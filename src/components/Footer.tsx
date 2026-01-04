@@ -11,7 +11,7 @@ const Footer = () => {
               <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
                 <Plane className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">SkySearch</span>
+              <span className="text-xl font-bold text-foreground">GoFlyFinder</span>
             </div>
             <p className="text-muted-foreground text-sm mb-4">
               Find the best flight deals from anywhere, to everywhere.
@@ -77,7 +77,7 @@ const Footer = () => {
 
         <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2026 SkySearch. All rights reserved.
+            © 2026 GoFlyFinder. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">Privacy</a>
