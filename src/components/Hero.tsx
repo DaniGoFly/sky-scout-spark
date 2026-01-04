@@ -18,11 +18,14 @@ const Hero = ({ onSearch }: HeroProps) => {
       <div className="container mx-auto relative">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-            Find your next
-            <span className="block text-primary">adventure</span>
+            Smarter Flight Comparison
+            <span className="block text-primary">Starts Here</span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            GoFlyFinder compares flight prices from multiple travel partners so you can find the best deals. When you click a deal, you'll be redirected to the provider to complete your booking.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
+            Search, compare, and explore flight options from leading airlines and travel providers. GoFlyFinder makes it easy to find competitive prices and book securely with our partners.
+          </p>
+          <p className="text-sm text-muted-foreground/80 italic">
+            We don't sell flights — we help you find the right option.
           </p>
         </div>
 
