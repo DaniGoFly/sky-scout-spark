@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import WhyUseSection from "@/components/WhyUseSection";
 import ThingsToDoSection from "@/components/ThingsToDoSection";
 import PopularDestinations from "@/components/PopularDestinations";
 import FlightResults from "@/components/FlightResults";
@@ -21,6 +22,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <Hero onSearch={handleSearch} />
+      <WhyUseSection />
       
       {showResults && (
         <div id="results">
