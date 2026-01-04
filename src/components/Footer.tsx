@@ -76,7 +76,14 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        {/* Disclaimer */}
+        <div className="border-t border-border pt-6 pb-4 text-center">
+          <p className="text-xs text-muted-foreground max-w-xl mx-auto">
+            Sky-Scout may earn a commission when you book through our links. This helps keep the site free at no extra cost to you.
+          </p>
+        </div>
+
+        <div className="border-t border-border pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
             © 2026 GoFlyFinder. All rights reserved.
           </p>
