@@ -1,11 +1,7 @@
 import SearchForm from "./SearchForm";
 import { Shield, Sparkles, Clock } from "lucide-react";
 
-interface HeroProps {
-  onSearch?: () => void;
-}
-
-const Hero = ({ onSearch }: HeroProps) => {
+const Hero = () => {
   return (
     <section className="relative pt-28 pb-24 px-4 overflow-hidden">
       {/* Layered Background */}
@@ -45,7 +41,7 @@ const Hero = ({ onSearch }: HeroProps) => {
           </p>
         </div>
 
-        <SearchForm onSearch={onSearch} />
+        <SearchForm />
         
         {/* Trust line */}
         <p className="text-center text-sm text-muted-foreground mt-4">
