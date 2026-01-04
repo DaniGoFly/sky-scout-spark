@@ -1,5 +1,10 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { generateMockFlights } from "@/lib/mockFlights";
+import { buildTravelpayoutsUrl } from "@/lib/travelpayouts";
+
+// Set to true to use mock data, false to use live API
+const USE_MOCK_DATA = true;
 
 export interface LiveFlight {
   id: string;
@@ -32,17 +37,74 @@ interface UseFlightSearchResult {
   isLoading: boolean;
   error: string | null;
   searchFlights: (params: SearchParams) => Promise<void>;
+  isUsingMockData: boolean;
 }
 
 export function useFlightSearch(): UseFlightSearchResult {
   const [flights, setFlights] = useState<LiveFlight[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUsingMockData, setIsUsingMockData] = useState(USE_MOCK_DATA);
+
+  const generateMockFlightsData = useCallback((params: SearchParams): LiveFlight[] => {
+    const mockFlights = generateMockFlights({
+      from: params.origin,
+      to: params.destination,
+      depart: params.departDate,
+      adults: params.adults,
+    });
+
+    // Transform mock flights to LiveFlight format with proper deeplinks
+    return mockFlights.map((flight, index) => {
+      const deepLink = buildTravelpayoutsUrl({
+        origin: params.origin,
+        destination: params.destination,
+        departDate: params.departDate,
+        returnDate: params.returnDate,
+        adults: params.adults,
+      });
+
+      // Parse duration to minutes
+      const durationMatch = flight.duration.match(/(\d+)h\s*(\d+)?m?/);
+      const durationMinutes = durationMatch 
+        ? parseInt(durationMatch[1]) * 60 + (parseInt(durationMatch[2]) || 0)
+        : 0;
+
+      return {
+        id: `mock-${flight.id}-${index}`,
+        airline: flight.airline,
+        airlineLogo: flight.airlineLogo,
+        flightNumber: `FL${1000 + flight.id}`,
+        departureTime: flight.departureTime,
+        arrivalTime: flight.arrivalTime.replace("+1", ""),
+        departureCode: flight.departureCode,
+        arrivalCode: flight.arrivalCode,
+        duration: flight.duration,
+        durationMinutes,
+        stops: flight.stopsCount,
+        price: flight.price,
+        deepLink,
+        returnAt: params.returnDate || null,
+      };
+    });
+  }, []);
 
   const searchFlights = useCallback(async (params: SearchParams) => {
     setIsLoading(true);
     setError(null);
     setFlights([]);
+
+    // Use mock data if flag is set
+    if (USE_MOCK_DATA) {
+      console.log("Using mock flight data (API approval pending)");
+      // Simulate network delay for realistic UX
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const mockData = generateMockFlightsData(params);
+      setFlights(mockData);
+      setIsUsingMockData(true);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       console.log("Searching flights with params:", params);
@@ -58,19 +120,39 @@ export function useFlightSearch(): UseFlightSearchResult {
 
       if (data?.error) {
         console.error("API error:", data.error);
-        throw new Error(data.error);
+        // Fallback to mock data on API error
+        console.log("Falling back to mock data due to API error");
+        const mockData = generateMockFlightsData(params);
+        setFlights(mockData);
+        setIsUsingMockData(true);
+        return;
       }
 
       console.log("Flight search results:", data);
-      setFlights(data?.flights || []);
+      
+      if (data?.flights?.length > 0) {
+        setFlights(data.flights);
+        setIsUsingMockData(false);
+      } else {
+        // No results from API, use mock data
+        console.log("No API results, using mock data");
+        const mockData = generateMockFlightsData(params);
+        setFlights(mockData);
+        setIsUsingMockData(true);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to search flights";
       console.error("Flight search error:", message);
-      setError(message);
+      
+      // Fallback to mock data on any error
+      console.log("Falling back to mock data due to error:", message);
+      const mockData = generateMockFlightsData(params);
+      setFlights(mockData);
+      setIsUsingMockData(true);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [generateMockFlightsData]);
 
-  return { flights, isLoading, error, searchFlights };
+  return { flights, isLoading, error, searchFlights, isUsingMockData };
 }
