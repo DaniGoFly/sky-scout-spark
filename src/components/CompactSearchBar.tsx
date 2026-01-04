@@ -1,11 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Plane, ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
+import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, parse } from "date-fns";
+import AirportAutocomplete from "./AirportAutocomplete";
+
+interface AirportSelection {
+  code: string;
+  display: string;
+}
 
 const CompactSearchBar = () => {
   const navigate = useNavigate();
@@ -14,8 +19,17 @@ const CompactSearchBar = () => {
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">(
     (searchParams.get("trip") as "roundtrip" | "oneway") || "roundtrip"
   );
-  const [from, setFrom] = useState(searchParams.get("from") || "NYC");
-  const [to, setTo] = useState(searchParams.get("to") || "LON");
+  
+  // Initialize from URL params
+  const fromCode = searchParams.get("from") || "";
+  const toCode = searchParams.get("to") || "";
+  
+  const [from, setFrom] = useState<AirportSelection | null>(
+    fromCode ? { code: fromCode, display: fromCode } : null
+  );
+  const [to, setTo] = useState<AirportSelection | null>(
+    toCode ? { code: toCode, display: toCode } : null
+  );
   const [departDate, setDepartDate] = useState<Date>(() => {
     const dateStr = searchParams.get("depart");
     return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : new Date(2026, 1, 15);
@@ -32,11 +46,15 @@ const CompactSearchBar = () => {
     setTo(temp);
   };
 
+  const isValid = from !== null && to !== null;
+
   const handleSearch = () => {
+    if (!isValid) return;
+    
     const params = new URLSearchParams({
       trip: tripType,
-      from,
-      to,
+      from: from.code,
+      to: to.code,
       depart: format(departDate, "yyyy-MM-dd"),
       adults: passengers.toString(),
       cabin: "economy",
@@ -77,13 +95,13 @@ const CompactSearchBar = () => {
         </div>
 
         {/* From */}
-        <div className="relative flex-1 min-w-[120px]">
-          <Plane className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
+        <div className="flex-1 min-w-[140px]">
+          <AirportAutocomplete
             value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="pl-9 h-10 bg-secondary/50 border-transparent rounded-lg text-sm"
+            onChange={setFrom}
             placeholder="From"
+            icon="from"
+            compact
           />
         </div>
 
@@ -98,13 +116,13 @@ const CompactSearchBar = () => {
         </Button>
 
         {/* To */}
-        <div className="relative flex-1 min-w-[120px]">
-          <Plane className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rotate-90" />
-          <Input
+        <div className="flex-1 min-w-[140px]">
+          <AirportAutocomplete
             value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="pl-9 h-10 bg-secondary/50 border-transparent rounded-lg text-sm"
+            onChange={setTo}
             placeholder="To"
+            icon="to"
+            compact
           />
         </div>
 
@@ -119,7 +137,7 @@ const CompactSearchBar = () => {
               {format(departDate, "MMM d")}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className="w-auto p-0 bg-card" align="start">
             <CalendarComponent
               mode="single"
               selected={departDate}
@@ -142,7 +160,7 @@ const CompactSearchBar = () => {
                 {format(returnDate, "MMM d")}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0 bg-card" align="start">
               <CalendarComponent
                 mode="single"
                 selected={returnDate}
@@ -165,7 +183,7 @@ const CompactSearchBar = () => {
               {passengers}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-48" align="start">
+          <PopoverContent className="w-48 bg-card" align="start">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Adults</span>
               <div className="flex items-center gap-2">
@@ -192,7 +210,7 @@ const CompactSearchBar = () => {
         </Popover>
 
         {/* Search */}
-        <Button onClick={handleSearch} className="h-10 gap-2">
+        <Button onClick={handleSearch} disabled={!isValid} className="h-10 gap-2">
           <Search className="w-4 h-4" />
           Search
         </Button>
