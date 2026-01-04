@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Compass } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const ThingsToDoSection = () => {
   return (
@@ -27,14 +28,10 @@ const ThingsToDoSection = () => {
             size="lg" 
             asChild
           >
-            <a 
-              href="https://klook.tpo.lv/qk4USebH" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
+            <Link to="/activities">
               <Compass className="w-5 h-5 mr-2" />
               Explore Tours & Activities
-            </a>
+            </Link>
           </Button>
         </div>
       </div>

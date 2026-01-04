@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Results from "./pages/Results";
+import Hotels from "./pages/Hotels";
+import CarRental from "./pages/CarRental";
+import Deals from "./pages/Deals";
+import Activities from "./pages/Activities";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
@@ -23,6 +27,10 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/results" element={<Results />} />
+          <Route path="/hotels" element={<Hotels />} />
+          <Route path="/car-rental" element={<CarRental />} />
+          <Route path="/deals" element={<Deals />} />
+          <Route path="/activities" element={<Activities />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
           <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
