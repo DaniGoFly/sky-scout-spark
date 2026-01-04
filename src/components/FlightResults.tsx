@@ -1,57 +1,109 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import CompactSearchBar from "./CompactSearchBar";
-import { generateMockFlights, sortFlights, filterFlights, Flight } from "@/lib/mockFlights";
+import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
 
 const FlightResults = () => {
   const [searchParams] = useSearchParams();
-  const [isLoading, setIsLoading] = useState(true);
+  const { flights, isLoading, error, searchFlights } = useFlightSearch();
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({
     stops: [],
     airlines: [],
-    priceRange: [0, 2000],
+    priceRange: [0, 5000],
     departureTime: [],
   });
   const [showAllFlights, setShowAllFlights] = useState(false);
 
   // Extract search params
-  const from = searchParams.get("from") || "NYC";
-  const to = searchParams.get("to") || "LON";
-  const depart = searchParams.get("depart") || "2026-02-15";
+  const from = searchParams.get("from") || "";
+  const to = searchParams.get("to") || "";
+  const depart = searchParams.get("depart") || "";
   const returnDate = searchParams.get("return") || "";
   const adults = Number(searchParams.get("adults")) || 1;
   const tripType = searchParams.get("trip") || "roundtrip";
 
-  // Generate mock flights based on search params
-  const allFlights = useMemo(() => {
-    return generateMockFlights({ from, to, depart, adults });
-  }, [from, to, depart, adults]);
-
-  // Apply filters and sorting
-  const displayedFlights = useMemo(() => {
-    let flights = filterFlights(allFlights, filters);
-    flights = sortFlights(flights, sortBy);
-    return showAllFlights ? flights : flights.slice(0, 6);
-  }, [allFlights, filters, sortBy, showAllFlights]);
-
-  const totalFiltered = useMemo(() => {
-    return filterFlights(allFlights, filters).length;
-  }, [allFlights, filters]);
-
-  // Simulate loading
+  // Fetch live flights when params change
   useEffect(() => {
-    setIsLoading(true);
-    setShowAllFlights(false);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [from, to, depart, adults]);
+    if (from && to && depart) {
+      setShowAllFlights(false);
+      searchFlights({
+        origin: from,
+        destination: to,
+        departDate: depart,
+        returnDate: returnDate || undefined,
+        adults,
+        tripType,
+      });
+    }
+  }, [from, to, depart, returnDate, adults, tripType, searchFlights]);
+
+  // Filter and sort flights
+  const processedFlights = useMemo(() => {
+    let result = [...flights];
+
+    // Apply filters
+    if (filters.stops.length > 0) {
+      result = result.filter((flight) => {
+        return filters.stops.some((stop) => {
+          if (stop === "direct") return flight.stops === 0;
+          if (stop === "1stop") return flight.stops === 1;
+          if (stop === "2stops") return flight.stops >= 2;
+          return true;
+        });
+      });
+    }
+
+    if (filters.airlines.length > 0) {
+      result = result.filter((flight) =>
+        filters.airlines.includes(flight.airline)
+      );
+    }
+
+    result = result.filter(
+      (flight) =>
+        flight.price >= filters.priceRange[0] &&
+        flight.price <= filters.priceRange[1]
+    );
+
+    if (filters.departureTime.length > 0) {
+      result = result.filter((flight) => {
+        const hour = parseInt(flight.departureTime.split(":")[0]);
+        return filters.departureTime.some((time) => {
+          if (time === "morning") return hour >= 6 && hour < 12;
+          if (time === "afternoon") return hour >= 12 && hour < 18;
+          if (time === "evening") return hour >= 18 && hour < 24;
+          if (time === "night") return hour >= 0 && hour < 6;
+          return true;
+        });
+      });
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case "cheapest":
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case "fastest":
+        result.sort((a, b) => a.durationMinutes - b.durationMinutes);
+        break;
+      case "best":
+      default:
+        result.sort((a, b) => a.price + a.stops * 100 - (b.price + b.stops * 100));
+        break;
+    }
+
+    return result;
+  }, [flights, filters, sortBy]);
+
+  const displayedFlights = showAllFlights
+    ? processedFlights
+    : processedFlights.slice(0, 6);
+  const totalFiltered = processedFlights.length;
 
   const formatDate = (dateStr: string) => {
     try {
@@ -63,6 +115,12 @@ const FlightResults = () => {
     } catch {
       return dateStr;
     }
+  };
+
+  const getStopsLabel = (stops: number): string => {
+    if (stops === 0) return "Direct";
+    if (stops === 1) return "1 stop";
+    return `${stops} stops`;
   };
 
   return (
@@ -86,9 +144,39 @@ const FlightResults = () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24">
             <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-            <p className="text-lg text-muted-foreground">Searching flights...</p>
+            <p className="text-lg text-muted-foreground">Searching live prices...</p>
             <p className="text-sm text-muted-foreground mt-2">
-              Finding the best deals for your trip
+              Finding the best deals from airlines worldwide
+            </p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+            <p className="text-lg text-foreground font-medium">Unable to load flights</p>
+            <p className="text-sm text-muted-foreground mt-2 max-w-md">{error}</p>
+            <Button
+              variant="outline"
+              className="mt-6"
+              onClick={() =>
+                searchFlights({
+                  origin: from,
+                  destination: to,
+                  departDate: depart,
+                  returnDate: returnDate || undefined,
+                  adults,
+                  tripType,
+                })
+              }
+            >
+              Try Again
+            </Button>
+          </div>
+        ) : flights.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <Plane className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-lg text-foreground font-medium">No flights found</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Try different dates or destinations
             </p>
           </div>
         ) : (
@@ -146,10 +234,10 @@ const FlightResults = () => {
                         departureCode={flight.departureCode}
                         arrivalCode={flight.arrivalCode}
                         duration={flight.duration}
-                        stops={flight.stops}
+                        stops={getStopsLabel(flight.stops)}
                         price={flight.price}
                         deepLink={flight.deepLink}
-                        featured={flight.featured}
+                        featured={index === 0}
                       />
                     </div>
                   ))}

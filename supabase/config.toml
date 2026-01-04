@@ -1,1 +1,10 @@
 project_id = "kvhykvuvsbmcselojbcn"
+
+[api]
+enabled = true
+
+[functions.flights-search]
+verify_jwt = false
+
+[functions.hotels-search]
+verify_jwt = false
