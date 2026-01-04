@@ -1,0 +1,204 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Plane, ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format, parse } from "date-fns";
+
+const CompactSearchBar = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  const [tripType, setTripType] = useState<"roundtrip" | "oneway">(
+    (searchParams.get("trip") as "roundtrip" | "oneway") || "roundtrip"
+  );
+  const [from, setFrom] = useState(searchParams.get("from") || "NYC");
+  const [to, setTo] = useState(searchParams.get("to") || "LON");
+  const [departDate, setDepartDate] = useState<Date>(() => {
+    const dateStr = searchParams.get("depart");
+    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : new Date(2026, 1, 15);
+  });
+  const [returnDate, setReturnDate] = useState<Date>(() => {
+    const dateStr = searchParams.get("return");
+    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : new Date(2026, 1, 22);
+  });
+  const [passengers, setPassengers] = useState(Number(searchParams.get("adults")) || 1);
+
+  const swapLocations = () => {
+    const temp = from;
+    setFrom(to);
+    setTo(temp);
+  };
+
+  const handleSearch = () => {
+    const params = new URLSearchParams({
+      trip: tripType,
+      from,
+      to,
+      depart: format(departDate, "yyyy-MM-dd"),
+      adults: passengers.toString(),
+      cabin: "economy",
+    });
+    
+    if (tripType === "roundtrip") {
+      params.set("return", format(returnDate, "yyyy-MM-dd"));
+    }
+    
+    navigate(`/results?${params.toString()}`);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-2xl shadow-card p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Trip Type */}
+        <div className="flex gap-1">
+          <button
+            onClick={() => setTripType("roundtrip")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              tripType === "roundtrip"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Round trip
+          </button>
+          <button
+            onClick={() => setTripType("oneway")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              tripType === "oneway"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            One way
+          </button>
+        </div>
+
+        {/* From */}
+        <div className="relative flex-1 min-w-[120px]">
+          <Plane className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="pl-9 h-10 bg-secondary/50 border-transparent rounded-lg text-sm"
+            placeholder="From"
+          />
+        </div>
+
+        {/* Swap */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={swapLocations}
+          className="h-10 w-10 rounded-full hover:bg-secondary"
+        >
+          <ArrowRightLeft className="w-4 h-4" />
+        </Button>
+
+        {/* To */}
+        <div className="relative flex-1 min-w-[120px]">
+          <Plane className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rotate-90" />
+          <Input
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="pl-9 h-10 bg-secondary/50 border-transparent rounded-lg text-sm"
+            placeholder="To"
+          />
+        </div>
+
+        {/* Depart */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm min-w-[130px]"
+            >
+              <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+              {format(departDate, "MMM d")}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <CalendarComponent
+              mode="single"
+              selected={departDate}
+              onSelect={(date) => date && setDepartDate(date)}
+              initialFocus
+              className="pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Return */}
+        {tripType === "roundtrip" && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm min-w-[130px]"
+              >
+                <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                {format(returnDate, "MMM d")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={returnDate}
+                onSelect={(date) => date && setReturnDate(date)}
+                initialFocus
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {/* Passengers */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm"
+            >
+              <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+              {passengers}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48" align="start">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Adults</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8"
+                  onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                >
+                  -
+                </Button>
+                <span className="w-4 text-center">{passengers}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8"
+                  onClick={() => setPassengers(passengers + 1)}
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Search */}
+        <Button onClick={handleSearch} className="h-10 gap-2">
+          <Search className="w-4 h-4" />
+          Search
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default CompactSearchBar;
