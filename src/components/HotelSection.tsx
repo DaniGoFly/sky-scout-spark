@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Hotel, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const destinations = [
   {
@@ -45,14 +46,10 @@ const HotelSection = () => {
             size="lg" 
             asChild
           >
-            <a 
-              href="#" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
+            <Link to="/hotels">
               <Hotel className="w-5 h-5 mr-2" />
               Search Hotels
-            </a>
+            </Link>
           </Button>
           
           <p className="text-sm text-muted-foreground mt-4 mb-10">
@@ -62,9 +59,9 @@ const HotelSection = () => {
           {/* Destination Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {destinations.map((destination) => (
-              <a
+              <Link
                 key={destination.city}
-                href="#"
+                to="/hotels"
                 className="group relative rounded-2xl overflow-hidden aspect-[4/3] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
                 <img
@@ -80,7 +77,7 @@ const HotelSection = () => {
                 <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <ArrowRight className="w-4 h-4 text-white" />
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
