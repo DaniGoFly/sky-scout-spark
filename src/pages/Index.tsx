@@ -2,6 +2,7 @@ import { useState } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import WhyUseSection from "@/components/WhyUseSection";
+import HotelSection from "@/components/HotelSection";
 import ThingsToDoSection from "@/components/ThingsToDoSection";
 import PopularDestinations from "@/components/PopularDestinations";
 import FlightResults from "@/components/FlightResults";
@@ -23,6 +24,7 @@ const Index = () => {
       <Header />
       <Hero onSearch={handleSearch} />
       <WhyUseSection />
+      <HotelSection />
       
       {showResults && (
         <div id="results">
