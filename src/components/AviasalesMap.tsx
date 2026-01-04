@@ -1,18 +1,17 @@
 import { useEffect, useRef } from "react";
-import { buildSearchWidgetUrl } from "@/lib/aviasalesConfig";
+import { buildMapWidgetUrl } from "@/lib/aviasalesConfig";
 
-const AviasalesSearch = () => {
+const AviasalesMap = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clear any existing content to ensure fresh results
+    // Clear any existing content
     containerRef.current.innerHTML = "";
 
     const script = document.createElement("script");
-    // Build URL from config - always fetches live prices, no caching
-    script.src = buildSearchWidgetUrl();
+    script.src = buildMapWidgetUrl();
     script.charset = "utf-8";
     script.async = true;
 
@@ -28,13 +27,11 @@ const AviasalesSearch = () => {
   return (
     <section className="py-12 px-4 bg-background">
       <div className="max-w-6xl mx-auto">
-        <div ref={containerRef} className="aviasales-widget-container" />
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          Prices are live and frequently updated. Final price is confirmed on the booking provider's site.
-        </p>
+        <h2 className="text-2xl font-bold text-center mb-6">Explore Prices on Map</h2>
+        <div ref={containerRef} className="aviasales-map-container flex justify-center" />
       </div>
     </section>
   );
 };
 
-export default AviasalesSearch;
+export default AviasalesMap;
