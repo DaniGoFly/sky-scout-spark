@@ -1,17 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plane, ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
+import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import AirportAutocomplete from "./AirportAutocomplete";
+
+interface AirportSelection {
+  code: string;
+  display: string;
+}
 
 const SearchForm = () => {
   const navigate = useNavigate();
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
-  const [from, setFrom] = useState("New York (JFK)");
-  const [to, setTo] = useState("London (LHR)");
+  const [from, setFrom] = useState<AirportSelection | null>(null);
+  const [to, setTo] = useState<AirportSelection | null>(null);
   const [departDate, setDepartDate] = useState<Date>(new Date(2026, 1, 15));
   const [returnDate, setReturnDate] = useState<Date>(new Date(2026, 1, 22));
   const [passengers, setPassengers] = useState(1);
@@ -22,11 +27,15 @@ const SearchForm = () => {
     setTo(temp);
   };
 
+  const isValid = from !== null && to !== null;
+
   const handleSearch = () => {
+    if (!isValid) return;
+
     const params = new URLSearchParams({
       trip: tripType,
-      from: from.match(/\(([^)]+)\)/)?.[1] || from,
-      to: to.match(/\(([^)]+)\)/)?.[1] || to,
+      from: from.code,
+      to: to.code,
       depart: format(departDate, "yyyy-MM-dd"),
       adults: passengers.toString(),
       cabin: "economy",
@@ -70,15 +79,12 @@ const SearchForm = () => {
         {/* From */}
         <div className="lg:col-span-3 relative">
           <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">From</label>
-          <div className="relative group">
-            <Plane className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="pl-12 h-14 bg-secondary/50 border-2 border-transparent rounded-xl focus:bg-card focus:border-primary focus:ring-0 text-base font-medium transition-all"
-              placeholder="Where from?"
-            />
-          </div>
+          <AirportAutocomplete
+            value={from}
+            onChange={setFrom}
+            placeholder="Where from?"
+            icon="from"
+          />
         </div>
 
         {/* Swap Button */}
@@ -96,15 +102,12 @@ const SearchForm = () => {
         {/* To */}
         <div className="lg:col-span-3">
           <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">To</label>
-          <div className="relative group">
-            <Plane className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground rotate-90 group-focus-within:text-primary transition-colors" />
-            <Input
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="pl-12 h-14 bg-secondary/50 border-2 border-transparent rounded-xl focus:bg-card focus:border-primary focus:ring-0 text-base font-medium transition-all"
-              placeholder="Where to?"
-            />
-          </div>
+          <AirportAutocomplete
+            value={to}
+            onChange={setTo}
+            placeholder="Where to?"
+            icon="to"
+          />
         </div>
 
         {/* Depart Date */}
@@ -200,7 +203,13 @@ const SearchForm = () => {
 
       {/* Search Button */}
       <div className="mt-8 flex justify-center">
-        <Button variant="hero" size="xl" onClick={handleSearch} className="gap-3 text-base">
+        <Button 
+          variant="hero" 
+          size="xl" 
+          onClick={handleSearch} 
+          disabled={!isValid}
+          className="gap-3 text-base"
+        >
           <Search className="w-5 h-5" />
           Search Flights
         </Button>
