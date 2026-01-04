@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plane, ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,11 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 
-interface SearchFormProps {
-  onSearch?: () => void;
-}
-
-const SearchForm = ({ onSearch }: SearchFormProps) => {
+const SearchForm = () => {
+  const navigate = useNavigate();
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
   const [from, setFrom] = useState("New York (JFK)");
   const [to, setTo] = useState("London (LHR)");
@@ -25,7 +23,7 @@ const SearchForm = ({ onSearch }: SearchFormProps) => {
   };
 
   const handleSearch = () => {
-    if (onSearch) onSearch();
+    navigate("/results");
   };
 
   return (
