@@ -22,7 +22,7 @@ const Hero = ({ onSearch }: HeroProps) => {
             <span className="block text-primary">adventure</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Search millions of flights to find the best deals. Compare prices from hundreds of airlines and travel sites.
+            GoFlyFinder compares flight prices from multiple travel partners so you can find the best deals. When you click a deal, you'll be redirected to the provider to complete your booking.
           </p>
         </div>
 
