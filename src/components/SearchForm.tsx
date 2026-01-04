@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
 import { format } from "date-fns";
-import { buildTravelpayoutsUrl, logClickout } from "@/lib/travelpayouts";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -13,6 +13,7 @@ interface AirportSelection {
 }
 
 const SearchForm = () => {
+  const navigate = useNavigate();
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
   const [from, setFrom] = useState<AirportSelection | null>(null);
   const [to, setTo] = useState<AirportSelection | null>(null);
@@ -31,21 +32,21 @@ const SearchForm = () => {
   const handleSearch = () => {
     if (!isValid) return;
 
-    const url = buildTravelpayoutsUrl({
-      origin: from.code,
-      destination: to.code,
-      departDate: format(departDate, "yyyy-MM-dd"),
-      returnDate: tripType === "roundtrip" ? format(returnDate, "yyyy-MM-dd") : undefined,
-      adults: passengers,
+    // Navigate to internal results page instead of redirecting externally
+    const params = new URLSearchParams({
+      trip: tripType,
+      from: from.code,
+      to: to.code,
+      depart: format(departDate, "yyyy-MM-dd"),
+      adults: passengers.toString(),
+      cabin: "economy",
     });
 
-    logClickout({
-      origin: from.code,
-      destination: to.code,
-      url,
-    });
+    if (tripType === "roundtrip") {
+      params.set("return", format(returnDate, "yyyy-MM-dd"));
+    }
 
-    window.open(url, "_blank", "noopener,noreferrer");
+    navigate(`/results?${params.toString()}`);
   };
 
   return (

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Loader2, AlertCircle, Plane } from "lucide-react";
+import { Loader2, AlertCircle, Plane, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
@@ -9,7 +9,7 @@ import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
 
 const FlightResults = () => {
   const [searchParams] = useSearchParams();
-  const { flights, isLoading, error, searchFlights } = useFlightSearch();
+  const { flights, isLoading, error, searchFlights, isUsingMockData } = useFlightSearch();
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({
     stops: [],
@@ -181,8 +181,24 @@ const FlightResults = () => {
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6 mt-6">
+            {/* Mock Data Notice */}
+            {isUsingMockData && (
+              <div className="w-full mb-4 lg:hidden">
+                <div className="flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded-xl text-sm text-primary">
+                  <Info className="w-4 h-4 shrink-0" />
+                  <span>Showing sample prices. Click "View Deal" for live rates.</span>
+                </div>
+              </div>
+            )}
+
             {/* Filters Sidebar */}
             <div className="lg:w-72 shrink-0">
+              {isUsingMockData && (
+                <div className="hidden lg:flex items-center gap-2 p-3 mb-4 bg-primary/10 border border-primary/20 rounded-xl text-sm text-primary">
+                  <Info className="w-4 h-4 shrink-0" />
+                  <span>Sample prices shown. Click "View Deal" for live rates.</span>
+                </div>
+              )}
               <FlightFilters onFiltersChange={setFilters} />
             </div>
 
