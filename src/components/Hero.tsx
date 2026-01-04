@@ -46,6 +46,11 @@ const Hero = ({ onSearch }: HeroProps) => {
         </div>
 
         <SearchForm onSearch={onSearch} />
+        
+        {/* Trust line */}
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          No hidden fees • Secure booking • Trusted travel partners
+        </p>
 
         {/* Trust Badges */}
         <div className="mt-14 flex flex-wrap items-center justify-center gap-6 md:gap-10">
