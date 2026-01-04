@@ -36,6 +36,10 @@ const HotelSection = () => {
               Search Hotels
             </a>
           </Button>
+          
+          <p className="text-sm text-muted-foreground mt-4">
+            No hidden fees • Secure booking • Trusted travel partners
+          </p>
         </div>
       </div>
     </section>
