@@ -9,7 +9,7 @@ const Header = () => {
           <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
             <Plane className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold text-foreground">SkySearch</span>
+          <span className="text-xl font-bold text-foreground">GoFlyFinder</span>
         </div>
 
         <nav className="hidden md:flex items-center gap-8">
