@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import ThingsToDoSection from "@/components/ThingsToDoSection";
 import PopularDestinations from "@/components/PopularDestinations";
 import FlightResults from "@/components/FlightResults";
 import Footer from "@/components/Footer";
@@ -27,6 +28,7 @@ const Index = () => {
         </div>
       )}
       
+      <ThingsToDoSection />
       <PopularDestinations />
       <Footer />
     </div>
