@@ -1,4 +1,5 @@
 import { Plane, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -59,19 +60,19 @@ const Footer = () => {
             <h4 className="font-semibold text-foreground mb-4">Support</h4>
             <ul className="space-y-3">
               <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Help Center</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Contact Us</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Terms of Service</a></li>
+              <li><Link to="/contact" className="text-muted-foreground hover:text-primary text-sm transition-colors">Contact Us</Link></li>
+              <li><Link to="/privacy-policy" className="text-muted-foreground hover:text-primary text-sm transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms-and-conditions" className="text-muted-foreground hover:text-primary text-sm transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
 
-          {/* Download */}
+          {/* Legal */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Get the App</h4>
-            <div className="space-y-3">
-              <a href="#" className="block w-32 h-10 bg-secondary rounded-lg"></a>
-              <a href="#" className="block w-32 h-10 bg-secondary rounded-lg"></a>
-            </div>
+            <h4 className="font-semibold text-foreground mb-4">Legal</h4>
+            <ul className="space-y-3">
+              <li><Link to="/affiliate-disclosure" className="text-muted-foreground hover:text-primary text-sm transition-colors">Affiliate Disclosure</Link></li>
+              <li><Link to="/price-disclaimer" className="text-muted-foreground hover:text-primary text-sm transition-colors">Price Disclaimer</Link></li>
+            </ul>
           </div>
         </div>
 
@@ -80,9 +81,9 @@ const Footer = () => {
             © 2026 GoFlyFinder. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Terms</a>
-            <a href="#" className="hover:text-primary transition-colors">Cookies</a>
+            <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy</Link>
+            <Link to="/terms-and-conditions" className="hover:text-primary transition-colors">Terms</Link>
+            <Link to="/affiliate-disclosure" className="hover:text-primary transition-colors">Affiliates</Link>
           </div>
         </div>
       </div>
