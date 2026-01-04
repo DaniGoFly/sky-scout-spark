@@ -1,6 +1,8 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import AviasalesSearch from "@/components/AviasalesSearch";
+import AviasalesCalendar from "@/components/AviasalesCalendar";
+import AviasalesMap from "@/components/AviasalesMap";
 import WhyUseSection from "@/components/WhyUseSection";
 import HotelSection from "@/components/HotelSection";
 import ThingsToDoSection from "@/components/ThingsToDoSection";
@@ -13,6 +15,8 @@ const Index = () => {
       <Header />
       <Hero />
       <AviasalesSearch />
+      <AviasalesCalendar />
+      <AviasalesMap />
       <WhyUseSection />
       <HotelSection />
       <ThingsToDoSection />
