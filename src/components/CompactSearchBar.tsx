@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, parse } from "date-fns";
 import AirportAutocomplete from "./AirportAutocomplete";
+import { buildTravelpayoutsUrl, logClickout } from "@/lib/travelpayouts";
 
 interface AirportSelection {
   code: string;
@@ -13,7 +14,6 @@ interface AirportSelection {
 }
 
 const CompactSearchBar = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">(
@@ -51,20 +51,21 @@ const CompactSearchBar = () => {
   const handleSearch = () => {
     if (!isValid) return;
     
-    const params = new URLSearchParams({
-      trip: tripType,
-      from: from.code,
-      to: to.code,
-      depart: format(departDate, "yyyy-MM-dd"),
-      adults: passengers.toString(),
-      cabin: "economy",
+    const url = buildTravelpayoutsUrl({
+      origin: from.code,
+      destination: to.code,
+      departDate: format(departDate, "yyyy-MM-dd"),
+      returnDate: tripType === "roundtrip" ? format(returnDate, "yyyy-MM-dd") : undefined,
+      adults: passengers,
     });
-    
-    if (tripType === "roundtrip") {
-      params.set("return", format(returnDate, "yyyy-MM-dd"));
-    }
-    
-    navigate(`/results?${params.toString()}`);
+
+    logClickout({
+      origin: from.code,
+      destination: to.code,
+      url,
+    });
+
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (

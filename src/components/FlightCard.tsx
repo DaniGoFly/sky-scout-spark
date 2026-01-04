@@ -30,17 +30,18 @@ const FlightCard = ({
 }: FlightCardProps) => {
   
   const handleViewDeal = () => {
+    const url = deepLink || `https://www.aviasales.com/search/${departureCode}${arrivalCode}1?marker=694224`;
+    
     // Log clickout event
     const clickoutEvent = {
       timestamp: new Date().toISOString(),
       airline,
       route: `${departureCode}-${arrivalCode}`,
       price,
-      deepLink: deepLink || "placeholder",
+      url,
     };
     
-    // Log to console
-    console.log("Clickout Event:", clickoutEvent);
+    console.log("Affiliate Clickout:", clickoutEvent);
     
     // Store in localStorage for tracking
     const existingClickouts = JSON.parse(localStorage.getItem("flight_clickouts") || "[]");
@@ -48,7 +49,6 @@ const FlightCard = ({
     localStorage.setItem("flight_clickouts", JSON.stringify(existingClickouts));
 
     // Open affiliate link in new tab
-    const url = deepLink || `https://tpo.lv/search?route=${departureCode}-${arrivalCode}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
