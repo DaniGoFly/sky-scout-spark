@@ -1,4 +1,4 @@
-import { Plane, Clock, Luggage } from "lucide-react";
+import { Plane, Clock, Luggage, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FlightCardProps {
@@ -11,6 +11,7 @@ interface FlightCardProps {
   duration: string;
   stops: string;
   price: number;
+  deepLink?: string;
   featured?: boolean;
 }
 
@@ -24,8 +25,33 @@ const FlightCard = ({
   duration,
   stops,
   price,
+  deepLink,
   featured = false,
 }: FlightCardProps) => {
+  
+  const handleViewDeal = () => {
+    // Log clickout event
+    const clickoutEvent = {
+      timestamp: new Date().toISOString(),
+      airline,
+      route: `${departureCode}-${arrivalCode}`,
+      price,
+      deepLink: deepLink || "placeholder",
+    };
+    
+    // Log to console
+    console.log("Clickout Event:", clickoutEvent);
+    
+    // Store in localStorage for tracking
+    const existingClickouts = JSON.parse(localStorage.getItem("flight_clickouts") || "[]");
+    existingClickouts.push(clickoutEvent);
+    localStorage.setItem("flight_clickouts", JSON.stringify(existingClickouts));
+
+    // Open affiliate link in new tab
+    const url = deepLink || `https://tpo.lv/search?route=${departureCode}-${arrivalCode}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div
       className={`relative bg-card rounded-2xl p-6 transition-all duration-300 hover:shadow-card-hover ${
@@ -42,7 +68,14 @@ const FlightCard = ({
         {/* Airline Info */}
         <div className="flex items-center gap-4 lg:w-48">
           <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
-            <img src={airlineLogo} alt={airline} className="w-8 h-8 object-contain" />
+            <img 
+              src={airlineLogo} 
+              alt={airline} 
+              className="w-8 h-8 object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/placeholder.svg";
+              }}
+            />
           </div>
           <span className="font-semibold text-foreground">{airline}</span>
         </div>
@@ -62,7 +95,9 @@ const FlightCard = ({
             <div className="w-full h-0.5 bg-border relative">
               <Plane className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 text-primary rotate-90" />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">{stops}</p>
+            <p className={`text-xs mt-2 ${stops === "Direct" ? "text-green-600" : "text-muted-foreground"}`}>
+              {stops}
+            </p>
           </div>
 
           <div className="text-center">
@@ -85,8 +120,9 @@ const FlightCard = ({
             <p className="text-sm text-muted-foreground">From</p>
             <p className="text-3xl font-bold text-foreground">${price}</p>
           </div>
-          <Button variant="hero" size="lg">
-            Select
+          <Button variant="hero" size="lg" onClick={handleViewDeal} className="gap-2">
+            View Deal
+            <ExternalLink className="w-4 h-4" />
           </Button>
         </div>
       </div>

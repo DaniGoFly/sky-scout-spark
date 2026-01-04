@@ -23,7 +23,20 @@ const SearchForm = () => {
   };
 
   const handleSearch = () => {
-    navigate("/results");
+    const params = new URLSearchParams({
+      trip: tripType,
+      from: from.match(/\(([^)]+)\)/)?.[1] || from,
+      to: to.match(/\(([^)]+)\)/)?.[1] || to,
+      depart: format(departDate, "yyyy-MM-dd"),
+      adults: passengers.toString(),
+      cabin: "economy",
+    });
+    
+    if (tripType === "roundtrip") {
+      params.set("return", format(returnDate, "yyyy-MM-dd"));
+    }
+    
+    navigate(`/results?${params.toString()}`);
   };
 
   return (
