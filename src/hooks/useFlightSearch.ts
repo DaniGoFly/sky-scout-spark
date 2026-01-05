@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { generateMockFlights } from "@/lib/mockFlights";
-import { buildTravelpayoutsUrl } from "@/lib/travelpayouts";
 
 // Set to true to use mock data, false to use live API
 const USE_MOCK_DATA = true;
@@ -54,16 +53,8 @@ export function useFlightSearch(): UseFlightSearchResult {
       adults: params.adults,
     });
 
-    // Transform mock flights to LiveFlight format with proper deeplinks
+    // Transform mock flights to LiveFlight format
     return mockFlights.map((flight, index) => {
-      const deepLink = buildTravelpayoutsUrl({
-        origin: params.origin,
-        destination: params.destination,
-        departDate: params.departDate,
-        returnDate: params.returnDate,
-        adults: params.adults,
-      });
-
       // Parse duration to minutes
       const durationMatch = flight.duration.match(/(\d+)h\s*(\d+)?m?/);
       const durationMinutes = durationMatch 
@@ -83,7 +74,7 @@ export function useFlightSearch(): UseFlightSearchResult {
         durationMinutes,
         stops: flight.stopsCount,
         price: flight.price,
-        deepLink,
+        deepLink: "#", // Placeholder for internal booking flow
         returnAt: params.returnDate || null,
       };
     });
