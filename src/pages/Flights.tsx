@@ -1,16 +1,18 @@
 import Header from "@/components/Header";
-import Hero from "@/components/Hero";
+import Footer from "@/components/Footer";
+import FlightSearchHero from "@/components/FlightSearchHero";
 import WhyUseSection from "@/components/WhyUseSection";
 import PopularDestinations from "@/components/PopularDestinations";
-import Footer from "@/components/Footer";
 
 const Flights = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <Hero />
-      <WhyUseSection />
-      <PopularDestinations />
+      <main className="pt-20 flex-1">
+        <FlightSearchHero />
+        <WhyUseSection />
+        <PopularDestinations />
+      </main>
       <Footer />
     </div>
   );

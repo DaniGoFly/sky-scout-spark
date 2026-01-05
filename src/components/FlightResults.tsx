@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Loader2, AlertCircle, Plane, Info } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Loader2, AlertCircle, Plane, Info, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
-import CompactSearchBar from "./CompactSearchBar";
+import FlightDetailsModal from "./FlightDetailsModal";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
 
 const FlightResults = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { flights, isLoading, error, searchFlights, isUsingMockData } = useFlightSearch();
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({
@@ -18,6 +19,7 @@ const FlightResults = () => {
     departureTime: [],
   });
   const [showAllFlights, setShowAllFlights] = useState(false);
+  const [selectedFlight, setSelectedFlight] = useState<LiveFlight | null>(null);
 
   // Extract search params
   const from = searchParams.get("from") || "";
@@ -126,8 +128,15 @@ const FlightResults = () => {
   return (
     <section className="py-8 px-4 bg-secondary/30 min-h-screen">
       <div className="container mx-auto">
-        {/* Compact Search Bar */}
-        <CompactSearchBar />
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/flights")}
+          className="mb-4 gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          New Search
+        </Button>
 
         {/* Search Summary */}
         <div className="mt-6 mb-4">
@@ -239,20 +248,12 @@ const FlightResults = () => {
                   {displayedFlights.map((flight, index) => (
                     <div
                       key={flight.id}
-                      className="opacity-0 animate-fade-in"
+                      className="opacity-0 animate-fade-in cursor-pointer"
                       style={{ animationDelay: `${index * 50}ms`, animationFillMode: "forwards" }}
+                      onClick={() => setSelectedFlight(flight)}
                     >
                       <FlightCard
-                        airline={flight.airline}
-                        airlineLogo={flight.airlineLogo}
-                        departureTime={flight.departureTime}
-                        arrivalTime={flight.arrivalTime}
-                        departureCode={flight.departureCode}
-                        arrivalCode={flight.arrivalCode}
-                        duration={flight.duration}
-                        stops={getStopsLabel(flight.stops)}
-                        price={flight.price}
-                        deepLink={flight.deepLink}
+                        flight={flight}
                         featured={index === 0}
                       />
                     </div>
@@ -267,7 +268,6 @@ const FlightResults = () => {
                 </div>
               )}
 
-              {/* Show More */}
               {!showAllFlights && totalFiltered > 6 && (
                 <div className="mt-8 text-center">
                   <Button
@@ -282,6 +282,13 @@ const FlightResults = () => {
             </div>
           </div>
         )}
+
+        {/* Flight Details Modal */}
+        <FlightDetailsModal
+          flight={selectedFlight}
+          isOpen={!!selectedFlight}
+          onClose={() => setSelectedFlight(null)}
+        />
       </div>
     </section>
   );
