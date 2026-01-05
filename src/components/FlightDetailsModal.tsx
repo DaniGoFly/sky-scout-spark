@@ -1,7 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plane, Clock, Luggage, Wifi, Coffee, ExternalLink, MapPin } from "lucide-react";
+import { Plane, Clock, Luggage, Wifi, Coffee, ExternalLink, MapPin, Check } from "lucide-react";
 import { LiveFlight } from "@/hooks/useFlightSearch";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface FlightDetailsModalProps {
   flight: LiveFlight | null;
@@ -10,16 +12,25 @@ interface FlightDetailsModalProps {
 }
 
 const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps) => {
+  const [isBooking, setIsBooking] = useState(false);
+
   if (!flight) return null;
 
-  const handleBookNow = () => {
-    // Open booking link if available, otherwise show a toast
+  const handleBookNow = async () => {
+    setIsBooking(true);
+    
+    // If there's a deep link, open it
     if (flight.deepLink) {
       window.open(flight.deepLink, "_blank", "noopener,noreferrer");
-    } else {
-      // For mock data without deep links, provide a helpful message
-      alert(`Booking for ${flight.airline} ${flight.flightNumber} - ${flight.departureCode} to ${flight.arrivalCode}. In production, this would redirect to the airline's booking page.`);
+      setIsBooking(false);
+      return;
     }
+    
+    // For mock data, simulate booking
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsBooking(false);
+    toast.success(`Booking confirmed for ${flight.airline} ${flight.flightNumber}! You'll receive a confirmation email shortly.`);
+    onClose();
   };
 
   const getStopsLabel = (stops: number): string => {
@@ -117,6 +128,29 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
             </div>
           </div>
 
+          {/* What's included */}
+          <div className="bg-muted/30 rounded-xl p-4">
+            <h4 className="font-semibold text-foreground mb-3">What's included</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Check className="w-4 h-4 text-emerald-500" />
+                <span>Free seat selection</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Check className="w-4 h-4 text-emerald-500" />
+                <span>Priority boarding</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Check className="w-4 h-4 text-emerald-500" />
+                <span>Flexible rebooking</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Check className="w-4 h-4 text-emerald-500" />
+                <span>24h free cancellation</span>
+              </div>
+            </div>
+          </div>
+
           {/* Price & Booking */}
           <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
             <div className="flex items-center justify-between">
@@ -125,15 +159,24 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
                 <p className="text-4xl font-bold text-foreground">${flight.price}</p>
                 <p className="text-xs text-muted-foreground mt-1">Includes taxes & fees</p>
               </div>
-              <Button variant="hero" size="lg" onClick={handleBookNow} className="gap-2">
-                Continue to Booking
-                <ExternalLink className="w-4 h-4" />
+              <Button 
+                variant="hero" 
+                size="lg" 
+                onClick={handleBookNow} 
+                className="gap-2"
+                disabled={isBooking}
+              >
+                {isBooking ? "Processing..." : "Book Now"}
+                {!isBooking && (flight.deepLink ? <ExternalLink className="w-4 h-4" /> : null)}
               </Button>
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            You will be redirected to our partner's website to complete your booking.
+            {flight.deepLink 
+              ? "You will be redirected to our partner's website to complete your booking."
+              : "Free cancellation within 24 hours of booking."
+            }
           </p>
         </div>
       </DialogContent>

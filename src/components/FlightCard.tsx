@@ -5,9 +5,10 @@ import { LiveFlight } from "@/hooks/useFlightSearch";
 interface FlightCardProps {
   flight: LiveFlight;
   featured?: boolean;
+  onViewDetails?: () => void;
 }
 
-const FlightCard = ({ flight, featured = false }: FlightCardProps) => {
+const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps) => {
   const getStopsLabel = (stops: number): string => {
     if (stops === 0) return "Direct";
     if (stops === 1) return "1 stop";
@@ -82,7 +83,15 @@ const FlightCard = ({ flight, featured = false }: FlightCardProps) => {
             <p className="text-sm text-muted-foreground">From</p>
             <p className="text-3xl font-bold text-foreground">${flight.price}</p>
           </div>
-          <Button variant="hero" size="lg" className="gap-2" onClick={(e) => e.stopPropagation()}>
+          <Button 
+            variant="hero" 
+            size="lg" 
+            className="gap-2" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetails?.();
+            }}
+          >
             View Details
           </Button>
         </div>

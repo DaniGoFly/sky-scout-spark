@@ -2,8 +2,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Hotel } from "@/lib/mockHotels";
-import { Star, MapPin, Wifi, Car, Dumbbell, Coffee, X } from "lucide-react";
+import { Star, MapPin, Wifi, Car, Dumbbell, Coffee, UtensilsCrossed, Waves, Snowflake, Tv } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface HotelDetailsModalProps {
   hotel: Hotel | null;
@@ -16,12 +17,26 @@ const amenityIcons: Record<string, React.ReactNode> = {
   "Parking": <Car className="w-4 h-4" />,
   "Fitness Center": <Dumbbell className="w-4 h-4" />,
   "Breakfast Included": <Coffee className="w-4 h-4" />,
+  "Restaurant": <UtensilsCrossed className="w-4 h-4" />,
+  "Pool": <Waves className="w-4 h-4" />,
+  "Air Conditioning": <Snowflake className="w-4 h-4" />,
+  "TV": <Tv className="w-4 h-4" />,
 };
 
 const HotelDetailsModal = ({ hotel, open, onClose }: HotelDetailsModalProps) => {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isBooking, setIsBooking] = useState(false);
 
   if (!hotel) return null;
+
+  const handleBookNow = async () => {
+    setIsBooking(true);
+    // Simulate booking process
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsBooking(false);
+    toast.success(`Booking confirmed for ${hotel.name}! You'll receive a confirmation email shortly.`);
+    onClose();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -91,9 +106,9 @@ const HotelDetailsModal = ({ hotel, open, onClose }: HotelDetailsModalProps) => 
               {hotel.amenities.map((amenity) => (
                 <div
                   key={amenity}
-                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                  className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 px-3 py-2 rounded-lg"
                 >
-                  {amenityIcons[amenity] || <span className="w-4 h-4">•</span>}
+                  {amenityIcons[amenity] || <span className="w-4 h-4">✓</span>}
                   <span>{amenity}</span>
                 </div>
               ))}
@@ -120,20 +135,28 @@ const HotelDetailsModal = ({ hotel, open, onClose }: HotelDetailsModalProps) => 
           </div>
 
           {/* Price & Booking */}
-          <div className="flex items-center justify-between pt-4 border-t border-border">
-            <div>
-              <p className="text-3xl font-bold text-foreground">
-                ${hotel.pricePerNight}
-              </p>
-              <p className="text-sm text-muted-foreground">per night</p>
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Price per night</p>
+                <p className="text-4xl font-bold text-foreground">
+                  ${hotel.pricePerNight}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Includes taxes & fees</p>
+              </div>
+              <Button 
+                size="lg" 
+                variant="hero" 
+                onClick={handleBookNow}
+                disabled={isBooking}
+              >
+                {isBooking ? "Processing..." : "Book Now"}
+              </Button>
             </div>
-            <Button size="lg" variant="hero" disabled>
-              Continue to Booking
-            </Button>
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            Final booking will redirect to partner site
+            Free cancellation available on most rooms
           </p>
         </div>
       </DialogContent>

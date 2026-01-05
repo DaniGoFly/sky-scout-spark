@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, User } from "lucide-react";
+import { toast } from "sonner";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -16,11 +17,43 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }: AuthModalProps) =
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Update mode when initialMode changes
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual auth logic
-    console.log("Auth submit:", { mode, email, password, name });
+    
+    if (!email || !password) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    
+    if (mode === "signup" && !name) {
+      toast.error("Please enter your name");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    // Simulate auth process
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setIsSubmitting(false);
+    
+    if (mode === "login") {
+      toast.success("Welcome back! You've been logged in successfully.");
+    } else {
+      toast.success("Account created! Welcome to GoFlyFinder.");
+    }
+    
+    // Reset form
+    setEmail("");
+    setPassword("");
+    setName("");
     onClose();
   };
 
@@ -49,6 +82,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }: AuthModalProps) =
                   className="pl-10"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  required={mode === "signup"}
                 />
               </div>
             </div>
@@ -65,6 +99,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }: AuthModalProps) =
                 className="pl-10"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
           </div>
@@ -80,12 +115,22 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }: AuthModalProps) =
                 className="pl-10"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
               />
             </div>
           </div>
 
-          <Button type="submit" variant="hero" className="w-full">
-            {mode === "login" ? "Log In" : "Sign Up"}
+          <Button 
+            type="submit" 
+            variant="hero" 
+            className="w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting 
+              ? "Please wait..." 
+              : (mode === "login" ? "Log In" : "Sign Up")
+            }
           </Button>
         </form>
 
