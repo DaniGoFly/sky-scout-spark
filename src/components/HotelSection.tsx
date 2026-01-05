@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Hotel, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const destinations = [
   {
@@ -21,6 +21,28 @@ const destinations = [
 ];
 
 const HotelSection = () => {
+  const navigate = useNavigate();
+
+  const handleSearchHotelsClick = () => {
+    navigate("/hotels");
+    // After navigation, scroll to the search form
+    setTimeout(() => {
+      const searchForm = document.querySelector('[data-hotel-search-form]');
+      if (searchForm) {
+        searchForm.scrollIntoView({ behavior: "smooth", block: "center" });
+        const destinationInput = searchForm.querySelector('input[placeholder*="Where"]') as HTMLInputElement;
+        if (destinationInput) {
+          destinationInput.focus();
+        }
+      }
+    }, 100);
+  };
+
+  const handleDestinationClick = (city: string) => {
+    // Navigate to hotels page with pre-filled city and auto-search
+    navigate(`/hotels?city=${encodeURIComponent(city)}&autoSearch=true`);
+  };
+
   return (
     <section className="py-16 px-4 relative overflow-hidden">
       {/* Background decoration */}
@@ -44,12 +66,10 @@ const HotelSection = () => {
           <Button 
             variant="hero" 
             size="lg" 
-            asChild
+            onClick={handleSearchHotelsClick}
           >
-            <Link to="/hotels">
-              <Hotel className="w-5 h-5 mr-2" />
-              Search Hotels
-            </Link>
+            <Hotel className="w-5 h-5 mr-2" />
+            Search Hotels
           </Button>
           
           <p className="text-sm text-muted-foreground mt-4 mb-10">
@@ -59,10 +79,10 @@ const HotelSection = () => {
           {/* Destination Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {destinations.map((destination) => (
-              <Link
+              <div
                 key={destination.city}
-                to="/hotels"
-                className="group relative rounded-2xl overflow-hidden aspect-[4/3] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                onClick={() => handleDestinationClick(destination.city)}
+                className="group relative rounded-2xl overflow-hidden aspect-[4/3] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
               >
                 <img
                   src={destination.image}
@@ -77,7 +97,7 @@ const HotelSection = () => {
                 <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <ArrowRight className="w-4 h-4 text-white" />
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </div>

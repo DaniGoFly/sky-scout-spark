@@ -6,6 +6,21 @@ import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightDetailsModal from "./FlightDetailsModal";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
+import { format, addDays } from "date-fns";
+
+// City to airport code mapping for auto-search
+const CITY_AIRPORT_CODES: Record<string, string> = {
+  "paris": "CDG",
+  "tokyo": "NRT",
+  "new york": "JFK",
+  "dubai": "DXB",
+  "london": "LHR",
+  "barcelona": "BCN",
+  "los angeles": "LAX",
+  "miami": "MIA",
+  "sydney": "SYD",
+  "singapore": "SIN",
+};
 
 const FlightResults = () => {
   const [searchParams] = useSearchParams();
@@ -28,10 +43,31 @@ const FlightResults = () => {
   const returnDate = searchParams.get("return") || "";
   const adults = Number(searchParams.get("adults")) || 1;
   const tripType = searchParams.get("trip") || "roundtrip";
+  const autoSearch = searchParams.get("autoSearch") === "true";
 
-  // Fetch live flights when params change
+  // Handle auto-search from destination cards
   useEffect(() => {
-    if (from && to && depart) {
+    if (autoSearch && to && !from) {
+      // Get airport code from city name
+      const airportCode = CITY_AIRPORT_CODES[to.toLowerCase()] || to.toUpperCase().slice(0, 3);
+      const defaultDepart = format(addDays(new Date(), 7), "yyyy-MM-dd");
+      const defaultReturn = format(addDays(new Date(), 14), "yyyy-MM-dd");
+      
+      setShowAllFlights(false);
+      searchFlights({
+        origin: "NYC", // Default origin
+        destination: airportCode,
+        departDate: defaultDepart,
+        returnDate: defaultReturn,
+        adults: 1,
+        tripType: "roundtrip",
+      });
+    }
+  }, [autoSearch, to, from, searchFlights]);
+
+  // Fetch live flights when params change (regular search)
+  useEffect(() => {
+    if (from && to && depart && !autoSearch) {
       setShowAllFlights(false);
       searchFlights({
         origin: from,
@@ -42,7 +78,7 @@ const FlightResults = () => {
         tripType,
       });
     }
-  }, [from, to, depart, returnDate, adults, tripType, searchFlights]);
+  }, [from, to, depart, returnDate, adults, tripType, searchFlights, autoSearch]);
 
   // Filter and sort flights
   const processedFlights = useMemo(() => {
@@ -119,11 +155,11 @@ const FlightResults = () => {
     }
   };
 
-  const getStopsLabel = (stops: number): string => {
-    if (stops === 0) return "Direct";
-    if (stops === 1) return "1 stop";
-    return `${stops} stops`;
-  };
+  // Get display values for auto-search
+  const displayFrom = from || (autoSearch ? "NYC" : "");
+  const displayTo = to || "";
+  const displayDepart = depart || (autoSearch ? format(addDays(new Date(), 7), "yyyy-MM-dd") : "");
+  const displayReturn = returnDate || (autoSearch ? format(addDays(new Date(), 14), "yyyy-MM-dd") : "");
 
   return (
     <section className="py-8 px-4 bg-secondary/30 min-h-screen">
@@ -141,11 +177,11 @@ const FlightResults = () => {
         {/* Search Summary */}
         <div className="mt-6 mb-4">
           <h1 className="text-2xl font-bold text-foreground">
-            {from.toUpperCase()} → {to.toUpperCase()}
+            {autoSearch && !from ? "NYC" : displayFrom.toUpperCase()} → {autoSearch ? to : displayTo.toUpperCase()}
           </h1>
           <p className="text-muted-foreground">
-            {formatDate(depart)}
-            {tripType === "roundtrip" && returnDate && ` - ${formatDate(returnDate)}`}
+            {formatDate(displayDepart)}
+            {tripType === "roundtrip" && displayReturn && ` - ${formatDate(displayReturn)}`}
             {" • "}{adults} traveler{adults > 1 ? "s" : ""}
           </p>
         </div>
@@ -168,10 +204,10 @@ const FlightResults = () => {
               className="mt-6"
               onClick={() =>
                 searchFlights({
-                  origin: from,
-                  destination: to,
-                  departDate: depart,
-                  returnDate: returnDate || undefined,
+                  origin: displayFrom,
+                  destination: displayTo,
+                  departDate: displayDepart,
+                  returnDate: displayReturn || undefined,
                   adults,
                   tripType,
                 })

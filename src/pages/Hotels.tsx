@@ -3,14 +3,15 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Hotel as HotelIcon, ArrowRight, Search, MapPin, Calendar, Users, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useState, useRef } from "react";
-import { format, addDays, isBefore, isValid } from "date-fns";
+import { useState, useRef, useEffect } from "react";
+import { format, addDays, isBefore } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useHotelSearch, HotelSearchParams } from "@/hooks/useHotelSearch";
 import HotelResults from "@/components/HotelResults";
 import { DateRange } from "react-day-picker";
+import { useSearchParams } from "react-router-dom";
 
 const destinations = [
   {
@@ -51,16 +52,60 @@ interface FormErrors {
 }
 
 const Hotels = () => {
+  const [searchParams] = useSearchParams();
   const [destination, setDestination] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [guests, setGuests] = useState(2);
   const [rooms, setRooms] = useState(1);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [searchParams, setSearchParams] = useState<HotelSearchParams | null>(null);
+  const [hotelSearchParams, setHotelSearchParams] = useState<HotelSearchParams | null>(null);
   const [guestPopoverOpen, setGuestPopoverOpen] = useState(false);
   
   const resultsRef = useRef<HTMLDivElement>(null);
+  const searchFormRef = useRef<HTMLDivElement>(null);
+  const destinationInputRef = useRef<HTMLInputElement>(null);
   const { hotels, isLoading, hasSearched, searchHotels } = useHotelSearch();
+
+  // Handle URL params for auto-search
+  useEffect(() => {
+    const city = searchParams.get("city");
+    const autoSearch = searchParams.get("autoSearch");
+    
+    if (city) {
+      setDestination(city);
+      // Set default dates if not set
+      if (!dateRange?.from) {
+        setDateRange({
+          from: addDays(new Date(), 7),
+          to: addDays(new Date(), 10),
+        });
+      }
+      
+      if (autoSearch === "true") {
+        // Trigger search after state updates
+        setTimeout(() => {
+          handleAutoSearch(city);
+        }, 100);
+      }
+    }
+  }, [searchParams]);
+
+  const handleAutoSearch = async (city: string) => {
+    const params: HotelSearchParams = {
+      destination: city,
+      checkIn: format(addDays(new Date(), 7), "yyyy-MM-dd"),
+      checkOut: format(addDays(new Date(), 10), "yyyy-MM-dd"),
+      guests: 2,
+      rooms: 1,
+    };
+
+    setHotelSearchParams(params);
+    await searchHotels(params);
+
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -90,7 +135,7 @@ const Hotels = () => {
       rooms,
     };
 
-    setSearchParams(params);
+    setHotelSearchParams(params);
     await searchHotels(params);
 
     // Scroll to results
@@ -99,7 +144,7 @@ const Hotels = () => {
     }, 100);
   };
 
-  const handleDestinationClick = (city: string) => {
+  const handleDestinationClick = async (city: string) => {
     setDestination(city);
     if (!dateRange?.from) {
       setDateRange({
@@ -107,6 +152,22 @@ const Hotels = () => {
         to: addDays(new Date(), 10),
       });
     }
+    
+    // Auto-search when clicking a destination
+    const params: HotelSearchParams = {
+      destination: city,
+      checkIn: format(dateRange?.from || addDays(new Date(), 7), "yyyy-MM-dd"),
+      checkOut: format(dateRange?.to || addDays(new Date(), 10), "yyyy-MM-dd"),
+      guests,
+      rooms,
+    };
+
+    setHotelSearchParams(params);
+    await searchHotels(params);
+
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   return (
@@ -133,12 +194,17 @@ const Hotels = () => {
             </p>
 
             {/* Search Form */}
-            <div className="bg-card/80 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-lg max-w-3xl mx-auto">
+            <div 
+              ref={searchFormRef}
+              data-hotel-search-form
+              className="bg-card/80 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-lg max-w-3xl mx-auto"
+            >
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Destination */}
                 <div className="md:col-span-2 relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
                   <Input
+                    ref={destinationInputRef}
                     placeholder="Where are you going?"
                     className={cn("pl-10 h-12", errors.destination && "border-destructive")}
                     value={destination}
@@ -301,7 +367,7 @@ const Hotels = () => {
               <HotelResults
                 hotels={hotels}
                 isLoading={isLoading}
-                searchParams={searchParams}
+                searchParams={hotelSearchParams}
               />
             </div>
           </section>
