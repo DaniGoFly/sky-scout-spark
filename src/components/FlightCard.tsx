@@ -82,7 +82,7 @@ const FlightCard = ({ flight, featured = false }: FlightCardProps) => {
             <p className="text-sm text-muted-foreground">From</p>
             <p className="text-3xl font-bold text-foreground">${flight.price}</p>
           </div>
-          <Button variant="hero" size="lg" className="gap-2">
+          <Button variant="hero" size="lg" className="gap-2" onClick={(e) => e.stopPropagation()}>
             View Details
           </Button>
         </div>

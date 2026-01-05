@@ -13,9 +13,13 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
   if (!flight) return null;
 
   const handleBookNow = () => {
-    // This is the only place with external redirect - final booking step
-    const url = flight.deepLink || `https://www.aviasales.com/search/${flight.departureCode}${flight.arrivalCode}1?marker=694224`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    // Open booking link if available, otherwise show a toast
+    if (flight.deepLink) {
+      window.open(flight.deepLink, "_blank", "noopener,noreferrer");
+    } else {
+      // For mock data without deep links, provide a helpful message
+      alert(`Booking for ${flight.airline} ${flight.flightNumber} - ${flight.departureCode} to ${flight.arrivalCode}. In production, this would redirect to the airline's booking page.`);
+    }
   };
 
   const getStopsLabel = (stops: number): string => {
