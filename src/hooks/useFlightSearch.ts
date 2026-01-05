@@ -28,7 +28,10 @@ interface SearchParams {
   departDate: string;
   returnDate?: string;
   adults: number;
+  children?: number;
+  infants?: number;
   tripType: string;
+  travelClass?: string;
 }
 
 interface UseFlightSearchResult {

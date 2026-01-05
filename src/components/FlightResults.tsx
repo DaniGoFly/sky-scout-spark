@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightDetailsModal from "./FlightDetailsModal";
+import PriceCalendar from "./PriceCalendar";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
-import { format, addDays } from "date-fns";
+import { format, addDays, parseISO } from "date-fns";
 
 // City to airport code mapping for auto-search
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -23,7 +24,7 @@ const CITY_AIRPORT_CODES: Record<string, string> = {
 };
 
 const FlightResults = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { flights, isLoading, error, searchFlights, isUsingMockData } = useFlightSearch();
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
@@ -42,7 +43,11 @@ const FlightResults = () => {
   const depart = searchParams.get("depart") || "";
   const returnDate = searchParams.get("return") || "";
   const adults = Number(searchParams.get("adults")) || 1;
+  const children = Number(searchParams.get("children")) || 0;
+  const infants = Number(searchParams.get("infants")) || 0;
   const tripType = searchParams.get("trip") || "roundtrip";
+  const travelClass = searchParams.get("class") || "economy";
+  const flexible = searchParams.get("flexible") === "true";
   const autoSearch = searchParams.get("autoSearch") === "true";
 
   // Handle auto-search from destination cards
@@ -75,10 +80,26 @@ const FlightResults = () => {
         departDate: depart,
         returnDate: returnDate || undefined,
         adults,
+        children,
+        infants,
         tripType,
+        travelClass,
       });
     }
-  }, [from, to, depart, returnDate, adults, tripType, searchFlights, autoSearch]);
+  }, [from, to, depart, returnDate, adults, children, infants, tripType, travelClass, searchFlights, autoSearch]);
+
+  // Handle price calendar date selection
+  const handleDateSelect = (newDate: Date) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("depart", format(newDate, "yyyy-MM-dd"));
+    setSearchParams(newParams);
+  };
+
+  // Get base price for calendar
+  const basePrice = useMemo(() => {
+    if (flights.length === 0) return 350;
+    return Math.min(...flights.map(f => f.price));
+  }, [flights]);
 
   // Filter and sort flights
   const processedFlights = useMemo(() => {
@@ -182,9 +203,20 @@ const FlightResults = () => {
           <p className="text-muted-foreground">
             {formatDate(displayDepart)}
             {tripType === "roundtrip" && displayReturn && ` - ${formatDate(displayReturn)}`}
-            {" • "}{adults} traveler{adults > 1 ? "s" : ""}
+            {" • "}{adults + children + infants} traveler{(adults + children + infants) > 1 ? "s" : ""}
+            {travelClass !== "economy" && ` • ${travelClass.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}`}
+            {flexible && " • Flexible dates"}
           </p>
         </div>
+
+        {/* Price Calendar - only show when we have results and a depart date */}
+        {!isLoading && !error && flights.length > 0 && depart && (
+          <PriceCalendar
+            departDate={parseISO(depart)}
+            basePrice={basePrice}
+            onDateSelect={handleDateSelect}
+          />
+        )}
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24">
