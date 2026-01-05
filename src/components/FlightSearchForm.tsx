@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
+import { ArrowRightLeft, Users, Search } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import AirportAutocomplete from "./AirportAutocomplete";
+import FlightDateRangePicker from "./FlightDateRangePicker";
 
 interface AirportSelection {
   code: string;
@@ -22,13 +22,14 @@ const FlightSearchForm = () => {
   const [passengers, setPassengers] = useState(1);
   const [errors, setErrors] = useState<{ from?: string; to?: string; dates?: string }>({});
 
-  const swapLocations = () => {
-    const temp = from;
-    setFrom(to);
-    setTo(temp);
-  };
+  const swapLocations = useCallback(() => {
+    setFrom(prev => {
+      setTo(from);
+      return to;
+    });
+  }, [from, to]);
 
-  const validate = (): boolean => {
+  const validate = useCallback((): boolean => {
     const newErrors: { from?: string; to?: string; dates?: string } = {};
     
     if (!from) {
@@ -43,9 +44,9 @@ const FlightSearchForm = () => {
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [from, to, tripType, returnDate, departDate]);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (!validate()) return;
 
     const params = new URLSearchParams({
@@ -61,12 +62,36 @@ const FlightSearchForm = () => {
     }
 
     navigate(`/flights/results?${params.toString()}`);
-  };
+  }, [validate, tripType, from, to, departDate, passengers, returnDate, navigate]);
+
+  const handleFromChange = useCallback((val: AirportSelection | null) => {
+    setFrom(val);
+    setErrors(e => ({ ...e, from: undefined }));
+  }, []);
+
+  const handleToChange = useCallback((val: AirportSelection | null) => {
+    setTo(val);
+    setErrors(e => ({ ...e, to: undefined }));
+  }, []);
+
+  const handleDepartChange = useCallback((date: Date) => {
+    setDepartDate(date);
+    setErrors(e => ({ ...e, dates: undefined }));
+  }, []);
+
+  const handleReturnChange = useCallback((date: Date) => {
+    setReturnDate(date);
+    setErrors(e => ({ ...e, dates: undefined }));
+  }, []);
+
+  const handleTripTypeChange = useCallback((type: "roundtrip" | "oneway") => {
+    setTripType(type);
+  }, []);
 
   return (
     <div className="glass-strong rounded-3xl shadow-card p-6 md:p-8 w-full max-w-5xl mx-auto">
-      {/* Trip Type Toggle */}
-      <div className="flex gap-2 mb-6">
+      {/* Trip Type Toggle - Hidden on mobile, shown in calendar */}
+      <div className="hidden md:flex gap-2 mb-6">
         <button
           onClick={() => setTripType("roundtrip")}
           className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
@@ -96,7 +121,7 @@ const FlightSearchForm = () => {
           <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">From</label>
           <AirportAutocomplete
             value={from}
-            onChange={(val) => { setFrom(val); setErrors(e => ({ ...e, from: undefined })); }}
+            onChange={handleFromChange}
             placeholder="Where from?"
             icon="from"
           />
@@ -120,70 +145,29 @@ const FlightSearchForm = () => {
           <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">To</label>
           <AirportAutocomplete
             value={to}
-            onChange={(val) => { setTo(val); setErrors(e => ({ ...e, to: undefined })); }}
+            onChange={handleToChange}
             placeholder="Where to?"
             icon="to"
           />
           {errors.to && <p className="text-destructive text-xs mt-1">{errors.to}</p>}
         </div>
 
-        {/* Depart Date */}
-        <div className="lg:col-span-2">
-          <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Depart</label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full h-14 justify-start text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all"
-              >
-                <Calendar className="mr-3 h-5 w-5 text-muted-foreground" />
-                {format(departDate, "MMM d, yyyy")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
-              <CalendarComponent
-                mode="single"
-                selected={departDate}
-                onSelect={(date) => date && setDepartDate(date)}
-                disabled={(date) => date < new Date()}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+        {/* Date Range Picker */}
+        <div className="lg:col-span-4">
+          <FlightDateRangePicker
+            departDate={departDate}
+            returnDate={returnDate}
+            onDepartChange={handleDepartChange}
+            onReturnChange={handleReturnChange}
+            tripType={tripType}
+            onTripTypeChange={handleTripTypeChange}
+            hasError={!!errors.dates}
+          />
+          {errors.dates && <p className="text-destructive text-xs mt-1">{errors.dates}</p>}
         </div>
 
-        {/* Return Date */}
-        {tripType === "roundtrip" && (
-          <div className="lg:col-span-2">
-            <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Return</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={`w-full h-14 justify-start text-left font-medium bg-secondary/50 border-2 rounded-xl hover:bg-card hover:border-primary/50 transition-all ${
-                    errors.dates ? "border-destructive" : "border-transparent"
-                  }`}
-                >
-                  <Calendar className="mr-3 h-5 w-5 text-muted-foreground" />
-                  {format(returnDate, "MMM d, yyyy")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={returnDate}
-                  onSelect={(date) => { date && setReturnDate(date); setErrors(e => ({ ...e, dates: undefined })); }}
-                  disabled={(date) => date <= departDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-            {errors.dates && <p className="text-destructive text-xs mt-1">{errors.dates}</p>}
-          </div>
-        )}
-
         {/* Passengers */}
-        <div className={tripType === "oneway" ? "lg:col-span-2" : "lg:col-span-1"}>
+        <div className="lg:col-span-1">
           <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Travelers</label>
           <Popover>
             <PopoverTrigger asChild>
@@ -240,3 +224,4 @@ const FlightSearchForm = () => {
 };
 
 export default FlightSearchForm;
+
