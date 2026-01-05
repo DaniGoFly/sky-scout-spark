@@ -11,8 +11,8 @@ const Index = () => {
       <Header />
       <Hero />
       <WhyUseSection />
-      <HotelSection />
       <PopularDestinations />
+      <HotelSection />
       <Footer />
     </div>
   );

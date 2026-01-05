@@ -8,12 +8,12 @@ const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
+            <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
                 <Plane className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold text-foreground">GoFlyFinder</span>
-            </div>
+            </Link>
             <p className="text-muted-foreground text-sm mb-4">
               Find the best flight deals from anywhere, to everywhere.
             </p>
@@ -37,10 +37,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-4">Company</h4>
             <ul className="space-y-3">
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">About Us</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Careers</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Press</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Blog</a></li>
+              <li><Link to="/contact" className="text-muted-foreground hover:text-primary text-sm transition-colors">About Us</Link></li>
+              <li><Link to="/contact" className="text-muted-foreground hover:text-primary text-sm transition-colors">Careers</Link></li>
+              <li><Link to="/contact" className="text-muted-foreground hover:text-primary text-sm transition-colors">Press</Link></li>
+              <li><Link to="/contact" className="text-muted-foreground hover:text-primary text-sm transition-colors">Blog</Link></li>
             </ul>
           </div>
 
@@ -48,10 +48,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-4">Products</h4>
             <ul className="space-y-3">
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Flights</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Hotels</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Car Rental</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Travel Insurance</a></li>
+              <li><Link to="/flights" className="text-muted-foreground hover:text-primary text-sm transition-colors">Flights</Link></li>
+              <li><Link to="/hotels" className="text-muted-foreground hover:text-primary text-sm transition-colors">Hotels</Link></li>
+              <li><Link to="/car-rental" className="text-muted-foreground hover:text-primary text-sm transition-colors">Car Rental</Link></li>
+              <li><Link to="/activities" className="text-muted-foreground hover:text-primary text-sm transition-colors">Activities</Link></li>
             </ul>
           </div>
 
@@ -59,7 +59,7 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-4">Support</h4>
             <ul className="space-y-3">
-              <li><a href="#" className="text-muted-foreground hover:text-primary text-sm transition-colors">Help Center</a></li>
+              <li><Link to="/contact" className="text-muted-foreground hover:text-primary text-sm transition-colors">Help Center</Link></li>
               <li><Link to="/contact" className="text-muted-foreground hover:text-primary text-sm transition-colors">Contact Us</Link></li>
               <li><Link to="/privacy-policy" className="text-muted-foreground hover:text-primary text-sm transition-colors">Privacy Policy</Link></li>
               <li><Link to="/terms-and-conditions" className="text-muted-foreground hover:text-primary text-sm transition-colors">Terms of Service</Link></li>
@@ -79,7 +79,7 @@ const Footer = () => {
         {/* Disclaimer */}
         <div className="border-t border-border pt-6 pb-4 text-center">
           <p className="text-xs text-muted-foreground max-w-xl mx-auto">
-            Sky-Scout may earn a commission when you book through our links. This helps keep the site free at no extra cost to you.
+            GoFlyFinder helps you compare travel options. Prices shown are estimates and may change. We may earn a commission when you book through our partners.
           </p>
         </div>
 

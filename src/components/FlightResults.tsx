@@ -291,6 +291,7 @@ const FlightResults = () => {
                       <FlightCard
                         flight={flight}
                         featured={index === 0}
+                        onViewDetails={() => setSelectedFlight(flight)}
                       />
                     </div>
                   ))}
