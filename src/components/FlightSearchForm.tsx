@@ -17,8 +17,8 @@ const FlightSearchForm = () => {
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
   const [from, setFrom] = useState<AirportSelection | null>(null);
   const [to, setTo] = useState<AirportSelection | null>(null);
-  const [departDate, setDepartDate] = useState<Date>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-  const [returnDate, setReturnDate] = useState<Date>(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+  const [departDate, setDepartDate] = useState<Date | null>(null);
+  const [returnDate, setReturnDate] = useState<Date | null>(null);
   const [passengers, setPassengers] = useState(1);
   const [errors, setErrors] = useState<{ from?: string; to?: string; dates?: string }>({});
 
@@ -38,7 +38,13 @@ const FlightSearchForm = () => {
     if (!to) {
       newErrors.to = "Please select destination";
     }
-    if (tripType === "roundtrip" && returnDate <= departDate) {
+    if (!departDate) {
+      newErrors.dates = "Please select departure date";
+    }
+    if (tripType === "roundtrip" && !returnDate) {
+      newErrors.dates = "Please select return date";
+    }
+    if (tripType === "roundtrip" && departDate && returnDate && returnDate <= departDate) {
       newErrors.dates = "Return date must be after departure";
     }
     
@@ -53,11 +59,11 @@ const FlightSearchForm = () => {
       trip: tripType,
       from: from!.code,
       to: to!.code,
-      depart: format(departDate, "yyyy-MM-dd"),
+      depart: format(departDate!, "yyyy-MM-dd"),
       adults: passengers.toString(),
     });
 
-    if (tripType === "roundtrip") {
+    if (tripType === "roundtrip" && returnDate) {
       params.set("return", format(returnDate, "yyyy-MM-dd"));
     }
 
@@ -74,12 +80,12 @@ const FlightSearchForm = () => {
     setErrors(e => ({ ...e, to: undefined }));
   }, []);
 
-  const handleDepartChange = useCallback((date: Date) => {
+  const handleDepartChange = useCallback((date: Date | null) => {
     setDepartDate(date);
     setErrors(e => ({ ...e, dates: undefined }));
   }, []);
 
-  const handleReturnChange = useCallback((date: Date) => {
+  const handleReturnChange = useCallback((date: Date | null) => {
     setReturnDate(date);
     setErrors(e => ({ ...e, dates: undefined }));
   }, []);
@@ -224,4 +230,3 @@ const FlightSearchForm = () => {
 };
 
 export default FlightSearchForm;
-

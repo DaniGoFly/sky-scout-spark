@@ -1,4 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface DestinationCardProps {
   city: string;
@@ -8,8 +9,18 @@ interface DestinationCardProps {
 }
 
 const DestinationCard = ({ city, country, price, image }: DestinationCardProps) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    // Navigate to flight results with pre-filled destination
+    navigate(`/flights/results?to=${encodeURIComponent(city)}&autoSearch=true`);
+  };
+
   return (
-    <div className="group relative overflow-hidden rounded-3xl cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-card-hover">
+    <div 
+      onClick={handleClick}
+      className="group relative overflow-hidden rounded-3xl cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-card-hover"
+    >
       <div className="aspect-[4/3] overflow-hidden">
         <img
           src={image}

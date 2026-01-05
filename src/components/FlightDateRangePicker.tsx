@@ -1,15 +1,15 @@
-import React, { useState, useCallback, useMemo, useEffect, lazy, Suspense } from "react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isBefore, isAfter, startOfDay, getDay, isWithinInterval } from "date-fns";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isBefore, isAfter, startOfDay, getDay } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface FlightDateRangePickerProps {
-  departDate: Date;
-  returnDate: Date;
-  onDepartChange: (date: Date) => void;
-  onReturnChange: (date: Date) => void;
+  departDate: Date | null;
+  returnDate: Date | null;
+  onDepartChange: (date: Date | null) => void;
+  onReturnChange: (date: Date | null) => void;
   tripType: "roundtrip" | "oneway";
   onTripTypeChange: (type: "roundtrip" | "oneway") => void;
   hasError?: boolean;
@@ -20,21 +20,17 @@ const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 // Memoized day cell to prevent unnecessary re-renders
 const DayCell = React.memo(({ 
   day, 
-  isSelected, 
   isStart, 
   isEnd, 
   isInRange, 
   isDisabled,
-  isToday,
   onClick 
 }: {
   day: Date;
-  isSelected: boolean;
   isStart: boolean;
   isEnd: boolean;
   isInRange: boolean;
   isDisabled: boolean;
-  isToday: boolean;
   onClick: () => void;
 }) => {
   return (
@@ -46,8 +42,7 @@ const DayCell = React.memo(({
         "relative h-10 w-10 text-sm font-medium transition-colors rounded-full",
         "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
         isDisabled && "text-muted-foreground/40 cursor-not-allowed",
-        !isDisabled && !isSelected && "hover:bg-secondary",
-        isToday && !isSelected && "border border-primary",
+        !isDisabled && !isStart && !isEnd && "hover:bg-secondary",
         isInRange && !isStart && !isEnd && "bg-primary/20 rounded-none",
         (isStart || isEnd) && "bg-primary text-primary-foreground",
         isStart && isInRange && "rounded-l-full rounded-r-none",
@@ -73,8 +68,8 @@ const MonthGrid = React.memo(({
   today
 }: {
   month: Date;
-  departDate: Date;
-  returnDate: Date;
+  departDate: Date | null;
+  returnDate: Date | null;
   tripType: "roundtrip" | "oneway";
   onDayClick: (day: Date) => void;
   today: Date;
@@ -112,24 +107,22 @@ const MonthGrid = React.memo(({
         
         {days.map((day) => {
           const isDisabled = isBefore(day, today);
-          const isStart = isSameDay(day, departDate);
-          const isEnd = tripType === "roundtrip" && isSameDay(day, returnDate);
+          const isStart = departDate ? isSameDay(day, departDate) : false;
+          const isEnd = tripType === "roundtrip" && returnDate ? isSameDay(day, returnDate) : false;
           const isInRange = tripType === "roundtrip" && 
+            departDate && 
+            returnDate && 
             isAfter(day, departDate) && 
             isBefore(day, returnDate);
-          const isSelected = isStart || isEnd;
-          const isDayToday = isSameDay(day, today);
 
           return (
             <DayCell
               key={day.toISOString()}
               day={day}
-              isSelected={isSelected}
               isStart={isStart}
               isEnd={isEnd}
-              isInRange={isInRange || (isStart && tripType === "roundtrip" && !isSameDay(departDate, returnDate))}
+              isInRange={isInRange || (isStart && tripType === "roundtrip" && returnDate && !isSameDay(departDate!, returnDate))}
               isDisabled={isDisabled}
-              isToday={isDayToday}
               onClick={() => !isDisabled && onDayClick(day)}
             />
           );
@@ -151,7 +144,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   hasError
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(departDate));
+  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
   const [selectingReturn, setSelectingReturn] = useState(false);
   const isMobile = useIsMobile();
   
@@ -198,24 +191,22 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
       return;
     }
     
-    if (!selectingReturn) {
+    if (!selectingReturn || !departDate) {
       onDepartChange(day);
-      // If selected day is after current return, update return too
-      if (isAfter(day, returnDate) || isSameDay(day, returnDate)) {
-        onReturnChange(addMonths(day, 0)); // Keep same, user will select
-      }
+      onReturnChange(null);
       setSelectingReturn(true);
     } else {
       if (isBefore(day, departDate)) {
         // User clicked before depart, treat as new depart date
         onDepartChange(day);
+        onReturnChange(null);
       } else {
         onReturnChange(day);
         setSelectingReturn(false);
         setIsOpen(false);
       }
     }
-  }, [tripType, selectingReturn, departDate, returnDate, onDepartChange, onReturnChange]);
+  }, [tripType, selectingReturn, departDate, onDepartChange, onReturnChange]);
 
   const handlePrevMonth = useCallback(() => {
     setCurrentMonth(prev => subMonths(prev, 1));
@@ -226,12 +217,10 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   }, []);
 
   const handleClear = useCallback(() => {
-    const defaultDepart = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const defaultReturn = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-    onDepartChange(defaultDepart);
-    onReturnChange(defaultReturn);
+    onDepartChange(null);
+    onReturnChange(null);
     setSelectingReturn(false);
-    setCurrentMonth(startOfMonth(defaultDepart));
+    setCurrentMonth(startOfMonth(new Date()));
   }, [onDepartChange, onReturnChange]);
 
   const handleDone = useCallback(() => {
@@ -242,7 +231,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   const toggleOpen = useCallback(() => {
     setIsOpen(prev => !prev);
     if (!isOpen) {
-      setCurrentMonth(startOfMonth(departDate));
+      setCurrentMonth(departDate ? startOfMonth(departDate) : startOfMonth(new Date()));
       setSelectingReturn(false);
     }
   }, [isOpen, departDate]);
@@ -252,8 +241,14 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   const canGoPrev = useMemo(() => !isBefore(subMonths(currentMonth, 1), startOfMonth(today)), [currentMonth, today]);
 
   const displayText = useMemo(() => {
+    if (!departDate) {
+      return tripType === "oneway" ? "Select date" : "Select dates";
+    }
     if (tripType === "oneway") {
       return format(departDate, "MMM d, yyyy");
+    }
+    if (!returnDate) {
+      return `${format(departDate, "MMM d")} - Select return`;
     }
     return `${format(departDate, "MMM d")} - ${format(returnDate, "MMM d, yyyy")}`;
   }, [departDate, returnDate, tripType]);
@@ -276,7 +271,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
           )}
         >
           <Calendar className="mr-3 h-5 w-5 text-muted-foreground" />
-          <span className="truncate">{displayText}</span>
+          <span className={cn("truncate", !departDate && "text-muted-foreground")}>{displayText}</span>
         </Button>
       </div>
 
