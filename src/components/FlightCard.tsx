@@ -82,6 +82,7 @@ const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps
           <div className="text-right">
             <p className="text-sm text-muted-foreground">From</p>
             <p className="text-3xl font-bold text-foreground">${flight.price}</p>
+            <p className="text-xs text-muted-foreground">per person</p>
           </div>
           <Button 
             variant="hero" 
@@ -92,7 +93,7 @@ const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps
               onViewDetails?.();
             }}
           >
-            View Details
+            View Deal
           </Button>
         </div>
       </div>

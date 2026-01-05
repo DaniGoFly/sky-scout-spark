@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FlightSearchHero from "@/components/FlightSearchHero";
-import WhyUseSection from "@/components/WhyUseSection";
+import HowItWorks from "@/components/HowItWorks";
 import PopularDestinations from "@/components/PopularDestinations";
 
 const Flights = () => {
@@ -10,7 +10,7 @@ const Flights = () => {
       <Header />
       <main className="pt-20 flex-1">
         <FlightSearchHero />
-        <WhyUseSection />
+        <HowItWorks />
         <PopularDestinations />
       </main>
       <Footer />

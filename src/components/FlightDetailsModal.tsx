@@ -153,7 +153,7 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
 
           {/* Price & Booking */}
           <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Total price per person</p>
                 <p className="text-4xl font-bold text-foreground">${flight.price}</p>
@@ -163,20 +163,26 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
                 variant="hero" 
                 size="lg" 
                 onClick={handleBookNow} 
-                className="gap-2"
+                className="gap-2 shrink-0"
                 disabled={isBooking}
               >
-                {isBooking ? "Processing..." : "Book Now"}
-                {!isBooking && (flight.deepLink ? <ExternalLink className="w-4 h-4" /> : null)}
+                {isBooking ? "Processing..." : "Continue to Booking"}
+                {!isBooking && <ExternalLink className="w-4 h-4" />}
               </Button>
             </div>
           </div>
 
+          {/* Demo disclaimer for mock data */}
+          <div className="bg-muted/50 rounded-xl p-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Demo Mode:</span>{" "}
+              This is a prototype using sample data. In production, clicking "Continue to Booking" 
+              will redirect you to the airline or travel partner to complete your purchase.
+            </p>
+          </div>
+
           <p className="text-xs text-muted-foreground text-center">
-            {flight.deepLink 
-              ? "You will be redirected to our partner's website to complete your booking."
-              : "Free cancellation within 24 hours of booking."
-            }
+            You'll be redirected to our partner's website to complete your booking securely.
           </p>
         </div>
       </DialogContent>
