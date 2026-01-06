@@ -15,7 +15,7 @@ const Footer = () => {
               <span className="text-xl font-bold text-foreground">GoFlyFinder</span>
             </Link>
             <p className="text-muted-foreground text-sm mb-4">
-              Find the best flight deals from anywhere, to everywhere.
+              Compare flights and hotels from trusted travel providers.
             </p>
             <div className="flex gap-3">
               <a href="#" className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
@@ -50,8 +50,6 @@ const Footer = () => {
             <ul className="space-y-3">
               <li><Link to="/flights" className="text-muted-foreground hover:text-primary text-sm transition-colors">Flights</Link></li>
               <li><Link to="/hotels" className="text-muted-foreground hover:text-primary text-sm transition-colors">Hotels</Link></li>
-              <li><Link to="/car-rental" className="text-muted-foreground hover:text-primary text-sm transition-colors">Car Rental</Link></li>
-              <li><Link to="/activities" className="text-muted-foreground hover:text-primary text-sm transition-colors">Activities</Link></li>
             </ul>
           </div>
 
@@ -79,7 +77,7 @@ const Footer = () => {
         {/* Disclaimer */}
         <div className="border-t border-border pt-6 pb-4 text-center">
           <p className="text-xs text-muted-foreground max-w-xl mx-auto">
-            GoFlyFinder helps you compare travel options. Prices shown are estimates and may change. We may earn a commission when you book through our partners.
+            GoFlyFinder helps you compare flights and hotels. Prices shown are estimates and may change. We may earn a commission when you book through our partners. This is a demo using sample data.
           </p>
         </div>
 

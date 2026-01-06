@@ -23,6 +23,7 @@ const HotelResults = ({ hotels, isLoading, searchParams }: HotelResultsProps) =>
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [minRating, setMinRating] = useState(0);
   const [starRating, setStarRating] = useState<number[]>([]);
+  const [amenities, setAmenities] = useState<string[]>([]);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -31,15 +32,22 @@ const HotelResults = ({ hotels, isLoading, searchParams }: HotelResultsProps) =>
     return Math.ceil(Math.max(...hotels.map((h) => h.pricePerNight)) / 100) * 100;
   }, [hotels]);
 
+  // Reset price range when max price changes
+  useMemo(() => {
+    if (priceRange[1] > maxPrice) {
+      setPriceRange([0, maxPrice]);
+    }
+  }, [maxPrice]);
+
   const filteredAndSortedHotels = useMemo(() => {
     const filtered = filterHotels(hotels, {
       priceRange,
       minRating,
       starRating,
-      amenities: [],
+      amenities,
     });
     return sortHotels(filtered, sortBy);
-  }, [hotels, sortBy, priceRange, minRating, starRating]);
+  }, [hotels, sortBy, priceRange, minRating, starRating, amenities]);
 
   if (isLoading) {
     return (
@@ -107,6 +115,8 @@ const HotelResults = ({ hotels, isLoading, searchParams }: HotelResultsProps) =>
             onMinRatingChange={setMinRating}
             starRating={starRating}
             onStarRatingChange={setStarRating}
+            amenities={amenities}
+            onAmenitiesChange={setAmenities}
           />
         </div>
 
@@ -128,6 +138,8 @@ const HotelResults = ({ hotels, isLoading, searchParams }: HotelResultsProps) =>
                 onMinRatingChange={setMinRating}
                 starRating={starRating}
                 onStarRatingChange={setStarRating}
+                amenities={amenities}
+                onAmenitiesChange={setAmenities}
               />
               <Button
                 className="w-full mt-4"

@@ -80,7 +80,7 @@ const HotelCard = ({ hotel, onViewDetails }: HotelCardProps) => {
               <p className="text-xs text-muted-foreground">per night</p>
             </div>
             <Button onClick={() => onViewDetails(hotel)}>
-              View Details
+              View Deal
             </Button>
           </div>
         </div>

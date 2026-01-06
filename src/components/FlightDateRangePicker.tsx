@@ -42,7 +42,7 @@ const DayCell = React.memo(({
         "relative h-10 w-10 text-sm font-medium transition-colors rounded-full",
         "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
         isDisabled && "text-muted-foreground/40 cursor-not-allowed",
-        !isDisabled && !isStart && !isEnd && "hover:bg-secondary",
+        !isDisabled && !isStart && !isEnd && !isInRange && "hover:bg-secondary",
         isInRange && !isStart && !isEnd && "bg-primary/20 rounded-none",
         (isStart || isEnd) && "bg-primary text-primary-foreground",
         isStart && isInRange && "rounded-l-full rounded-r-none",
@@ -107,13 +107,19 @@ const MonthGrid = React.memo(({
         
         {days.map((day) => {
           const isDisabled = isBefore(day, today);
+          
+          // Only highlight selected dates, not today
           const isStart = departDate ? isSameDay(day, departDate) : false;
           const isEnd = tripType === "roundtrip" && returnDate ? isSameDay(day, returnDate) : false;
+          
+          // Calculate if day is in range between depart and return
           const isInRange = tripType === "roundtrip" && 
             departDate && 
             returnDate && 
-            isAfter(day, departDate) && 
-            isBefore(day, returnDate);
+            (isAfter(day, departDate) && isBefore(day, returnDate));
+
+          // Include start/end in range styling for proper rounded corners
+          const showRangeStyle = isInRange || (isStart && returnDate && tripType === "roundtrip" && !isSameDay(departDate!, returnDate)) || (isEnd && departDate && tripType === "roundtrip" && !isSameDay(departDate, returnDate!));
 
           return (
             <DayCell
@@ -121,7 +127,7 @@ const MonthGrid = React.memo(({
               day={day}
               isStart={isStart}
               isEnd={isEnd}
-              isInRange={isInRange || (isStart && tripType === "roundtrip" && returnDate && !isSameDay(departDate!, returnDate))}
+              isInRange={showRangeStyle}
               isDisabled={isDisabled}
               onClick={() => !isDisabled && onDayClick(day)}
             />
@@ -192,15 +198,18 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
     }
     
     if (!selectingReturn || !departDate) {
+      // Starting new selection - set depart, clear return
       onDepartChange(day);
       onReturnChange(null);
       setSelectingReturn(true);
     } else {
-      if (isBefore(day, departDate)) {
-        // User clicked before depart, treat as new depart date
+      if (isBefore(day, departDate) || isSameDay(day, departDate)) {
+        // User clicked before or on depart, treat as new depart date
         onDepartChange(day);
         onReturnChange(null);
+        // Keep selectingReturn true to continue selection
       } else {
+        // Valid return date
         onReturnChange(day);
         setSelectingReturn(false);
         setIsOpen(false);
@@ -231,10 +240,12 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   const toggleOpen = useCallback(() => {
     setIsOpen(prev => !prev);
     if (!isOpen) {
+      // When opening, show month of departure date or current month
       setCurrentMonth(departDate ? startOfMonth(departDate) : startOfMonth(new Date()));
-      setSelectingReturn(false);
+      // If we have depart but no return, we're selecting return
+      setSelectingReturn(!!departDate && !returnDate && tripType === "roundtrip");
     }
-  }, [isOpen, departDate]);
+  }, [isOpen, departDate, returnDate, tripType]);
 
   const nextMonth = useMemo(() => addMonths(currentMonth, 1), [currentMonth]);
   
