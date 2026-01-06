@@ -264,8 +264,40 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
     return `${format(departDate, "MMM d")} - ${format(returnDate, "MMM d, yyyy")}`;
   }, [departDate, returnDate, tripType]);
 
+  // Calculate position for fixed dropdown
+  const triggerRef = React.useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 });
+
+  React.useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const dropdownHeight = isMobile ? 500 : 520;
+      const dropdownWidth = isMobile ? window.innerWidth - 32 : 580;
+      
+      let top = rect.bottom + 8;
+      let left = rect.left;
+      
+      // Prevent dropdown from going off bottom of viewport
+      if (top + dropdownHeight > window.innerHeight - 16) {
+        top = Math.max(16, window.innerHeight - dropdownHeight - 16);
+      }
+      
+      // Prevent dropdown from going off right side
+      if (left + dropdownWidth > window.innerWidth - 16) {
+        left = Math.max(16, window.innerWidth - dropdownWidth - 16);
+      }
+      
+      // Center on mobile
+      if (isMobile) {
+        left = 16;
+      }
+      
+      setDropdownPosition({ top, left });
+    }
+  }, [isOpen, isMobile]);
+
   return (
-    <div className="relative" data-date-picker>
+    <div className="relative" data-date-picker ref={triggerRef}>
       {/* Trigger Button */}
       <div className="lg:col-span-4">
         <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
@@ -286,18 +318,30 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
         </Button>
       </div>
 
-      {/* Calendar Dropdown */}
+      {/* Backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Calendar Dropdown - Fixed Position */}
       {isOpen && (
         <div 
           className={cn(
-            "absolute z-50 mt-2 bg-card border border-border rounded-2xl shadow-xl",
+            "fixed z-[101] bg-card border border-border rounded-2xl shadow-xl",
             "animate-in fade-in-0 zoom-in-95 duration-200",
-            isMobile ? "left-0 right-0 mx-4 fixed top-1/4" : "left-0"
+            "max-h-[90vh] overflow-y-auto"
           )}
-          style={{ minWidth: isMobile ? "auto" : "580px" }}
+          style={{ 
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            width: isMobile ? "calc(100vw - 32px)" : "580px"
+          }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-card z-10">
             <div className="flex gap-2">
               <button
                 type="button"
@@ -397,7 +441,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-between p-4 border-t border-border">
+          <div className="flex items-center justify-between p-4 border-t border-border sticky bottom-0 bg-card">
             <Button
               type="button"
               variant="ghost"
@@ -418,14 +462,6 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Backdrop for mobile */}
-      {isOpen && isMobile && (
-        <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
-          onClick={() => setIsOpen(false)}
-        />
       )}
     </div>
   );
