@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Filter, RotateCcw } from "lucide-react";
 
 interface FlightFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
@@ -37,10 +38,12 @@ const DEPARTURE_TIMES = [
   { value: "night", label: "Night (12am - 6am)" },
 ];
 
+const DEFAULT_PRICE_RANGE: [number, number] = [0, 2000];
+
 const FlightFilters = ({ onFiltersChange }: FlightFiltersProps) => {
   const [stops, setStops] = useState<string[]>([]);
   const [airlines, setAirlines] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>(DEFAULT_PRICE_RANGE);
   const [departureTime, setDepartureTime] = useState<string[]>([]);
 
   const updateFilters = (newFilters: Partial<FilterState>) => {
@@ -83,11 +86,40 @@ const FlightFilters = ({ onFiltersChange }: FlightFiltersProps) => {
     updateFilters({ priceRange: newRange });
   };
 
+  const handleReset = () => {
+    setStops([]);
+    setAirlines([]);
+    setPriceRange(DEFAULT_PRICE_RANGE);
+    setDepartureTime([]);
+    onFiltersChange({
+      stops: [],
+      airlines: [],
+      priceRange: DEFAULT_PRICE_RANGE,
+      departureTime: [],
+    });
+  };
+
+  const hasActiveFilters = stops.length > 0 || airlines.length > 0 || departureTime.length > 0 ||
+    priceRange[0] !== DEFAULT_PRICE_RANGE[0] || priceRange[1] !== DEFAULT_PRICE_RANGE[1];
+
   return (
     <div className="bg-card border border-border rounded-2xl p-6 space-y-6">
-      <div className="flex items-center gap-2 text-foreground font-semibold">
-        <Filter className="w-5 h-5" />
-        <span>Filters</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-foreground font-semibold">
+          <Filter className="w-5 h-5" />
+          <span>Filters</span>
+        </div>
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReset}
+            className="text-xs text-muted-foreground hover:text-foreground gap-1"
+          >
+            <RotateCcw className="w-3 h-3" />
+            Reset
+          </Button>
+        )}
       </div>
 
       {/* Stops */}
@@ -112,20 +144,23 @@ const FlightFilters = ({ onFiltersChange }: FlightFiltersProps) => {
         </div>
       </div>
 
-      {/* Price Range */}
+      {/* Price Range - Dual Handle */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-foreground">Price Range</h3>
-        <Slider
-          value={priceRange}
-          onValueChange={handlePriceChange}
-          min={0}
-          max={2000}
-          step={50}
-          className="w-full"
-        />
-        <div className="flex justify-between text-sm text-muted-foreground">
-          <span>${priceRange[0]}</span>
-          <span>${priceRange[1]}</span>
+        <div className="pt-2">
+          <Slider
+            value={priceRange}
+            onValueChange={handlePriceChange}
+            min={0}
+            max={2000}
+            step={25}
+            className="w-full"
+          />
+        </div>
+        <div className="flex justify-between items-center text-sm">
+          <span className="font-medium text-foreground">${priceRange[0]}</span>
+          <span className="text-muted-foreground">—</span>
+          <span className="font-medium text-foreground">${priceRange[1]}</span>
         </div>
       </div>
 

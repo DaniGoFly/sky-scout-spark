@@ -1,4 +1,4 @@
-import { CheckCircle, Plane, MapPin, ShieldCheck, BadgeCheck } from "lucide-react";
+import { CheckCircle, Plane, Hotel, ShieldCheck, BadgeCheck } from "lucide-react";
 
 const benefits = [
   {
@@ -6,8 +6,8 @@ const benefits = [
     text: "Compare flights across trusted providers",
   },
   {
-    icon: MapPin,
-    text: "Find experiences, tours, and attractions instantly",
+    icon: Hotel,
+    text: "Find hotels with best price comparison",
   },
   {
     icon: BadgeCheck,

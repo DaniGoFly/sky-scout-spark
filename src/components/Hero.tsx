@@ -1,5 +1,7 @@
 import SearchForm from "./SearchForm";
-import { Shield, Sparkles, Clock } from "lucide-react";
+import { Shield, Sparkles, Clock, Plane, Hotel } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Hero = () => {
   return (
@@ -24,29 +26,40 @@ const Hero = () => {
         <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-medium text-foreground/80">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span>Trusted by 2M+ travelers worldwide</span>
+            <span>Compare Flights & Hotels</span>
           </div>
         </div>
 
         <div className="text-center mb-14">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-foreground mb-6 leading-[1.1] tracking-tight">
-            Smarter Flight Comparison
-            <span className="block gradient-text mt-2">Starts Here</span>
+            Find Your Best Travel Deal
+            <span className="block gradient-text mt-2">Flights & Hotels</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-5 leading-relaxed">
-            Search, compare, and explore flight options from leading airlines and travel providers. GoFlyFinder makes it easy to find competitive prices and book securely with our partners.
+            Search, compare, and explore flight and hotel options from leading travel providers. Find competitive prices and book securely with our partners.
           </p>
           <p className="text-sm text-muted-foreground/70 italic font-medium">
-            We don't sell flights — we help you find the right option.
+            Demo mode — using sample data
           </p>
         </div>
 
         <SearchForm />
         
-        {/* Trust line */}
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          No hidden fees • Secure booking • Trusted travel partners
-        </p>
+        {/* Quick Links */}
+        <div className="flex justify-center gap-4 mt-6">
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link to="/flights" className="gap-2">
+              <Plane className="w-4 h-4" />
+              Search Flights
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link to="/hotels" className="gap-2">
+              <Hotel className="w-4 h-4" />
+              Search Hotels
+            </Link>
+          </Button>
+        </div>
 
         {/* Trust Badges */}
         <div className="mt-14 flex flex-wrap items-center justify-center gap-6 md:gap-10">
@@ -65,7 +78,7 @@ const Hero = () => {
             </div>
             <div className="text-left">
               <span className="text-sm font-semibold text-foreground block">Best price match</span>
-              <span className="text-xs text-muted-foreground">Guaranteed savings</span>
+              <span className="text-xs text-muted-foreground">Compare top providers</span>
             </div>
           </div>
           <div className="flex items-center gap-3 px-5 py-3 rounded-2xl glass">
@@ -73,8 +86,8 @@ const Hero = () => {
               <Clock className="w-5 h-5 text-accent" />
             </div>
             <div className="text-left">
-              <span className="text-sm font-semibold text-foreground block">24/7 support</span>
-              <span className="text-xs text-muted-foreground">Always here for you</span>
+              <span className="text-sm font-semibold text-foreground block">Easy booking</span>
+              <span className="text-xs text-muted-foreground">Quick comparison</span>
             </div>
           </div>
         </div>
