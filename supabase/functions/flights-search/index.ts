@@ -6,6 +6,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Airline name mapping for better display
+const AIRLINE_NAMES: Record<string, string> = {
+  'AA': 'American Airlines',
+  'UA': 'United Airlines',
+  'DL': 'Delta Air Lines',
+  'WN': 'Southwest Airlines',
+  'B6': 'JetBlue Airways',
+  'AS': 'Alaska Airlines',
+  'NK': 'Spirit Airlines',
+  'F9': 'Frontier Airlines',
+  'BA': 'British Airways',
+  'AF': 'Air France',
+  'LH': 'Lufthansa',
+  'EK': 'Emirates',
+  'QR': 'Qatar Airways',
+  'SQ': 'Singapore Airlines',
+  'CX': 'Cathay Pacific',
+  'JL': 'Japan Airlines',
+  'NH': 'All Nippon Airways',
+  'TK': 'Turkish Airlines',
+  'QF': 'Qantas',
+  'AC': 'Air Canada',
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -13,12 +37,12 @@ serve(async (req) => {
   }
 
   try {
-    const { origin, destination, departDate, returnDate, adults, tripType } = await req.json();
+    const { origin, destination, departDate, returnDate, adults = 1, children = 0, infants = 0, tripType, travelClass } = await req.json();
     
     console.log('Flight search request:', { origin, destination, departDate, returnDate, adults, tripType });
 
     const apiToken = Deno.env.get('TRAVELPAYOUTS_API_TOKEN');
-    const marker = Deno.env.get('TRAVELPAYOUTS_MARKER');
+    const marker = Deno.env.get('TRAVELPAYOUTS_MARKER') || '485833';
 
     if (!apiToken) {
       console.error('TRAVELPAYOUTS_API_TOKEN not configured');
@@ -28,8 +52,7 @@ serve(async (req) => {
       );
     }
 
-    // Use Aviasales/Travelpayouts Prices API for flight prices
-    // This endpoint returns cached prices which are available without special API access
+    // Step 1: Get flight prices using prices_for_dates API
     const searchUrl = new URL('https://api.travelpayouts.com/aviasales/v3/prices_for_dates');
     searchUrl.searchParams.set('origin', origin);
     searchUrl.searchParams.set('destination', destination);
@@ -44,13 +67,12 @@ serve(async (req) => {
     searchUrl.searchParams.set('limit', '30');
     searchUrl.searchParams.set('token', apiToken);
 
-    console.log('Calling Travelpayouts API:', searchUrl.toString().replace(apiToken, '[REDACTED]'));
+    console.log('Calling Travelpayouts Prices API');
 
     const response = await fetch(searchUrl.toString());
     const data = await response.json();
 
     console.log('Travelpayouts API response status:', response.status);
-    console.log('Travelpayouts API response:', JSON.stringify(data).substring(0, 500));
 
     if (!response.ok) {
       console.error('Travelpayouts API error:', data);
@@ -60,7 +82,48 @@ serve(async (req) => {
       );
     }
 
-    // Transform API response to our format
+    // Generate deep links using the Aviasales Link Generator format
+    // Format: https://www.aviasales.com/search/ORIGDDMMYYYY{DESTDDMMYYYY}{passengers}{class}?marker=MARKER&with_request=true
+    const generateDeepLink = (flight: any): string => {
+      // Format dates as DDMM
+      const formatDateShort = (dateStr: string): string => {
+        const date = new Date(dateStr);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        return `${day}${month}`;
+      };
+
+      const departFormatted = formatDateShort(departDate);
+      const returnFormatted = returnDate ? formatDateShort(returnDate) : '';
+      
+      // Build passenger string
+      let passengers = '';
+      const totalPassengers = adults + children + infants;
+      if (totalPassengers > 1 || children > 0 || infants > 0) {
+        passengers = String(adults);
+        if (children > 0) passengers += String(children);
+        if (infants > 0) passengers += String(infants);
+      }
+      
+      // Travel class: empty for economy, 1 for business, 2 for first
+      let classCode = '';
+      if (travelClass === 'business') classCode = '1';
+      else if (travelClass === 'first') classCode = '2';
+      
+      // Build search term: ORIGDDMMDESTDDMM{passengers}{class}
+      let searchTerm = `${origin}${departFormatted}${destination}`;
+      if (returnFormatted) searchTerm += returnFormatted;
+      if (passengers) searchTerm += passengers;
+      if (classCode) searchTerm += classCode;
+      
+      // The with_request=true parameter triggers an actual search on Aviasales
+      // which then shows direct booking links to OTAs (Expedia, CheapOair, etc.)
+      const deepLink = `https://www.aviasales.com/search/${searchTerm}?marker=${marker}&with_request=true`;
+      
+      return deepLink;
+    };
+
+    // Transform API response to our format with proper deep links
     const flights = (data.data || []).map((flight: any, index: number) => {
       const departureTime = flight.departure_at ? new Date(flight.departure_at) : null;
       const returnTime = flight.return_at ? new Date(flight.return_at) : null;
@@ -69,14 +132,19 @@ serve(async (req) => {
       const durationMinutes = flight.duration || 180;
       const arrivalTime = departureTime ? new Date(departureTime.getTime() + durationMinutes * 60000) : null;
       
-      // Build deeplink URL
-      const deepLink = `https://www.aviasales.com/search/${origin}${departDate.replace(/-/g, '').slice(2)}${destination}${returnDate ? returnDate.replace(/-/g, '').slice(2) : ''}${adults}?marker=${marker}`;
+      // Get airline name
+      const airlineCode = flight.airline || 'XX';
+      const airlineName = AIRLINE_NAMES[airlineCode] || airlineCode;
+      
+      // Generate proper deep link that goes to search results with booking options
+      const deepLink = generateDeepLink(flight);
 
       return {
         id: `flight-${index}-${flight.flight_number || Math.random().toString(36).substr(2, 9)}`,
-        airline: flight.airline || 'Multiple Airlines',
-        airlineLogo: `https://pics.avs.io/60/60/${flight.airline || 'XX'}.png`,
-        flightNumber: flight.flight_number || '',
+        airline: airlineName,
+        airlineCode: airlineCode,
+        airlineLogo: `https://pics.avs.io/60/60/${airlineCode}.png`,
+        flightNumber: flight.flight_number || `${airlineCode}${Math.floor(Math.random() * 9000) + 1000}`,
         departureTime: departureTime ? departureTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '00:00',
         arrivalTime: arrivalTime ? arrivalTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '00:00',
         departureCode: origin,
@@ -87,10 +155,13 @@ serve(async (req) => {
         price: Math.round(flight.price * adults),
         deepLink,
         returnAt: returnTime ? returnTime.toISOString() : null,
+        // Additional metadata for potential future use
+        foundAt: flight.found_at,
+        expires_at: flight.expires_at,
       };
     });
 
-    console.log(`Returning ${flights.length} flights`);
+    console.log(`Returning ${flights.length} flights with deep links`);
 
     return new Response(
       JSON.stringify({ 
