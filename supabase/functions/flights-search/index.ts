@@ -154,12 +154,22 @@ serve(async (req) => {
     console.log('Flight search request:', { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass });
 
     const apiToken = Deno.env.get('TRAVELPAYOUTS_API_TOKEN');
-    const marker = Deno.env.get('TRAVELPAYOUTS_MARKER') || '485833';
+    const marker = Deno.env.get('TRAVELPAYOUTS_MARKER');
+
+    console.log('Using marker:', marker ? `${marker.substring(0, 3)}***` : 'NOT SET');
 
     if (!apiToken) {
       console.error('TRAVELPAYOUTS_API_TOKEN not configured');
       return new Response(
-        JSON.stringify({ error: 'API token not configured' }),
+        JSON.stringify({ error: 'API credentials not configured. Please add your Travelpayouts API token.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!marker) {
+      console.error('TRAVELPAYOUTS_MARKER not configured');
+      return new Response(
+        JSON.stringify({ error: 'Affiliate marker not configured. Please add your Travelpayouts marker.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
