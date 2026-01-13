@@ -2,35 +2,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Plane, Clock, Luggage, Wifi, Coffee, ExternalLink, MapPin, Check } from "lucide-react";
 import { LiveFlight } from "@/hooks/useFlightSearch";
-import { toast } from "sonner";
-import { useState } from "react";
+import { generateFlightAffiliateUrl } from "@/lib/affiliateLinks";
+import { format } from "date-fns";
 
 interface FlightDetailsModalProps {
   flight: LiveFlight | null;
   isOpen: boolean;
   onClose: () => void;
+  searchDate?: string; // The original search departure date
 }
 
-const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps) => {
-  const [isBooking, setIsBooking] = useState(false);
-
+const FlightDetailsModal = ({ flight, isOpen, onClose, searchDate }: FlightDetailsModalProps) => {
   if (!flight) return null;
 
-  const handleBookNow = async () => {
-    setIsBooking(true);
-    
-    // If there's a deep link, open it
-    if (flight.deepLink) {
-      window.open(flight.deepLink, "_blank", "noopener,noreferrer");
-      setIsBooking(false);
-      return;
+  // Generate the affiliate booking URL
+  const getBookingUrl = (): string => {
+    // If flight has a valid deep link from API, use it
+    if (flight.deepLink && flight.deepLink !== "#") {
+      return flight.deepLink;
     }
     
-    // For mock data, simulate booking
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsBooking(false);
-    toast.success(`Booking confirmed for ${flight.airline} ${flight.flightNumber}! You'll receive a confirmation email shortly.`);
-    onClose();
+    // Otherwise, generate Travelpayouts affiliate URL
+    const departDate = searchDate || format(new Date(), "yyyy-MM-dd");
+    
+    return generateFlightAffiliateUrl({
+      departureCode: flight.departureCode,
+      arrivalCode: flight.arrivalCode,
+      departDate: departDate,
+      returnDate: flight.returnAt,
+    });
+  };
+
+  const handleBookNow = () => {
+    const bookingUrl = getBookingUrl();
+    window.open(bookingUrl, "_blank", "noopener,noreferrer");
   };
 
   const getStopsLabel = (stops: number): string => {
@@ -164,25 +169,15 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
                 size="lg" 
                 onClick={handleBookNow} 
                 className="gap-2 shrink-0"
-                disabled={isBooking}
               >
-                {isBooking ? "Processing..." : "Continue to Booking"}
-                {!isBooking && <ExternalLink className="w-4 h-4" />}
+                Continue to Booking
+                <ExternalLink className="w-4 h-4" />
               </Button>
             </div>
           </div>
 
-          {/* Demo disclaimer for mock data */}
-          <div className="bg-muted/50 rounded-xl p-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Demo Mode:</span>{" "}
-              This is a prototype using sample data. In production, clicking "Continue to Booking" 
-              will redirect you to the airline or travel partner to complete your purchase.
-            </p>
-          </div>
-
           <p className="text-xs text-muted-foreground text-center">
-            You'll be redirected to our partner's website to complete your booking securely.
+            You'll be redirected to our travel partner (Aviasales) to complete your booking securely.
           </p>
         </div>
       </DialogContent>
