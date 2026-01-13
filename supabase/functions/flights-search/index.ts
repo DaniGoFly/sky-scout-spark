@@ -185,6 +185,7 @@ serve(async (req) => {
     const data = await response.json();
 
     console.log('Travelpayouts API response status:', response.status);
+    console.log('Travelpayouts API raw response:', JSON.stringify(data));
 
     if (!response.ok) {
       console.error('Travelpayouts API error:', data);
@@ -192,6 +193,11 @@ serve(async (req) => {
         JSON.stringify({ error: 'Failed to fetch flights', details: data }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+    
+    // Log if no data returned
+    if (!data.data || data.data.length === 0) {
+      console.log('No flights found in API response - this could be due to dates too far in the future');
     }
 
     // Transform API response with official redirect links
