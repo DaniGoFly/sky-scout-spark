@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Hotel } from "@/lib/mockHotels";
 import { Star, MapPin, Wifi, Car, Dumbbell, Coffee, UtensilsCrossed, Waves, Snowflake, Tv, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { generateHotelAffiliateUrl } from "@/lib/affiliateLinks";
+
+// Travelpayouts affiliate marker
+const AFFILIATE_MARKER = "485833";
 
 interface HotelDetailsModalProps {
   hotel: Hotel | null;
@@ -36,14 +38,17 @@ const HotelDetailsModal = ({ hotel, open, onClose, searchParams }: HotelDetailsM
   if (!hotel) return null;
 
   const handleBookNow = () => {
-    const bookingUrl = generateHotelAffiliateUrl({
-      locationName: searchParams?.location || hotel.name,
-      checkIn: searchParams?.checkIn || new Date().toISOString().split("T")[0],
-      checkOut: searchParams?.checkOut || new Date(Date.now() + 86400000).toISOString().split("T")[0],
-      adults: searchParams?.adults || 2,
-      children: searchParams?.children || 0,
-      rooms: searchParams?.rooms || 1,
-    });
+    // Generate Hotellook affiliate URL using official Travelpayouts redirect
+    const params = new URLSearchParams();
+    params.set('destination', searchParams?.location || hotel.name);
+    params.set('checkIn', searchParams?.checkIn || new Date().toISOString().split("T")[0]);
+    params.set('checkOut', searchParams?.checkOut || new Date(Date.now() + 86400000).toISOString().split("T")[0]);
+    params.set('adults', String(searchParams?.adults || 2));
+    params.set('children', String(searchParams?.children || 0));
+    params.set('rooms', String(searchParams?.rooms || 1));
+    params.set('marker', AFFILIATE_MARKER);
+    
+    const bookingUrl = `https://search.hotellook.com/?${params.toString()}`;
     window.open(bookingUrl, "_blank", "noopener,noreferrer");
   };
 
