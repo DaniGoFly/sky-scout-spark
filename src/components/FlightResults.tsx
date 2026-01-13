@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle, Plane, ArrowLeft, Search } from "lucide-react";
+import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
@@ -9,7 +9,7 @@ import FlightResultsSkeleton from "./FlightResultsSkeleton";
 import CompactSearchBar from "./CompactSearchBar";
 import PriceCalendar from "./PriceCalendar";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
-import { format, addDays, parseISO } from "date-fns";
+import { format, addDays, parseISO, differenceInMonths } from "date-fns";
 
 // City to airport code mapping for auto-search
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -294,11 +294,21 @@ const FlightResults = () => {
         ) : flights.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
-              <Plane className="w-10 h-10 text-muted-foreground" />
+              {depart && differenceInMonths(parseISO(depart), new Date()) > 9 ? (
+                <Calendar className="w-10 h-10 text-muted-foreground" />
+              ) : (
+                <Plane className="w-10 h-10 text-muted-foreground" />
+              )}
             </div>
-            <p className="text-xl text-foreground font-semibold mb-2">No flights found</p>
+            <p className="text-xl text-foreground font-semibold mb-2">
+              {depart && differenceInMonths(parseISO(depart), new Date()) > 9 
+                ? "Prices not available yet" 
+                : "No flights found"}
+            </p>
             <p className="text-muted-foreground max-w-md mb-6">
-              We couldn't find any flights for your search. Try different dates or destinations.
+              {depart && differenceInMonths(parseISO(depart), new Date()) > 9 
+                ? "Flight prices are typically available 9-12 months in advance. Please choose dates closer to today."
+                : "We couldn't find any flights for your search. Try different dates or destinations."}
             </p>
             <Button
               variant="outline"
