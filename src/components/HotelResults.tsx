@@ -176,6 +176,14 @@ const HotelResults = ({ hotels, isLoading, searchParams }: HotelResultsProps) =>
         hotel={selectedHotel}
         open={!!selectedHotel}
         onClose={() => setSelectedHotel(null)}
+        searchParams={searchParams ? {
+          location: searchParams.destination,
+          checkIn: searchParams.checkIn,
+          checkOut: searchParams.checkOut,
+          adults: searchParams.guests,
+          children: 0,
+          rooms: searchParams.rooms,
+        } : undefined}
       />
     </div>
   );

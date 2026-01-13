@@ -1,14 +1,22 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Hotel } from "@/lib/mockHotels";
-import { Star, MapPin, Wifi, Car, Dumbbell, Coffee, UtensilsCrossed, Waves, Snowflake, Tv, Info } from "lucide-react";
+import { Star, MapPin, Wifi, Car, Dumbbell, Coffee, UtensilsCrossed, Waves, Snowflake, Tv, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import BookingDemoModal from "./BookingDemoModal";
+import { generateHotelAffiliateUrl } from "@/lib/affiliateLinks";
 
 interface HotelDetailsModalProps {
   hotel: Hotel | null;
   open: boolean;
   onClose: () => void;
+  searchParams?: {
+    location: string;
+    checkIn: string;
+    checkOut: string;
+    adults: number;
+    children: number;
+    rooms: number;
+  };
 }
 
 const amenityIcons: Record<string, React.ReactNode> = {
@@ -22,14 +30,21 @@ const amenityIcons: Record<string, React.ReactNode> = {
   "TV": <Tv className="w-4 h-4" />,
 };
 
-const HotelDetailsModal = ({ hotel, open, onClose }: HotelDetailsModalProps) => {
+const HotelDetailsModal = ({ hotel, open, onClose, searchParams }: HotelDetailsModalProps) => {
   const [selectedImage, setSelectedImage] = useState(0);
-  const [showDemoModal, setShowDemoModal] = useState(false);
 
   if (!hotel) return null;
 
   const handleBookNow = () => {
-    setShowDemoModal(true);
+    const bookingUrl = generateHotelAffiliateUrl({
+      locationName: searchParams?.location || hotel.name,
+      checkIn: searchParams?.checkIn || new Date().toISOString().split("T")[0],
+      checkOut: searchParams?.checkOut || new Date(Date.now() + 86400000).toISOString().split("T")[0],
+      adults: searchParams?.adults || 2,
+      children: searchParams?.children || 0,
+      rooms: searchParams?.rooms || 1,
+    });
+    window.open(bookingUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -143,26 +158,20 @@ const HotelDetailsModal = ({ hotel, open, onClose }: HotelDetailsModalProps) => 
                   size="lg" 
                   variant="hero" 
                   onClick={handleBookNow}
+                  className="gap-2"
                 >
                   View Deal
+                  <ExternalLink className="w-4 h-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Demo Notice */}
-            <div className="flex items-center gap-2 justify-center text-xs text-muted-foreground bg-secondary/30 py-2 px-4 rounded-lg">
-              <Info className="w-4 h-4" />
-              <span>Demo mode — using sample data</span>
-            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              You'll be redirected to our travel partner (Hotellook) to complete your booking securely.
+            </p>
           </div>
         </DialogContent>
       </Dialog>
-
-      <BookingDemoModal 
-        open={showDemoModal} 
-        onClose={() => setShowDemoModal(false)}
-        type="hotel"
-      />
     </>
   );
 };
