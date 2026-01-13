@@ -38,9 +38,6 @@ const Hero = () => {
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-5 leading-relaxed">
             Search, compare, and explore flight and hotel options from leading travel providers. Find competitive prices and book securely with our partners.
           </p>
-          <p className="text-sm text-muted-foreground/70 italic font-medium">
-            Demo mode — using sample data
-          </p>
         </div>
 
         <SearchForm />

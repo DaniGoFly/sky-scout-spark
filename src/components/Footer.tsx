@@ -77,7 +77,7 @@ const Footer = () => {
         {/* Disclaimer */}
         <div className="border-t border-border pt-6 pb-4 text-center">
           <p className="text-xs text-muted-foreground max-w-xl mx-auto">
-            GoFlyFinder helps you compare flights and hotels. Prices shown are estimates and may change. We may earn a commission when you book through our partners. This is a demo using sample data.
+            GoFlyFinder helps you compare flights and hotels. Prices shown are estimates and may change. We may earn a commission when you book through our partners.
           </p>
         </div>
 
