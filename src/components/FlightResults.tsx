@@ -412,7 +412,6 @@ const FlightResults = () => {
           flight={selectedFlight}
           isOpen={!!selectedFlight}
           onClose={() => setSelectedFlight(null)}
-          searchDate={displayDepart}
         />
       </div>
     </section>

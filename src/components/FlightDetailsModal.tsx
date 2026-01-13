@@ -2,40 +2,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Plane, Clock, Luggage, Wifi, Coffee, ExternalLink, MapPin, Check } from "lucide-react";
 import { LiveFlight } from "@/hooks/useFlightSearch";
-import { generateFlightAffiliateUrl } from "@/lib/affiliateLinks";
-import { format } from "date-fns";
 
 interface FlightDetailsModalProps {
   flight: LiveFlight | null;
   isOpen: boolean;
   onClose: () => void;
-  searchDate?: string; // The original search departure date
 }
 
-const FlightDetailsModal = ({ flight, isOpen, onClose, searchDate }: FlightDetailsModalProps) => {
+const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps) => {
   if (!flight) return null;
 
-  // Generate the affiliate booking URL
-  const getBookingUrl = (): string => {
-    // If flight has a valid deep link from API, use it
-    if (flight.deepLink && flight.deepLink !== "#") {
-      return flight.deepLink;
-    }
-    
-    // Otherwise, generate Travelpayouts affiliate URL
-    const departDate = searchDate || format(new Date(), "yyyy-MM-dd");
-    
-    return generateFlightAffiliateUrl({
-      departureCode: flight.departureCode,
-      arrivalCode: flight.arrivalCode,
-      departDate: departDate,
-      returnDate: flight.returnAt,
-    });
-  };
-
   const handleBookNow = () => {
-    const bookingUrl = getBookingUrl();
-    window.open(bookingUrl, "_blank", "noopener,noreferrer");
+    // Use the official API-provided deep link directly
+    // No manual URL construction - uses Jetradar/tp.media redirect links
+    if (flight.deepLink && flight.deepLink !== "#") {
+      window.open(flight.deepLink, "_blank", "noopener,noreferrer");
+    }
   };
 
   const getStopsLabel = (stops: number): string => {
