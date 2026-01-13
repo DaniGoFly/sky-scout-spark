@@ -1,5 +1,4 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Plane, Clock, Luggage, Wifi, Coffee, ExternalLink, MapPin, Check } from "lucide-react";
 import { LiveFlight } from "@/hooks/useFlightSearch";
 
@@ -12,13 +11,8 @@ interface FlightDetailsModalProps {
 const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps) => {
   if (!flight) return null;
 
-  const handleBookNow = () => {
-    // Use the official API-provided deep link directly
-    // No manual URL construction - uses Jetradar/tp.media redirect links
-    if (flight.deepLink && flight.deepLink !== "#") {
-      window.open(flight.deepLink, "_blank", "noopener,noreferrer");
-    }
-  };
+  // Check if we have a valid booking link
+  const hasValidBookingLink = flight.deepLink && flight.deepLink !== "#";
 
   const getStopsLabel = (stops: number): string => {
     if (stops === 0) return "Direct flight";
@@ -146,20 +140,24 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
                 <p className="text-4xl font-bold text-foreground">${flight.price}</p>
                 <p className="text-xs text-muted-foreground mt-1">Includes taxes & fees</p>
               </div>
-              <Button 
-                variant="hero" 
-                size="lg" 
-                onClick={handleBookNow} 
-                className="gap-2 shrink-0"
-              >
-                Continue to Booking
-                <ExternalLink className="w-4 h-4" />
-              </Button>
+              {hasValidBookingLink ? (
+                <a
+                  href={flight.deepLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 shrink-0 rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-lg hover:bg-primary/90 transition-all duration-200"
+                >
+                  Continue to Booking
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              ) : (
+                <p className="text-sm text-muted-foreground">Booking unavailable</p>
+              )}
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            You'll be redirected to our travel partner (Aviasales) to complete your booking securely.
+            You'll be redirected to complete your booking securely on flights.goflyfinder.com.
           </p>
         </div>
       </DialogContent>

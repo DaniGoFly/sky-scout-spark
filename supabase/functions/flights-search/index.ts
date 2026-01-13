@@ -31,15 +31,12 @@ const AIRLINE_NAMES: Record<string, string> = {
 };
 
 /**
- * Generate official Travelpayouts redirect link using tp.media
- * This is the officially recommended method that ensures:
- * - Proper affiliate tracking
- * - Valid session creation
- * - Correct redirect to booking providers
+ * Generate White Label booking link using the user's custom domain
+ * This provides the best user experience with branded booking flow
  * 
- * Documentation: https://support.travelpayouts.com/hc/en-us/articles/210995998
+ * White Label domain: flights.goflyfinder.com (CNAME -> whitelabel.travelpayouts.com)
  */
-function generateOfficialRedirectLink(params: {
+function generateWhiteLabelLink(params: {
   marker: string;
   origin: string;
   destination: string;
@@ -50,12 +47,9 @@ function generateOfficialRedirectLink(params: {
   infants: number;
   travelClass: string;
 }): string {
-  const { marker, origin, destination, departDate, returnDate, adults, children, infants, travelClass } = params;
+  const { origin, destination, departDate, returnDate, adults, children, infants, travelClass } = params;
   
-  // Format dates as YYYY-MM-DD for the redirect API
-  const formatDate = (dateStr: string): string => dateStr; // Already in YYYY-MM-DD format
-  
-  // Travel class mapping: Y = economy, C = business, F = first
+  // Travel class mapping for White Label: Y = economy, C = business
   const classMap: Record<string, string> = {
     'economy': 'Y',
     'premium_economy': 'W',
@@ -64,40 +58,32 @@ function generateOfficialRedirectLink(params: {
   };
   const cabinClass = classMap[travelClass] || 'Y';
   
-  // Build the official tp.media redirect URL
-  // Program ID 4114 = Aviasales
-  const baseUrl = 'https://tp.media/r';
+  // Format date as DDMM for Aviasales URL format
+  const formatDateShort = (dateStr: string): string => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}${month}`;
+  };
   
-  // Build search parameters for the target URL
-  const searchParams = new URLSearchParams();
-  searchParams.set('origin_iata', origin);
-  searchParams.set('destination_iata', destination);
-  searchParams.set('depart_date', formatDate(departDate));
-  if (returnDate) {
-    searchParams.set('return_date', formatDate(returnDate));
-  }
-  searchParams.set('adults', String(adults));
-  searchParams.set('children', String(children));
-  searchParams.set('infants', String(infants));
-  searchParams.set('cabin', cabinClass);
-  searchParams.set('with_request', 'true'); // Triggers actual search
+  // Build passenger string: e.g., "1" for 1 adult, "2" for 2 adults, "11" for 1 adult + 1 child
+  let passengers = String(adults);
+  if (children > 0) passengers += String(children);
+  if (infants > 0) passengers += String(infants);
   
-  // The destination URL for Aviasales search
-  const targetUrl = `https://www.aviasales.com/search/${origin}${destination}${departDate.replace(/-/g, '').slice(4)}?${searchParams.toString()}`;
+  // White Label URL format: /search/ORIGIN_DEST_DATE1_DATE2_CABIN_PASSENGERS
+  // Example: /search/JFK_CDG_1501_2201_Y_1
+  const searchPath = returnDate 
+    ? `${origin}${destination}${formatDateShort(departDate)}${formatDateShort(returnDate)}${passengers}`
+    : `${origin}${destination}${formatDateShort(departDate)}${passengers}`;
   
-  // Build the official redirect URL with tracking
-  const redirectParams = new URLSearchParams();
-  redirectParams.set('marker', marker);
-  redirectParams.set('p', '4114'); // Aviasales program ID
-  redirectParams.set('u', encodeURIComponent(targetUrl));
-  
-  return `${baseUrl}?${redirectParams.toString()}`;
+  // Use custom White Label domain
+  return `https://flights.goflyfinder.com/search/${searchPath}`;
 }
 
 /**
- * Alternative: Generate Jetradar direct link (same network, often more reliable)
+ * Fallback: Generate official tp.media redirect link
+ * Used when White Label link might not work
  */
-function generateJetradarLink(params: {
+function generateTpMediaLink(params: {
   marker: string;
   origin: string;
   destination: string;
@@ -111,27 +97,39 @@ function generateJetradarLink(params: {
   const { marker, origin, destination, departDate, returnDate, adults, children, infants, travelClass } = params;
   
   const classMap: Record<string, string> = {
-    'economy': '0',
-    'premium_economy': '1',
-    'business': '2',
-    'first': '3',
+    'economy': 'Y',
+    'premium_economy': 'W', 
+    'business': 'C',
+    'first': 'F',
   };
+  const cabinClass = classMap[travelClass] || 'Y';
   
+  // Build Aviasales search URL
   const searchParams = new URLSearchParams();
-  searchParams.set('origin_iata', origin);
-  searchParams.set('destination_iata', destination);
-  searchParams.set('depart_date', departDate);
-  if (returnDate) {
-    searchParams.set('return_date', returnDate);
-  }
   searchParams.set('adults', String(adults));
   searchParams.set('children', String(children));
   searchParams.set('infants', String(infants));
-  searchParams.set('trip_class', classMap[travelClass] || '0');
-  searchParams.set('marker', marker);
+  searchParams.set('cabin', cabinClass);
   searchParams.set('with_request', 'true');
   
-  return `https://www.jetradar.com/searches/new?${searchParams.toString()}`;
+  const formatDateShort = (dateStr: string): string => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}${month}`;
+  };
+  
+  const route = returnDate
+    ? `${origin}${formatDateShort(departDate)}${destination}${formatDateShort(returnDate)}`
+    : `${origin}${formatDateShort(departDate)}${destination}`;
+  
+  const targetUrl = `https://www.aviasales.com/search/${route}?${searchParams.toString()}`;
+  
+  // tp.media redirect with tracking
+  const redirectParams = new URLSearchParams();
+  redirectParams.set('marker', marker);
+  redirectParams.set('p', '4114'); // Aviasales program ID
+  redirectParams.set('u', encodeURIComponent(targetUrl));
+  
+  return `https://tp.media/r?${redirectParams.toString()}`;
 }
 
 serve(async (req) => {
@@ -209,8 +207,8 @@ serve(async (req) => {
       const airlineCode = flight.airline || 'XX';
       const airlineName = AIRLINE_NAMES[airlineCode] || airlineCode;
       
-      // Generate official Travelpayouts redirect link (preferred)
-      const deepLink = generateJetradarLink({
+      // Generate White Label booking link (primary - branded experience)
+      const deepLink = generateWhiteLabelLink({
         marker,
         origin,
         destination,
@@ -222,8 +220,8 @@ serve(async (req) => {
         travelClass,
       });
       
-      // Alternative: Use tp.media redirect (backup)
-      const alternativeLink = generateOfficialRedirectLink({
+      // Fallback: tp.media redirect link (if White Label has issues)
+      const alternativeLink = generateTpMediaLink({
         marker,
         origin,
         destination,
