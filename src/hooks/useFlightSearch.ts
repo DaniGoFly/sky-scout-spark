@@ -2,8 +2,8 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { generateMockFlights } from "@/lib/mockFlights";
 
-// Set to true to use mock data, false to use live API
-const USE_MOCK_DATA = true;
+// Set to false to use live Travelpayouts API
+const USE_MOCK_DATA = false;
 
 export interface LiveFlight {
   id: string;

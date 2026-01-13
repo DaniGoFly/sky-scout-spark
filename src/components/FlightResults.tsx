@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle, Plane, Info, ArrowLeft, Search } from "lucide-react";
+import { Loader2, AlertCircle, Plane, ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
@@ -28,7 +28,7 @@ const CITY_AIRPORT_CODES: Record<string, string> = {
 const FlightResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { flights, isLoading, error, searchFlights, isUsingMockData } = useFlightSearch();
+  const { flights, isLoading, error, searchFlights } = useFlightSearch();
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({
     stops: [],
@@ -311,24 +311,8 @@ const FlightResults = () => {
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6 mt-6">
-            {/* Mock Data Notice */}
-            {isUsingMockData && (
-              <div className="w-full mb-4 lg:hidden">
-                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm text-amber-700 dark:text-amber-400">
-                  <Info className="w-4 h-4 shrink-0" />
-                  <span><strong>Demo Mode:</strong> Showing sample prices. In production, you'd see live rates.</span>
-                </div>
-              </div>
-            )}
-
             {/* Filters Sidebar */}
             <div className="lg:w-72 shrink-0">
-              {isUsingMockData && (
-                <div className="hidden lg:flex items-center gap-2 p-3 mb-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm text-amber-700 dark:text-amber-400">
-                  <Info className="w-4 h-4 shrink-0" />
-                  <span><strong>Demo:</strong> Sample prices shown</span>
-                </div>
-              )}
               <div className="sticky top-40">
                 <FlightFilters onFiltersChange={setFilters} />
               </div>
