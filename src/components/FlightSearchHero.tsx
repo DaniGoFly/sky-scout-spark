@@ -1,70 +1,36 @@
 import TravelpayoutsWidget from "./TravelpayoutsWidget";
-import { Plane, Shield, Sparkles, TrendingDown, ExternalLink } from "lucide-react";
 
 const FlightSearchHero = () => {
   return (
-    <section className="relative py-16 px-4 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 gradient-hero-subtle" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_hsl(199_89%_48%_/_0.15),_transparent_50%)]" />
-      
-      {/* Animated Orbs */}
-      <div className="absolute top-20 left-[10%] w-72 h-72 bg-primary/20 rounded-full blur-[100px] animate-pulse-slow" />
-      <div className="absolute bottom-10 right-[5%] w-96 h-96 bg-accent/15 rounded-full blur-[120px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
+    <section className="relative min-h-[500px] flex flex-col">
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0">
+        <img
+          src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1920&auto=format&fit=crop&q=80"
+          alt="Flight search background"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />
+      </div>
 
-      <div className="container mx-auto relative">
-        {/* Badge */}
-        <div className="flex justify-center mb-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-medium text-foreground/80">
-            <TrendingDown className="w-4 h-4 text-emerald-500" />
-            <span>Find the lowest prices on flights</span>
+      {/* Content */}
+      <div className="relative z-10 flex-1 flex flex-col justify-center py-12 px-4">
+        <div className="container mx-auto">
+          {/* Hero Text */}
+          <div className="text-center mb-8 max-w-3xl mx-auto">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3">
+              Search cheap flights
+            </h1>
+            <p className="text-lg text-white/80">
+              Compare prices from hundreds of airlines and booking sites
+            </p>
           </div>
-        </div>
 
-        {/* Main headline - clear value prop */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-4 leading-[1.1] tracking-tight">
-            Find the Best
-            <span className="block gradient-text mt-1">Flight Deals</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Compare flights from hundreds of airlines and booking sites. 
-            Search, compare prices, and book with our trusted partners.
-          </p>
-        </div>
-
-        {/* Travelpayouts Widget - Clean Integration */}
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-card/60 backdrop-blur-xl rounded-2xl border border-border/40 shadow-card p-4 md:p-6">
-            <TravelpayoutsWidget />
-          </div>
-          
-          {/* Subtle info text */}
-          <p className="text-center text-xs text-muted-foreground/70 mt-4 flex items-center justify-center gap-1.5">
-            <ExternalLink className="w-3 h-3" />
-            Search redirects to Aviasales for live prices & booking
-          </p>
-        </div>
-
-        {/* Trust Badges - key differentiators */}
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-6 md:gap-8">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-emerald-500" />
+          {/* Search Widget Container */}
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
+              <TravelpayoutsWidget />
             </div>
-            <span>No hidden fees</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Plane className="w-4 h-4 text-primary" />
-            </div>
-            <span>500+ airlines</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-accent" />
-            </div>
-            <span>Best price guarantee</span>
           </div>
         </div>
       </div>

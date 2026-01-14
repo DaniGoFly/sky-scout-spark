@@ -1,50 +1,58 @@
-import { CheckCircle, Plane, Hotel, ShieldCheck, BadgeCheck } from "lucide-react";
+import { Search, TrendingDown, Shield, Zap } from "lucide-react";
 
-const benefits = [
+const features = [
   {
-    icon: Plane,
-    text: "Compare flights across trusted providers",
+    icon: Search,
+    title: "Search all in one place",
+    description: "Compare prices from hundreds of airlines and travel sites at once.",
   },
   {
-    icon: Hotel,
-    text: "Find hotels with best price comparison",
+    icon: TrendingDown,
+    title: "Find the best deals",
+    description: "We search for deals so you don't have to. Let us do the hard work.",
   },
   {
-    icon: BadgeCheck,
-    text: "No extra fees — book directly with partners",
+    icon: Shield,
+    title: "Book with confidence",
+    description: "We only work with trusted travel providers you know and trust.",
   },
   {
-    icon: ShieldCheck,
-    text: "Secure & traveler-trusted platforms",
+    icon: Zap,
+    title: "Fast and easy",
+    description: "Simple search, quick results. Find your flight in seconds.",
   },
 ];
 
 const WhyUseSection = () => {
   return (
-    <section className="py-12 px-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-      
-      <div className="container mx-auto relative z-10">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-8">
-            Why use GoFlyFinder?
+    <section className="py-20 px-4 bg-background">
+      <div className="container mx-auto">
+        <div className="text-center mb-14">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            Why travelers choose us
           </h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {benefits.map((benefit, index) => (
-              <div 
-                key={index}
-                className="flex items-center gap-3 p-4 rounded-xl glass hover:shadow-lg transition-all duration-300"
-              >
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                </div>
-                <p className="text-foreground font-medium text-sm">
-                  {benefit.text}
-                </p>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            We make finding cheap flights simple and stress-free
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {features.map((feature, index) => (
+            <div 
+              key={index}
+              className="text-center p-6 rounded-2xl bg-card hover:shadow-lg transition-all duration-300 border border-border/50"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
+                <feature.icon className="w-7 h-7 text-primary" />
               </div>
-            ))}
-          </div>
+              <h3 className="text-lg font-semibold text-foreground mb-3">
+                {feature.title}
+              </h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                {feature.description}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>

@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Hotel as HotelIcon, ArrowRight, Search, MapPin, Calendar, Users, AlertCircle } from "lucide-react";
+import { ArrowRight, Search, MapPin, Calendar, Users, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useRef, useEffect } from "react";
 import { format, addDays, isBefore } from "date-fns";
@@ -34,16 +34,6 @@ const destinations = [
     country: "Japan",
     image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=300&fit=crop",
   },
-  {
-    city: "Dubai",
-    country: "UAE",
-    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&h=300&fit=crop",
-  },
-  {
-    city: "Barcelona",
-    country: "Spain",
-    image: "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=400&h=300&fit=crop",
-  },
 ];
 
 interface FormErrors {
@@ -66,14 +56,12 @@ const Hotels = () => {
   const destinationInputRef = useRef<HTMLInputElement>(null);
   const { hotels, isLoading, hasSearched, searchHotels } = useHotelSearch();
 
-  // Handle URL params for auto-search
   useEffect(() => {
     const city = searchParams.get("city");
     const autoSearch = searchParams.get("autoSearch");
     
     if (city) {
       setDestination(city);
-      // Set default dates if not set
       if (!dateRange?.from) {
         setDateRange({
           from: addDays(new Date(), 7),
@@ -82,7 +70,6 @@ const Hotels = () => {
       }
       
       if (autoSearch === "true") {
-        // Trigger search after state updates
         setTimeout(() => {
           handleAutoSearch(city);
         }, 100);
@@ -138,7 +125,6 @@ const Hotels = () => {
     setHotelSearchParams(params);
     await searchHotels(params);
 
-    // Scroll to results
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
@@ -153,7 +139,6 @@ const Hotels = () => {
       });
     }
     
-    // Auto-search when clicking a destination
     const params: HotelSearchParams = {
       destination: city,
       checkIn: format(dateRange?.from || addDays(new Date(), 7), "yyyy-MM-dd"),
@@ -175,38 +160,43 @@ const Hotels = () => {
       <Header />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-16 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/20" />
-        
-        <div className="container mx-auto text-center relative z-10">
-          <div className="max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
-              <HotelIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">Hotel Search</span>
+      <section className="relative min-h-[400px] flex flex-col">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&auto=format&fit=crop&q=80"
+            alt="Hotels background"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center pt-20 pb-12 px-4">
+          <div className="container mx-auto">
+            <div className="text-center mb-8 max-w-3xl mx-auto">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3">
+                Find your perfect stay
+              </h1>
+              <p className="text-lg text-white/80">
+                Compare hotel prices from all major booking sites
+              </p>
             </div>
-            
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Find Your Perfect Stay
-            </h1>
-            
-            <p className="text-muted-foreground mb-8 text-lg max-w-2xl mx-auto">
-              Compare prices from top booking sites and find the best deals on hotels worldwide.
-            </p>
 
             {/* Search Form */}
             <div 
               ref={searchFormRef}
               data-hotel-search-form
-              className="bg-card/80 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-lg max-w-3xl mx-auto"
+              className="bg-white rounded-xl shadow-2xl p-5 max-w-4xl mx-auto"
             >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 {/* Destination */}
                 <div className="md:col-span-2 relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
                   <Input
                     ref={destinationInputRef}
                     placeholder="Where are you going?"
-                    className={cn("pl-10 h-12", errors.destination && "border-destructive")}
+                    className={cn("pl-10 h-12 bg-secondary/50 border-0", errors.destination && "ring-2 ring-destructive")}
                     value={destination}
                     onChange={(e) => {
                       setDestination(e.target.value);
@@ -226,11 +216,11 @@ const Hotels = () => {
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         className={cn(
-                          "w-full h-12 justify-start text-left font-normal pl-10",
+                          "w-full h-12 justify-start text-left font-normal pl-10 bg-secondary/50 hover:bg-secondary/70",
                           !dateRange?.from && "text-muted-foreground",
-                          errors.dates && "border-destructive"
+                          errors.dates && "ring-2 ring-destructive"
                         )}
                       >
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -275,8 +265,8 @@ const Hotels = () => {
                   <Popover open={guestPopoverOpen} onOpenChange={setGuestPopoverOpen}>
                     <PopoverTrigger asChild>
                       <Button
-                        variant="outline"
-                        className="w-full h-12 justify-start text-left font-normal pl-10"
+                        variant="ghost"
+                        className="w-full h-12 justify-start text-left font-normal pl-10 bg-secondary/50 hover:bg-secondary/70"
                       >
                         <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         {guests} guest{guests > 1 ? "s" : ""}, {rooms} room{rooms > 1 ? "s" : ""}
@@ -345,9 +335,7 @@ const Hotels = () => {
                 </div>
               </div>
               <Button
-                variant="hero"
-                size="lg"
-                className="w-full mt-4"
+                className="w-full mt-4 h-12 text-base font-semibold"
                 onClick={handleSearch}
                 disabled={isLoading}
               >
@@ -362,7 +350,7 @@ const Hotels = () => {
       {/* Results Section */}
       <div ref={resultsRef}>
         {(hasSearched || isLoading) && (
-          <section className="px-4 pb-8">
+          <section className="px-4 py-8 bg-secondary/30">
             <div className="container mx-auto">
               <HotelResults
                 hotels={hotels}
@@ -374,32 +362,35 @@ const Hotels = () => {
         )}
       </div>
 
-      {/* Popular Destinations - Only show if no search results */}
+      {/* Popular Destinations */}
       {!hasSearched && (
-        <section className="py-16 px-4 flex-1">
+        <section className="py-16 px-4 bg-background flex-1">
           <div className="container mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">
-              Popular Hotel Destinations
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2 text-center">
+              Popular hotel destinations
             </h2>
+            <p className="text-muted-foreground text-center mb-8">
+              Explore our most popular cities
+            </p>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
               {destinations.map((dest) => (
                 <div
                   key={dest.city}
                   onClick={() => handleDestinationClick(dest.city)}
-                  className="group relative rounded-2xl overflow-hidden aspect-[4/3] shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                  className="group relative rounded-xl overflow-hidden aspect-[4/3] cursor-pointer"
                 >
                   <img
                     src={dest.image}
                     alt={`${dest.city}, ${dest.country}`}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
-                    <h3 className="text-xl font-bold text-white">{dest.city}</h3>
-                    <p className="text-white/80 text-sm">{dest.country}</p>
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h3 className="text-lg font-bold text-white">{dest.city}</h3>
+                    <p className="text-white/70 text-sm">{dest.country}</p>
                   </div>
-                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <ArrowRight className="w-4 h-4 text-white" />
                   </div>
                 </div>
