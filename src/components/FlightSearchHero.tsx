@@ -37,8 +37,13 @@ const FlightSearchHero = () => {
             </div>
           </div>
 
+          {/* AI Helper Text */}
+          <p className="text-center text-white/80 text-sm mt-6 mb-2">
+            ✨ Use AI to help you find your perfect trip
+          </p>
+
           {/* AI Travel Assistant */}
-          <div className="-mt-8">
+          <div>
             <TravelAssistant />
           </div>
         </div>
