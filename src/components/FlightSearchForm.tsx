@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Search } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -16,11 +16,21 @@ interface AirportSelection {
 
 const FlightSearchForm = () => {
   const navigate = useNavigate();
+  
+  // Dynamic default dates: today + 7 days / today + 14 days
+  const defaultDates = useMemo(() => {
+    const today = new Date();
+    return {
+      depart: addDays(today, 7),
+      return: addDays(today, 14),
+    };
+  }, []);
+  
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
   const [from, setFrom] = useState<AirportSelection | null>(null);
   const [to, setTo] = useState<AirportSelection | null>(null);
-  const [departDate, setDepartDate] = useState<Date | null>(null);
-  const [returnDate, setReturnDate] = useState<Date | null>(null);
+  const [departDate, setDepartDate] = useState<Date | null>(defaultDates.depart);
+  const [returnDate, setReturnDate] = useState<Date | null>(defaultDates.return);
   const [travelers, setTravelers] = useState<TravelersData>({
     adults: 1,
     children: 0,
