@@ -17,12 +17,15 @@ const FlightSearchHero = () => {
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-16 px-4">
         <div className="container mx-auto">
           {/* Hero Text */}
-          <div className="text-center mb-8 max-w-3xl mx-auto">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3">
-              Search cheap flights
+          <div className="text-center mb-10 max-w-3xl mx-auto">
+            <p className="text-primary text-sm font-medium tracking-wide uppercase mb-3">
+              ✈️ Your journey starts here
+            </p>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+              Where would you like to go?
             </h1>
-            <p className="text-lg text-white/80">
-              Compare prices from hundreds of airlines and booking sites
+            <p className="text-lg md:text-xl text-white/85">
+              Search hundreds of airlines and find the best deals for your next adventure
             </p>
           </div>
 
