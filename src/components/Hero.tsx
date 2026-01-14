@@ -38,17 +38,17 @@ const Hero = () => {
           </p>
         </div>
 
-        {/* Travelpayouts Widget */}
-        <div className="widget-wrapper glass rounded-2xl p-6 md:p-8 max-w-4xl mx-auto">
-          <TravelpayoutsWidget />
-        </div>
-
-        {/* Explanation */}
-        <div className="mt-6 text-center">
-          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-2">
-            <ExternalLink className="w-4 h-4" />
-            <span>Clicking "Search" will redirect you to Aviasales for live results and booking</span>
+        {/* Travelpayouts Widget - Clean Integration */}
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-card/60 backdrop-blur-xl rounded-2xl border border-border/40 shadow-card p-4 md:p-6">
+            <TravelpayoutsWidget />
           </div>
+          
+          {/* Subtle info text */}
+          <p className="text-center text-xs text-muted-foreground/70 mt-4 flex items-center justify-center gap-1.5">
+            <ExternalLink className="w-3 h-3" />
+            Search redirects to Aviasales for live prices & booking
+          </p>
         </div>
 
         {/* Trust Badges */}
