@@ -1,7 +1,5 @@
-import SearchForm from "./SearchForm";
-import { Shield, Sparkles, Clock, Plane, Hotel } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import TravelpayoutsWidget from "./TravelpayoutsWidget";
+import { Shield, Sparkles, Clock, ExternalLink } from "lucide-react";
 
 const Hero = () => {
   return (
@@ -40,22 +38,17 @@ const Hero = () => {
           </p>
         </div>
 
-        <SearchForm />
-        
-        {/* Quick Links */}
-        <div className="flex justify-center gap-4 mt-6">
-          <Button asChild variant="outline" className="rounded-xl">
-            <Link to="/flights" className="gap-2">
-              <Plane className="w-4 h-4" />
-              Search Flights
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="rounded-xl">
-            <Link to="/hotels" className="gap-2">
-              <Hotel className="w-4 h-4" />
-              Search Hotels
-            </Link>
-          </Button>
+        {/* Travelpayouts Widget */}
+        <div className="widget-wrapper glass rounded-2xl p-6 md:p-8 max-w-4xl mx-auto">
+          <TravelpayoutsWidget />
+        </div>
+
+        {/* Explanation */}
+        <div className="mt-6 text-center">
+          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-2">
+            <ExternalLink className="w-4 h-4" />
+            <span>Clicking "Search" will redirect you to Aviasales for live results and booking</span>
+          </div>
         </div>
 
         {/* Trust Badges */}
