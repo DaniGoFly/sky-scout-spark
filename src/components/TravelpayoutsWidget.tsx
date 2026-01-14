@@ -17,6 +17,7 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
       shmarker: "694224",
       show_hotels: "true",
       powered_by: "false",
+      logo: "false",
       locale: "en",
       searchUrl: "www.aviasales.com/search",
       primary_override: "#05B0D5",
@@ -32,6 +33,7 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
       plain: "false",
       promo_id: "7879",
       campaign_id: "100",
+      white_label: "true",
     });
 
     const script = document.createElement("script");
