@@ -2,7 +2,7 @@ import TravelpayoutsWidget from "./TravelpayoutsWidget";
 
 const FlightSearchHero = () => {
   return (
-    <section className="relative min-h-[500px] flex flex-col">
+    <section className="relative min-h-[700px] flex flex-col">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img
