@@ -155,7 +155,8 @@ function generateAviasalesSearchUrl(params: {
 }
 
 /**
- * Generate White Label booking link
+ * Generate White Label booking link for GoFlyFinder
+ * Uses the Travelpayouts White Label hosted on the user's domain
  */
 function generateWhiteLabelLink(params: {
   marker: string;
@@ -168,7 +169,7 @@ function generateWhiteLabelLink(params: {
   infants: number;
   travelClass: string;
 }): string {
-  const { origin, destination, departDate, returnDate, adults, children, infants, travelClass } = params;
+  const { marker, origin, destination, departDate, returnDate, adults, children, infants, travelClass } = params;
   
   const classMap: Record<string, string> = {
     'economy': 'Y',
@@ -187,11 +188,15 @@ function generateWhiteLabelLink(params: {
   if (children > 0) passengers += String(children);
   if (infants > 0) passengers += String(infants);
   
+  // Format: ORIGINDESTDDMMDDMM for roundtrip, ORIGINDESTDDMM for one-way
+  // Example: ZRHSEA2101280111 (ZRH->SEA, depart Jan 21, return Jan 28, 1 adult)
   const searchPath = returnDate 
     ? `${origin}${destination}${formatDateShort(departDate)}${formatDateShort(returnDate)}${passengers}`
     : `${origin}${destination}${formatDateShort(departDate)}${passengers}`;
   
-  return `https://flights.goflyfinder.com/search/${searchPath}`;
+  // White label URL hosted on GoFlyFinder domain
+  // Format: https://www.goflyfinder.com/flights/search/SEARCHPATH?marker=MARKER
+  return `https://www.goflyfinder.com/flights/search/${searchPath}?marker=${marker}&with_request=true`;
 }
 
 /**
