@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
+import { ArrowRightLeft, Calendar, Users, Search, X } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AirportAutocomplete from "./AirportAutocomplete";
 import { getDefaultDates } from "@/lib/dateUtils";
 
@@ -126,86 +127,85 @@ const SearchForm = () => {
         {/* Depart Date */}
         <div className="lg:col-span-2">
           <label className="block text-xs font-medium text-muted-foreground mb-1.5">Depart</label>
-          <Popover open={departOpen} onOpenChange={setDepartOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full h-12 justify-start text-left font-normal bg-secondary/50 border-0 rounded-lg hover:bg-secondary transition-all"
-              >
-                <Calendar className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span className="truncate">{format(departDate, "MMM d, yyyy")}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="w-auto p-0" 
-              align="start"
-              side="bottom"
-              sideOffset={8}
-            >
-              <CalendarComponent
-                mode="single"
-                selected={departDate}
-                onSelect={(date) => {
-                  if (date) {
-                    setDepartDate(date);
-                    // If return date is before new depart date, update it
-                    if (date > returnDate) {
-                      setReturnDate(new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+          <Button
+            variant="outline"
+            onClick={() => setDepartOpen(true)}
+            className="w-full h-12 justify-start text-left font-normal bg-secondary/50 border-0 rounded-lg hover:bg-secondary transition-all"
+          >
+            <Calendar className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="truncate">{format(departDate, "MMM d, yyyy")}</span>
+          </Button>
+          <Dialog open={departOpen} onOpenChange={setDepartOpen}>
+            <DialogContent className="sm:max-w-fit p-0 gap-0">
+              <DialogHeader className="p-4 pb-0">
+                <DialogTitle>Select departure date</DialogTitle>
+              </DialogHeader>
+              <div className="p-4">
+                <CalendarComponent
+                  mode="single"
+                  selected={departDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setDepartDate(date);
+                      if (date > returnDate) {
+                        setReturnDate(new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+                      }
+                      setDepartOpen(false);
                     }
-                    setDepartOpen(false);
-                  }
-                }}
-                disabled={(date) => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  return date < today;
-                }}
-                initialFocus
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
+                  }}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return date < today;
+                  }}
+                  initialFocus
+                  className="pointer-events-auto"
+                  numberOfMonths={2}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Return Date */}
         {tripType === "roundtrip" && (
           <div className="lg:col-span-2">
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">Return</label>
-            <Popover open={returnOpen} onOpenChange={setReturnOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full h-12 justify-start text-left font-normal bg-secondary/50 border-0 rounded-lg hover:bg-secondary transition-all"
-                >
-                  <Calendar className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <span className="truncate">{format(returnDate, "MMM d, yyyy")}</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-auto p-0" 
-                align="start"
-                side="bottom"
-                sideOffset={8}
-              >
-                <CalendarComponent
-                  mode="single"
-                  selected={returnDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setReturnDate(date);
-                      setReturnOpen(false);
-                    }
-                  }}
-                  disabled={(date) => {
-                    const minDate = new Date(departDate);
-                    minDate.setHours(0, 0, 0, 0);
-                    return date < minDate;
-                  }}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+            <Button
+              variant="outline"
+              onClick={() => setReturnOpen(true)}
+              className="w-full h-12 justify-start text-left font-normal bg-secondary/50 border-0 rounded-lg hover:bg-secondary transition-all"
+            >
+              <Calendar className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="truncate">{format(returnDate, "MMM d, yyyy")}</span>
+            </Button>
+            <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
+              <DialogContent className="sm:max-w-fit p-0 gap-0">
+                <DialogHeader className="p-4 pb-0">
+                  <DialogTitle>Select return date</DialogTitle>
+                </DialogHeader>
+                <div className="p-4">
+                  <CalendarComponent
+                    mode="single"
+                    selected={returnDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setReturnDate(date);
+                        setReturnOpen(false);
+                      }
+                    }}
+                    disabled={(date) => {
+                      const minDate = new Date(departDate);
+                      minDate.setHours(0, 0, 0, 0);
+                      return date < minDate;
+                    }}
+                    initialFocus
+                    className="pointer-events-auto"
+                    numberOfMonths={2}
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
 
