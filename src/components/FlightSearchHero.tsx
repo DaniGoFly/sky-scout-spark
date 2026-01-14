@@ -1,7 +1,24 @@
-import TravelpayoutsWidget from "./TravelpayoutsWidget";
+import { useState, useCallback } from "react";
+import FlightSearchForm from "./FlightSearchForm";
 import TravelAssistant from "./TravelAssistant";
 
+export interface AISearchParams {
+  destinationCode: string;
+  destinationName: string;
+}
+
 const FlightSearchHero = () => {
+  const [aiSearchParams, setAiSearchParams] = useState<AISearchParams | null>(null);
+
+  const handleAIDestinationSelect = useCallback((params: AISearchParams) => {
+    setAiSearchParams(params);
+  }, []);
+
+  // Reset after the form has consumed the params
+  const handleParamsConsumed = useCallback(() => {
+    setAiSearchParams(null);
+  }, []);
+
   return (
     <section className="relative min-h-[900px] flex flex-col">
       {/* Background Image with Overlay */}
@@ -32,9 +49,10 @@ const FlightSearchHero = () => {
 
           {/* Search Widget Container */}
           <div className="max-w-4xl mx-auto">
-            <div className="rounded-xl overflow-visible">
-              <TravelpayoutsWidget />
-            </div>
+            <FlightSearchForm 
+              aiSearchParams={aiSearchParams}
+              onParamsConsumed={handleParamsConsumed}
+            />
           </div>
 
           {/* AI Helper Text */}
@@ -49,7 +67,7 @@ const FlightSearchHero = () => {
 
           {/* AI Travel Assistant */}
           <div>
-            <TravelAssistant />
+            <TravelAssistant onDestinationSelect={handleAIDestinationSelect} />
           </div>
         </div>
       </div>

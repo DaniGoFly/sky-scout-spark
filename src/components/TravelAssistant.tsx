@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Send, Loader2, Plane, MapPin, ArrowRight } from "lucide-react";
+import { Sparkles, Send, Loader2, Plane, MapPin, ArrowRight, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { AISearchParams } from "./FlightSearchHero";
 
 interface Suggestion {
   city: string;
@@ -17,6 +18,10 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   suggestions?: Suggestion[];
+}
+
+interface TravelAssistantProps {
+  onDestinationSelect?: (params: AISearchParams) => void;
 }
 
 const DESTINATION_IMAGES: Record<string, string> = {
@@ -46,11 +51,12 @@ const DESTINATION_IMAGES: Record<string, string> = {
   MLE: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=400&auto=format&fit=crop",
 };
 
-const TravelAssistant = () => {
+const TravelAssistant = ({ onDestinationSelect }: TravelAssistantProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -102,10 +108,23 @@ const TravelAssistant = () => {
   };
 
   const handleDestinationClick = (suggestion: Suggestion) => {
-    // Open Aviasales search in a new tab
-    const searchUrl = `https://www.aviasales.com/search/${suggestion.iataCode}`;
-    window.open(searchUrl, "_blank");
-    toast.success(`Searching flights to ${suggestion.city}!`);
+    // Set this destination in the search form above
+    if (onDestinationSelect) {
+      onDestinationSelect({
+        destinationCode: suggestion.iataCode,
+        destinationName: `${suggestion.city} (${suggestion.iataCode})`,
+      });
+      setSelectedDestination(suggestion.iataCode);
+      toast.success(`${suggestion.city} added to search! Now select your dates and search.`, {
+        duration: 4000,
+      });
+      
+      // Scroll to the search form
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      
+      // Clear selection after a moment
+      setTimeout(() => setSelectedDestination(null), 3000);
+    }
   };
 
   return (
@@ -143,46 +162,67 @@ const TravelAssistant = () => {
                   {/* Suggestion Cards */}
                   {msg.suggestions && msg.suggestions.length > 0 && (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {msg.suggestions.map((suggestion, sIdx) => (
-                        <div
-                          key={sIdx}
-                          onClick={() => handleDestinationClick(suggestion)}
-                          className="group cursor-pointer bg-white/10 rounded-xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1"
-                        >
-                          {/* Image */}
-                          <div className="relative h-24 overflow-hidden">
-                            <img
-                              src={DESTINATION_IMAGES[suggestion.iataCode] || "https://images.unsplash.com/photo-1488085061387-422e29b40080?w=400&auto=format&fit=crop"}
-                              alt={suggestion.city}
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                            <div className="absolute bottom-2 left-2 flex items-center gap-1">
-                              <MapPin className="w-3 h-3 text-white/80" />
-                              <span className="text-xs text-white/80">{suggestion.iataCode}</span>
-                            </div>
-                          </div>
-
-                          {/* Content */}
-                          <div className="p-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <h4 className="text-white font-semibold text-sm">{suggestion.city}</h4>
-                              <span className="text-primary font-bold text-sm">${suggestion.price}</span>
-                            </div>
-                            <p className="text-white/60 text-xs mb-2">{suggestion.country}</p>
-                            <p className="text-white/70 text-xs line-clamp-2">{suggestion.reason}</p>
-
-                            {/* Action */}
-                            <div className="mt-3 flex items-center justify-between">
-                              <div className="flex items-center gap-1 text-primary text-xs font-medium">
-                                <Plane className="w-3 h-3" />
-                                <span>Search flights</span>
+                      {msg.suggestions.map((suggestion, sIdx) => {
+                        const isSelected = selectedDestination === suggestion.iataCode;
+                        return (
+                          <div
+                            key={sIdx}
+                            onClick={() => handleDestinationClick(suggestion)}
+                            className={`group cursor-pointer bg-white/10 rounded-xl overflow-hidden border transition-all duration-300 hover:-translate-y-1 ${
+                              isSelected 
+                                ? "border-green-500 ring-2 ring-green-500/50" 
+                                : "border-white/10 hover:border-primary/50"
+                            }`}
+                          >
+                            {/* Image */}
+                            <div className="relative h-24 overflow-hidden">
+                              <img
+                                src={DESTINATION_IMAGES[suggestion.iataCode] || "https://images.unsplash.com/photo-1488085061387-422e29b40080?w=400&auto=format&fit=crop"}
+                                alt={suggestion.city}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                              <div className="absolute bottom-2 left-2 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-white/80" />
+                                <span className="text-xs text-white/80">{suggestion.iataCode}</span>
                               </div>
-                              <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                              {isSelected && (
+                                <div className="absolute top-2 right-2">
+                                  <CheckCircle className="w-5 h-5 text-green-500" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-3">
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="text-white font-semibold text-sm">{suggestion.city}</h4>
+                                <span className="text-primary font-bold text-sm">${suggestion.price}</span>
+                              </div>
+                              <p className="text-white/60 text-xs mb-2">{suggestion.country}</p>
+                              <p className="text-white/70 text-xs line-clamp-2">{suggestion.reason}</p>
+
+                              {/* Action */}
+                              <div className="mt-3 flex items-center justify-between">
+                                <div className={`flex items-center gap-1 text-xs font-medium ${isSelected ? "text-green-500" : "text-primary"}`}>
+                                  {isSelected ? (
+                                    <>
+                                      <CheckCircle className="w-3 h-3" />
+                                      <span>Added to search</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plane className="w-3 h-3" />
+                                      <span>Add to search</span>
+                                    </>
+                                  )}
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
