@@ -1,5 +1,5 @@
-import FlightSearchForm from "./FlightSearchForm";
-import { Plane, Shield, Sparkles, TrendingDown } from "lucide-react";
+import TravelpayoutsWidget from "./TravelpayoutsWidget";
+import { Plane, Shield, Sparkles, TrendingDown, ExternalLink } from "lucide-react";
 
 const FlightSearchHero = () => {
   return (
@@ -33,7 +33,18 @@ const FlightSearchHero = () => {
           </p>
         </div>
 
-        <FlightSearchForm />
+        {/* Travelpayouts Widget */}
+        <div className="widget-wrapper glass rounded-2xl p-6 md:p-8 max-w-4xl mx-auto">
+          <TravelpayoutsWidget />
+        </div>
+
+        {/* Explanation */}
+        <div className="mt-6 text-center">
+          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-2">
+            <ExternalLink className="w-4 h-4" />
+            <span>Clicking "Search" will redirect you to Aviasales for live results and booking</span>
+          </div>
+        </div>
 
         {/* Trust Badges - key differentiators */}
         <div className="mt-10 flex flex-wrap items-center justify-center gap-6 md:gap-8">
