@@ -9,8 +9,8 @@ import FlightResultsSkeleton from "./FlightResultsSkeleton";
 import CompactSearchBar from "./CompactSearchBar";
 import PriceCalendar from "./PriceCalendar";
 import { useFlightSearch, LiveFlight, EmptyReason } from "@/hooks/useFlightSearch";
-import { format, addDays, parseISO } from "date-fns";
-import { getDefaultDates, isTooFarForPricing, getPricingUnavailableMessage } from "@/lib/dateUtils";
+import { format, addDays } from "date-fns";
+import { getDefaultDates, isTooFarForPricing, getPricingUnavailableMessage, parseDateSafe, getMonthsAhead } from "@/lib/dateUtils";
 
 // City to airport code mapping for auto-search
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -208,8 +208,10 @@ const FlightResults = () => {
   const displayReturn = returnDate || (autoSearch ? format(defaults.return, "yyyy-MM-dd") : "");
   
   // Calculate if selected date is too far for pricing (for smarter empty state)
-  const departDateObj = depart ? parseISO(depart) : null;
+  // Use our safe parser to avoid timezone issues
+  const departDateObj = parseDateSafe(depart);
   const isDateTooFar = departDateObj ? isTooFarForPricing(departDateObj) : false;
+  const monthsAhead = departDateObj ? getMonthsAhead(departDateObj) : 0;
   const pricingMessage = departDateObj ? getPricingUnavailableMessage(departDateObj) : "";
 
   return (
@@ -246,9 +248,9 @@ const FlightResults = () => {
         </div>
 
         {/* Price Calendar - only show when we have results and a depart date */}
-        {!isLoading && !error && flights.length > 0 && depart && (
+        {!isLoading && !error && flights.length > 0 && departDateObj && (
           <PriceCalendar
-            departDate={parseISO(depart)}
+            departDate={departDateObj}
             basePrice={basePrice}
             onDateSelect={handleDateSelect}
           />
@@ -338,24 +340,29 @@ const FlightResults = () => {
             </p>
             
             {/* Debug info panel */}
-            {isDebugMode && apiDebugInfo && (
+            {isDebugMode && (
               <div className="mb-6 p-4 bg-secondary/50 rounded-lg text-left max-w-2xl w-full overflow-hidden">
                 <div className="flex items-center gap-2 mb-2">
                   <Info className="w-4 h-4 text-primary" />
                   <span className="text-sm font-semibold">Debug Info</span>
                 </div>
                 <div className="space-y-2 text-xs">
-                  <div><span className="font-semibold">Timestamp:</span> {apiDebugInfo.timestamp}</div>
-                  {apiDebugInfo.url && <div><span className="font-semibold">API URL:</span> <code className="break-all">{apiDebugInfo.url}</code></div>}
-                  {apiDebugInfo.status && <div><span className="font-semibold">HTTP Status:</span> {apiDebugInfo.status}</div>}
+                  <div><span className="font-semibold">Timestamp:</span> {apiDebugInfo?.timestamp || new Date().toISOString()}</div>
+                  <div><span className="font-semibold">Depart Date:</span> {depart}</div>
+                  <div><span className="font-semibold">Months Ahead (frontend):</span> {monthsAhead}</div>
+                  <div><span className="font-semibold">Is Too Far (&gt;11 mo):</span> {isDateTooFar ? 'Yes' : 'No'}</div>
+                  {apiDebugInfo?.url && <div><span className="font-semibold">API URL:</span> <code className="break-all">{apiDebugInfo.url}</code></div>}
+                  {apiDebugInfo?.status && <div><span className="font-semibold">HTTP Status:</span> {apiDebugInfo.status}</div>}
                   <div><span className="font-semibold">Empty Reason:</span> {emptyReason || 'unknown'}</div>
                 </div>
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-xs font-semibold text-primary">Full Response</summary>
-                  <pre className="text-xs text-muted-foreground overflow-auto mt-2 max-h-48 bg-background p-2 rounded">
-                    {JSON.stringify(apiDebugInfo, null, 2)}
-                  </pre>
-                </details>
+                {apiDebugInfo && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs font-semibold text-primary">Full Response</summary>
+                    <pre className="text-xs text-muted-foreground overflow-auto mt-2 max-h-48 bg-background p-2 rounded">
+                      {JSON.stringify(apiDebugInfo, null, 2)}
+                    </pre>
+                  </details>
+                )}
               </div>
             )}
             
