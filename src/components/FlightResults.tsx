@@ -319,44 +319,68 @@ const FlightResults = () => {
 
   // Empty state for "no cached prices" (NOT an error)
   const NoCachedPricesState = () => (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center mb-6">
-        <Database className="w-10 h-10 text-amber-500" />
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+        <Plane className="w-12 h-12 text-primary" />
       </div>
-      <p className="text-xl text-foreground font-semibold mb-2">No cached prices available</p>
-      <p className="text-muted-foreground max-w-md mb-6">
-        {userMessage || "We searched our price database but couldn't find cached prices for this route and dates. This is common for less popular routes or specific date combinations."}
+      <p className="text-2xl text-foreground font-bold mb-3">No cached prices available</p>
+      <p className="text-muted-foreground max-w-lg mb-6">
+        {userMessage || "Our price database doesn't have cached prices for this specific route and dates. This is common for less popular routes. Flights likely exist – just search live!"}
       </p>
       
-      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6 max-w-md text-left">
-        <div className="flex items-start gap-2">
-          <Info className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">This is not an error.</strong> Our app uses cached historical prices. 
-            For real-time availability and booking, use the direct search button below.
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex flex-wrap gap-3 justify-center mb-6">
+      {/* Primary CTA - Search Live Prices */}
+      <div className="mb-6">
         {aviasalesDirectUrl && (
           <Button 
+            size="lg"
             onClick={() => window.open(aviasalesDirectUrl, '_blank')}
-            className="gap-2"
+            className="gap-2 text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-shadow"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-5 h-5" />
             Search Live Prices
           </Button>
         )}
+      </div>
+      
+      <div className="bg-muted/50 border border-border rounded-xl p-5 mb-6 max-w-lg text-left">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground mb-1">Why am I seeing this?</p>
+            <p className="text-sm text-muted-foreground">
+              We use cached historical pricing data. When the cache is empty, it doesn't mean flights don't exist – 
+              just that we don't have recent price data. Click "Search Live Prices" to see real-time availability and book.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex flex-wrap gap-3 justify-center">
         <Button variant="outline" onClick={() => navigate("/flights")} className="gap-2">
           <Calendar className="w-4 h-4" />
           Try Different Dates
         </Button>
+        <Button variant="ghost" onClick={() => {
+          // Try +30 days
+          const currentDepart = parseDateSafe(depart);
+          if (currentDepart) {
+            const newDepart = addDays(currentDepart, 30);
+            const newParams = new URLSearchParams(searchParams);
+            newParams.set("depart", format(newDepart, "yyyy-MM-dd"));
+            if (tripType === "roundtrip" && returnDate) {
+              const returnParsed = parseDateSafe(returnDate);
+              if (returnParsed) {
+                const tripLength = Math.round((returnParsed.getTime() - currentDepart.getTime()) / (1000 * 60 * 60 * 24));
+                newParams.set("return", format(addDays(newDepart, tripLength), "yyyy-MM-dd"));
+              }
+            }
+            setSearchParams(newParams);
+          }
+        }} className="gap-2">
+          <Calendar className="w-4 h-4" />
+          Try +30 Days
+        </Button>
       </div>
-      
-      <p className="text-xs text-muted-foreground max-w-lg">
-        Airlines typically release prices 9-12 months in advance. Try dates closer to today for better cache coverage.
-      </p>
       
       <DebugPanel />
     </div>
@@ -364,35 +388,39 @@ const FlightResults = () => {
 
   // Empty state for "far future" (beyond airline publish window)
   const FarFutureState = () => (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-20 h-20 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
-        <Clock className="w-10 h-10 text-blue-500" />
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="w-24 h-24 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
+        <Clock className="w-12 h-12 text-blue-500" />
       </div>
-      <p className="text-xl text-foreground font-semibold mb-2">Prices not released yet</p>
-      <p className="text-muted-foreground max-w-md mb-6">
+      <p className="text-2xl text-foreground font-bold mb-3">Prices not available yet</p>
+      <p className="text-muted-foreground max-w-lg mb-6">
         {userMessage || "Airlines typically publish fares 9-11 months in advance. Your selected date is beyond the current booking window."}
       </p>
       
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6 max-w-md text-left">
-        <div className="flex items-start gap-2">
-          <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Not an error!</strong> This date is too far in the future. 
-            Airline prices aren't available yet. You can still search directly or try nearer dates.
-          </p>
-        </div>
-      </div>
-      
+      {/* Primary CTA - Suggested dates */}
       {suggestedSearchDate && (
         <div className="mb-6">
-          <p className="text-sm text-muted-foreground mb-2">Try the nearest available dates:</p>
-          <Button onClick={handleSuggestedDateClick} className="gap-2">
-            <Calendar className="w-4 h-4" />
+          <p className="text-sm text-muted-foreground mb-3">Try the nearest available dates:</p>
+          <Button size="lg" onClick={handleSuggestedDateClick} className="gap-2 px-8 py-6 shadow-lg">
+            <Calendar className="w-5 h-5" />
             Search {formatDate(suggestedSearchDate)}
             {suggestedReturnDate && tripType === "roundtrip" && ` – ${formatDate(suggestedReturnDate)}`}
           </Button>
         </div>
       )}
+      
+      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-5 mb-6 max-w-lg text-left">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground mb-1">Why can't I book this far ahead?</p>
+            <p className="text-sm text-muted-foreground">
+              Airlines release their schedules and prices approximately 330 days (about 11 months) before departure. 
+              Your selected date is beyond this window. Try a nearer date or check back closer to when prices are released.
+            </p>
+          </div>
+        </div>
+      </div>
       
       <div className="flex flex-wrap gap-3 justify-center">
         {aviasalesDirectUrl && (
@@ -402,7 +430,7 @@ const FlightResults = () => {
             className="gap-2"
           >
             <ExternalLink className="w-4 h-4" />
-            Try Direct Search
+            Try Direct Search Anyway
           </Button>
         )}
         <Button variant="outline" onClick={() => navigate("/flights")} className="gap-2">
