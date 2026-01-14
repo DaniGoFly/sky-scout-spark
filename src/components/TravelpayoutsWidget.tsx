@@ -22,6 +22,7 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
       searchUrl: "www.aviasales.com/search",
       primary_override: "#05B0D5",
       color_button: "#05B0D5",
+      color_button_text: "#ffffff",
       color_icons: "#05B0D5",
       dark: "transparent",
       light: "#ffffff",
