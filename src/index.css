@@ -1,4 +1,30 @@
 @tailwind base;
+
+/* Travelpayouts Widget Styling */
+.travelpayouts-widget-container {
+  width: 100%;
+}
+
+.travelpayouts-widget-container iframe {
+  border: none !important;
+  width: 100% !important;
+  min-height: 400px;
+}
+
+#tp-widget-container {
+  min-height: 350px;
+}
+
+/* Make widget responsive */
+@media (max-width: 768px) {
+  .travelpayouts-widget-container iframe {
+    min-height: 500px;
+  }
+  
+  #tp-widget-container {
+    min-height: 450px;
+  }
+}
 @tailwind components;
 @tailwind utilities;
 
