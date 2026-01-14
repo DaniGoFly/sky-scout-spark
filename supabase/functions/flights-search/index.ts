@@ -63,19 +63,41 @@ const AIRLINE_NAMES: Record<string, string> = {
 };
 
 /**
- * Calculate months between two dates
+ * Parse date string YYYY-MM-DD to Date object at noon UTC to avoid timezone issues
+ */
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
+}
+
+/**
+ * Calculate months between two dates (from date a to date b)
+ * Returns positive number if b is after a
  */
 function monthsBetween(a: Date, b: Date): number {
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 }
 
 /**
- * Check if date is too far for airline pricing (>11 months)
+ * Check if date is too far for airline pricing (>11 months ahead)
+ * Airlines typically release pricing 9-12 months before departure
  */
 function isTooFarForPricing(departDateStr: string): boolean {
-  const departDate = new Date(departDateStr);
+  const departDate = parseLocalDate(departDateStr);
   const now = new Date();
-  return monthsBetween(now, departDate) > 11;
+  now.setHours(12, 0, 0, 0); // Normalize to noon
+  const months = monthsBetween(now, departDate);
+  return months > 11;
+}
+
+/**
+ * Calculate months ahead from today for a given date string
+ */
+function getMonthsAhead(departDateStr: string): number {
+  const departDate = parseLocalDate(departDateStr);
+  const now = new Date();
+  now.setHours(12, 0, 0, 0);
+  return monthsBetween(now, departDate);
 }
 
 /**
@@ -320,12 +342,14 @@ serve(async (req) => {
       );
     }
     
-    // Check for empty results - provide clear reason
+    // Check for empty results - provide clear reason with correct monthsAhead calculation
     if (!data.data || data.data.length === 0) {
-      const farFuture = isTooFarForPricing(departDate);
-      const monthsAhead = monthsBetween(new Date(), new Date(departDate));
+      const monthsAhead = getMonthsAhead(departDate);
+      const farFuture = monthsAhead > 11;
       
       console.log('=== NO FLIGHTS FOUND ===');
+      console.log('Depart date:', departDate);
+      console.log('Today:', new Date().toISOString().split('T')[0]);
       console.log('Months ahead:', monthsAhead);
       console.log('Is far future (>11 months):', farFuture);
       console.log('Reason:', farFuture ? 'NO_PRICING_YET - Airlines have not released pricing' : 'NO_RESULTS - No available flights');
@@ -345,6 +369,8 @@ serve(async (req) => {
             status: response.status, 
             rawResponse: data,
             timestamp: new Date().toISOString(),
+            today: new Date().toISOString().split('T')[0],
+            parsedDepartDate: departDate,
             isFarFuture: farFuture,
             monthsAhead
           } : undefined
