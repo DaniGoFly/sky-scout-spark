@@ -12,12 +12,14 @@ interface Suggestion {
   iataCode: string;
   price: number;
   reason: string;
+  isLivePrice?: boolean;
 }
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   suggestions?: Suggestion[];
+  travelTip?: string;
 }
 
 interface TravelAssistantProps {
@@ -78,8 +80,14 @@ const TravelAssistant = ({ onDestinationSelect }: TravelAssistantProps) => {
     setIsLoading(true);
 
     try {
+      // Build conversation history for context
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
       const { data, error } = await supabase.functions.invoke("travel-assistant", {
-        body: { message: userMessage },
+        body: { message: userMessage, conversationHistory },
       });
 
       if (error) throw error;
@@ -96,6 +104,7 @@ const TravelAssistant = ({ onDestinationSelect }: TravelAssistantProps) => {
           role: "assistant",
           content: data.message,
           suggestions: data.suggestions,
+          travelTip: data.travelTip,
         },
       ]);
     } catch (error) {
@@ -197,7 +206,12 @@ const TravelAssistant = ({ onDestinationSelect }: TravelAssistantProps) => {
                             <div className="p-3">
                               <div className="flex items-center justify-between mb-1">
                                 <h4 className="text-white font-semibold text-sm">{suggestion.city}</h4>
-                                <span className="text-primary font-bold text-sm">${suggestion.price}</span>
+                                <div className="flex items-center gap-1">
+                                  {suggestion.isLivePrice && (
+                                    <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">LIVE</span>
+                                  )}
+                                  <span className="text-primary font-bold text-sm">€{suggestion.price}</span>
+                                </div>
                               </div>
                               <p className="text-white/60 text-xs mb-2">{suggestion.country}</p>
                               <p className="text-white/70 text-xs line-clamp-2">{suggestion.reason}</p>
@@ -223,6 +237,16 @@ const TravelAssistant = ({ onDestinationSelect }: TravelAssistantProps) => {
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+
+                  {/* Travel Tip */}
+                  {msg.travelTip && (
+                    <div className="mt-3 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2">
+                      <p className="text-xs text-primary flex items-center gap-2">
+                        <Sparkles className="w-3 h-3" />
+                        <span className="font-medium">Pro tip:</span> {msg.travelTip}
+                      </p>
                     </div>
                   )}
                 </div>
