@@ -11,11 +11,6 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
   useEffect(() => {
     if (scriptLoaded.current || !containerRef.current) return;
 
-    // Widget colors matched to site design tokens:
-    // Primary: hsl(199 89% 48%) = #0BA5E9
-    // Accent: hsl(280 65% 60%) = #A855F7
-    // Background light: hsl(220 25% 97%) = #F5F7FA
-    // Foreground dark: hsl(220 25% 10%) = #171C26
     const widgetParams = new URLSearchParams({
       currency: "usd",
       trs: "488332",
