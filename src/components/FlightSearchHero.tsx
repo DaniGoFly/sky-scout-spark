@@ -2,7 +2,7 @@ import TravelpayoutsWidget from "./TravelpayoutsWidget";
 
 const FlightSearchHero = () => {
   return (
-    <section className="relative min-h-[750px] flex flex-col">
+    <section className="relative min-h-[800px] flex flex-col">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img
@@ -10,21 +10,21 @@ const FlightSearchHero = () => {
           alt="Flight search background"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-16 px-4">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-20 px-4">
         <div className="container mx-auto">
           {/* Hero Text */}
-          <div className="text-center mb-10 max-w-3xl mx-auto">
-            <p className="text-primary text-sm font-medium tracking-wide uppercase mb-3">
+          <div className="text-center mb-12 max-w-4xl mx-auto">
+            <p className="text-primary text-base font-semibold tracking-wider uppercase mb-4">
               ✈️ Your journey starts here
             </p>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
               Where would you like to go?
             </h1>
-            <p className="text-lg md:text-xl text-white/85">
+            <p className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto">
               Search hundreds of airlines and find the best deals for your next adventure
             </p>
           </div>
