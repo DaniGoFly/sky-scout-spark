@@ -1,4 +1,5 @@
 import TravelpayoutsWidget from "./TravelpayoutsWidget";
+import TravelAssistant from "./TravelAssistant";
 
 const FlightSearchHero = () => {
   return (
@@ -14,10 +15,10 @@ const FlightSearchHero = () => {
       </div>
 
       {/* Content - positioned toward top to leave room below for calendar */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-start pt-28 pb-48 px-4">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-start pt-20 pb-16 px-4">
         <div className="container mx-auto">
           {/* Hero Text */}
-          <div className="text-center mb-12 max-w-4xl mx-auto">
+          <div className="text-center mb-10 max-w-4xl mx-auto">
             <p className="text-primary text-base font-semibold tracking-wider uppercase mb-4">
               ✈️ Your journey starts here
             </p>
@@ -35,6 +36,9 @@ const FlightSearchHero = () => {
               <TravelpayoutsWidget />
             </div>
           </div>
+
+          {/* AI Travel Assistant */}
+          <TravelAssistant />
         </div>
       </div>
     </section>
