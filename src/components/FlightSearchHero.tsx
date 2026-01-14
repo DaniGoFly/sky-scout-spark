@@ -28,7 +28,7 @@ const FlightSearchHero = () => {
 
           {/* Search Widget Container */}
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
+            <div className="rounded-xl overflow-visible">
               <TravelpayoutsWidget />
             </div>
           </div>
