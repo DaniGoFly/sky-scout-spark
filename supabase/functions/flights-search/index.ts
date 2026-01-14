@@ -6,6 +6,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple in-memory rate limiting (per IP, resets on function cold start)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_REQUESTS = 30; // Max requests per window
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+
+function checkRateLimit(clientIP: string): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(clientIP);
+  
+  // Clean up expired entries periodically
+  if (rateLimitMap.size > 1000) {
+    for (const [ip, data] of rateLimitMap.entries()) {
+      if (now > data.resetTime) {
+        rateLimitMap.delete(ip);
+      }
+    }
+  }
+  
+  if (!record || now > record.resetTime) {
+    // New window
+    rateLimitMap.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+  
+  if (record.count >= RATE_LIMIT_REQUESTS) {
+    return { allowed: false, remaining: 0, resetIn: record.resetTime - now };
+  }
+  
+  record.count++;
+  return { allowed: true, remaining: RATE_LIMIT_REQUESTS - record.count, resetIn: record.resetTime - now };
+}
+
 // Airline name mapping for better display
 const AIRLINE_NAMES: Record<string, string> = {
   'AA': 'American Airlines',
@@ -152,6 +184,33 @@ serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting - get client IP from headers
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                   req.headers.get('cf-connecting-ip') || 
+                   req.headers.get('x-real-ip') || 
+                   'unknown';
+  
+  const rateLimit = checkRateLimit(clientIP);
+  
+  if (!rateLimit.allowed) {
+    console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Too many requests. Please try again later.',
+        errorType: 'rate_limit',
+        retryAfter: Math.ceil(rateLimit.resetIn / 1000)
+      }),
+      { 
+        status: 429, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000))
+        } 
+      }
+    );
   }
 
   try {
