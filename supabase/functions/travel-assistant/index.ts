@@ -6,32 +6,194 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const POPULAR_DESTINATIONS = [
-  { city: "Barcelona", country: "Spain", iataCode: "BCN", avgPrice: 180, weather: "warm", continent: "Europe" },
-  { city: "Lisbon", country: "Portugal", iataCode: "LIS", avgPrice: 150, weather: "warm", continent: "Europe" },
-  { city: "Athens", country: "Greece", iataCode: "ATH", avgPrice: 200, weather: "warm", continent: "Europe" },
-  { city: "Rome", country: "Italy", iataCode: "FCO", avgPrice: 220, weather: "warm", continent: "Europe" },
-  { city: "Dubrovnik", country: "Croatia", iataCode: "DBV", avgPrice: 190, weather: "warm", continent: "Europe" },
-  { city: "Nice", country: "France", iataCode: "NCE", avgPrice: 210, weather: "warm", continent: "Europe" },
-  { city: "Marrakech", country: "Morocco", iataCode: "RAK", avgPrice: 120, weather: "hot", continent: "Africa" },
-  { city: "Cairo", country: "Egypt", iataCode: "CAI", avgPrice: 250, weather: "hot", continent: "Africa" },
-  { city: "Cape Town", country: "South Africa", iataCode: "CPT", avgPrice: 450, weather: "warm", continent: "Africa" },
-  { city: "Tokyo", country: "Japan", iataCode: "TYO", avgPrice: 650, weather: "mild", continent: "Asia" },
-  { city: "Bangkok", country: "Thailand", iataCode: "BKK", avgPrice: 400, weather: "hot", continent: "Asia" },
-  { city: "Bali", country: "Indonesia", iataCode: "DPS", avgPrice: 500, weather: "hot", continent: "Asia" },
-  { city: "Singapore", country: "Singapore", iataCode: "SIN", avgPrice: 550, weather: "hot", continent: "Asia" },
-  { city: "Cancun", country: "Mexico", iataCode: "CUN", avgPrice: 280, weather: "hot", continent: "North America" },
-  { city: "Miami", country: "USA", iataCode: "MIA", avgPrice: 200, weather: "warm", continent: "North America" },
-  { city: "New York", country: "USA", iataCode: "JFK", avgPrice: 250, weather: "cold", continent: "North America" },
-  { city: "Rio de Janeiro", country: "Brazil", iataCode: "GIG", avgPrice: 600, weather: "hot", continent: "South America" },
-  { city: "Sydney", country: "Australia", iataCode: "SYD", avgPrice: 800, weather: "warm", continent: "Oceania" },
-  { city: "Reykjavik", country: "Iceland", iataCode: "KEF", avgPrice: 350, weather: "cold", continent: "Europe" },
-  { city: "Prague", country: "Czech Republic", iataCode: "PRG", avgPrice: 140, weather: "cold", continent: "Europe" },
-  { city: "Vienna", country: "Austria", iataCode: "VIE", avgPrice: 160, weather: "cold", continent: "Europe" },
-  { city: "Amsterdam", country: "Netherlands", iataCode: "AMS", avgPrice: 170, weather: "mild", continent: "Europe" },
-  { city: "Dubai", country: "UAE", iataCode: "DXB", avgPrice: 350, weather: "hot", continent: "Asia" },
-  { city: "Maldives", country: "Maldives", iataCode: "MLE", avgPrice: 700, weather: "hot", continent: "Asia" },
+// City to IATA code mapping
+const CITY_TO_IATA: Record<string, { code: string; country: string }> = {
+  "barcelona": { code: "BCN", country: "Spain" },
+  "lisbon": { code: "LIS", country: "Portugal" },
+  "athens": { code: "ATH", country: "Greece" },
+  "rome": { code: "FCO", country: "Italy" },
+  "dubrovnik": { code: "DBV", country: "Croatia" },
+  "nice": { code: "NCE", country: "France" },
+  "marrakech": { code: "RAK", country: "Morocco" },
+  "cairo": { code: "CAI", country: "Egypt" },
+  "cape town": { code: "CPT", country: "South Africa" },
+  "tokyo": { code: "TYO", country: "Japan" },
+  "bangkok": { code: "BKK", country: "Thailand" },
+  "bali": { code: "DPS", country: "Indonesia" },
+  "singapore": { code: "SIN", country: "Singapore" },
+  "cancun": { code: "CUN", country: "Mexico" },
+  "miami": { code: "MIA", country: "USA" },
+  "new york": { code: "JFK", country: "USA" },
+  "rio de janeiro": { code: "GIG", country: "Brazil" },
+  "sydney": { code: "SYD", country: "Australia" },
+  "reykjavik": { code: "KEF", country: "Iceland" },
+  "prague": { code: "PRG", country: "Czech Republic" },
+  "vienna": { code: "VIE", country: "Austria" },
+  "amsterdam": { code: "AMS", country: "Netherlands" },
+  "dubai": { code: "DXB", country: "UAE" },
+  "maldives": { code: "MLE", country: "Maldives" },
+  "paris": { code: "CDG", country: "France" },
+  "london": { code: "LHR", country: "UK" },
+  "berlin": { code: "BER", country: "Germany" },
+  "munich": { code: "MUC", country: "Germany" },
+  "frankfurt": { code: "FRA", country: "Germany" },
+  "stuttgart": { code: "STR", country: "Germany" },
+  "milan": { code: "MXP", country: "Italy" },
+  "madrid": { code: "MAD", country: "Spain" },
+  "los angeles": { code: "LAX", country: "USA" },
+  "chicago": { code: "ORD", country: "USA" },
+  "san francisco": { code: "SFO", country: "USA" },
+  "zurich": { code: "ZRH", country: "Switzerland" },
+  "brussels": { code: "BRU", country: "Belgium" },
+  "dublin": { code: "DUB", country: "Ireland" },
+  "copenhagen": { code: "CPH", country: "Denmark" },
+  "stockholm": { code: "ARN", country: "Sweden" },
+  "oslo": { code: "OSL", country: "Norway" },
+  "helsinki": { code: "HEL", country: "Finland" },
+  "warsaw": { code: "WAW", country: "Poland" },
+  "budapest": { code: "BUD", country: "Hungary" },
+  "istanbul": { code: "IST", country: "Turkey" },
+};
+
+// Popular destinations with weather/vibe info
+const DESTINATIONS = [
+  { city: "Barcelona", country: "Spain", iataCode: "BCN", vibe: "beaches, architecture, nightlife", weather: "warm" },
+  { city: "Lisbon", country: "Portugal", iataCode: "LIS", vibe: "historic, coastal, food scene", weather: "warm" },
+  { city: "Athens", country: "Greece", iataCode: "ATH", vibe: "ancient history, islands nearby", weather: "warm" },
+  { city: "Rome", country: "Italy", iataCode: "FCO", vibe: "history, art, incredible food", weather: "warm" },
+  { city: "Marrakech", country: "Morocco", iataCode: "RAK", vibe: "exotic, markets, riads", weather: "hot" },
+  { city: "Bangkok", country: "Thailand", iataCode: "BKK", vibe: "temples, street food, vibrant", weather: "hot" },
+  { city: "Bali", country: "Indonesia", iataCode: "DPS", vibe: "beaches, temples, wellness", weather: "hot" },
+  { city: "Prague", country: "Czech Republic", iataCode: "PRG", vibe: "fairy-tale city, cheap beer", weather: "cold" },
+  { city: "Reykjavik", country: "Iceland", iataCode: "KEF", vibe: "northern lights, nature", weather: "cold" },
+  { city: "Dubai", country: "UAE", iataCode: "DXB", vibe: "luxury, shopping, futuristic", weather: "hot" },
+  { city: "Tokyo", country: "Japan", iataCode: "TYO", vibe: "culture, food, technology", weather: "mild" },
+  { city: "New York", country: "USA", iataCode: "JFK", vibe: "iconic, culture, energy", weather: "cold" },
+  { city: "Miami", country: "USA", iataCode: "MIA", vibe: "beaches, nightlife, art deco", weather: "warm" },
+  { city: "Cancun", country: "Mexico", iataCode: "CUN", vibe: "beaches, ruins, resorts", weather: "hot" },
+  { city: "Cape Town", country: "South Africa", iataCode: "CPT", vibe: "nature, wine, adventure", weather: "warm" },
+  { city: "Sydney", country: "Australia", iataCode: "SYD", vibe: "beaches, harbor, outdoors", weather: "warm" },
+  { city: "Amsterdam", country: "Netherlands", iataCode: "AMS", vibe: "canals, culture, bikes", weather: "mild" },
+  { city: "Vienna", country: "Austria", iataCode: "VIE", vibe: "classical music, cafes, elegant", weather: "cold" },
+  { city: "Nice", country: "France", iataCode: "NCE", vibe: "French Riviera, beaches, glamour", weather: "warm" },
+  { city: "Dubrovnik", country: "Croatia", iataCode: "DBV", vibe: "Game of Thrones, coastal, historic", weather: "warm" },
 ];
+
+// Nearby airports for comparison
+const NEARBY_AIRPORTS: Record<string, string[]> = {
+  "London": ["LHR", "LGW", "STN", "LTN"],
+  "Paris": ["CDG", "ORY"],
+  "Berlin": ["BER"],
+  "Frankfurt": ["FRA", "HHN"],
+  "Munich": ["MUC", "NUE"],
+  "Stuttgart": ["STR", "FRA", "MUC"],
+  "Milan": ["MXP", "LIN", "BGY"],
+  "Rome": ["FCO", "CIA"],
+  "Barcelona": ["BCN", "GRO"],
+  "New York": ["JFK", "EWR", "LGA"],
+  "Los Angeles": ["LAX", "BUR", "SNA"],
+  "Miami": ["MIA", "FLL"],
+  "Amsterdam": ["AMS", "EIN"],
+  "Brussels": ["BRU", "CRL"],
+};
+
+/**
+ * Get next month's date for price searching
+ */
+function getNextMonthDate(): string {
+  const date = new Date();
+  date.setMonth(date.getMonth() + 1);
+  date.setDate(15); // Mid-month for better availability
+  return date.toISOString().split('T')[0];
+}
+
+/**
+ * Fetch live prices from Travelpayouts API
+ */
+async function fetchLivePrices(
+  origin: string,
+  destinations: string[],
+  token: string
+): Promise<Record<string, number>> {
+  const prices: Record<string, number> = {};
+  const departDate = getNextMonthDate();
+  
+  console.log(`Fetching live prices from ${origin} to ${destinations.join(', ')} for ${departDate}`);
+  
+  // Fetch prices for each destination in parallel
+  const pricePromises = destinations.map(async (dest) => {
+    try {
+      const api = new URL('https://api.travelpayouts.com/aviasales/v3/prices_for_dates');
+      api.searchParams.set('origin', origin.toUpperCase());
+      api.searchParams.set('destination', dest.toUpperCase());
+      api.searchParams.set('departure_at', departDate);
+      api.searchParams.set('one_way', 'false');
+      api.searchParams.set('currency', 'eur');
+      api.searchParams.set('limit', '1');
+      api.searchParams.set('sorting', 'price');
+      api.searchParams.set('token', token);
+      
+      const response = await fetch(api.toString(), {
+        headers: {
+          'X-Access-Token': token,
+          'Accept': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data?.[0]?.price) {
+          prices[dest] = data.data[0].price;
+          console.log(`Price ${origin} → ${dest}: €${data.data[0].price}`);
+        }
+      }
+    } catch (err) {
+      console.error(`Error fetching price for ${dest}:`, err);
+    }
+  });
+  
+  await Promise.all(pricePromises);
+  return prices;
+}
+
+/**
+ * Fetch cheapest destinations from origin
+ */
+async function fetchCheapestDestinations(
+  origin: string,
+  token: string,
+  limit: number = 10
+): Promise<Array<{ destination: string; price: number }>> {
+  try {
+    const api = new URL('https://api.travelpayouts.com/aviasales/v3/prices_for_dates');
+    api.searchParams.set('origin', origin.toUpperCase());
+    api.searchParams.set('one_way', 'false');
+    api.searchParams.set('currency', 'eur');
+    api.searchParams.set('limit', String(limit));
+    api.searchParams.set('sorting', 'price');
+    api.searchParams.set('token', token);
+    
+    const response = await fetch(api.toString(), {
+      headers: {
+        'X-Access-Token': token,
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.data) {
+        return data.data.map((item: any) => ({
+          destination: item.destination,
+          price: item.price,
+        }));
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching cheapest destinations:', err);
+  }
+  return [];
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -39,121 +201,140 @@ serve(async (req) => {
   }
 
   try {
-    const { message } = await req.json();
+    const { message, conversationHistory = [] } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const TRAVELPAYOUTS_TOKEN = Deno.env.get("TRAVELPAYOUTS_API_TOKEN");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
     
     console.log("Processing message:", message);
+    console.log("Has Travelpayouts token:", !!TRAVELPAYOUTS_TOKEN);
 
-    // Major airports with nearby alternatives for price comparison
-    const AIRPORT_ALTERNATIVES = {
-      // UK
-      "London": ["LHR", "LGW", "STN", "LTN", "SEN", "LCY"],
-      "Manchester": ["MAN", "LPL", "LBA"],
-      // Germany
-      "Berlin": ["BER", "SXF"],
-      "Frankfurt": ["FRA", "HHN"],
-      "Munich": ["MUC", "NUE"],
-      // France
-      "Paris": ["CDG", "ORY", "BVA"],
-      // Netherlands
-      "Amsterdam": ["AMS", "EIN", "RTM"],
-      // Belgium
-      "Brussels": ["BRU", "CRL"],
-      // Italy
-      "Milan": ["MXP", "LIN", "BGY"],
-      "Rome": ["FCO", "CIA"],
-      // Spain
-      "Barcelona": ["BCN", "GRO", "REU"],
-      "Madrid": ["MAD"],
-      // USA
-      "New York": ["JFK", "EWR", "LGA"],
-      "Los Angeles": ["LAX", "BUR", "SNA", "ONT"],
-      "Chicago": ["ORD", "MDW"],
-      "San Francisco": ["SFO", "OAK", "SJC"],
-      "Miami": ["MIA", "FLL", "PBI"],
-      "Washington": ["DCA", "IAD", "BWI"],
-    };
+    // Try to extract origin from conversation or message
+    let detectedOrigin: string | null = null;
+    const allText = [message, ...conversationHistory.map((m: any) => m.content)].join(' ').toLowerCase();
+    
+    for (const [cityName, info] of Object.entries(CITY_TO_IATA)) {
+      if (allText.includes(cityName)) {
+        detectedOrigin = info.code;
+        console.log(`Detected origin city: ${cityName} (${info.code})`);
+        break;
+      }
+    }
 
-    const systemPrompt = `You are GoFlyFinder, an intelligent flight assistant.
+    // Fetch live prices if we have origin and token
+    let livePrices: Record<string, number> = {};
+    let cheapestDeals: Array<{ destination: string; price: number }> = [];
+    
+    if (detectedOrigin && TRAVELPAYOUTS_TOKEN) {
+      const destinationCodes = DESTINATIONS.slice(0, 8).map(d => d.iataCode);
+      
+      // Fetch both specific destinations and cheapest overall
+      const [prices, cheapest] = await Promise.all([
+        fetchLivePrices(detectedOrigin, destinationCodes, TRAVELPAYOUTS_TOKEN),
+        fetchCheapestDestinations(detectedOrigin, TRAVELPAYOUTS_TOKEN, 10),
+      ]);
+      
+      livePrices = prices;
+      cheapestDeals = cheapest;
+      console.log("Live prices fetched:", Object.keys(livePrices).length);
+      console.log("Cheapest deals:", cheapestDeals.length);
+    }
 
-Your job is to collect origin and destination information WITHOUT repeating or forgetting context.
+    // Build context with live prices
+    let priceContext = "";
+    if (Object.keys(livePrices).length > 0) {
+      priceContext = `\n\nLIVE PRICES (from ${detectedOrigin}, roundtrip, next month):\n`;
+      for (const [dest, price] of Object.entries(livePrices)) {
+        const destInfo = DESTINATIONS.find(d => d.iataCode === dest);
+        if (destInfo) {
+          priceContext += `- ${destInfo.city}: €${price}\n`;
+        }
+      }
+    }
+    
+    if (cheapestDeals.length > 0) {
+      priceContext += `\nCHEAPEST DEALS RIGHT NOW:\n`;
+      cheapestDeals.slice(0, 5).forEach(deal => {
+        priceContext += `- ${deal.destination}: €${deal.price}\n`;
+      });
+    }
 
-YOU UNDERSTAND GEOGRAPHY. You do not need the user to confirm countries for major cities.
+    const systemPrompt = `You are GoFlyFinder, a friendly and knowledgeable travel guide AI.
 
-ORIGIN HANDLING RULES:
-- If user gives a CITY → Assume you know which country it belongs to. Do NOT ask what country it is in. Confirm silently.
-  Example: User says "Stuttgart" → You treat it as Stuttgart, Germany. Reply: "Got it — Stuttgart, Germany. Where would you like to go?"
-- If user gives a COUNTRY only → Ask for the city.
-- If user gives CITY + COUNTRY → Accept and move on.
+YOUR PERSONALITY:
+- Enthusiastic but concise
+- Like a friend who knows all the travel hacks
+- Give genuine recommendations, not generic ones
+- Share insider tips and best times to visit
+- Be encouraging about travel dreams
 
-MEMORY RULES (critical):
-- Once origin city or country is provided, store it permanently for the session.
-- Never ask for it again.
-- Never contradict it.
-- Never reset it.
+YOUR JOB:
+1. Help users discover amazing destinations
+2. Find the cheapest flights using LIVE PRICES
+3. Give travel tips and recommendations
+4. Compare nearby airports to save money
 
-QUESTION LOGIC:
-You may only ask for information that is truly missing.
-Order:
-1. Origin city (only if unknown)
-2. Destination
-3. Dates / flexibility
-4. Budget
+CONVERSATION FLOW:
+1. If no origin is known → Ask where they're flying from (one short question)
+2. If origin is known → Suggest destinations with REAL prices
+3. Give travel tips for suggested destinations
+4. Mention the best time to visit, what to see, local tips
 
-Ask only ONE question at a time.
+GEOGRAPHY KNOWLEDGE:
+You know major cities and their airports. Never ask which country a city is in.
+Examples: Stuttgart → Germany (STR), Barcelona → Spain (BCN), etc.
 
-BEHAVIOR FOR VAGUE REQUESTS:
-If user says "warm trip for 200" or "cheap trip":
-- Ask origin only ONCE if not known
-- Then immediately suggest 3 destinations once origin is known
+AIRPORT COMPARISON DATA:
+${JSON.stringify(NEARBY_AIRPORTS, null, 2)}
 
-AIRPORT INTELLIGENCE:
-After origin is known, automatically compare nearby airports and show savings.
-Example: "From Stuttgart, I checked Frankfurt and Munich. Frankfurt is €64 cheaper."
+When user is near a major hub, compare prices from nearby airports.
+Example: "I also checked Frankfurt — it's €45 cheaper than Stuttgart for this route!"
 
-NEARBY AIRPORTS DATA:
-${JSON.stringify(AIRPORT_ALTERNATIVES, null, 2)}
+DESTINATION DATA:
+${JSON.stringify(DESTINATIONS, null, 2)}
+${priceContext}
 
-AVAILABLE DESTINATIONS DATA:
-${JSON.stringify(POPULAR_DESTINATIONS, null, 2)}
+HOW TO SUGGEST DESTINATIONS:
+- Lead with the VIBE, not just the price
+- "Barcelona is perfect if you want beaches + nightlife. From ${detectedOrigin || 'your city'}: €180"
+- Give 3-4 options with variety (beach vs city, cheap vs experience)
+- Include one "dream destination" even if pricier
 
-FORBIDDEN BEHAVIOR:
-❌ Never ask what country a well-known city is in
-❌ Never re-ask for information already given
-❌ Never loop
-❌ Never contradict stored memory
-❌ Never repeat what the user said
-❌ Never explain what you are doing
-❌ Never give long paragraphs
+TRAVEL TIPS TO INCLUDE:
+- Best months to visit
+- Must-see spots or neighborhoods  
+- Food recommendations
+- Money-saving hacks (e.g., "book 6 weeks ahead", "Tuesday flights are cheaper")
 
-PERSONALITY: Smart travel hacker. Fast. Confident. No stupidity.
-
-ONE SENTENCE RULE: If the next question is obvious, ask it in ONE short sentence only.
-
-RESPONSE FORMAT - Always use this JSON structure:
+RESPONSE FORMAT - Always use this JSON:
 {
-  "message": "Your direct, concise response",
+  "message": "Your friendly, helpful response with travel tips",
   "askingForOrigin": true/false,
-  "userOrigin": { "city": "City", "country": "Country", "mainAirport": "XXX", "nearbyAirports": ["YYY", "ZZZ"] },
+  "userOrigin": { "city": "City", "country": "Country", "iataCode": "XXX" },
   "suggestions": [
     {
       "city": "City name",
       "country": "Country name", 
       "iataCode": "IATA code",
-      "price": estimated_price_number,
-      "reason": "Short reason with airport savings if applicable",
-      "cheaperFromAirport": "Alternative airport code if cheaper (optional)"
+      "price": price_as_number,
+      "reason": "Why this destination is great + any travel tip",
+      "cheaperFromAirport": "Alternative airport if cheaper (optional)"
     }
-  ]
+  ],
+  "travelTip": "One actionable travel tip related to the conversation"
 }
 
-If asking for origin, set askingForOrigin: true and suggestions: []
-The price field must be a number (no currency symbol).
-Only suggest destinations from the provided AVAILABLE DESTINATIONS DATA list.`;
+RULES:
+✅ Use LIVE PRICES when available (shown above)
+✅ Be enthusiastic but brief
+✅ Give specific recommendations, not generic ones
+✅ Always include a travel tip
+❌ Never ask which country a city is in
+❌ Never repeat the same question
+❌ Never give long paragraphs — keep it snappy`;
 
     console.log("Calling Lovable AI...");
     
@@ -167,6 +348,7 @@ Only suggest destinations from the provided AVAILABLE DESTINATIONS DATA list.`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
+          ...conversationHistory,
           { role: "user", content: message }
         ],
       }),
@@ -206,11 +388,20 @@ Only suggest destinations from the provided AVAILABLE DESTINATIONS DATA list.`;
     // Try to parse as JSON, if it fails, return as plain text
     let parsedResponse;
     try {
-      // Clean the response - sometimes AI wraps in markdown code blocks
       const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
       parsedResponse = JSON.parse(cleanedContent);
+      
+      // Inject live prices into suggestions if available
+      if (parsedResponse.suggestions && Object.keys(livePrices).length > 0) {
+        parsedResponse.suggestions = parsedResponse.suggestions.map((s: any) => {
+          const livePrice = livePrices[s.iataCode];
+          if (livePrice) {
+            return { ...s, price: livePrice, isLivePrice: true };
+          }
+          return s;
+        });
+      }
     } catch {
-      // If parsing fails, return as a message without suggestions
       parsedResponse = {
         message: content,
         suggestions: []
