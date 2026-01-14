@@ -4,8 +4,9 @@ import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format, parse, addDays } from "date-fns";
+import { format, parse } from "date-fns";
 import AirportAutocomplete from "./AirportAutocomplete";
+import { getDefaultDates } from "@/lib/dateUtils";
 
 interface AirportSelection {
   code: string;
@@ -15,6 +16,9 @@ interface AirportSelection {
 const CompactSearchBar = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  
+  // Get dynamic default dates (today + 30 / today + 37)
+  const defaultDates = getDefaultDates();
   
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">(
     (searchParams.get("trip") as "roundtrip" | "oneway") || "roundtrip"
@@ -30,14 +34,15 @@ const CompactSearchBar = () => {
   const [to, setTo] = useState<AirportSelection | null>(
     toCode ? { code: toCode, display: toCode } : null
   );
-  // Dynamic default dates: today + 7 / today + 14 (no hardcoded dates)
+  
+  // Dynamic default dates using centralized utility (no hardcoded dates)
   const [departDate, setDepartDate] = useState<Date>(() => {
     const dateStr = searchParams.get("depart");
-    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : addDays(new Date(), 7);
+    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : defaultDates.depart;
   });
   const [returnDate, setReturnDate] = useState<Date>(() => {
     const dateStr = searchParams.get("return");
-    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : addDays(new Date(), 14);
+    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : defaultDates.return;
   });
   const [passengers, setPassengers] = useState(Number(searchParams.get("adults")) || 1);
 
