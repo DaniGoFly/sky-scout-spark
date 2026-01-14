@@ -292,6 +292,33 @@ const FlightResults = () => {
             <AlertCircle className="w-16 h-16 text-destructive mb-4" />
             <p className="text-xl text-foreground font-semibold mb-2">Unable to load flights</p>
             <p className="text-muted-foreground max-w-md mb-6">{error}</p>
+            
+            {/* Debug info for errors */}
+            {isDebugMode && apiDebugInfo && (
+              <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-left max-w-2xl w-full overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-destructive" />
+                    <span className="text-sm font-semibold text-destructive">Debug Info (Error)</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(apiDebugInfo, null, 2));
+                      alert('Debug info copied to clipboard!');
+                    }}
+                    className="text-xs"
+                  >
+                    Copy Debug Info
+                  </Button>
+                </div>
+                <pre className="text-xs text-muted-foreground overflow-auto max-h-64 bg-background p-2 rounded">
+                  {JSON.stringify(apiDebugInfo, null, 2)}
+                </pre>
+              </div>
+            )}
+            
             <Button
               onClick={() =>
                 searchFlights({
@@ -301,6 +328,7 @@ const FlightResults = () => {
                   returnDate: displayReturn || undefined,
                   adults,
                   tripType,
+                  debug: isDebugMode,
                 })
               }
               className="gap-2"
@@ -339,27 +367,66 @@ const FlightResults = () => {
                 : "We couldn't find any flights for this route. Try different dates, nearby airports, or flexible travel options."}
             </p>
             
-            {/* Debug info panel */}
+            {/* Debug info panel - enhanced */}
             {isDebugMode && (
               <div className="mb-6 p-4 bg-secondary/50 rounded-lg text-left max-w-2xl w-full overflow-hidden">
-                <div className="flex items-center gap-2 mb-2">
-                  <Info className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold">Debug Info</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold">Debug Info</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const debugData = {
+                        frontend: {
+                          departDate: depart,
+                          monthsAhead,
+                          isDateTooFar,
+                          emptyReason,
+                          timestamp: new Date().toISOString()
+                        },
+                        backend: apiDebugInfo
+                      };
+                      navigator.clipboard.writeText(JSON.stringify(debugData, null, 2));
+                      alert('Debug info copied to clipboard!');
+                    }}
+                    className="text-xs"
+                  >
+                    Copy Debug Info
+                  </Button>
                 </div>
                 <div className="space-y-2 text-xs">
                   <div><span className="font-semibold">Timestamp:</span> {apiDebugInfo?.timestamp || new Date().toISOString()}</div>
                   <div><span className="font-semibold">Depart Date:</span> {depart}</div>
                   <div><span className="font-semibold">Months Ahead (frontend):</span> {monthsAhead}</div>
                   <div><span className="font-semibold">Is Too Far (&gt;11 mo):</span> {isDateTooFar ? 'Yes' : 'No'}</div>
-                  {apiDebugInfo?.url && <div><span className="font-semibold">API URL:</span> <code className="break-all">{apiDebugInfo.url}</code></div>}
-                  {apiDebugInfo?.status && <div><span className="font-semibold">HTTP Status:</span> {apiDebugInfo.status}</div>}
                   <div><span className="font-semibold">Empty Reason:</span> {emptyReason || 'unknown'}</div>
+                  {apiDebugInfo?.httpStatus && <div><span className="font-semibold">Upstream HTTP Status:</span> {apiDebugInfo.httpStatus}</div>}
+                  {apiDebugInfo?.requestUrl && <div><span className="font-semibold">API URL:</span> <code className="break-all text-[10px]">{apiDebugInfo.requestUrl}</code></div>}
+                  {apiDebugInfo?.responseJsonParsed && (
+                    <div>
+                      <span className="font-semibold">Parsed Response:</span>
+                      <pre className="text-[10px] bg-background p-1 rounded mt-1 overflow-auto max-h-20">
+                        {JSON.stringify(apiDebugInfo.responseJsonParsed, null, 2)}
+                      </pre>
+                    </div>
+                  )}
                 </div>
                 {apiDebugInfo && (
                   <details className="mt-2">
-                    <summary className="cursor-pointer text-xs font-semibold text-primary">Full Response</summary>
+                    <summary className="cursor-pointer text-xs font-semibold text-primary">Full Backend Response</summary>
                     <pre className="text-xs text-muted-foreground overflow-auto mt-2 max-h-48 bg-background p-2 rounded">
                       {JSON.stringify(apiDebugInfo, null, 2)}
+                    </pre>
+                  </details>
+                )}
+                {apiDebugInfo?.responsePreview && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs font-semibold text-primary">Raw Upstream Response (first 2000 chars)</summary>
+                    <pre className="text-xs text-muted-foreground overflow-auto mt-2 max-h-48 bg-background p-2 rounded whitespace-pre-wrap">
+                      {apiDebugInfo.responsePreview}
                     </pre>
                   </details>
                 )}

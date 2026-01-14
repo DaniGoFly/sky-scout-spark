@@ -236,6 +236,10 @@ serve(async (req) => {
   }
 
   try {
+    // Check for debug mode from BOTH query string AND body
+    const url = new URL(req.url);
+    const debugFromQuery = url.searchParams.get('debug') === '1';
+    
     const requestBody = await req.json();
     const { 
       origin, 
@@ -247,8 +251,11 @@ serve(async (req) => {
       infants = 0, 
       tripType, 
       travelClass = 'economy',
-      debug = false
+      debug: debugFromBody = false
     } = requestBody;
+    
+    // Debug is enabled if either query param or body flag is set
+    const debug = debugFromQuery || debugFromBody;
     
     console.log('=== FLIGHT SEARCH REQUEST ===');
     console.log('Timestamp:', new Date().toISOString());
@@ -266,17 +273,25 @@ serve(async (req) => {
     const marker = Deno.env.get('TRAVELPAYOUTS_MARKER');
 
     console.log('API Token configured:', !!apiToken);
+    console.log('API Token length:', apiToken?.length || 0);
     console.log('Marker configured:', marker ? `${marker.substring(0, 6)}...` : 'NOT SET');
 
     if (!apiToken) {
       console.error('CRITICAL: TRAVELPAYOUTS_API_TOKEN not configured');
       return new Response(
         JSON.stringify({ 
+          flights: [],
+          status: 'ERROR',
+          emptyReason: 'missing_config',
           error: 'API credentials not configured. Please add your Travelpayouts API token.',
           errorType: 'config',
-          debug: debug ? { timestamp: new Date().toISOString() } : undefined
+          debug: debug ? { 
+            timestamp: new Date().toISOString(),
+            hasToken: false,
+            hasMarker: !!marker
+          } : undefined
         }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -284,11 +299,18 @@ serve(async (req) => {
       console.error('CRITICAL: TRAVELPAYOUTS_MARKER not configured');
       return new Response(
         JSON.stringify({ 
+          flights: [],
+          status: 'ERROR',
+          emptyReason: 'missing_config',
           error: 'Affiliate marker not configured. Please add your Travelpayouts marker.',
           errorType: 'config',
-          debug: debug ? { timestamp: new Date().toISOString() } : undefined
+          debug: debug ? { 
+            timestamp: new Date().toISOString(),
+            hasToken: !!apiToken,
+            hasMarker: false
+          } : undefined
         }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -307,38 +329,137 @@ serve(async (req) => {
     searchUrl.searchParams.set('limit', '30');
     searchUrl.searchParams.set('token', apiToken);
 
-    const apiUrlForLogging = searchUrl.toString().replace(apiToken, 'TOKEN_HIDDEN');
+    const apiUrlForLogging = searchUrl.toString().replace(apiToken, '[TOKEN_REDACTED]');
     console.log('=== API REQUEST ===');
-    console.log('URL:', apiUrlForLogging);
+    console.log('Full URL (redacted):', apiUrlForLogging);
 
-    const response = await fetch(searchUrl.toString());
-    const data = await response.json();
+    // Make the upstream request
+    let response: Response;
+    let rawText: string;
+    let data: any;
+    let parseError: string | null = null;
 
-    console.log('=== API RESPONSE ===');
-    console.log('HTTP Status:', response.status);
-    console.log('Success:', data.success);
-    console.log('Data count:', data.data?.length || 0);
-    
-    // Always log raw response in debug mode or when empty
-    if (debug || data.data?.length === 0) {
-      console.log('Raw response:', JSON.stringify(data, null, 2));
-    }
-
-    if (!response.ok) {
-      console.error('API Error Response:', data);
+    try {
+      response = await fetch(searchUrl.toString());
+      rawText = await response.text();
+      
+      console.log('=== UPSTREAM RESPONSE ===');
+      console.log('HTTP Status:', response.status);
+      console.log('Status Text:', response.statusText);
+      console.log('Content-Type:', response.headers.get('content-type'));
+      console.log('Raw Response Length:', rawText.length);
+      console.log('Raw Response Preview (first 500 chars):', rawText.substring(0, 500));
+      
+      // Try to parse JSON
+      try {
+        data = JSON.parse(rawText);
+        console.log('JSON Parsed Successfully');
+        console.log('Response keys:', Object.keys(data));
+        console.log('data.success:', data.success);
+        console.log('data.data exists:', !!data.data);
+        console.log('data.data length:', data.data?.length);
+        console.log('data.error:', data.error);
+      } catch (jsonErr) {
+        parseError = `JSON parse failed: ${jsonErr instanceof Error ? jsonErr.message : String(jsonErr)}`;
+        console.error('JSON Parse Error:', parseError);
+        data = null;
+      }
+    } catch (fetchErr) {
+      const fetchError = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      console.error('Fetch Error:', fetchError);
+      
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to fetch flights from provider', 
-          errorType: 'api',
-          details: data,
+          flights: [],
+          status: 'ERROR',
+          emptyReason: 'upstream_error',
+          error: `Failed to connect to flight provider: ${fetchError}`,
+          errorType: 'fetch',
           debug: debug ? { 
-            url: apiUrlForLogging, 
-            status: response.status,
             timestamp: new Date().toISOString(),
-            rawResponse: data
+            requestUrl: apiUrlForLogging,
+            error: fetchError,
+            searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass }
           } : undefined
         }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Build debug object for response
+    const debugObj = debug ? {
+      timestamp: new Date().toISOString(),
+      requestUrl: apiUrlForLogging,
+      httpStatus: response.status,
+      httpStatusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      responseLength: rawText.length,
+      responsePreview: rawText.substring(0, 2000),
+      responseJsonParsed: data ? {
+        success: data.success,
+        currency: data.currency,
+        dataLength: data.data?.length || 0,
+        dataPreview: data.data?.slice(0, 3) || null,
+        error: data.error,
+        allKeys: Object.keys(data)
+      } : null,
+      parseError: parseError,
+      searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass }
+    } : undefined;
+
+    // Handle non-200 responses from upstream
+    if (!response.ok) {
+      console.error('=== UPSTREAM ERROR (non-200) ===');
+      console.error('Status:', response.status);
+      console.error('Body:', rawText.substring(0, 1000));
+      
+      return new Response(
+        JSON.stringify({ 
+          flights: [],
+          status: 'ERROR',
+          emptyReason: 'upstream_error',
+          error: `Flight provider returned HTTP ${response.status}: ${response.statusText}`,
+          errorType: 'upstream_http',
+          details: data?.error || data?.message || rawText.substring(0, 200),
+          debug: debugObj
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle JSON parse failure
+    if (parseError || !data) {
+      console.error('=== JSON PARSE ERROR ===');
+      
+      return new Response(
+        JSON.stringify({ 
+          flights: [],
+          status: 'ERROR',
+          emptyReason: 'upstream_error',
+          error: parseError || 'Failed to parse upstream response',
+          errorType: 'parse',
+          debug: debugObj
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle API-level errors (success: false or error field)
+    if (data.success === false || data.error) {
+      console.error('=== API ERROR RESPONSE ===');
+      console.error('Error:', data.error);
+      console.error('Message:', data.message);
+      
+      return new Response(
+        JSON.stringify({ 
+          flights: [],
+          status: 'ERROR',
+          emptyReason: 'upstream_error',
+          error: data.error || data.message || 'Flight provider returned an error',
+          errorType: 'api',
+          debug: debugObj
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
@@ -352,7 +473,9 @@ serve(async (req) => {
       console.log('Today:', new Date().toISOString().split('T')[0]);
       console.log('Months ahead:', monthsAhead);
       console.log('Is far future (>11 months):', farFuture);
-      console.log('Reason:', farFuture ? 'NO_PRICING_YET - Airlines have not released pricing' : 'NO_RESULTS - No available flights');
+      console.log('Reason:', farFuture ? 'NO_PRICING_YET - Airlines have not released pricing' : 'NO_RESULTS - API returned empty data array');
+      console.log('API success field:', data.success);
+      console.log('API currency:', data.currency);
       
       return new Response(
         JSON.stringify({ 
@@ -361,19 +484,10 @@ serve(async (req) => {
           emptyReason: farFuture ? 'far_future' : 'no_results',
           message: farFuture 
             ? 'Prices for this date are not available yet. Airlines usually publish fares 6-11 months in advance.'
-            : 'No flights found for this route and date combination.',
+            : 'No flights found for this route and date combination. The API returned an empty result set.',
           monthsAhead,
           searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass },
-          debug: debug ? { 
-            url: apiUrlForLogging, 
-            status: response.status, 
-            rawResponse: data,
-            timestamp: new Date().toISOString(),
-            today: new Date().toISOString().split('T')[0],
-            parsedDepartDate: departDate,
-            isFarFuture: farFuture,
-            monthsAhead
-          } : undefined
+          debug: debugObj
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
