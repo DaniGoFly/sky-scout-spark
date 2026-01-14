@@ -53,11 +53,11 @@ const PriceCalendar = ({ departDate, basePrice, onDateSelect }: PriceCalendarPro
     <div className="bg-card border border-border rounded-2xl p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-foreground">Price Calendar</h3>
-          <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded">Estimated</span>
+          <h3 className="font-semibold text-foreground">Price Trends</h3>
+          <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded font-medium">Estimated</span>
         </div>
         <p className="text-sm text-muted-foreground">
-          Avg: <span className="font-semibold text-foreground">${avgPrice}</span>
+          Based on: <span className="font-semibold text-foreground">${basePrice}</span>
         </p>
       </div>
       

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar, Info } from "lucide-react";
+import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar, Info, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
@@ -8,8 +8,8 @@ import FlightDetailsModal from "./FlightDetailsModal";
 import FlightResultsSkeleton from "./FlightResultsSkeleton";
 import CompactSearchBar from "./CompactSearchBar";
 import PriceCalendar from "./PriceCalendar";
-import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
-import { format, addDays, parseISO, differenceInMonths, differenceInDays } from "date-fns";
+import { useFlightSearch, LiveFlight, EmptyReason } from "@/hooks/useFlightSearch";
+import { format, addDays, parseISO } from "date-fns";
 
 // City to airport code mapping for auto-search
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -28,7 +28,7 @@ const CITY_AIRPORT_CODES: Record<string, string> = {
 const FlightResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { flights, isLoading, error, searchFlights } = useFlightSearch();
+  const { flights, isLoading, error, emptyReason, debugInfo: apiDebugInfo, searchFlights } = useFlightSearch();
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({
     stops: [],
@@ -39,7 +39,6 @@ const FlightResults = () => {
   const [showAllFlights, setShowAllFlights] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<LiveFlight | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   // Check for debug mode
   const isDebugMode = searchParams.get("debug") === "1";
@@ -56,18 +55,6 @@ const FlightResults = () => {
   const travelClass = searchParams.get("class") || "economy";
   const flexible = searchParams.get("flexible") === "true";
   const autoSearch = searchParams.get("autoSearch") === "true";
-
-  // Calculate if date is far in the future (more than 9 months)
-  const isFarFuture = useMemo(() => {
-    if (!depart) return false;
-    try {
-      const departDate = parseISO(depart);
-      const monthsDiff = differenceInMonths(departDate, new Date());
-      return monthsDiff > 9;
-    } catch {
-      return false;
-    }
-  }, [depart]);
 
   // Handle auto-search from destination cards
   useEffect(() => {
@@ -90,6 +77,7 @@ const FlightResults = () => {
         returnDate: defaultReturn,
         adults: 1,
         tripType: "roundtrip",
+        debug: isDebugMode,
       });
     }
   }, [autoSearch, to, from, searchFlights, isDebugMode]);
@@ -110,11 +98,11 @@ const FlightResults = () => {
         infants,
         tripType,
         travelClass,
+        debug: isDebugMode,
       };
       
       if (isDebugMode) {
         console.log("[DEBUG] Search params:", searchData);
-        setDebugInfo({ request: searchData, timestamp: new Date().toISOString() });
       }
       
       searchFlights(searchData);
@@ -323,37 +311,46 @@ const FlightResults = () => {
         ) : flights.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
-              {isFarFuture ? (
-                <Calendar className="w-10 h-10 text-muted-foreground" />
+              {emptyReason === 'far_future' ? (
+                <Clock className="w-10 h-10 text-muted-foreground" />
               ) : (
                 <Plane className="w-10 h-10 text-muted-foreground" />
               )}
             </div>
             <p className="text-xl text-foreground font-semibold mb-2">
-              {isFarFuture 
+              {emptyReason === 'far_future' 
                 ? "Prices not available yet" 
                 : "No flights found"}
             </p>
             <p className="text-muted-foreground max-w-md mb-6">
-              {isFarFuture 
-                ? "Flight prices are typically available 9-12 months in advance. Try closer dates for this route."
-                : "We couldn't find any flights for your search. Try different dates, nearby airports, or flexible travel days."}
+              {emptyReason === 'far_future' 
+                ? "Airlines typically release pricing 9-12 months before departure. Try searching for dates closer to today."
+                : "We couldn't find any flights for your search. Try different dates, nearby airports, or flexible travel options."}
             </p>
             
             {/* Debug info panel */}
-            {isDebugMode && debugInfo && (
-              <div className="mb-6 p-4 bg-secondary/50 rounded-lg text-left max-w-lg w-full">
+            {isDebugMode && apiDebugInfo && (
+              <div className="mb-6 p-4 bg-secondary/50 rounded-lg text-left max-w-2xl w-full overflow-hidden">
                 <div className="flex items-center gap-2 mb-2">
                   <Info className="w-4 h-4 text-primary" />
                   <span className="text-sm font-semibold">Debug Info</span>
                 </div>
-                <pre className="text-xs text-muted-foreground overflow-auto">
-                  {JSON.stringify(debugInfo, null, 2)}
-                </pre>
+                <div className="space-y-2 text-xs">
+                  <div><span className="font-semibold">Timestamp:</span> {apiDebugInfo.timestamp}</div>
+                  {apiDebugInfo.url && <div><span className="font-semibold">API URL:</span> <code className="break-all">{apiDebugInfo.url}</code></div>}
+                  {apiDebugInfo.status && <div><span className="font-semibold">HTTP Status:</span> {apiDebugInfo.status}</div>}
+                  <div><span className="font-semibold">Empty Reason:</span> {emptyReason || 'unknown'}</div>
+                </div>
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-xs font-semibold text-primary">Full Response</summary>
+                  <pre className="text-xs text-muted-foreground overflow-auto mt-2 max-h-48 bg-background p-2 rounded">
+                    {JSON.stringify(apiDebugInfo, null, 2)}
+                  </pre>
+                </details>
               </div>
             )}
             
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3 justify-center">
               <Button
                 variant="outline"
                 onClick={() => navigate("/flights")}
@@ -362,7 +359,7 @@ const FlightResults = () => {
                 <ArrowLeft className="w-4 h-4" />
                 Modify Search
               </Button>
-              {isFarFuture && depart && (
+              {emptyReason === 'far_future' && depart && (
                 <Button
                   variant="default"
                   onClick={() => {
@@ -378,6 +375,21 @@ const FlightResults = () => {
                 >
                   <Calendar className="w-4 h-4" />
                   Try Dates in 30 Days
+                </Button>
+              )}
+              {emptyReason === 'no_results' && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    // Try flexible dates (±7 days)
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.set("flexible", "true");
+                    setSearchParams(newParams);
+                  }}
+                  className="gap-2"
+                >
+                  <Search className="w-4 h-4" />
+                  Try Flexible Dates
                 </Button>
               )}
             </div>

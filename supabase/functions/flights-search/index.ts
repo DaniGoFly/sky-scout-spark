@@ -236,17 +236,26 @@ serve(async (req) => {
     
     // Check for empty results - provide clear reason
     if (!data.data || data.data.length === 0) {
-      // Check if date is far in the future
+      // Check if date is far in the future (more than 9 months)
       const departDateObj = new Date(departDate);
       const now = new Date();
       const monthsDiff = (departDateObj.getFullYear() - now.getFullYear()) * 12 + (departDateObj.getMonth() - now.getMonth());
       
-      console.log('No flights found. Months in future:', monthsDiff);
+      const isFarFuture = monthsDiff > 9;
+      
+      console.log('=== NO FLIGHTS FOUND ===');
+      console.log('Months ahead:', monthsDiff);
+      console.log('Is far future:', isFarFuture);
+      console.log('Reason:', isFarFuture ? 'Pricing not released yet' : 'No available flights');
       
       return new Response(
         JSON.stringify({ 
           flights: [],
-          emptyReason: monthsDiff > 9 ? 'far_future' : 'no_results',
+          status: isFarFuture ? 'NO_PRICING_YET' : 'NO_RESULTS',
+          emptyReason: isFarFuture ? 'far_future' : 'no_results',
+          message: isFarFuture 
+            ? 'Prices for this date are not available yet. Airlines release pricing closer to departure.'
+            : 'No flights found for this route and date combination.',
           monthsAhead: monthsDiff,
           searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass },
           debug: debug ? { url: apiUrlForLogging, status: response.status, rawResponse: data } : undefined
