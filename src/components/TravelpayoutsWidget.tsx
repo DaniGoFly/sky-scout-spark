@@ -11,9 +11,37 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
   useEffect(() => {
     if (scriptLoaded.current || !containerRef.current) return;
 
-    // Create the widget script
+    // Widget colors matched to site design tokens:
+    // Primary: hsl(199 89% 48%) = #0BA5E9
+    // Accent: hsl(280 65% 60%) = #A855F7
+    // Background light: hsl(220 25% 97%) = #F5F7FA
+    // Foreground dark: hsl(220 25% 10%) = #171C26
+    const widgetParams = new URLSearchParams({
+      currency: "usd",
+      trs: "488332",
+      shmarker: "694224",
+      show_hotels: "true",
+      powered_by: "false",
+      locale: "en",
+      searchUrl: "www.aviasales.com/search",
+      // Colors matched to site design
+      primary_override: "#0BA5E9ff", // Primary blue
+      color_button: "#0BA5E9", // Primary button
+      color_icons: "#0BA5E9", // Icons
+      dark: "#171C26ff", // Dark text
+      light: "#F5F7FAff", // Light background
+      secondary: "#FFFFFF", // White
+      special: "#64748B", // Muted foreground
+      color_focused: "#0BA5E9ff", // Focus state
+      border_radius: "16", // Match site's rounded corners
+      no_labels: "false",
+      plain: "true",
+      promo_id: "7879",
+      campaign_id: "100",
+    });
+
     const script = document.createElement("script");
-    script.src = "https://tpwgts.com/content?currency=usd&trs=488332&shmarker=694224&show_hotels=true&powered_by=false&locale=en&searchUrl=www.aviasales.com%2Fsearch&primary_override=%23369BDEff&color_button=%2332a8dd&color_icons=%2332a8dd&dark=%23121212ff&light=%23FFFFFF&secondary=%23FFFFFF&special=%23C4C4C4&color_focused=%232485E6ff&border_radius=0&no_labels=true&plain=true&promo_id=7879&campaign_id=100";
+    script.src = `https://tpwgts.com/content?${widgetParams.toString()}`;
     script.async = true;
     script.charset = "utf-8";
 
@@ -21,7 +49,6 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
     scriptLoaded.current = true;
 
     return () => {
-      // Cleanup on unmount
       if (containerRef.current) {
         const existingScript = containerRef.current.querySelector('script');
         if (existingScript) {
@@ -33,17 +60,12 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
   }, []);
 
   return (
-    <div className={`travelpayouts-widget-container ${className}`}>
+    <div className={`travelpayouts-widget ${className}`}>
       <div 
         ref={containerRef} 
-        className="w-full max-w-4xl mx-auto"
+        className="tp-widget-inner"
         id="tp-widget-container"
       />
-      
-      {/* Informational text */}
-      <p className="text-center text-sm text-muted-foreground mt-4 px-4">
-        Powered by Aviasales • Prices shown are live from airlines and booking sites
-      </p>
     </div>
   );
 };
