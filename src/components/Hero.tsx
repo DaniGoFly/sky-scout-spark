@@ -28,7 +28,7 @@ const Hero = () => {
 
           {/* Search Widget Container */}
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-xl shadow-2xl overflow-visible pb-64">
+            <div className="rounded-xl overflow-visible pb-64">
               <TravelpayoutsWidget />
             </div>
           </div>
