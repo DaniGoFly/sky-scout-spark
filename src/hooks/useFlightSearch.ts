@@ -36,9 +36,16 @@ interface SearchParams {
 interface DebugInfo {
   request?: any;
   url?: string;
+  requestUrl?: string;
   status?: number;
+  httpStatus?: number;
+  httpStatusText?: string;
   rawResponse?: any;
+  responsePreview?: string;
+  responseJsonParsed?: any;
+  parseError?: string | null;
   timestamp?: string;
+  searchParams?: any;
 }
 
 interface UseFlightSearchResult {
@@ -104,8 +111,13 @@ export function useFlightSearch(): UseFlightSearchResult {
         // No results - determine why
         setFlights([]);
         
+        // Check for ERROR status first (upstream issues)
+        if (data?.status === 'ERROR') {
+          setError(data.error || data.message || 'An error occurred while searching for flights');
+          setEmptyReason(null);
+        }
         // Check for NO_PRICING_YET status or emptyReason
-        if (data?.status === 'NO_PRICING_YET' || data?.emptyReason === 'far_future') {
+        else if (data?.status === 'NO_PRICING_YET' || data?.emptyReason === 'far_future') {
           setEmptyReason('far_future');
         } else {
           setEmptyReason('no_results');
