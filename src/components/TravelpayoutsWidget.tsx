@@ -24,17 +24,16 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
       powered_by: "false",
       locale: "en",
       searchUrl: "www.aviasales.com/search",
-      // Colors matched to site design
-      primary_override: "#0BA5E9ff", // Primary blue
-      color_button: "#0BA5E9", // Primary button
-      color_icons: "#0BA5E9", // Icons
-      dark: "#171C26ff", // Dark text
-      light: "#F5F7FAff", // Light background
-      secondary: "#FFFFFF", // White
-      special: "#64748B", // Muted foreground
-      color_focused: "#0BA5E9ff", // Focus state
-      border_radius: "16", // Match site's rounded corners
-      no_labels: "false",
+      primary_override: "#369BDEff",
+      color_button: "#32a8dd",
+      color_icons: "#32a8dd",
+      dark: "#121212ff",
+      light: "#FFFFFF",
+      secondary: "#FFFFFF",
+      special: "#C4C4C4",
+      color_focused: "#2485E6ff",
+      border_radius: "0",
+      no_labels: "true",
       plain: "true",
       promo_id: "7879",
       campaign_id: "100",
