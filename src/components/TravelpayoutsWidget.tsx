@@ -35,7 +35,7 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
       promo_id: "7879",
       campaign_id: "100",
       white_label: "true",
-      border: "false",
+      border: "true",
     });
 
     const script = document.createElement("script");
