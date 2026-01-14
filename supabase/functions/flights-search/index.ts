@@ -8,14 +8,13 @@ const corsHeaders = {
 
 // Simple in-memory rate limiting (per IP, resets on function cold start)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_REQUESTS = 30; // Max requests per window
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const RATE_LIMIT_REQUESTS = 30;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 function checkRateLimit(clientIP: string): { allowed: boolean; remaining: number; resetIn: number } {
   const now = Date.now();
   const record = rateLimitMap.get(clientIP);
   
-  // Clean up expired entries periodically
   if (rateLimitMap.size > 1000) {
     for (const [ip, data] of rateLimitMap.entries()) {
       if (now > data.resetTime) {
@@ -25,7 +24,6 @@ function checkRateLimit(clientIP: string): { allowed: boolean; remaining: number
   }
   
   if (!record || now > record.resetTime) {
-    // New window
     rateLimitMap.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
     return { allowed: true, remaining: RATE_LIMIT_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS };
   }
@@ -38,7 +36,7 @@ function checkRateLimit(clientIP: string): { allowed: boolean; remaining: number
   return { allowed: true, remaining: RATE_LIMIT_REQUESTS - record.count, resetIn: record.resetTime - now };
 }
 
-// Airline name mapping for better display
+// Airline name mapping
 const AIRLINE_NAMES: Record<string, string> = {
   'AA': 'American Airlines',
   'UA': 'United Airlines',
@@ -60,51 +58,49 @@ const AIRLINE_NAMES: Record<string, string> = {
   'TK': 'Turkish Airlines',
   'QF': 'Qantas',
   'AC': 'Air Canada',
+  'LX': 'Swiss International',
+  'KL': 'KLM Royal Dutch',
+  'IB': 'Iberia',
+  'AY': 'Finnair',
+  'SK': 'SAS Scandinavian',
 };
 
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
+  });
+}
+
 /**
- * Parse date string YYYY-MM-DD to Date object at noon UTC to avoid timezone issues
+ * Format date as YYYY-MM-DD in UTC to avoid timezone issues
  */
-function parseLocalDate(dateStr: string): Date {
+function toISODateOnly(d: Date): string {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Calculate days between two dates in UTC
+ */
+function daysBetweenUTC(a: Date, b: Date): number {
+  const msA = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
+  const msB = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
+  return Math.floor((msB - msA) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Parse date string safely (YYYY-MM-DD) to UTC Date
+ */
+function parseDateUTC(dateStr: string): Date {
   const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day, 12, 0, 0, 0);
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
 }
 
 /**
- * Calculate months between two dates (from date a to date b)
- * Returns positive number if b is after a
- */
-function monthsBetween(a: Date, b: Date): number {
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
-}
-
-/**
- * Check if date is too far for airline pricing (>11 months ahead)
- * Airlines typically release pricing 9-12 months before departure
- */
-function isTooFarForPricing(departDateStr: string): boolean {
-  const departDate = parseLocalDate(departDateStr);
-  const now = new Date();
-  now.setHours(12, 0, 0, 0); // Normalize to noon
-  const months = monthsBetween(now, departDate);
-  return months > 11;
-}
-
-/**
- * Calculate months ahead from today for a given date string
- */
-function getMonthsAhead(departDateStr: string): number {
-  const departDate = parseLocalDate(departDateStr);
-  const now = new Date();
-  now.setHours(12, 0, 0, 0);
-  return monthsBetween(now, departDate);
-}
-
-/**
- * Generate White Label booking link using the user's custom domain
- * This provides the best user experience with branded booking flow
- * 
- * White Label domain: flights.goflyfinder.com (CNAME -> whitelabel.travelpayouts.com)
+ * Generate White Label booking link
  */
 function generateWhiteLabelLink(params: {
   marker: string;
@@ -119,7 +115,6 @@ function generateWhiteLabelLink(params: {
 }): string {
   const { origin, destination, departDate, returnDate, adults, children, infants, travelClass } = params;
   
-  // Travel class mapping for White Label: Y = economy, C = business
   const classMap: Record<string, string> = {
     'economy': 'Y',
     'premium_economy': 'W',
@@ -128,30 +123,24 @@ function generateWhiteLabelLink(params: {
   };
   const cabinClass = classMap[travelClass] || 'Y';
   
-  // Format date as DDMM for Aviasales URL format
   const formatDateShort = (dateStr: string): string => {
     const [year, month, day] = dateStr.split('-');
     return `${day}${month}`;
   };
   
-  // Build passenger string: e.g., "1" for 1 adult, "2" for 2 adults, "11" for 1 adult + 1 child
   let passengers = String(adults);
   if (children > 0) passengers += String(children);
   if (infants > 0) passengers += String(infants);
   
-  // White Label URL format: /search/ORIGIN_DEST_DATE1_DATE2_CABIN_PASSENGERS
-  // Example: /search/JFK_CDG_1501_2201_Y_1
   const searchPath = returnDate 
     ? `${origin}${destination}${formatDateShort(departDate)}${formatDateShort(returnDate)}${passengers}`
     : `${origin}${destination}${formatDateShort(departDate)}${passengers}`;
   
-  // Use custom White Label domain
   return `https://flights.goflyfinder.com/search/${searchPath}`;
 }
 
 /**
- * Fallback: Generate official tp.media redirect link
- * Used when White Label link might not work
+ * Generate tp.media redirect link (fallback)
  */
 function generateTpMediaLink(params: {
   marker: string;
@@ -174,7 +163,6 @@ function generateTpMediaLink(params: {
   };
   const cabinClass = classMap[travelClass] || 'Y';
   
-  // Build Aviasales search URL
   const searchParams = new URLSearchParams();
   searchParams.set('adults', String(adults));
   searchParams.set('children', String(children));
@@ -193,22 +181,24 @@ function generateTpMediaLink(params: {
   
   const targetUrl = `https://www.aviasales.com/search/${route}?${searchParams.toString()}`;
   
-  // tp.media redirect with tracking - marker is REQUIRED
   const redirectParams = new URLSearchParams();
   redirectParams.set('marker', marker);
-  redirectParams.set('p', '4114'); // Aviasales program ID
+  redirectParams.set('p', '4114');
   redirectParams.set('u', encodeURIComponent(targetUrl));
   
   return `https://tp.media/r?${redirectParams.toString()}`;
 }
 
+// Constants
+const PUBLISH_WINDOW_DAYS = 360; // Airlines publish ~330-360 days ahead
+
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Rate limiting - get client IP from headers
+  // Rate limiting
   const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
                    req.headers.get('cf-connecting-ip') || 
                    req.headers.get('x-real-ip') || 
@@ -218,29 +208,24 @@ serve(async (req) => {
   
   if (!rateLimit.allowed) {
     console.warn(`Rate limit exceeded for IP: ${clientIP}`);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Too many requests. Please try again later.',
-        errorType: 'rate_limit',
-        retryAfter: Math.ceil(rateLimit.resetIn / 1000)
-      }),
-      { 
-        status: 429, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000))
-        } 
-      }
-    );
+    return json({ 
+      status: 'ERROR',
+      error: 'Too many requests. Please try again later.',
+      errorType: 'rate_limit',
+      retryAfter: Math.ceil(rateLimit.resetIn / 1000)
+    }, 429);
   }
 
   try {
-    // Check for debug mode from BOTH query string AND body
+    // Check for debug mode
     const url = new URL(req.url);
     const debugFromQuery = url.searchParams.get('debug') === '1';
     
-    const requestBody = await req.json();
+    if (req.method !== 'POST') {
+      return json({ status: 'BAD_REQUEST', error: 'Use POST' }, 405);
+    }
+
+    const body = await req.json().catch(() => ({}));
     const { 
       origin, 
       destination, 
@@ -249,147 +234,168 @@ serve(async (req) => {
       adults = 1, 
       children = 0, 
       infants = 0, 
-      tripType, 
+      tripType = 'roundtrip', 
       travelClass = 'economy',
+      currency = 'usd',
+      market = 'us',
+      direct = false,
       debug: debugFromBody = false
-    } = requestBody;
+    } = body ?? {};
     
-    // Debug is enabled if either query param or body flag is set
     const debug = debugFromQuery || debugFromBody;
     
     console.log('=== FLIGHT SEARCH REQUEST ===');
     console.log('Timestamp:', new Date().toISOString());
-    console.log('Origin:', origin);
-    console.log('Destination:', destination);
-    console.log('Depart Date:', departDate);
-    console.log('Return Date:', returnDate);
-    console.log('Adults:', adults, 'Children:', children, 'Infants:', infants);
-    console.log('Trip Type:', tripType);
-    console.log('Travel Class:', travelClass);
+    console.log('Params:', { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, currency, market });
     console.log('Debug Mode:', debug);
 
-    // SECURITY: API token MUST come from environment - no hardcoded fallbacks
-    const apiToken = Deno.env.get('TRAVELPAYOUTS_API_TOKEN');
-    const marker = Deno.env.get('TRAVELPAYOUTS_MARKER');
+    // Validation
+    if (!origin || !destination || !departDate) {
+      return json({ 
+        status: 'BAD_REQUEST', 
+        error: 'origin, destination, and departDate are required',
+        received: { origin, destination, departDate }
+      }, 400);
+    }
 
-    console.log('API Token configured:', !!apiToken);
-    console.log('API Token length:', apiToken?.length || 0);
-    console.log('Marker configured:', marker ? `${marker.substring(0, 6)}...` : 'NOT SET');
+    // Parse and validate dates
+    const dep = parseDateUTC(departDate);
+    const ret = returnDate ? parseDateUTC(returnDate) : null;
+    
+    if (isNaN(dep.getTime())) {
+      return json({ status: 'BAD_REQUEST', error: 'Invalid departDate format. Use YYYY-MM-DD.' }, 400);
+    }
+    if (returnDate && ret && isNaN(ret.getTime())) {
+      return json({ status: 'BAD_REQUEST', error: 'Invalid returnDate format. Use YYYY-MM-DD.' }, 400);
+    }
+    if (ret && ret.getTime() < dep.getTime()) {
+      return json({ status: 'BAD_REQUEST', error: 'returnDate must be >= departDate' }, 400);
+    }
 
-    if (!apiToken) {
-      console.error('CRITICAL: TRAVELPAYOUTS_API_TOKEN not configured');
-      return new Response(
-        JSON.stringify({ 
-          flights: [],
-          status: 'ERROR',
-          emptyReason: 'missing_config',
-          error: 'API credentials not configured. Please add your Travelpayouts API token.',
-          errorType: 'config',
-          debug: debug ? { 
-            timestamp: new Date().toISOString(),
-            hasToken: false,
-            hasMarker: !!marker
-          } : undefined
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Check if date is too far in the future
+    const todayUTC = new Date();
+    const daysAhead = daysBetweenUTC(todayUTC, dep);
+    
+    console.log('Days ahead:', daysAhead, '(publish window:', PUBLISH_WINDOW_DAYS, ')');
+    
+    if (daysAhead > PUBLISH_WINDOW_DAYS) {
+      const suggested = new Date(todayUTC);
+      suggested.setUTCDate(suggested.getUTCDate() + (PUBLISH_WINDOW_DAYS - 14));
+      
+      return json({
+        status: 'NOT_AVAILABLE_YET',
+        emptyReason: 'far_future',
+        message: 'Airline inventory is usually published ~330-360 days ahead. Your selected date is too far in the future for reliable results.',
+        daysAhead,
+        publishWindowDays: PUBLISH_WINDOW_DAYS,
+        suggestedSearchDate: toISODateOnly(suggested),
+        searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, currency, market },
+      });
+    }
+
+    // Get secrets
+    const token = Deno.env.get('TRAVELPAYOUTS_API_TOKEN') || '';
+    const marker = Deno.env.get('TRAVELPAYOUTS_MARKER') || '';
+
+    console.log('Token configured:', !!token, '(length:', token.length, ')');
+    console.log('Marker configured:', !!marker);
+
+    if (!token) {
+      return json({ 
+        status: 'MISCONFIGURED',
+        emptyReason: 'missing_config',
+        error: 'Missing TRAVELPAYOUTS_API_TOKEN in secrets.',
+        debug: debug ? { hasToken: false, hasMarker: !!marker } : undefined
+      });
     }
 
     if (!marker) {
-      console.error('CRITICAL: TRAVELPAYOUTS_MARKER not configured');
-      return new Response(
-        JSON.stringify({ 
-          flights: [],
-          status: 'ERROR',
-          emptyReason: 'missing_config',
-          error: 'Affiliate marker not configured. Please add your Travelpayouts marker.',
-          errorType: 'config',
-          debug: debug ? { 
-            timestamp: new Date().toISOString(),
-            hasToken: !!apiToken,
-            hasMarker: false
-          } : undefined
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        status: 'MISCONFIGURED',
+        emptyReason: 'missing_config', 
+        error: 'Missing TRAVELPAYOUTS_MARKER in secrets.',
+        debug: debug ? { hasToken: !!token, hasMarker: false } : undefined
+      });
     }
 
-    // Get flight prices using prices_for_dates API
-    const searchUrl = new URL('https://api.travelpayouts.com/aviasales/v3/prices_for_dates');
-    searchUrl.searchParams.set('origin', origin);
-    searchUrl.searchParams.set('destination', destination);
-    searchUrl.searchParams.set('departure_at', departDate);
-    if (returnDate && tripType === 'roundtrip') {
-      searchUrl.searchParams.set('return_at', returnDate);
+    // Build Travelpayouts API request
+    // CRITICAL: Correct endpoint is /aviasales/v3/prices_for_dates
+    const api = new URL('https://api.travelpayouts.com/aviasales/v3/prices_for_dates');
+    api.searchParams.set('origin', String(origin).toUpperCase());
+    api.searchParams.set('destination', String(destination).toUpperCase());
+    api.searchParams.set('departure_at', departDate);
+    
+    // CRITICAL: one_way parameter determines roundtrip vs oneway
+    if (tripType === 'roundtrip' && returnDate) {
+      api.searchParams.set('return_at', returnDate);
+      api.searchParams.set('one_way', 'false');
+    } else {
+      api.searchParams.set('one_way', 'true');
     }
-    searchUrl.searchParams.set('unique', 'false');
-    searchUrl.searchParams.set('sorting', 'price');
-    searchUrl.searchParams.set('direct', 'false');
-    searchUrl.searchParams.set('currency', 'usd');
-    searchUrl.searchParams.set('limit', '30');
-    searchUrl.searchParams.set('token', apiToken);
+    
+    api.searchParams.set('direct', direct ? 'true' : 'false');
+    api.searchParams.set('currency', currency);
+    api.searchParams.set('market', market); // CRITICAL: market affects cache availability
+    api.searchParams.set('limit', '30');
+    api.searchParams.set('sorting', 'price');
+    api.searchParams.set('unique', 'false');
+    api.searchParams.set('token', token);
 
-    const apiUrlForLogging = searchUrl.toString().replace(apiToken, '[TOKEN_REDACTED]');
-    console.log('=== API REQUEST ===');
-    console.log('Full URL (redacted):', apiUrlForLogging);
+    const apiUrlRedacted = api.toString().replace(token, '[TOKEN_REDACTED]');
+    console.log('API URL (redacted):', apiUrlRedacted);
 
-    // Make the upstream request
+    // Make upstream request
     let response: Response;
     let rawText: string;
-    let data: any;
     let parseError: string | null = null;
 
     try {
-      response = await fetch(searchUrl.toString());
+      response = await fetch(api.toString(), {
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+      });
       rawText = await response.text();
       
       console.log('=== UPSTREAM RESPONSE ===');
-      console.log('HTTP Status:', response.status);
-      console.log('Status Text:', response.statusText);
+      console.log('HTTP Status:', response.status, response.statusText);
       console.log('Content-Type:', response.headers.get('content-type'));
-      console.log('Raw Response Length:', rawText.length);
-      console.log('Raw Response Preview (first 500 chars):', rawText.substring(0, 500));
+      console.log('Response Length:', rawText.length);
+      console.log('Response Preview:', rawText.substring(0, 500));
       
-      // Try to parse JSON
-      try {
-        data = JSON.parse(rawText);
-        console.log('JSON Parsed Successfully');
-        console.log('Response keys:', Object.keys(data));
-        console.log('data.success:', data.success);
-        console.log('data.data exists:', !!data.data);
-        console.log('data.data length:', data.data?.length);
-        console.log('data.error:', data.error);
-      } catch (jsonErr) {
-        parseError = `JSON parse failed: ${jsonErr instanceof Error ? jsonErr.message : String(jsonErr)}`;
-        console.error('JSON Parse Error:', parseError);
-        data = null;
-      }
     } catch (fetchErr) {
       const fetchError = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
       console.error('Fetch Error:', fetchError);
       
-      return new Response(
-        JSON.stringify({ 
-          flights: [],
-          status: 'ERROR',
-          emptyReason: 'upstream_error',
-          error: `Failed to connect to flight provider: ${fetchError}`,
-          errorType: 'fetch',
-          debug: debug ? { 
-            timestamp: new Date().toISOString(),
-            requestUrl: apiUrlForLogging,
-            error: fetchError,
-            searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass }
-          } : undefined
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        status: 'ERROR',
+        emptyReason: 'upstream_error',
+        error: `Failed to connect to Travelpayouts: ${fetchError}`,
+        errorType: 'fetch',
+        debug: debug ? { 
+          requestUrl: apiUrlRedacted,
+          fetchError,
+          searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass }
+        } : undefined
+      });
     }
 
-    // Build debug object for response
+    // Parse JSON
+    let data: any = null;
+    try {
+      data = JSON.parse(rawText);
+      console.log('JSON parsed. Keys:', Object.keys(data));
+      console.log('success:', data.success, 'data length:', data.data?.length, 'error:', data.error);
+    } catch (jsonErr) {
+      parseError = `JSON parse failed: ${jsonErr instanceof Error ? jsonErr.message : String(jsonErr)}`;
+      console.error('Parse Error:', parseError);
+    }
+
+    // Build debug object
     const debugObj = debug ? {
       timestamp: new Date().toISOString(),
-      requestUrl: apiUrlForLogging,
+      requestUrl: apiUrlRedacted,
       httpStatus: response.status,
       httpStatusText: response.statusText,
       contentType: response.headers.get('content-type'),
@@ -399,115 +405,79 @@ serve(async (req) => {
         success: data.success,
         currency: data.currency,
         dataLength: data.data?.length || 0,
-        dataPreview: data.data?.slice(0, 3) || null,
+        dataPreview: data.data?.slice(0, 3),
         error: data.error,
         allKeys: Object.keys(data)
       } : null,
-      parseError: parseError,
-      searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass }
+      parseError,
+      searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, market, currency }
     } : undefined;
 
-    // Handle non-200 responses from upstream
+    // Handle non-200 responses
     if (!response.ok) {
       console.error('=== UPSTREAM ERROR (non-200) ===');
       console.error('Status:', response.status);
-      console.error('Body:', rawText.substring(0, 1000));
       
-      return new Response(
-        JSON.stringify({ 
-          flights: [],
-          status: 'ERROR',
-          emptyReason: 'upstream_error',
-          error: `Flight provider returned HTTP ${response.status}: ${response.statusText}`,
-          errorType: 'upstream_http',
-          details: data?.error || data?.message || rawText.substring(0, 200),
-          debug: debugObj
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        status: 'TP_ERROR',
+        emptyReason: 'upstream_error',
+        message: `Travelpayouts returned HTTP ${response.status}: ${response.statusText}`,
+        httpStatus: response.status,
+        raw: debug ? (data ?? rawText.substring(0, 500)) : undefined,
+        debug: debugObj
+      });
     }
 
-    // Handle JSON parse failure
+    // Handle parse failure
     if (parseError || !data) {
-      console.error('=== JSON PARSE ERROR ===');
-      
-      return new Response(
-        JSON.stringify({ 
-          flights: [],
-          status: 'ERROR',
-          emptyReason: 'upstream_error',
-          error: parseError || 'Failed to parse upstream response',
-          errorType: 'parse',
-          debug: debugObj
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        status: 'TP_ERROR',
+        emptyReason: 'upstream_error',
+        message: parseError || 'Failed to parse Travelpayouts response',
+        debug: debugObj
+      });
     }
 
-    // Handle API-level errors (success: false or error field)
+    // Handle API-level errors (success: false)
     if (data.success === false || data.error) {
-      console.error('=== API ERROR RESPONSE ===');
+      console.error('=== API ERROR ===');
       console.error('Error:', data.error);
-      console.error('Message:', data.message);
       
-      return new Response(
-        JSON.stringify({ 
-          flights: [],
-          status: 'ERROR',
-          emptyReason: 'upstream_error',
-          error: data.error || data.message || 'Flight provider returned an error',
-          errorType: 'api',
-          debug: debugObj
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    // Check for empty results - provide clear reason with correct monthsAhead calculation
-    if (!data.data || data.data.length === 0) {
-      const monthsAhead = getMonthsAhead(departDate);
-      const farFuture = monthsAhead > 11;
-      
-      console.log('=== NO FLIGHTS FOUND ===');
-      console.log('Depart date:', departDate);
-      console.log('Today:', new Date().toISOString().split('T')[0]);
-      console.log('Months ahead:', monthsAhead);
-      console.log('Is far future (>11 months):', farFuture);
-      console.log('Reason:', farFuture ? 'NO_PRICING_YET - Airlines have not released pricing' : 'NO_RESULTS - API returned empty data array');
-      console.log('API success field:', data.success);
-      console.log('API currency:', data.currency);
-      
-      return new Response(
-        JSON.stringify({ 
-          flights: [],
-          status: farFuture ? 'NO_PRICING_YET' : 'NO_RESULTS',
-          emptyReason: farFuture ? 'far_future' : 'no_results',
-          message: farFuture 
-            ? 'Prices for this date are not available yet. Airlines usually publish fares 6-11 months in advance.'
-            : 'No flights found for this route and date combination. The API returned an empty result set.',
-          monthsAhead,
-          searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass },
-          debug: debugObj
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        status: 'TP_ERROR',
+        emptyReason: 'upstream_error',
+        message: data.error || 'Travelpayouts returned an error',
+        debug: debugObj
+      });
     }
 
-    // Transform API response with official redirect links
-    const flights = (data.data || []).map((flight: any, index: number) => {
+    // Handle empty results - this is NOT an error, just no cached prices
+    if (!data.data || data.data.length === 0) {
+      console.log('=== NO CACHED PRICES ===');
+      console.log('Route:', origin, '->', destination);
+      console.log('Dates:', departDate, returnDate);
+      console.log('This is normal for many routes - the Data API is cache-based');
+      
+      return json({
+        status: 'NO_CACHED_PRICES',
+        emptyReason: 'no_cached_prices',
+        message: 'No cached prices found for this route/dates in the Aviasales Data API. This is normal for less popular routes. Try different dates or nearby airports.',
+        searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, market, currency },
+        debug: debugObj
+      });
+    }
+
+    // Transform results
+    const flights = data.data.map((flight: any, index: number) => {
       const departureTime = flight.departure_at ? new Date(flight.departure_at) : null;
       const returnTime = flight.return_at ? new Date(flight.return_at) : null;
       
-      // Calculate arrival time based on duration
       const durationMinutes = flight.duration || 180;
       const arrivalTime = departureTime ? new Date(departureTime.getTime() + durationMinutes * 60000) : null;
       
-      // Get airline name
       const airlineCode = flight.airline || 'XX';
       const airlineName = AIRLINE_NAMES[airlineCode] || airlineCode;
       
-      // Generate White Label booking link (primary - branded experience)
-      // Marker is ALWAYS included via the function parameters
       const deepLink = generateWhiteLabelLink({
         marker,
         origin,
@@ -520,8 +490,6 @@ serve(async (req) => {
         travelClass,
       });
       
-      // Fallback: tp.media redirect link (if White Label has issues)
-      // Marker is ALWAYS included in the tp.media link
       const alternativeLink = generateTpMediaLink({
         marker,
         origin,
@@ -537,7 +505,7 @@ serve(async (req) => {
       return {
         id: `flight-${index}-${flight.flight_number || Math.random().toString(36).substr(2, 9)}`,
         airline: airlineName,
-        airlineCode: airlineCode,
+        airlineCode,
         airlineLogo: `https://pics.avs.io/60/60/${airlineCode}.png`,
         flightNumber: flight.flight_number || `${airlineCode}${Math.floor(Math.random() * 9000) + 1000}`,
         departureTime: departureTime ? departureTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '00:00',
@@ -548,41 +516,35 @@ serve(async (req) => {
         durationMinutes,
         stops: flight.transfers || 0,
         price: Math.round(flight.price * adults),
-        deepLink, // Primary: White Label link with marker
-        alternativeLink, // Backup: tp.media redirect with marker
+        deepLink,
+        alternativeLink,
         returnAt: returnTime ? returnTime.toISOString() : null,
         foundAt: flight.found_at,
       };
     });
 
-    console.log(`=== SUCCESS: Returning ${flights.length} flights ===`);
+    console.log(`=== SUCCESS: ${flights.length} flights ===`);
 
-    return new Response(
-      JSON.stringify({ 
-        flights,
-        marker, // Include marker for client-side verification
-        searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass },
-        debug: debug ? { 
-          url: apiUrlForLogging, 
-          status: response.status, 
-          rawDataCount: data.data?.length,
-          timestamp: new Date().toISOString()
-        } : undefined
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({
+      status: 'OK',
+      flights,
+      currency: data.currency || currency,
+      marker,
+      searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, market, currency },
+      debug: debugObj
+    });
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('=== EDGE FUNCTION ERROR ===');
+    console.error('=== EXCEPTION ===');
     console.error('Error:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        errorType: 'exception',
-        debug: { timestamp: new Date().toISOString() }
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    
+    return json({ 
+      status: 'ERROR',
+      emptyReason: 'exception',
+      error: errorMessage,
+      errorType: 'exception',
+      debug: { timestamp: new Date().toISOString() }
+    }, 500);
   }
 });
