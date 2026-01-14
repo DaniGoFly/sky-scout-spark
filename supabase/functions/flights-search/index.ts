@@ -100,6 +100,61 @@ function parseDateUTC(dateStr: string): Date {
 }
 
 /**
+ * Add days to a date
+ */
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
+/**
+ * Generate Aviasales search URL for direct fallback
+ */
+function generateAviasalesSearchUrl(params: {
+  origin: string;
+  destination: string;
+  departDate: string;
+  returnDate?: string;
+  adults: number;
+  children: number;
+  infants: number;
+  travelClass: string;
+}): string {
+  const { origin, destination, departDate, returnDate, adults, children, infants, travelClass } = params;
+  
+  const formatDateShort = (dateStr: string): string => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}${month}`;
+  };
+  
+  const classMap: Record<string, string> = {
+    'economy': 'Y',
+    'premium_economy': 'W',
+    'business': 'C',
+    'first': 'F',
+  };
+  const cabin = classMap[travelClass] || 'Y';
+  
+  let passengers = String(adults);
+  if (children > 0) passengers += String(children);
+  if (infants > 0) passengers += String(infants);
+  
+  const searchPath = returnDate 
+    ? `${origin}${formatDateShort(departDate)}${destination}${formatDateShort(returnDate)}${passengers}`
+    : `${origin}${formatDateShort(departDate)}${destination}${passengers}`;
+  
+  const searchParams = new URLSearchParams();
+  searchParams.set('adults', String(adults));
+  searchParams.set('children', String(children));
+  searchParams.set('infants', String(infants));
+  searchParams.set('cabin', cabin);
+  searchParams.set('with_request', 'true');
+  
+  return `https://www.aviasales.com/search/${searchPath}?${searchParams.toString()}`;
+}
+
+/**
  * Generate White Label booking link
  */
 function generateWhiteLabelLink(params: {
@@ -190,7 +245,91 @@ function generateTpMediaLink(params: {
 }
 
 // Constants
-const PUBLISH_WINDOW_DAYS = 360; // Airlines publish ~330-360 days ahead
+const PUBLISH_WINDOW_DAYS = 330; // Airlines publish ~330-360 days ahead (be conservative)
+const MAX_FLEXIBLE_DAYS = 14; // How far to search for flexible dates
+
+/**
+ * Fetch prices from Travelpayouts API for a specific date
+ */
+async function fetchPricesForDate(params: {
+  token: string;
+  origin: string;
+  destination: string;
+  departDate: string;
+  returnDate: string | null;
+  tripType: string;
+  currency: string;
+  market: string;
+  direct: boolean;
+}): Promise<{ success: boolean; data: any[]; error?: string; httpStatus?: number; rawResponse?: string }> {
+  const { token, origin, destination, departDate, returnDate, tripType, currency, market, direct } = params;
+  
+  const api = new URL('https://api.travelpayouts.com/aviasales/v3/prices_for_dates');
+  api.searchParams.set('origin', String(origin).toUpperCase());
+  api.searchParams.set('destination', String(destination).toUpperCase());
+  api.searchParams.set('departure_at', departDate);
+  
+  if (tripType === 'roundtrip' && returnDate) {
+    api.searchParams.set('return_at', returnDate);
+    api.searchParams.set('one_way', 'false');
+  } else {
+    api.searchParams.set('one_way', 'true');
+  }
+  
+  api.searchParams.set('direct', direct ? 'true' : 'false');
+  api.searchParams.set('currency', currency);
+  api.searchParams.set('market', market);
+  api.searchParams.set('limit', '30');
+  api.searchParams.set('sorting', 'price');
+  api.searchParams.set('unique', 'false');
+  api.searchParams.set('token', token);
+
+  try {
+    const response = await fetch(api.toString(), {
+      headers: {
+        'X-Access-Token': token,
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+      },
+    });
+    
+    const rawText = await response.text();
+    
+    if (!response.ok) {
+      return { 
+        success: false, 
+        data: [], 
+        error: `HTTP ${response.status}: ${response.statusText}`,
+        httpStatus: response.status,
+        rawResponse: rawText.substring(0, 500)
+      };
+    }
+    
+    const parsed = JSON.parse(rawText);
+    
+    if (parsed.success === false || parsed.error) {
+      return { 
+        success: false, 
+        data: [], 
+        error: parsed.error || 'API returned success=false',
+        rawResponse: rawText.substring(0, 500)
+      };
+    }
+    
+    return { 
+      success: true, 
+      data: Array.isArray(parsed.data) ? parsed.data : [],
+      httpStatus: response.status,
+      rawResponse: rawText.substring(0, 500)
+    };
+  } catch (err) {
+    return { 
+      success: false, 
+      data: [], 
+      error: err instanceof Error ? err.message : 'Unknown fetch error'
+    };
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -239,14 +378,19 @@ serve(async (req) => {
       currency = 'usd',
       market = 'us',
       direct = false,
-      debug: debugFromBody = false
+      debug: debugFromBody = false,
+      flexibleDates = true, // Enable flexible date search by default
     } = body ?? {};
     
     const debug = debugFromQuery || debugFromBody;
     
+    // Server UTC date for consistent calculations
+    const serverNow = new Date();
+    const serverDateUTC = toISODateOnly(serverNow);
+    
     console.log('=== FLIGHT SEARCH REQUEST ===');
-    console.log('Timestamp:', new Date().toISOString());
-    console.log('Params:', { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, currency, market });
+    console.log('Server UTC Date:', serverDateUTC);
+    console.log('Params:', { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, currency, market, flexibleDates });
     console.log('Debug Mode:', debug);
 
     // Validation
@@ -272,26 +416,11 @@ serve(async (req) => {
       return json({ status: 'BAD_REQUEST', error: 'returnDate must be >= departDate' }, 400);
     }
 
-    // Check if date is too far in the future
-    const todayUTC = new Date();
+    // Check how far in the future the date is
+    const todayUTC = parseDateUTC(serverDateUTC);
     const daysAhead = daysBetweenUTC(todayUTC, dep);
     
     console.log('Days ahead:', daysAhead, '(publish window:', PUBLISH_WINDOW_DAYS, ')');
-    
-    if (daysAhead > PUBLISH_WINDOW_DAYS) {
-      const suggested = new Date(todayUTC);
-      suggested.setUTCDate(suggested.getUTCDate() + (PUBLISH_WINDOW_DAYS - 14));
-      
-      return json({
-        status: 'NOT_AVAILABLE_YET',
-        emptyReason: 'far_future',
-        message: 'Airline inventory is usually published ~330-360 days ahead. Your selected date is too far in the future for reliable results.',
-        daysAhead,
-        publishWindowDays: PUBLISH_WINDOW_DAYS,
-        suggestedSearchDate: toISODateOnly(suggested),
-        searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, currency, market },
-      });
-    }
 
     // Get secrets
     const token = Deno.env.get('TRAVELPAYOUTS_API_TOKEN') || '';
@@ -318,14 +447,55 @@ serve(async (req) => {
       });
     }
 
-    // Build Travelpayouts API request
-    // CRITICAL: Correct endpoint is /aviasales/v3/prices_for_dates
+    // Generate direct Aviasales search URL for fallback
+    const aviasalesDirectUrl = generateAviasalesSearchUrl({
+      origin,
+      destination,
+      departDate,
+      returnDate: returnDate || undefined,
+      adults,
+      children,
+      infants,
+      travelClass,
+    });
+
+    // If date is beyond publish window, provide helpful response with alternatives
+    if (daysAhead > PUBLISH_WINDOW_DAYS) {
+      const suggestedDate = addDays(todayUTC, PUBLISH_WINDOW_DAYS - 30); // 30 days before edge of window
+      const suggestedDateStr = toISODateOnly(suggestedDate);
+      
+      // Calculate the duration between depart and return for the suggested dates
+      let suggestedReturn: string | undefined;
+      if (tripType === 'roundtrip' && returnDate) {
+        const tripDuration = daysBetweenUTC(dep, ret!);
+        const suggestedReturnDate = addDays(suggestedDate, tripDuration);
+        suggestedReturn = toISODateOnly(suggestedReturnDate);
+      }
+      
+      console.log('=== DATE TOO FAR IN FUTURE ===');
+      console.log('Requested:', daysAhead, 'days ahead. Max:', PUBLISH_WINDOW_DAYS);
+      console.log('Suggested date:', suggestedDateStr);
+      
+      return json({
+        status: 'CACHE_LIMITATION',
+        emptyReason: 'far_future',
+        message: 'Airlines typically publish fares 9-11 months in advance. Your selected date is beyond the current booking window.',
+        userFriendlyMessage: 'No cached prices available yet for these dates. Airlines usually release prices 9–12 months in advance. Try nearer dates or use the direct search link below.',
+        daysAhead,
+        publishWindowDays: PUBLISH_WINDOW_DAYS,
+        suggestedSearchDate: suggestedDateStr,
+        suggestedReturnDate: suggestedReturn,
+        aviasalesDirectUrl,
+        searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, currency, market },
+      });
+    }
+
+    // Build API request for primary date
     const api = new URL('https://api.travelpayouts.com/aviasales/v3/prices_for_dates');
     api.searchParams.set('origin', String(origin).toUpperCase());
     api.searchParams.set('destination', String(destination).toUpperCase());
     api.searchParams.set('departure_at', departDate);
     
-    // CRITICAL: one_way parameter determines roundtrip vs oneway
     if (tripType === 'roundtrip' && returnDate) {
       api.searchParams.set('return_at', returnDate);
       api.searchParams.set('one_way', 'false');
@@ -335,7 +505,7 @@ serve(async (req) => {
     
     api.searchParams.set('direct', direct ? 'true' : 'false');
     api.searchParams.set('currency', currency);
-    api.searchParams.set('market', market); // CRITICAL: market affects cache availability
+    api.searchParams.set('market', market);
     api.searchParams.set('limit', '30');
     api.searchParams.set('sorting', 'price');
     api.searchParams.set('unique', 'false');
@@ -344,7 +514,7 @@ serve(async (req) => {
     const apiUrlRedacted = api.toString().replace(token, '[TOKEN_REDACTED]');
     console.log('API URL (redacted):', apiUrlRedacted);
 
-    // Make upstream request
+    // Make primary request
     let response: Response;
     let rawText: string;
     let parseError: string | null = null;
@@ -352,6 +522,7 @@ serve(async (req) => {
     try {
       response = await fetch(api.toString(), {
         headers: {
+          'X-Access-Token': token,
           'Accept': 'application/json',
           'Accept-Encoding': 'gzip, deflate',
         },
@@ -370,9 +541,11 @@ serve(async (req) => {
       
       return json({ 
         status: 'ERROR',
-        emptyReason: 'upstream_error',
-        error: `Failed to connect to Travelpayouts: ${fetchError}`,
+        emptyReason: 'service_unavailable',
+        error: `Service temporarily unavailable`,
+        userFriendlyMessage: 'Unable to connect to the flight data service. Please try again in a moment.',
         errorType: 'fetch',
+        aviasalesDirectUrl,
         debug: debug ? { 
           requestUrl: apiUrlRedacted,
           fetchError,
@@ -395,6 +568,7 @@ serve(async (req) => {
     // Build debug object
     const debugObj = debug ? {
       timestamp: new Date().toISOString(),
+      serverDateUTC,
       requestUrl: apiUrlRedacted,
       httpStatus: response.status,
       httpStatusText: response.statusText,
@@ -410,19 +584,22 @@ serve(async (req) => {
         allKeys: Object.keys(data)
       } : null,
       parseError,
+      daysAhead,
       searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, market, currency }
     } : undefined;
 
-    // Handle non-200 responses
+    // Handle non-200 responses (real API errors)
     if (!response.ok) {
       console.error('=== UPSTREAM ERROR (non-200) ===');
       console.error('Status:', response.status);
       
       return json({ 
-        status: 'TP_ERROR',
-        emptyReason: 'upstream_error',
-        message: `Travelpayouts returned HTTP ${response.status}: ${response.statusText}`,
+        status: 'ERROR',
+        emptyReason: 'service_unavailable',
+        message: `Service returned an error`,
+        userFriendlyMessage: 'The flight data service is temporarily unavailable. Please try again or use the direct search link.',
         httpStatus: response.status,
+        aviasalesDirectUrl,
         raw: debug ? (data ?? rawText.substring(0, 500)) : undefined,
         debug: debugObj
       });
@@ -431,9 +608,11 @@ serve(async (req) => {
     // Handle parse failure
     if (parseError || !data) {
       return json({ 
-        status: 'TP_ERROR',
-        emptyReason: 'upstream_error',
-        message: parseError || 'Failed to parse Travelpayouts response',
+        status: 'ERROR',
+        emptyReason: 'service_unavailable',
+        message: 'Unable to process flight data',
+        userFriendlyMessage: 'We encountered an issue loading flight data. Please try again or use the direct search link.',
+        aviasalesDirectUrl,
         debug: debugObj
       });
     }
@@ -444,25 +623,165 @@ serve(async (req) => {
       console.error('Error:', data.error);
       
       return json({ 
-        status: 'TP_ERROR',
-        emptyReason: 'upstream_error',
-        message: data.error || 'Travelpayouts returned an error',
+        status: 'ERROR',
+        emptyReason: 'service_unavailable',
+        message: 'Flight data service error',
+        userFriendlyMessage: 'The flight data service returned an error. Please try again or use the direct search link.',
+        aviasalesDirectUrl,
         debug: debugObj
       });
     }
 
-    // Handle empty results - this is NOT an error, just no cached prices
+    // Handle empty results - THIS IS NOT AN ERROR!
+    // Aviasales Data API is cache-based, empty results are normal for many routes
     if (!data.data || data.data.length === 0) {
-      console.log('=== NO CACHED PRICES ===');
+      console.log('=== EMPTY CACHE - TRYING FLEXIBLE DATES ===');
+      
+      // Try flexible date searches if enabled
+      let flexibleResults: any[] = [];
+      let flexibleSearchDates: string[] = [];
+      
+      if (flexibleDates) {
+        const offsets = [-7, 7, 14]; // Days to try
+        
+        for (const offset of offsets) {
+          const flexDate = addDays(dep, offset);
+          const flexDaysAhead = daysBetweenUTC(todayUTC, flexDate);
+          
+          // Only try if within valid range (past today but within publish window)
+          if (flexDaysAhead >= 1 && flexDaysAhead <= PUBLISH_WINDOW_DAYS) {
+            const flexDateStr = toISODateOnly(flexDate);
+            
+            let flexReturn: string | null = null;
+            if (tripType === 'roundtrip' && ret) {
+              const tripDuration = daysBetweenUTC(dep, ret);
+              flexReturn = toISODateOnly(addDays(flexDate, tripDuration));
+            }
+            
+            console.log(`Trying flexible date: ${flexDateStr} (offset: ${offset})`);
+            
+            const flexResult = await fetchPricesForDate({
+              token,
+              origin,
+              destination,
+              departDate: flexDateStr,
+              returnDate: flexReturn,
+              tripType,
+              currency,
+              market,
+              direct,
+            });
+            
+            if (flexResult.success && flexResult.data.length > 0) {
+              flexibleSearchDates.push(flexDateStr);
+              flexibleResults.push(...flexResult.data.map(f => ({
+                ...f,
+                isFlexibleDate: true,
+                originalDepartDate: departDate,
+                flexibleDepartDate: flexDateStr,
+              })));
+            }
+          }
+        }
+      }
+      
+      // If we found flexible results, return them
+      if (flexibleResults.length > 0) {
+        console.log(`=== FOUND ${flexibleResults.length} FLEXIBLE RESULTS ===`);
+        
+        // Transform and deduplicate
+        const seen = new Set<string>();
+        const flights = flexibleResults
+          .filter(flight => {
+            const key = `${flight.departure_at}-${flight.price}-${flight.airline}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .slice(0, 30)
+          .map((flight: any, index: number) => {
+            const departureTime = flight.departure_at ? new Date(flight.departure_at) : null;
+            const returnTime = flight.return_at ? new Date(flight.return_at) : null;
+            const durationMinutes = flight.duration || 180;
+            const arrivalTime = departureTime ? new Date(departureTime.getTime() + durationMinutes * 60000) : null;
+            const airlineCode = flight.airline || 'XX';
+            const airlineName = AIRLINE_NAMES[airlineCode] || airlineCode;
+            
+            const deepLink = generateWhiteLabelLink({
+              marker,
+              origin,
+              destination,
+              departDate: flight.flexibleDepartDate || departDate,
+              returnDate: returnDate || undefined,
+              adults,
+              children,
+              infants,
+              travelClass,
+            });
+            
+            const alternativeLink = generateTpMediaLink({
+              marker,
+              origin,
+              destination,
+              departDate: flight.flexibleDepartDate || departDate,
+              returnDate: returnDate || undefined,
+              adults,
+              children,
+              infants,
+              travelClass,
+            });
+
+            return {
+              id: `flight-flex-${index}-${flight.flight_number || Math.random().toString(36).substr(2, 9)}`,
+              airline: airlineName,
+              airlineCode,
+              airlineLogo: `https://pics.avs.io/60/60/${airlineCode}.png`,
+              flightNumber: flight.flight_number || `${airlineCode}${Math.floor(Math.random() * 9000) + 1000}`,
+              departureTime: departureTime ? departureTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '00:00',
+              arrivalTime: arrivalTime ? arrivalTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '00:00',
+              departureCode: origin,
+              arrivalCode: destination,
+              duration: `${Math.floor(durationMinutes / 60)}h ${durationMinutes % 60}m`,
+              durationMinutes,
+              stops: flight.transfers || 0,
+              price: Math.round(flight.price * adults),
+              deepLink,
+              alternativeLink,
+              returnAt: returnTime ? returnTime.toISOString() : null,
+              foundAt: flight.found_at,
+              isFlexibleDate: true,
+              flexibleDepartDate: flight.flexibleDepartDate,
+            };
+          });
+
+        return json({
+          status: 'OK_FLEXIBLE',
+          emptyReason: null,
+          message: 'No exact date matches found, showing nearby dates',
+          userFriendlyMessage: `No cached prices for ${departDate}. Showing prices for nearby dates.`,
+          flights,
+          flexibleDatesUsed: flexibleSearchDates,
+          currency: data.currency || currency,
+          marker,
+          aviasalesDirectUrl,
+          searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, market, currency },
+          debug: debugObj
+        });
+      }
+      
+      // No results even with flexible dates - this is a cache limitation, NOT an error
+      console.log('=== NO CACHED PRICES (cache limitation) ===');
       console.log('Route:', origin, '->', destination);
-      console.log('Dates:', departDate, returnDate);
-      console.log('This is normal for many routes - the Data API is cache-based');
+      console.log('Dates tried:', departDate, ...flexibleSearchDates);
       
       return json({
-        status: 'NO_CACHED_PRICES',
+        status: 'CACHE_EMPTY',
         emptyReason: 'no_cached_prices',
-        message: 'No cached prices found for this route/dates in the Aviasales Data API. This is normal for less popular routes. Try different dates or nearby airports.',
+        message: 'No cached prices available',
+        userFriendlyMessage: 'No cached prices available yet for these dates. Airlines usually release prices 9–12 months in advance. Try nearer dates or flexible search.',
+        aviasalesDirectUrl,
         searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, market, currency },
+        flexibleDatesSearched: flexibleSearchDates,
         debug: debugObj
       });
     }
@@ -530,6 +849,7 @@ serve(async (req) => {
       flights,
       currency: data.currency || currency,
       marker,
+      aviasalesDirectUrl,
       searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass, market, currency },
       debug: debugObj
     });
@@ -543,6 +863,7 @@ serve(async (req) => {
       status: 'ERROR',
       emptyReason: 'exception',
       error: errorMessage,
+      userFriendlyMessage: 'An unexpected error occurred. Please try again.',
       errorType: 'exception',
       debug: { timestamp: new Date().toISOString() }
     }, 500);

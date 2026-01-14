@@ -16,26 +16,37 @@ export interface LiveFlight {
   price: number;
   deepLink: string;
   returnAt: string | null;
+  isFlexibleDate?: boolean;
+  flexibleDepartDate?: string;
 }
 
 /**
- * Empty reason types:
- * - 'far_future': Date is >360 days ahead, airlines haven't published
- * - 'no_cached_prices': Data API cache is empty for this route (normal for less popular routes)
- * - 'no_results': Generic no results (shouldn't be used much now)
+ * Empty reason types - these describe WHY results are empty
+ * - 'far_future': Date is beyond airline publish window (~330 days)
+ * - 'no_cached_prices': Aviasales Data API cache is empty for this route (normal for less popular routes)
+ * - 'service_unavailable': API/network error
+ * - null: Results found or no empty state
  */
-export type EmptyReason = 'far_future' | 'no_cached_prices' | 'no_results' | null;
+export type EmptyReason = 'far_future' | 'no_cached_prices' | 'service_unavailable' | null;
 
 /**
  * Response status types from backend:
- * - 'OK': Success with flights
- * - 'NOT_AVAILABLE_YET': Date too far in future
- * - 'NO_CACHED_PRICES': No prices in Aviasales cache (normal for many routes)
- * - 'TP_ERROR': Travelpayouts returned an error
+ * - 'OK': Success with flights for exact dates
+ * - 'OK_FLEXIBLE': Success with flights from flexible date search
+ * - 'CACHE_LIMITATION': Date too far in future (not an error)
+ * - 'CACHE_EMPTY': No prices in Aviasales cache (not an error, normal for many routes)
  * - 'MISCONFIGURED': Missing token/marker
- * - 'ERROR': Generic error
+ * - 'ERROR': Real error (API down, parse failure, etc.)
+ * - 'BAD_REQUEST': Invalid parameters
  */
-export type ResponseStatus = 'OK' | 'NOT_AVAILABLE_YET' | 'NO_CACHED_PRICES' | 'TP_ERROR' | 'MISCONFIGURED' | 'ERROR' | 'BAD_REQUEST';
+export type ResponseStatus = 
+  | 'OK' 
+  | 'OK_FLEXIBLE' 
+  | 'CACHE_LIMITATION' 
+  | 'CACHE_EMPTY' 
+  | 'MISCONFIGURED' 
+  | 'ERROR' 
+  | 'BAD_REQUEST';
 
 interface SearchParams {
   origin: string;
@@ -50,6 +61,7 @@ interface SearchParams {
   currency?: string;
   market?: string;
   debug?: boolean;
+  flexibleDates?: boolean;
 }
 
 interface DebugInfo {
@@ -61,6 +73,8 @@ interface DebugInfo {
   responseJsonParsed?: any;
   parseError?: string | null;
   timestamp?: string;
+  serverDateUTC?: string;
+  daysAhead?: number;
   searchParams?: any;
   [key: string]: any;
 }
@@ -70,10 +84,16 @@ interface ApiResponse {
   flights?: LiveFlight[];
   emptyReason?: EmptyReason;
   message?: string;
+  userFriendlyMessage?: string;
   error?: string;
   errorType?: string;
   daysAhead?: number;
+  publishWindowDays?: number;
   suggestedSearchDate?: string;
+  suggestedReturnDate?: string;
+  aviasalesDirectUrl?: string;
+  flexibleDatesUsed?: string[];
+  flexibleDatesSearched?: string[];
   searchParams?: any;
   debug?: DebugInfo;
   httpStatus?: number;
@@ -86,7 +106,11 @@ interface UseFlightSearchResult {
   error: string | null;
   emptyReason: EmptyReason;
   responseStatus: ResponseStatus | null;
+  userMessage: string | null;
   suggestedSearchDate: string | null;
+  suggestedReturnDate: string | null;
+  aviasalesDirectUrl: string | null;
+  flexibleDatesUsed: string[];
   debugInfo: DebugInfo | null;
   searchFlights: (params: SearchParams) => Promise<void>;
 }
@@ -97,7 +121,11 @@ export function useFlightSearch(): UseFlightSearchResult {
   const [error, setError] = useState<string | null>(null);
   const [emptyReason, setEmptyReason] = useState<EmptyReason>(null);
   const [responseStatus, setResponseStatus] = useState<ResponseStatus | null>(null);
+  const [userMessage, setUserMessage] = useState<string | null>(null);
   const [suggestedSearchDate, setSuggestedSearchDate] = useState<string | null>(null);
+  const [suggestedReturnDate, setSuggestedReturnDate] = useState<string | null>(null);
+  const [aviasalesDirectUrl, setAviasalesDirectUrl] = useState<string | null>(null);
+  const [flexibleDatesUsed, setFlexibleDatesUsed] = useState<string[]>([]);
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
 
   const searchFlights = useCallback(async (params: SearchParams) => {
@@ -106,7 +134,11 @@ export function useFlightSearch(): UseFlightSearchResult {
     setFlights([]);
     setEmptyReason(null);
     setResponseStatus(null);
+    setUserMessage(null);
     setSuggestedSearchDate(null);
+    setSuggestedReturnDate(null);
+    setAviasalesDirectUrl(null);
+    setFlexibleDatesUsed([]);
     setDebugInfo(null);
 
     try {
@@ -118,6 +150,7 @@ export function useFlightSearch(): UseFlightSearchResult {
           debug: params.debug || false,
           currency: params.currency || 'usd',
           market: params.market || 'us',
+          flexibleDates: params.flexibleDates !== false, // Default true
         },
       });
 
@@ -127,8 +160,12 @@ export function useFlightSearch(): UseFlightSearchResult {
         setDebugInfo({
           ...data.debug,
           request: params,
-          timestamp: new Date().toISOString(),
         });
+      }
+
+      // Store Aviasales direct URL if present
+      if (data?.aviasalesDirectUrl) {
+        setAviasalesDirectUrl(data.aviasalesDirectUrl);
       }
 
       if (fnError) {
@@ -141,9 +178,11 @@ export function useFlightSearch(): UseFlightSearchResult {
         flightCount: data?.flights?.length || 0,
         emptyReason: data?.emptyReason,
         message: data?.message,
+        userFriendlyMessage: data?.userFriendlyMessage,
       });
 
       setResponseStatus(data?.status || null);
+      setUserMessage(data?.userFriendlyMessage || data?.message || null);
 
       // Handle different statuses
       switch (data?.status) {
@@ -154,37 +193,52 @@ export function useFlightSearch(): UseFlightSearchResult {
           } else {
             // Shouldn't happen but handle gracefully
             setFlights([]);
-            setEmptyReason('no_results');
+            setEmptyReason('no_cached_prices');
           }
           break;
 
-        case 'NOT_AVAILABLE_YET':
+        case 'OK_FLEXIBLE':
+          // Flexible date results found
+          if (data.flights && data.flights.length > 0) {
+            setFlights(data.flights);
+            setFlexibleDatesUsed(data.flexibleDatesUsed || []);
+            setEmptyReason(null);
+          } else {
+            setFlights([]);
+            setEmptyReason('no_cached_prices');
+          }
+          break;
+
+        case 'CACHE_LIMITATION':
+          // Date too far in future - NOT an error
           setFlights([]);
           setEmptyReason('far_future');
           setSuggestedSearchDate(data.suggestedSearchDate || null);
+          setSuggestedReturnDate(data.suggestedReturnDate || null);
           break;
 
-        case 'NO_CACHED_PRICES':
+        case 'CACHE_EMPTY':
+          // No cached prices - NOT an error, normal for many routes
           setFlights([]);
           setEmptyReason('no_cached_prices');
           break;
 
-        case 'TP_ERROR':
         case 'MISCONFIGURED':
         case 'ERROR':
         case 'BAD_REQUEST':
+          // Real errors
           setFlights([]);
-          setError(data.error || data.message || 'An error occurred while searching for flights');
-          setEmptyReason(null);
+          setError(data.userFriendlyMessage || data.error || data.message || 'An error occurred');
+          setEmptyReason('service_unavailable');
           break;
 
         default:
-          // Unknown status
+          // Unknown status - treat as potential results
           if (data?.flights?.length > 0) {
             setFlights(data.flights);
           } else {
             setFlights([]);
-            setEmptyReason('no_results');
+            setEmptyReason('no_cached_prices');
           }
       }
 
@@ -192,6 +246,7 @@ export function useFlightSearch(): UseFlightSearchResult {
       const message = err instanceof Error ? err.message : "Failed to search flights";
       console.error("[FlightSearch] Error:", message);
       setError(message);
+      setEmptyReason('service_unavailable');
       setResponseStatus('ERROR');
     } finally {
       setIsLoading(false);
@@ -204,7 +259,11 @@ export function useFlightSearch(): UseFlightSearchResult {
     error, 
     emptyReason, 
     responseStatus,
+    userMessage,
     suggestedSearchDate,
+    suggestedReturnDate,
+    aviasalesDirectUrl,
+    flexibleDatesUsed,
     debugInfo, 
     searchFlights 
   };
