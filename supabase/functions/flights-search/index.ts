@@ -110,6 +110,8 @@ function addDays(date: Date, days: number): Date {
 
 /**
  * Generate Aviasales search URL for direct fallback
+ * URL format: https://www.aviasales.com/search/{ORIGIN}{DDMM}{DESTINATION}{DDMM}{passengers}
+ * Example: https://www.aviasales.com/search/ZRH2101SEA28011
  */
 function generateAviasalesSearchUrl(params: {
   origin: string;
@@ -120,9 +122,11 @@ function generateAviasalesSearchUrl(params: {
   children: number;
   infants: number;
   travelClass: string;
+  marker?: string;
 }): string {
-  const { origin, destination, departDate, returnDate, adults, children, infants, travelClass } = params;
+  const { origin, destination, departDate, returnDate, adults, children, infants, travelClass, marker } = params;
   
+  // Format date as DDMM (day + month, no year)
   const formatDateShort = (dateStr: string): string => {
     const [year, month, day] = dateStr.split('-');
     return `${day}${month}`;
@@ -136,13 +140,17 @@ function generateAviasalesSearchUrl(params: {
   };
   const cabin = classMap[travelClass] || 'Y';
   
+  // Passengers: adults + children + infants (each as single digit if applicable)
   let passengers = String(adults);
   if (children > 0) passengers += String(children);
   if (infants > 0) passengers += String(infants);
   
+  // Build search path: ORIGIN{DDMM}DESTINATION{DDMM}{passengers}
+  // Roundtrip: ZRH2101SEA28011 (ZRH on Jan 21, SEA on Jan 28, 1 adult)
+  // One-way: ZRH2101SEA1 (ZRH on Jan 21 to SEA, 1 adult)
   const searchPath = returnDate 
-    ? `${origin}${formatDateShort(departDate)}${destination}${formatDateShort(returnDate)}${passengers}`
-    : `${origin}${formatDateShort(departDate)}${destination}${passengers}`;
+    ? `${origin.toUpperCase()}${formatDateShort(departDate)}${destination.toUpperCase()}${formatDateShort(returnDate)}${passengers}`
+    : `${origin.toUpperCase()}${formatDateShort(departDate)}${destination.toUpperCase()}${passengers}`;
   
   const searchParams = new URLSearchParams();
   searchParams.set('adults', String(adults));
@@ -150,6 +158,11 @@ function generateAviasalesSearchUrl(params: {
   searchParams.set('infants', String(infants));
   searchParams.set('cabin', cabin);
   searchParams.set('with_request', 'true');
+  
+  // Add marker for affiliate tracking if provided
+  if (marker) {
+    searchParams.set('marker', marker);
+  }
   
   return `https://www.aviasales.com/search/${searchPath}?${searchParams.toString()}`;
 }
@@ -452,7 +465,7 @@ serve(async (req) => {
       });
     }
 
-    // Generate direct Aviasales search URL for fallback
+    // Generate direct Aviasales search URL for fallback (with marker for affiliate tracking)
     const aviasalesDirectUrl = generateAviasalesSearchUrl({
       origin,
       destination,
@@ -462,6 +475,7 @@ serve(async (req) => {
       children,
       infants,
       travelClass,
+      marker,
     });
 
     // If date is beyond publish window, provide helpful response with alternatives
