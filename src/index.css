@@ -2,17 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Travelpayouts Widget Styling - Fully Transparent */
+/* Travelpayouts Widget Styling */
 .travelpayouts-widget {
   width: 100%;
   position: relative;
-  background: transparent !important;
 }
 
 .tp-widget-inner {
   min-height: 320px;
   overflow: visible;
-  background: transparent !important;
 }
 
 .travelpayouts-widget iframe,
@@ -22,7 +20,6 @@
   box-shadow: none !important;
   width: 100% !important;
   min-height: 320px;
-  background: transparent !important;
 }
 
 /* Hide Aviasales logo and branding */
@@ -35,17 +32,6 @@
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
-}
-
-/* Make widget inputs have white text for visibility on dark backgrounds */
-.travelpayouts-widget input,
-.travelpayouts-widget select,
-.travelpayouts-widget button:not([type="submit"]) {
-  color: white !important;
-}
-
-.travelpayouts-widget input::placeholder {
-  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 @media (max-width: 768px) {
