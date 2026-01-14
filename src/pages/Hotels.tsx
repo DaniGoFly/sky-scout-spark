@@ -237,7 +237,12 @@ const Hotels = () => {
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent 
+                      className="w-auto p-0" 
+                      align="start"
+                      side="bottom"
+                      sideOffset={8}
+                    >
                       <CalendarComponent
                         mode="range"
                         selected={dateRange}
