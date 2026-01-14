@@ -23,6 +23,11 @@ const SearchForm = () => {
   const [departDate, setDepartDate] = useState<Date>(() => getDefaultDates().depart);
   const [returnDate, setReturnDate] = useState<Date>(() => getDefaultDates().return);
   const [passengers, setPassengers] = useState(1);
+  
+  // Control popover open states
+  const [departOpen, setDepartOpen] = useState(false);
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [passengersOpen, setPassengersOpen] = useState(false);
 
   const swapLocations = () => {
     const temp = from;
@@ -57,14 +62,14 @@ const SearchForm = () => {
   };
 
   return (
-    <div className="glass-strong rounded-3xl shadow-card p-6 md:p-8 w-full max-w-5xl mx-auto transition-all duration-300 hover:shadow-card-hover">
+    <div className="bg-card rounded-2xl shadow-lg p-4 md:p-6 w-full max-w-5xl mx-auto">
       {/* Trip Type Toggle */}
-      <div className="flex gap-2 mb-8">
+      <div className="flex gap-2 mb-6">
         <button
           onClick={() => setTripType("roundtrip")}
-          className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
             tripType === "roundtrip"
-              ? "bg-primary text-primary-foreground shadow-button"
+              ? "bg-primary text-primary-foreground"
               : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
           }`}
         >
@@ -72,9 +77,9 @@ const SearchForm = () => {
         </button>
         <button
           onClick={() => setTripType("oneway")}
-          className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
             tripType === "oneway"
-              ? "bg-primary text-primary-foreground shadow-button"
+              ? "bg-primary text-primary-foreground"
               : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
           }`}
         >
@@ -83,10 +88,10 @@ const SearchForm = () => {
       </div>
 
       {/* Search Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
         {/* From */}
         <div className="lg:col-span-3 relative">
-          <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">From</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">From</label>
           <AirportAutocomplete
             value={from}
             onChange={setFrom}
@@ -101,15 +106,15 @@ const SearchForm = () => {
             variant="outline"
             size="icon"
             onClick={swapLocations}
-            className="rounded-full h-14 w-14 border-2 border-dashed hover:border-primary hover:text-primary hover:bg-primary/5 transition-all duration-200"
+            className="rounded-full h-12 w-12 border-2 border-dashed hover:border-primary hover:text-primary hover:bg-primary/5 transition-all duration-200"
           >
-            <ArrowRightLeft className="w-5 h-5" />
+            <ArrowRightLeft className="w-4 h-4" />
           </Button>
         </div>
 
         {/* To */}
         <div className="lg:col-span-3">
-          <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">To</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">To</label>
           <AirportAutocomplete
             value={to}
             onChange={setTo}
@@ -120,24 +125,43 @@ const SearchForm = () => {
 
         {/* Depart Date */}
         <div className="lg:col-span-2">
-          <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Depart</label>
-          <Popover>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Depart</label>
+          <Popover open={departOpen} onOpenChange={setDepartOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full h-14 justify-start text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all"
+                className="w-full h-12 justify-start text-left font-normal bg-secondary/50 border-0 rounded-lg hover:bg-secondary transition-all"
               >
-                <Calendar className="mr-3 h-5 w-5 text-muted-foreground" />
-                {format(departDate, "MMM d, yyyy")}
+                <Calendar className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="truncate">{format(departDate, "MMM d, yyyy")}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+            <PopoverContent 
+              className="w-auto p-0" 
+              align="start"
+              side="bottom"
+              sideOffset={8}
+            >
               <CalendarComponent
                 mode="single"
                 selected={departDate}
-                onSelect={(date) => date && setDepartDate(date)}
-                disabled={(date) => date < new Date()}
+                onSelect={(date) => {
+                  if (date) {
+                    setDepartDate(date);
+                    // If return date is before new depart date, update it
+                    if (date > returnDate) {
+                      setReturnDate(new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+                    }
+                    setDepartOpen(false);
+                  }
+                }}
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date < today;
+                }}
                 initialFocus
+                className="pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
@@ -146,24 +170,39 @@ const SearchForm = () => {
         {/* Return Date */}
         {tripType === "roundtrip" && (
           <div className="lg:col-span-2">
-            <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Return</label>
-            <Popover>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Return</label>
+            <Popover open={returnOpen} onOpenChange={setReturnOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full h-14 justify-start text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all"
+                  className="w-full h-12 justify-start text-left font-normal bg-secondary/50 border-0 rounded-lg hover:bg-secondary transition-all"
                 >
-                  <Calendar className="mr-3 h-5 w-5 text-muted-foreground" />
-                  {format(returnDate, "MMM d, yyyy")}
+                  <Calendar className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="truncate">{format(returnDate, "MMM d, yyyy")}</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+              <PopoverContent 
+                className="w-auto p-0" 
+                align="start"
+                side="bottom"
+                sideOffset={8}
+              >
                 <CalendarComponent
                   mode="single"
                   selected={returnDate}
-                  onSelect={(date) => date && setReturnDate(date)}
-                  disabled={(date) => date < departDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setReturnDate(date);
+                      setReturnOpen(false);
+                    }
+                  }}
+                  disabled={(date) => {
+                    const minDate = new Date(departDate);
+                    minDate.setHours(0, 0, 0, 0);
+                    return date < minDate;
+                  }}
                   initialFocus
+                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
@@ -172,55 +211,68 @@ const SearchForm = () => {
 
         {/* Passengers */}
         <div className={tripType === "oneway" ? "lg:col-span-2" : "lg:col-span-1"}>
-          <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Travelers</label>
-          <Popover>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Travelers</label>
+          <Popover open={passengersOpen} onOpenChange={setPassengersOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full h-14 justify-start text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all"
+                className="w-full h-12 justify-start text-left font-normal bg-secondary/50 border-0 rounded-lg hover:bg-secondary transition-all"
               >
-                <Users className="mr-3 h-5 w-5 text-muted-foreground" />
-                {passengers}
+                <Users className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span>{passengers}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-56 bg-card border-border" align="start">
+            <PopoverContent 
+              className="w-56" 
+              align="end"
+              side="bottom"
+              sideOffset={8}
+            >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">Adults</span>
+                <span className="text-sm font-medium">Adults</span>
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 w-9 rounded-lg"
+                    className="h-8 w-8 rounded-lg p-0"
                     onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                    disabled={passengers <= 1}
                   >
                     -
                   </Button>
-                  <span className="w-6 text-center font-semibold">{passengers}</span>
+                  <span className="w-6 text-center font-medium">{passengers}</span>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 w-9 rounded-lg"
-                    onClick={() => setPassengers(passengers + 1)}
+                    className="h-8 w-8 rounded-lg p-0"
+                    onClick={() => setPassengers(Math.min(9, passengers + 1))}
+                    disabled={passengers >= 9}
                   >
                     +
                   </Button>
                 </div>
               </div>
+              <Button 
+                className="w-full mt-4" 
+                size="sm"
+                onClick={() => setPassengersOpen(false)}
+              >
+                Done
+              </Button>
             </PopoverContent>
           </Popover>
         </div>
       </div>
 
       {/* Search Button */}
-      <div className="mt-8 flex justify-center">
+      <div className="mt-6 flex justify-center">
         <Button 
-          variant="hero" 
-          size="xl" 
+          size="lg" 
           onClick={handleSearch} 
           disabled={!isValid}
-          className="gap-3 text-base"
+          className="h-12 px-8 text-base font-semibold"
         >
-          <Search className="w-5 h-5" />
+          <Search className="w-5 h-5 mr-2" />
           Search Flights
         </Button>
       </div>

@@ -45,6 +45,21 @@
   }
 }
 
+/* Calendar/Popover - ensure never clipped */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+/* Ensure calendar is fully visible on mobile */
+@media (max-width: 640px) {
+  [data-radix-popper-content-wrapper] {
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 98%;
