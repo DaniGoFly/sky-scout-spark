@@ -38,7 +38,7 @@ const FlightSearchHero = () => {
           </div>
 
           {/* AI Travel Assistant */}
-          <div className="mt-4">
+          <div className="mt-2">
             <TravelAssistant />
           </div>
         </div>
