@@ -10,6 +10,7 @@ import CompactSearchBar from "./CompactSearchBar";
 import PriceCalendar from "./PriceCalendar";
 import { useFlightSearch, LiveFlight, EmptyReason } from "@/hooks/useFlightSearch";
 import { format, addDays, parseISO } from "date-fns";
+import { getDefaultDates, isTooFarForPricing, getPricingUnavailableMessage } from "@/lib/dateUtils";
 
 // City to airport code mapping for auto-search
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -60,8 +61,10 @@ const FlightResults = () => {
   useEffect(() => {
     if (autoSearch && to && !from) {
       const airportCode = CITY_AIRPORT_CODES[to.toLowerCase()] || to.toUpperCase().slice(0, 3);
-      const defaultDepart = format(addDays(new Date(), 7), "yyyy-MM-dd");
-      const defaultReturn = format(addDays(new Date(), 14), "yyyy-MM-dd");
+      // Use centralized default dates (today + 30 / today + 37)
+      const defaults = getDefaultDates();
+      const defaultDepart = format(defaults.depart, "yyyy-MM-dd");
+      const defaultReturn = format(defaults.return, "yyyy-MM-dd");
       
       setShowAllFlights(false);
       setHasSearched(true);
@@ -197,11 +200,17 @@ const FlightResults = () => {
     }
   };
 
-  // Get display values for auto-search
+  // Get display values for auto-search using centralized defaults
+  const defaults = getDefaultDates();
   const displayFrom = from || (autoSearch ? "NYC" : "");
   const displayTo = to || "";
-  const displayDepart = depart || (autoSearch ? format(addDays(new Date(), 7), "yyyy-MM-dd") : "");
-  const displayReturn = returnDate || (autoSearch ? format(addDays(new Date(), 14), "yyyy-MM-dd") : "");
+  const displayDepart = depart || (autoSearch ? format(defaults.depart, "yyyy-MM-dd") : "");
+  const displayReturn = returnDate || (autoSearch ? format(defaults.return, "yyyy-MM-dd") : "");
+  
+  // Calculate if selected date is too far for pricing (for smarter empty state)
+  const departDateObj = depart ? parseISO(depart) : null;
+  const isDateTooFar = departDateObj ? isTooFarForPricing(departDateObj) : false;
+  const pricingMessage = departDateObj ? getPricingUnavailableMessage(departDateObj) : "";
 
   return (
     <section className="py-6 px-4 bg-secondary/30 min-h-screen">
@@ -311,21 +320,21 @@ const FlightResults = () => {
         ) : flights.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
-              {emptyReason === 'far_future' ? (
+              {(emptyReason === 'far_future' || isDateTooFar) ? (
                 <Clock className="w-10 h-10 text-muted-foreground" />
               ) : (
                 <Plane className="w-10 h-10 text-muted-foreground" />
               )}
             </div>
             <p className="text-xl text-foreground font-semibold mb-2">
-              {emptyReason === 'far_future' 
+              {(emptyReason === 'far_future' || isDateTooFar)
                 ? "Prices not available yet" 
                 : "No flights found"}
             </p>
             <p className="text-muted-foreground max-w-md mb-6">
-              {emptyReason === 'far_future' 
-                ? "Airlines typically release pricing 9-12 months before departure. Try searching for dates closer to today."
-                : "We couldn't find any flights for your search. Try different dates, nearby airports, or flexible travel options."}
+              {(emptyReason === 'far_future' || isDateTooFar)
+                ? pricingMessage || "Airlines typically release pricing 9-12 months before departure. Try searching for dates closer to today."
+                : "We couldn't find any flights for this route. Try different dates, nearby airports, or flexible travel options."}
             </p>
             
             {/* Debug info panel */}
@@ -359,15 +368,16 @@ const FlightResults = () => {
                 <ArrowLeft className="w-4 h-4" />
                 Modify Search
               </Button>
-              {emptyReason === 'far_future' && depart && (
+              {(emptyReason === 'far_future' || isDateTooFar) && depart && (
                 <Button
                   variant="default"
                   onClick={() => {
-                    // Suggest dates 30 days from now instead
+                    // Suggest dates 30 days from now instead using centralized defaults
+                    const newDates = getDefaultDates();
                     const newParams = new URLSearchParams(searchParams);
-                    newParams.set("depart", format(addDays(new Date(), 30), "yyyy-MM-dd"));
+                    newParams.set("depart", format(newDates.depart, "yyyy-MM-dd"));
                     if (tripType === "roundtrip") {
-                      newParams.set("return", format(addDays(new Date(), 37), "yyyy-MM-dd"));
+                      newParams.set("return", format(newDates.return, "yyyy-MM-dd"));
                     }
                     setSearchParams(newParams);
                   }}
@@ -377,7 +387,7 @@ const FlightResults = () => {
                   Try Dates in 30 Days
                 </Button>
               )}
-              {emptyReason === 'no_results' && (
+              {emptyReason === 'no_results' && !isDateTooFar && (
                 <Button
                   variant="secondary"
                   onClick={() => {

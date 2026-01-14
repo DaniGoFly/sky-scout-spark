@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
-import { TrendingDown, TrendingUp, AlertCircle } from "lucide-react";
+import { TrendingDown, TrendingUp, AlertCircle, Info } from "lucide-react";
 
 interface PriceCalendarProps {
   departDate: Date;
@@ -8,9 +8,11 @@ interface PriceCalendarProps {
   onDateSelect: (date: Date) => void;
   /** If true, indicates these are real API prices, not estimates */
   isRealData?: boolean;
+  /** Hide calendar if no real data available */
+  hideIfNoData?: boolean;
 }
 
-const PriceCalendar = ({ departDate, basePrice, onDateSelect, isRealData = false }: PriceCalendarProps) => {
+const PriceCalendar = ({ departDate, basePrice, onDateSelect, isRealData = false, hideIfNoData = false }: PriceCalendarProps) => {
   const priceData = useMemo(() => {
     const today = startOfDay(new Date());
     const data = [];
@@ -21,6 +23,7 @@ const PriceCalendar = ({ departDate, basePrice, onDateSelect, isRealData = false
       if (date < today) continue;
       
       // Generate pseudo-random but consistent price variation based on date
+      // Note: This is estimated data - real API integration needed for accurate prices
       const seed = date.getDate() + date.getMonth() * 31;
       const variation = ((seed * 17) % 100) - 50; // -50 to +49
       const price = Math.max(basePrice + variation, Math.floor(basePrice * 0.7));
@@ -49,8 +52,9 @@ const PriceCalendar = ({ departDate, basePrice, onDateSelect, isRealData = false
     return Math.round(priceData.reduce((sum, d) => sum + d.price, 0) / priceData.length);
   }, [priceData, basePrice]);
 
-  // Don't render if no price data
+  // Don't render if no price data or if hideIfNoData is true and no real data
   if (priceData.length === 0) return null;
+  if (hideIfNoData && !isRealData) return null;
 
   return (
     <div className="bg-card border border-border rounded-2xl p-4 mb-6">

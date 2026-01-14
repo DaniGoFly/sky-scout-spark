@@ -31,6 +31,22 @@ const AIRLINE_NAMES: Record<string, string> = {
 };
 
 /**
+ * Calculate months between two dates
+ */
+function monthsBetween(a: Date, b: Date): number {
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+}
+
+/**
+ * Check if date is too far for airline pricing (>11 months)
+ */
+function isTooFarForPricing(departDateStr: string): boolean {
+  const departDate = new Date(departDateStr);
+  const now = new Date();
+  return monthsBetween(now, departDate) > 11;
+}
+
+/**
  * Generate White Label booking link using the user's custom domain
  * This provides the best user experience with branded booking flow
  * 
@@ -123,7 +139,7 @@ function generateTpMediaLink(params: {
   
   const targetUrl = `https://www.aviasales.com/search/${route}?${searchParams.toString()}`;
   
-  // tp.media redirect with tracking
+  // tp.media redirect with tracking - marker is REQUIRED
   const redirectParams = new URLSearchParams();
   redirectParams.set('marker', marker);
   redirectParams.set('p', '4114'); // Aviasales program ID
@@ -154,6 +170,7 @@ serve(async (req) => {
     } = requestBody;
     
     console.log('=== FLIGHT SEARCH REQUEST ===');
+    console.log('Timestamp:', new Date().toISOString());
     console.log('Origin:', origin);
     console.log('Destination:', destination);
     console.log('Depart Date:', departDate);
@@ -161,7 +178,9 @@ serve(async (req) => {
     console.log('Adults:', adults, 'Children:', children, 'Infants:', infants);
     console.log('Trip Type:', tripType);
     console.log('Travel Class:', travelClass);
+    console.log('Debug Mode:', debug);
 
+    // SECURITY: API token MUST come from environment - no hardcoded fallbacks
     const apiToken = Deno.env.get('TRAVELPAYOUTS_API_TOKEN');
     const marker = Deno.env.get('TRAVELPAYOUTS_MARKER');
 
@@ -169,22 +188,24 @@ serve(async (req) => {
     console.log('Marker configured:', marker ? `${marker.substring(0, 6)}...` : 'NOT SET');
 
     if (!apiToken) {
-      console.error('TRAVELPAYOUTS_API_TOKEN not configured');
+      console.error('CRITICAL: TRAVELPAYOUTS_API_TOKEN not configured');
       return new Response(
         JSON.stringify({ 
           error: 'API credentials not configured. Please add your Travelpayouts API token.',
-          errorType: 'config'
+          errorType: 'config',
+          debug: debug ? { timestamp: new Date().toISOString() } : undefined
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!marker) {
-      console.error('TRAVELPAYOUTS_MARKER not configured');
+      console.error('CRITICAL: TRAVELPAYOUTS_MARKER not configured');
       return new Response(
         JSON.stringify({ 
           error: 'Affiliate marker not configured. Please add your Travelpayouts marker.',
-          errorType: 'config'
+          errorType: 'config',
+          debug: debug ? { timestamp: new Date().toISOString() } : undefined
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -217,6 +238,7 @@ serve(async (req) => {
     console.log('Success:', data.success);
     console.log('Data count:', data.data?.length || 0);
     
+    // Always log raw response in debug mode or when empty
     if (debug || data.data?.length === 0) {
       console.log('Raw response:', JSON.stringify(data, null, 2));
     }
@@ -228,7 +250,12 @@ serve(async (req) => {
           error: 'Failed to fetch flights from provider', 
           errorType: 'api',
           details: data,
-          debug: debug ? { url: apiUrlForLogging, status: response.status } : undefined
+          debug: debug ? { 
+            url: apiUrlForLogging, 
+            status: response.status,
+            timestamp: new Date().toISOString(),
+            rawResponse: data
+          } : undefined
         }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -236,29 +263,32 @@ serve(async (req) => {
     
     // Check for empty results - provide clear reason
     if (!data.data || data.data.length === 0) {
-      // Check if date is far in the future (more than 9 months)
-      const departDateObj = new Date(departDate);
-      const now = new Date();
-      const monthsDiff = (departDateObj.getFullYear() - now.getFullYear()) * 12 + (departDateObj.getMonth() - now.getMonth());
-      
-      const isFarFuture = monthsDiff > 9;
+      const farFuture = isTooFarForPricing(departDate);
+      const monthsAhead = monthsBetween(new Date(), new Date(departDate));
       
       console.log('=== NO FLIGHTS FOUND ===');
-      console.log('Months ahead:', monthsDiff);
-      console.log('Is far future:', isFarFuture);
-      console.log('Reason:', isFarFuture ? 'Pricing not released yet' : 'No available flights');
+      console.log('Months ahead:', monthsAhead);
+      console.log('Is far future (>11 months):', farFuture);
+      console.log('Reason:', farFuture ? 'NO_PRICING_YET - Airlines have not released pricing' : 'NO_RESULTS - No available flights');
       
       return new Response(
         JSON.stringify({ 
           flights: [],
-          status: isFarFuture ? 'NO_PRICING_YET' : 'NO_RESULTS',
-          emptyReason: isFarFuture ? 'far_future' : 'no_results',
-          message: isFarFuture 
-            ? 'Prices for this date are not available yet. Airlines release pricing closer to departure.'
+          status: farFuture ? 'NO_PRICING_YET' : 'NO_RESULTS',
+          emptyReason: farFuture ? 'far_future' : 'no_results',
+          message: farFuture 
+            ? 'Prices for this date are not available yet. Airlines usually publish fares 6-11 months in advance.'
             : 'No flights found for this route and date combination.',
-          monthsAhead: monthsDiff,
+          monthsAhead,
           searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass },
-          debug: debug ? { url: apiUrlForLogging, status: response.status, rawResponse: data } : undefined
+          debug: debug ? { 
+            url: apiUrlForLogging, 
+            status: response.status, 
+            rawResponse: data,
+            timestamp: new Date().toISOString(),
+            isFarFuture: farFuture,
+            monthsAhead
+          } : undefined
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -278,6 +308,7 @@ serve(async (req) => {
       const airlineName = AIRLINE_NAMES[airlineCode] || airlineCode;
       
       // Generate White Label booking link (primary - branded experience)
+      // Marker is ALWAYS included via the function parameters
       const deepLink = generateWhiteLabelLink({
         marker,
         origin,
@@ -291,6 +322,7 @@ serve(async (req) => {
       });
       
       // Fallback: tp.media redirect link (if White Label has issues)
+      // Marker is ALWAYS included in the tp.media link
       const alternativeLink = generateTpMediaLink({
         marker,
         origin,
@@ -317,8 +349,8 @@ serve(async (req) => {
         durationMinutes,
         stops: flight.transfers || 0,
         price: Math.round(flight.price * adults),
-        deepLink, // Primary: White Label link
-        alternativeLink, // Backup: tp.media redirect
+        deepLink, // Primary: White Label link with marker
+        alternativeLink, // Backup: tp.media redirect with marker
         returnAt: returnTime ? returnTime.toISOString() : null,
         foundAt: flight.found_at,
       };
@@ -329,9 +361,14 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         flights,
-        marker,
+        marker, // Include marker for client-side verification
         searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass },
-        debug: debug ? { url: apiUrlForLogging, status: response.status, rawDataCount: data.data?.length } : undefined
+        debug: debug ? { 
+          url: apiUrlForLogging, 
+          status: response.status, 
+          rawDataCount: data.data?.length,
+          timestamp: new Date().toISOString()
+        } : undefined
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -343,7 +380,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
-        errorType: 'exception'
+        errorType: 'exception',
+        debug: { timestamp: new Date().toISOString() }
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

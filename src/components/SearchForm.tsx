@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import AirportAutocomplete from "./AirportAutocomplete";
+import { getDefaultDates } from "@/lib/dateUtils";
 
 interface AirportSelection {
   code: string;
@@ -17,9 +18,10 @@ const SearchForm = () => {
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
   const [from, setFrom] = useState<AirportSelection | null>(null);
   const [to, setTo] = useState<AirportSelection | null>(null);
-  // Dynamic default dates: today + 7 days / today + 14 days (no hardcoded dates)
-  const [departDate, setDepartDate] = useState<Date>(() => addDays(new Date(), 7));
-  const [returnDate, setReturnDate] = useState<Date>(() => addDays(new Date(), 14));
+  
+  // Dynamic default dates using centralized utility (today + 30 / today + 37)
+  const [departDate, setDepartDate] = useState<Date>(() => getDefaultDates().depart);
+  const [returnDate, setReturnDate] = useState<Date>(() => getDefaultDates().return);
   const [passengers, setPassengers] = useState(1);
 
   const swapLocations = () => {
