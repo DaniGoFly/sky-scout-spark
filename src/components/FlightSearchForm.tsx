@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Search } from "lucide-react";
 import { format } from "date-fns";
@@ -9,13 +9,19 @@ import AirportAutocomplete from "./AirportAutocomplete";
 import FlightDateRangePicker from "./FlightDateRangePicker";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import { getDefaultDates } from "@/lib/dateUtils";
+import type { AISearchParams } from "./FlightSearchHero";
 
 interface AirportSelection {
   code: string;
   display: string;
 }
 
-const FlightSearchForm = () => {
+interface FlightSearchFormProps {
+  aiSearchParams?: AISearchParams | null;
+  onParamsConsumed?: () => void;
+}
+
+const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
   
   // Dynamic default dates using centralized utility (today + 30 / today + 37)
@@ -35,6 +41,25 @@ const FlightSearchForm = () => {
   });
   const [flexibleDates, setFlexibleDates] = useState(false);
   const [errors, setErrors] = useState<{ from?: string; to?: string; dates?: string }>({});
+  const [highlightDestination, setHighlightDestination] = useState(false);
+
+  // Handle AI search params
+  useEffect(() => {
+    if (aiSearchParams) {
+      setTo({
+        code: aiSearchParams.destinationCode,
+        display: aiSearchParams.destinationName,
+      });
+      setErrors(e => ({ ...e, to: undefined }));
+      
+      // Highlight the destination field briefly
+      setHighlightDestination(true);
+      setTimeout(() => setHighlightDestination(false), 2000);
+      
+      // Notify parent that params were consumed
+      onParamsConsumed?.();
+    }
+  }, [aiSearchParams, onParamsConsumed]);
 
   const swapLocations = useCallback(() => {
     setFrom(prev => {
@@ -174,7 +199,7 @@ const FlightSearchForm = () => {
         </div>
 
         {/* To */}
-        <div className="lg:col-span-3">
+        <div className={`lg:col-span-3 transition-all duration-500 ${highlightDestination ? "ring-2 ring-primary ring-offset-2 rounded-xl" : ""}`}>
           <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">To</label>
           <AirportAutocomplete
             value={to}
