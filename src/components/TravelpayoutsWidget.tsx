@@ -25,7 +25,7 @@ const TravelpayoutsWidget = ({ className = "" }: TravelpayoutsWidgetProps) => {
       color_button_text: "#05B0D5",
       color_icons: "#05B0D5",
       dark: "transparent",
-      light: "#ffffff",
+      light: "transparent",
       secondary: "transparent",
       special: "#666666",
       color_focused: "#05B0D5",
