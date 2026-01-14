@@ -5,14 +5,13 @@
 /* Travelpayouts Widget Styling */
 .travelpayouts-widget {
   width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
   position: relative;
-  transform: scale(1.15);
-  transform-origin: center top;
-  margin-bottom: 40px;
 }
 
 .tp-widget-inner {
-  min-height: 380px;
+  min-height: 200px;
   overflow: visible;
 }
 
@@ -22,38 +21,28 @@
   outline: none !important;
   box-shadow: none !important;
   width: 100% !important;
-  min-height: 380px;
+  min-height: 200px;
 }
 
 @media (max-width: 768px) {
-  .travelpayouts-widget {
-    transform: scale(1.05);
-    margin-bottom: 20px;
-  }
-  
   .tp-widget-inner {
-    min-height: 450px;
+    min-height: 300px;
   }
   
   .travelpayouts-widget iframe,
   #tp-widget-container iframe {
-    min-height: 450px;
+    min-height: 300px;
   }
 }
 
 @media (max-width: 480px) {
-  .travelpayouts-widget {
-    transform: scale(1);
-    margin-bottom: 10px;
-  }
-  
   .tp-widget-inner {
-    min-height: 550px;
+    min-height: 400px;
   }
   
   .travelpayouts-widget iframe,
   #tp-widget-container iframe {
-    min-height: 550px;
+    min-height: 400px;
   }
 }
 
