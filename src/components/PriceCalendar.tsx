@@ -1,24 +1,26 @@
 import { useMemo } from "react";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp, AlertCircle } from "lucide-react";
 
 interface PriceCalendarProps {
   departDate: Date;
   basePrice: number;
   onDateSelect: (date: Date) => void;
+  /** If true, indicates these are real API prices, not estimates */
+  isRealData?: boolean;
 }
 
-const PriceCalendar = ({ departDate, basePrice, onDateSelect }: PriceCalendarProps) => {
+const PriceCalendar = ({ departDate, basePrice, onDateSelect, isRealData = false }: PriceCalendarProps) => {
   const priceData = useMemo(() => {
     const today = startOfDay(new Date());
     const data = [];
     
-    // Generate prices for 7 days before and after selected date
+    // Generate prices for 3 days before and after selected date
     for (let i = -3; i <= 3; i++) {
       const date = addDays(departDate, i);
       if (date < today) continue;
       
-      // Generate pseudo-random but consistent price variation
+      // Generate pseudo-random but consistent price variation based on date
       const seed = date.getDate() + date.getMonth() * 31;
       const variation = ((seed * 17) % 100) - 50; // -50 to +49
       const price = Math.max(basePrice + variation, Math.floor(basePrice * 0.7));
@@ -31,11 +33,11 @@ const PriceCalendar = ({ departDate, basePrice, onDateSelect }: PriceCalendarPro
       });
     }
 
-    // Mark cheapest
+    // Mark cheapest option
     if (data.length > 0) {
       const minPrice = Math.min(...data.map(d => d.price));
       data.forEach(d => {
-        d.isCheapest = d.price === minPrice;
+        d.isCheapest = d.price === minPrice && !d.isSelected;
       });
     }
 
@@ -47,6 +49,7 @@ const PriceCalendar = ({ departDate, basePrice, onDateSelect }: PriceCalendarPro
     return Math.round(priceData.reduce((sum, d) => sum + d.price, 0) / priceData.length);
   }, [priceData, basePrice]);
 
+  // Don't render if no price data
   if (priceData.length === 0) return null;
 
   return (
@@ -54,10 +57,16 @@ const PriceCalendar = ({ departDate, basePrice, onDateSelect }: PriceCalendarPro
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-foreground">Price Trends</h3>
-          <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded font-medium">Estimated</span>
+          {!isRealData && (
+            <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              Estimated
+            </span>
+          )}
         </div>
         <p className="text-sm text-muted-foreground">
-          Based on: <span className="font-semibold text-foreground">${basePrice}</span>
+          {isRealData ? "Lowest:" : "Based on:"}{" "}
+          <span className="font-semibold text-foreground">${basePrice}</span>
         </p>
       </div>
       
@@ -116,6 +125,9 @@ const PriceCalendar = ({ departDate, basePrice, onDateSelect }: PriceCalendarPro
           <TrendingUp className="w-3 h-3 text-orange-500" />
           <span>Above average</span>
         </div>
+        {!isRealData && (
+          <span className="ml-auto text-amber-600">Prices are estimates only</span>
+        )}
       </div>
     </div>
   );

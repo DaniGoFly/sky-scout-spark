@@ -30,14 +30,14 @@ const CompactSearchBar = () => {
   const [to, setTo] = useState<AirportSelection | null>(
     toCode ? { code: toCode, display: toCode } : null
   );
-  // Dynamic default dates: today + 30 / today + 37 (no hardcoded 2026)
+  // Dynamic default dates: today + 7 / today + 14 (no hardcoded dates)
   const [departDate, setDepartDate] = useState<Date>(() => {
     const dateStr = searchParams.get("depart");
-    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : addDays(new Date(), 30);
+    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : addDays(new Date(), 7);
   });
   const [returnDate, setReturnDate] = useState<Date>(() => {
     const dateStr = searchParams.get("return");
-    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : addDays(new Date(), 37);
+    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : addDays(new Date(), 14);
   });
   const [passengers, setPassengers] = useState(Number(searchParams.get("adults")) || 1);
 
@@ -146,6 +146,7 @@ const CompactSearchBar = () => {
               mode="single"
               selected={departDate}
               onSelect={(date) => date && setDepartDate(date)}
+              disabled={(date) => date < new Date()}
               initialFocus
               className="pointer-events-auto"
             />
@@ -169,6 +170,7 @@ const CompactSearchBar = () => {
                 mode="single"
                 selected={returnDate}
                 onSelect={(date) => date && setReturnDate(date)}
+                disabled={(date) => date < departDate}
                 initialFocus
                 className="pointer-events-auto"
               />

@@ -17,9 +17,9 @@ const SearchForm = () => {
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
   const [from, setFrom] = useState<AirportSelection | null>(null);
   const [to, setTo] = useState<AirportSelection | null>(null);
-  // Dynamic default dates: today + 30 days / today + 37 days
-  const [departDate, setDepartDate] = useState<Date>(addDays(new Date(), 30));
-  const [returnDate, setReturnDate] = useState<Date>(addDays(new Date(), 37));
+  // Dynamic default dates: today + 7 days / today + 14 days (no hardcoded dates)
+  const [departDate, setDepartDate] = useState<Date>(() => addDays(new Date(), 7));
+  const [returnDate, setReturnDate] = useState<Date>(() => addDays(new Date(), 14));
   const [passengers, setPassengers] = useState(1);
 
   const swapLocations = () => {
@@ -132,6 +132,7 @@ const SearchForm = () => {
                 mode="single"
                 selected={departDate}
                 onSelect={(date) => date && setDepartDate(date)}
+                disabled={(date) => date < new Date()}
                 initialFocus
               />
             </PopoverContent>
@@ -157,6 +158,7 @@ const SearchForm = () => {
                   mode="single"
                   selected={returnDate}
                   onSelect={(date) => date && setReturnDate(date)}
+                  disabled={(date) => date < departDate}
                   initialFocus
                 />
               </PopoverContent>

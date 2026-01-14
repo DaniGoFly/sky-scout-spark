@@ -60,8 +60,8 @@ const FlightResults = () => {
   useEffect(() => {
     if (autoSearch && to && !from) {
       const airportCode = CITY_AIRPORT_CODES[to.toLowerCase()] || to.toUpperCase().slice(0, 3);
-      const defaultDepart = format(addDays(new Date(), 30), "yyyy-MM-dd");
-      const defaultReturn = format(addDays(new Date(), 37), "yyyy-MM-dd");
+      const defaultDepart = format(addDays(new Date(), 7), "yyyy-MM-dd");
+      const defaultReturn = format(addDays(new Date(), 14), "yyyy-MM-dd");
       
       setShowAllFlights(false);
       setHasSearched(true);
