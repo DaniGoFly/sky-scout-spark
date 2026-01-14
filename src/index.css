@@ -11,7 +11,7 @@
 }
 
 .tp-widget-inner {
-  min-height: 200px;
+  min-height: 450px;
   overflow: visible;
 }
 
@@ -21,7 +21,7 @@
   outline: none !important;
   box-shadow: none !important;
   width: 100% !important;
-  min-height: 200px;
+  min-height: 450px;
 }
 
 @media (max-width: 768px) {
