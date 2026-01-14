@@ -1,5 +1,5 @@
-import TravelpayoutsWidget from "./TravelpayoutsWidget";
-import { Shield, Sparkles, Clock, ExternalLink } from "lucide-react";
+import SearchForm from "./SearchForm";
+import { Shield, Sparkles, Clock } from "lucide-react";
 
 const Hero = () => {
   return (
@@ -38,18 +38,8 @@ const Hero = () => {
           </p>
         </div>
 
-        {/* Travelpayouts Widget - Clean Integration */}
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-card/60 backdrop-blur-xl rounded-2xl border border-border/40 shadow-card p-4 md:p-6">
-            <TravelpayoutsWidget />
-          </div>
-          
-          {/* Subtle info text */}
-          <p className="text-center text-xs text-muted-foreground/70 mt-4 flex items-center justify-center gap-1.5">
-            <ExternalLink className="w-3 h-3" />
-            Search redirects to Aviasales for live prices & booking
-          </p>
-        </div>
+        {/* Custom Search Form */}
+        <SearchForm />
 
         {/* Trust Badges */}
         <div className="mt-14 flex flex-wrap items-center justify-center gap-6 md:gap-10">
