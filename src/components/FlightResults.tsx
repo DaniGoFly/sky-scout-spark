@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar, Info, Clock, Database, ExternalLink } from "lucide-react";
+import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar, Info, Clock, Database, ExternalLink, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
@@ -35,7 +35,11 @@ const FlightResults = () => {
     error, 
     emptyReason, 
     responseStatus,
+    userMessage,
     suggestedSearchDate,
+    suggestedReturnDate,
+    aviasalesDirectUrl,
+    flexibleDatesUsed,
     debugInfo: apiDebugInfo, 
     searchFlights 
   } = useFlightSearch();
@@ -121,11 +125,15 @@ const FlightResults = () => {
     if (suggestedSearchDate) {
       const newParams = new URLSearchParams(searchParams);
       newParams.set("depart", suggestedSearchDate);
-      // Adjust return date if needed
-      const suggestedDepart = parseDateSafe(suggestedSearchDate);
-      if (suggestedDepart && tripType === "roundtrip") {
-        const newReturn = addDays(suggestedDepart, 7);
-        newParams.set("return", format(newReturn, "yyyy-MM-dd"));
+      if (suggestedReturnDate && tripType === "roundtrip") {
+        newParams.set("return", suggestedReturnDate);
+      } else if (tripType === "roundtrip") {
+        // Calculate return date if not provided
+        const suggestedDepart = parseDateSafe(suggestedSearchDate);
+        if (suggestedDepart) {
+          const newReturn = addDays(suggestedDepart, 7);
+          newParams.set("return", format(newReturn, "yyyy-MM-dd"));
+        }
       }
       setSearchParams(newParams);
     }
@@ -240,7 +248,10 @@ const FlightResults = () => {
                   params: { from, to, depart, returnDate, adults, children, infants, tripType, travelClass },
                   responseStatus,
                   emptyReason,
+                  userMessage,
                   flightCount: flights.length,
+                  flexibleDatesUsed,
+                  aviasalesDirectUrl,
                   timestamp: new Date().toISOString()
                 },
                 backend: apiDebugInfo
@@ -257,7 +268,7 @@ const FlightResults = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mb-3">
           <div className="bg-background p-2 rounded">
             <span className="font-semibold block text-muted-foreground">Status</span>
-            <span className={responseStatus === 'OK' ? 'text-green-500' : responseStatus === 'ERROR' || responseStatus === 'TP_ERROR' ? 'text-red-500' : 'text-yellow-500'}>
+            <span className={responseStatus === 'OK' || responseStatus === 'OK_FLEXIBLE' ? 'text-green-500' : responseStatus === 'ERROR' ? 'text-red-500' : 'text-yellow-500'}>
               {responseStatus || 'N/A'}
             </span>
           </div>
@@ -281,6 +292,18 @@ const FlightResults = () => {
             <code className="ml-1 break-all text-[10px] bg-background p-1 rounded">{apiDebugInfo.requestUrl}</code>
           </div>
         )}
+
+        {userMessage && (
+          <div className="text-xs mb-2 p-2 bg-background rounded">
+            <span className="font-semibold">User Message:</span> {userMessage}
+          </div>
+        )}
+
+        {flexibleDatesUsed.length > 0 && (
+          <div className="text-xs mb-2 p-2 bg-background rounded">
+            <span className="font-semibold">Flexible Dates Used:</span> {flexibleDatesUsed.join(', ')}
+          </div>
+        )}
         
         {apiDebugInfo && (
           <details className="mt-2">
@@ -294,7 +317,7 @@ const FlightResults = () => {
     );
   };
 
-  // Empty state for "no cached prices"
+  // Empty state for "no cached prices" (NOT an error)
   const NoCachedPricesState = () => (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center mb-6">
@@ -302,63 +325,86 @@ const FlightResults = () => {
       </div>
       <p className="text-xl text-foreground font-semibold mb-2">No cached prices available</p>
       <p className="text-muted-foreground max-w-md mb-6">
-        The Aviasales Data API doesn't have cached prices for this route and dates. 
-        This is common for less popular routes or specific dates.
+        {userMessage || "We searched our price database but couldn't find cached prices for this route and dates. This is common for less popular routes or specific date combinations."}
       </p>
       
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6 max-w-md text-left">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">This is not an error.</strong> Our app uses cached historical prices. 
+            For real-time availability and booking, use the direct search button below.
+          </p>
+        </div>
+      </div>
+      
       <div className="flex flex-wrap gap-3 justify-center mb-6">
+        {aviasalesDirectUrl && (
+          <Button 
+            onClick={() => window.open(aviasalesDirectUrl, '_blank')}
+            className="gap-2"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Search Live Prices
+          </Button>
+        )}
         <Button variant="outline" onClick={() => navigate("/flights")} className="gap-2">
           <Calendar className="w-4 h-4" />
           Try Different Dates
         </Button>
-        <Button 
-          variant="outline" 
-          onClick={() => {
-            // Open direct Aviasales search as fallback
-            const route = returnDate 
-              ? `${from}${depart.slice(8,10)}${depart.slice(5,7)}${to}${returnDate.slice(8,10)}${returnDate.slice(5,7)}`
-              : `${from}${depart.slice(8,10)}${depart.slice(5,7)}${to}`;
-            window.open(`https://www.aviasales.com/search/${route}${adults}`, '_blank');
-          }}
-          className="gap-2"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Search on Aviasales
-        </Button>
       </div>
       
       <p className="text-xs text-muted-foreground max-w-lg">
-        <strong>Note:</strong> This app uses the Aviasales Data API which shows cached/historical prices. 
-        For live availability, try the direct search link above.
+        Airlines typically release prices 9-12 months in advance. Try dates closer to today for better cache coverage.
       </p>
       
       <DebugPanel />
     </div>
   );
 
-  // Empty state for "far future"
+  // Empty state for "far future" (beyond airline publish window)
   const FarFutureState = () => (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="w-20 h-20 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
         <Clock className="w-10 h-10 text-blue-500" />
       </div>
-      <p className="text-xl text-foreground font-semibold mb-2">Prices not available yet</p>
+      <p className="text-xl text-foreground font-semibold mb-2">Prices not released yet</p>
       <p className="text-muted-foreground max-w-md mb-6">
-        Airlines typically publish fares 330-360 days in advance. 
-        Your selected date is too far in the future.
+        {userMessage || "Airlines typically publish fares 9-11 months in advance. Your selected date is beyond the current booking window."}
       </p>
+      
+      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6 max-w-md text-left">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Not an error!</strong> This date is too far in the future. 
+            Airline prices aren't available yet. You can still search directly or try nearer dates.
+          </p>
+        </div>
+      </div>
       
       {suggestedSearchDate && (
         <div className="mb-6">
-          <p className="text-sm text-muted-foreground mb-2">Try searching for:</p>
+          <p className="text-sm text-muted-foreground mb-2">Try the nearest available dates:</p>
           <Button onClick={handleSuggestedDateClick} className="gap-2">
             <Calendar className="w-4 h-4" />
-            {formatDate(suggestedSearchDate)}
+            Search {formatDate(suggestedSearchDate)}
+            {suggestedReturnDate && tripType === "roundtrip" && ` – ${formatDate(suggestedReturnDate)}`}
           </Button>
         </div>
       )}
       
       <div className="flex flex-wrap gap-3 justify-center">
+        {aviasalesDirectUrl && (
+          <Button 
+            variant="outline"
+            onClick={() => window.open(aviasalesDirectUrl, '_blank')}
+            className="gap-2"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Try Direct Search
+          </Button>
+        )}
         <Button variant="outline" onClick={() => navigate("/flights")} className="gap-2">
           <Search className="w-4 h-4" />
           Modify Search
@@ -369,34 +415,67 @@ const FlightResults = () => {
     </div>
   );
 
-  // Error state
+  // Error state (real service errors only)
   const ErrorState = () => (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <AlertCircle className="w-16 h-16 text-destructive mb-4" />
-      <p className="text-xl text-foreground font-semibold mb-2">Unable to load flights</p>
-      <p className="text-muted-foreground max-w-md mb-6">{error}</p>
+      <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
+        <AlertCircle className="w-10 h-10 text-destructive" />
+      </div>
+      <p className="text-xl text-foreground font-semibold mb-2">Service temporarily unavailable</p>
+      <p className="text-muted-foreground max-w-md mb-6">{error || userMessage || "We're having trouble connecting to our flight data service."}</p>
+      
+      <div className="flex flex-wrap gap-3 justify-center mb-6">
+        {aviasalesDirectUrl && (
+          <Button 
+            onClick={() => window.open(aviasalesDirectUrl, '_blank')}
+            className="gap-2"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Search on Aviasales
+          </Button>
+        )}
+        <Button
+          variant="outline"
+          onClick={() =>
+            searchFlights({
+              origin: displayFrom,
+              destination: displayTo,
+              departDate: displayDepart,
+              returnDate: displayReturn || undefined,
+              adults,
+              tripType,
+              debug: isDebugMode,
+            })
+          }
+          className="gap-2"
+        >
+          <Search className="w-4 h-4" />
+          Try Again
+        </Button>
+      </div>
       
       <DebugPanel />
-      
-      <Button
-        onClick={() =>
-          searchFlights({
-            origin: displayFrom,
-            destination: displayTo,
-            departDate: displayDepart,
-            returnDate: displayReturn || undefined,
-            adults,
-            tripType,
-            debug: isDebugMode,
-          })
-        }
-        className="gap-2"
-      >
-        <Search className="w-4 h-4" />
-        Try Again
-      </Button>
     </div>
   );
+
+  // Flexible dates banner
+  const FlexibleDatesBanner = () => {
+    if (flexibleDatesUsed.length === 0) return null;
+    
+    return (
+      <div className="mb-4 p-3 bg-primary/10 border border-primary/30 rounded-lg flex items-center gap-3">
+        <Calendar className="w-5 h-5 text-primary flex-shrink-0" />
+        <div className="flex-1">
+          <p className="text-sm font-medium text-foreground">
+            Showing prices for nearby dates
+          </p>
+          <p className="text-xs text-muted-foreground">
+            No exact matches for {formatDate(depart)}. Showing results for: {flexibleDatesUsed.map(d => formatDate(d)).join(', ')}
+          </p>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <section className="py-6 px-4 bg-secondary/30 min-h-screen">
@@ -472,7 +551,7 @@ const FlightResults = () => {
               <FlightResultsSkeleton />
             </div>
           </div>
-        ) : error ? (
+        ) : error || emptyReason === 'service_unavailable' ? (
           <ErrorState />
         ) : !hasSearched ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -485,31 +564,14 @@ const FlightResults = () => {
             </p>
           </div>
         ) : flights.length === 0 ? (
-          // Determine which empty state to show
+          // Determine which empty state to show based on emptyReason
           emptyReason === 'far_future' ? (
             <FarFutureState />
           ) : emptyReason === 'no_cached_prices' ? (
             <NoCachedPricesState />
           ) : (
-            // Generic no results
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
-                <Plane className="w-10 h-10 text-muted-foreground" />
-              </div>
-              <p className="text-xl text-foreground font-semibold mb-2">No flights found</p>
-              <p className="text-muted-foreground max-w-md mb-6">
-                We couldn't find any flights for this route. Try different dates, nearby airports, or flexible travel options.
-              </p>
-              
-              <DebugPanel />
-              
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Button variant="outline" onClick={() => navigate("/flights")} className="gap-2">
-                  <Search className="w-4 h-4" />
-                  Modify Search
-                </Button>
-              </div>
-            </div>
+            // This shouldn't happen often now, but fallback to cache empty state
+            <NoCachedPricesState />
           )
         ) : (
           /* Main Results View */
@@ -523,10 +585,14 @@ const FlightResults = () => {
 
             {/* Results */}
             <div className="flex-1 space-y-4">
+              {/* Flexible dates banner */}
+              <FlexibleDatesBanner />
+              
               {/* Sort & Count Bar */}
               <div className="flex flex-wrap items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-semibold text-foreground">{totalFiltered}</span> flights found
+                  {responseStatus === 'OK_FLEXIBLE' && <span className="text-primary ml-1">(nearby dates)</span>}
                 </p>
                 <div className="flex gap-2">
                   {(["best", "cheapest", "fastest"] as const).map((option) => (
@@ -561,6 +627,23 @@ const FlightResults = () => {
                     className="gap-2"
                   >
                     Show all {totalFiltered} flights
+                  </Button>
+                </div>
+              )}
+
+              {/* Direct search fallback */}
+              {aviasalesDirectUrl && (
+                <div className="text-center pt-4 pb-2 border-t border-border mt-4">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    These are cached historical prices. For live availability:
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(aviasalesDirectUrl, '_blank')}
+                    className="gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Search Live Prices on Aviasales
                   </Button>
                 </div>
               )}
