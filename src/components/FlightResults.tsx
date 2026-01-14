@@ -321,11 +321,14 @@ const FlightResults = () => {
   const NoCachedPricesState = () => (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-        <Plane className="w-12 h-12 text-primary" />
+        <Database className="w-12 h-12 text-primary" />
       </div>
       <p className="text-2xl text-foreground font-bold mb-3">No cached prices available</p>
-      <p className="text-muted-foreground max-w-lg mb-6">
-        {userMessage || "Our price database doesn't have cached prices for this specific route and dates. This is common for less popular routes. Flights likely exist – just search live!"}
+      <p className="text-muted-foreground max-w-lg mb-4">
+        These results use historical data. For live prices, search Aviasales directly.
+      </p>
+      <p className="text-sm text-muted-foreground max-w-md mb-6">
+        Airlines usually release prices 9–12 months in advance. Try nearer dates or use the live search below.
       </p>
       
       {/* Primary CTA - Search Live Prices */}
@@ -346,10 +349,10 @@ const FlightResults = () => {
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium text-foreground mb-1">Why am I seeing this?</p>
+            <p className="text-sm font-medium text-foreground mb-1">About cached prices</p>
             <p className="text-sm text-muted-foreground">
-              We use cached historical pricing data. When the cache is empty, it doesn't mean flights don't exist – 
-              just that we don't have recent price data. Click "Search Live Prices" to see real-time availability and book.
+              Our site uses cached historical pricing data for inspiration. When no cached prices are available, 
+              it doesn't mean flights don't exist. Click "Search Live Prices" to see real-time availability on Aviasales.
             </p>
           </div>
         </div>
@@ -659,11 +662,11 @@ const FlightResults = () => {
                 </div>
               )}
 
-              {/* Direct search fallback */}
+              {/* Direct search fallback - always show for transparency */}
               {aviasalesDirectUrl && (
                 <div className="text-center pt-4 pb-2 border-t border-border mt-4">
                   <p className="text-sm text-muted-foreground mb-2">
-                    These are cached historical prices. For live availability:
+                    These are cached historical prices. For live availability and booking:
                   </p>
                   <Button
                     variant="outline"
@@ -671,7 +674,7 @@ const FlightResults = () => {
                     className="gap-2"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    Search Live Prices on Aviasales
+                    Search Live Prices
                   </Button>
                 </div>
               )}
