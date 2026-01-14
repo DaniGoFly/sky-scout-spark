@@ -11,50 +11,51 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3 pointer-events-auto", className)}
+      className={cn("p-4 pointer-events-auto", className)}
       classNames={{
-        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+        months: "flex flex-col sm:flex-row gap-6",
         month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
+        caption: "flex justify-center pt-1 relative items-center mb-2",
+        caption_label: "text-base font-semibold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
-          buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+          "h-8 w-8 bg-gradient-to-br from-primary/10 to-purple-500/10 p-0 opacity-70 hover:opacity-100 rounded-full transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary/20 inline-flex items-center justify-center border border-primary/20 hover:border-primary/40",
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-y-1",
+        table: "w-full border-collapse",
         head_row: "flex",
-        head_cell: "text-muted-foreground rounded-md w-8 sm:w-9 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
+        head_cell: "text-muted-foreground rounded-md w-10 sm:w-11 font-medium text-xs uppercase tracking-wider",
+        row: "flex w-full mt-1",
         cell: cn(
-          "h-8 w-8 sm:h-9 sm:w-9 text-center text-sm p-0 relative",
-          "[&:has([aria-selected].day-range-end)]:rounded-r-md",
-          "[&:has([aria-selected].day-outside)]:bg-accent/50",
-          "[&:has([aria-selected])]:bg-accent",
-          "first:[&:has([aria-selected])]:rounded-l-md",
-          "last:[&:has([aria-selected])]:rounded-r-md",
-          "focus-within:relative focus-within:z-20"
+          "relative p-0.5 text-center text-sm focus-within:relative focus-within:z-20",
+          "[&:has([aria-selected])]:bg-transparent",
+          "[&:has([aria-selected].day-range-end)]:rounded-r-full",
+          "[&:has([aria-selected].day-outside)]:bg-transparent",
+          "first:[&:has([aria-selected])]:rounded-l-full",
+          "last:[&:has([aria-selected])]:rounded-r-full"
         ),
         day: cn(
-          buttonVariants({ variant: "ghost" }),
-          "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal aria-selected:opacity-100"
+          "h-10 w-10 sm:h-11 sm:w-11 p-0 font-medium rounded-full transition-all duration-300 hover:scale-110",
+          "hover:bg-gradient-to-br hover:from-primary/20 hover:via-purple-500/20 hover:to-pink-500/20",
+          "hover:shadow-lg hover:shadow-primary/10",
+          "aria-selected:opacity-100",
+          "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
         ),
         day_range_end: "day-range-end",
         day_selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        day_today: "bg-accent text-accent-foreground",
+          "bg-gradient-to-br from-primary via-purple-500 to-pink-500 text-white hover:from-primary hover:via-purple-600 hover:to-pink-600 focus:from-primary focus:via-purple-500 focus:to-pink-500 shadow-lg shadow-primary/30 animate-scale-in",
+        day_today: "bg-gradient-to-br from-primary/10 via-purple-500/10 to-pink-500/10 text-foreground font-bold ring-2 ring-primary/30",
         day_outside:
-          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-        day_disabled: "text-muted-foreground opacity-50",
-        day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+          "day-outside text-muted-foreground/40 opacity-50 aria-selected:bg-gradient-to-br aria-selected:from-primary/50 aria-selected:via-purple-500/50 aria-selected:to-pink-500/50 aria-selected:text-white/70",
+        day_disabled: "text-muted-foreground/30 opacity-30 cursor-not-allowed hover:scale-100 hover:bg-transparent",
+        day_range_middle: "aria-selected:bg-gradient-to-r aria-selected:from-primary/20 aria-selected:via-purple-500/20 aria-selected:to-pink-500/20 aria-selected:text-foreground rounded-none",
         day_hidden: "invisible",
         ...classNames,
       }}
       components={{
-        IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
+        IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4 text-primary" />,
+        IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4 text-primary" />,
       }}
       {...props}
     />
