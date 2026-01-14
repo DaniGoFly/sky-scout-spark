@@ -1,8 +1,8 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import WhyUseSection from "@/components/WhyUseSection";
-import HotelSection from "@/components/HotelSection";
 import PopularDestinations from "@/components/PopularDestinations";
+import HotelSection from "@/components/HotelSection";
 import Footer from "@/components/Footer";
 
 const Index = () => {
