@@ -159,7 +159,7 @@ Only suggest destinations from the provided AVAILABLE DESTINATIONS DATA list.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: message }
