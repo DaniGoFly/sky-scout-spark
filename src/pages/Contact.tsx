@@ -27,9 +27,9 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="pt-24 pb-16 px-4">
+      <main className="flex-1 pt-24 pb-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-foreground mb-4">Contact Us</h1>

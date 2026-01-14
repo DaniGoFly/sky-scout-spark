@@ -2,7 +2,7 @@ import TravelpayoutsWidget from "./TravelpayoutsWidget";
 
 const Hero = () => {
   return (
-    <section className="relative min-h-[600px] md:min-h-[700px] flex flex-col">
+    <section className="relative min-h-[750px] flex flex-col">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img
@@ -28,7 +28,7 @@ const Hero = () => {
 
           {/* Search Widget Container */}
           <div className="max-w-4xl mx-auto">
-            <div className="rounded-xl overflow-visible pb-64">
+            <div className="rounded-xl overflow-visible">
               <TravelpayoutsWidget />
             </div>
           </div>
