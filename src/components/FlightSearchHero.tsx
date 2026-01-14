@@ -2,7 +2,7 @@ import TravelpayoutsWidget from "./TravelpayoutsWidget";
 
 const FlightSearchHero = () => {
   return (
-    <section className="relative min-h-[800px] flex flex-col">
+    <section className="relative min-h-[900px] flex flex-col">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img
@@ -13,8 +13,8 @@ const FlightSearchHero = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-20 px-4">
+      {/* Content - positioned toward top to leave room below for calendar */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-start pt-28 pb-48 px-4">
         <div className="container mx-auto">
           {/* Hero Text */}
           <div className="text-center mb-12 max-w-4xl mx-auto">
