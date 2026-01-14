@@ -9,7 +9,7 @@
 }
 
 .tp-widget-inner {
-  min-height: 280px;
+  min-height: 320px;
   overflow: hidden;
 }
 
@@ -19,29 +19,41 @@
   outline: none !important;
   box-shadow: none !important;
   width: 100% !important;
-  min-height: 280px;
+  min-height: 320px;
   background: transparent !important;
+}
+
+/* Hide Aviasales logo */
+.travelpayouts-widget [class*="logo"],
+.travelpayouts-widget [class*="brand"],
+.travelpayouts-widget [class*="powered"],
+#tp-widget-container [class*="logo"],
+#tp-widget-container [class*="brand"],
+#tp-widget-container [class*="powered"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 @media (max-width: 768px) {
   .tp-widget-inner {
-    min-height: 380px;
+    min-height: 420px;
   }
   
   .travelpayouts-widget iframe,
   #tp-widget-container iframe {
-    min-height: 380px;
+    min-height: 420px;
   }
 }
 
 @media (max-width: 480px) {
   .tp-widget-inner {
-    min-height: 480px;
+    min-height: 520px;
   }
   
   .travelpayouts-widget iframe,
   #tp-widget-container iframe {
-    min-height: 480px;
+    min-height: 520px;
   }
 }
 
