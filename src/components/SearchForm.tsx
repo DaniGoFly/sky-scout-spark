@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -17,8 +17,9 @@ const SearchForm = () => {
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
   const [from, setFrom] = useState<AirportSelection | null>(null);
   const [to, setTo] = useState<AirportSelection | null>(null);
-  const [departDate, setDepartDate] = useState<Date>(new Date(2026, 1, 15));
-  const [returnDate, setReturnDate] = useState<Date>(new Date(2026, 1, 22));
+  // Dynamic default dates: today + 30 days / today + 37 days
+  const [departDate, setDepartDate] = useState<Date>(addDays(new Date(), 30));
+  const [returnDate, setReturnDate] = useState<Date>(addDays(new Date(), 37));
   const [passengers, setPassengers] = useState(1);
 
   const swapLocations = () => {
@@ -32,21 +33,23 @@ const SearchForm = () => {
   const handleSearch = () => {
     if (!isValid) return;
 
-    // Navigate to internal results page instead of redirecting externally
+    // Normalized parameters
     const params = new URLSearchParams({
       trip: tripType,
       from: from.code,
       to: to.code,
       depart: format(departDate, "yyyy-MM-dd"),
       adults: passengers.toString(),
-      cabin: "economy",
+      children: "0",
+      infants: "0",
+      class: "economy",
     });
 
     if (tripType === "roundtrip") {
       params.set("return", format(returnDate, "yyyy-MM-dd"));
     }
 
-    navigate(`/results?${params.toString()}`);
+    navigate(`/flights/results?${params.toString()}`);
   };
 
   return (

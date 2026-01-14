@@ -69,6 +69,10 @@ const FlightSearchForm = () => {
   const handleSearch = useCallback(() => {
     if (!validate()) return;
 
+    // Normalize infants: combine infantsSeat + infantsLap
+    const totalInfants = travelers.infantsSeat + travelers.infantsLap;
+
+    // Normalized parameters (unified schema)
     const params = new URLSearchParams({
       trip: tripType,
       from: from!.code,
@@ -76,8 +80,7 @@ const FlightSearchForm = () => {
       depart: format(departDate!, "yyyy-MM-dd"),
       adults: travelers.adults.toString(),
       children: travelers.children.toString(),
-      infantsSeat: travelers.infantsSeat.toString(),
-      infantsLap: travelers.infantsLap.toString(),
+      infants: totalInfants.toString(),
       class: travelers.cabinClass,
       flexible: flexibleDates.toString(),
     });

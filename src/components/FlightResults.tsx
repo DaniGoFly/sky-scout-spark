@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar } from "lucide-react";
+import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
@@ -9,7 +9,7 @@ import FlightResultsSkeleton from "./FlightResultsSkeleton";
 import CompactSearchBar from "./CompactSearchBar";
 import PriceCalendar from "./PriceCalendar";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
-import { format, addDays, parseISO, differenceInMonths } from "date-fns";
+import { format, addDays, parseISO, differenceInMonths, differenceInDays } from "date-fns";
 
 // City to airport code mapping for auto-search
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -39,8 +39,12 @@ const FlightResults = () => {
   const [showAllFlights, setShowAllFlights] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<LiveFlight | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
-  // Extract search params
+  // Check for debug mode
+  const isDebugMode = searchParams.get("debug") === "1";
+
+  // Extract search params - unified schema
   const from = searchParams.get("from") || "";
   const to = searchParams.get("to") || "";
   const depart = searchParams.get("depart") || "";
@@ -53,15 +57,32 @@ const FlightResults = () => {
   const flexible = searchParams.get("flexible") === "true";
   const autoSearch = searchParams.get("autoSearch") === "true";
 
+  // Calculate if date is far in the future (more than 9 months)
+  const isFarFuture = useMemo(() => {
+    if (!depart) return false;
+    try {
+      const departDate = parseISO(depart);
+      const monthsDiff = differenceInMonths(departDate, new Date());
+      return monthsDiff > 9;
+    } catch {
+      return false;
+    }
+  }, [depart]);
+
   // Handle auto-search from destination cards
   useEffect(() => {
     if (autoSearch && to && !from) {
       const airportCode = CITY_AIRPORT_CODES[to.toLowerCase()] || to.toUpperCase().slice(0, 3);
-      const defaultDepart = format(addDays(new Date(), 7), "yyyy-MM-dd");
-      const defaultReturn = format(addDays(new Date(), 14), "yyyy-MM-dd");
+      const defaultDepart = format(addDays(new Date(), 30), "yyyy-MM-dd");
+      const defaultReturn = format(addDays(new Date(), 37), "yyyy-MM-dd");
       
       setShowAllFlights(false);
       setHasSearched(true);
+      
+      if (isDebugMode) {
+        console.log("[DEBUG] Auto-search params:", { origin: "NYC", destination: airportCode, departDate: defaultDepart, returnDate: defaultReturn });
+      }
+      
       searchFlights({
         origin: "NYC",
         destination: airportCode,
@@ -71,14 +92,15 @@ const FlightResults = () => {
         tripType: "roundtrip",
       });
     }
-  }, [autoSearch, to, from, searchFlights]);
+  }, [autoSearch, to, from, searchFlights, isDebugMode]);
 
   // Fetch live flights when params change (regular search)
   useEffect(() => {
     if (from && to && depart && !autoSearch) {
       setShowAllFlights(false);
       setHasSearched(true);
-      searchFlights({
+      
+      const searchData = {
         origin: from,
         destination: to,
         departDate: depart,
@@ -88,9 +110,16 @@ const FlightResults = () => {
         infants,
         tripType,
         travelClass,
-      });
+      };
+      
+      if (isDebugMode) {
+        console.log("[DEBUG] Search params:", searchData);
+        setDebugInfo({ request: searchData, timestamp: new Date().toISOString() });
+      }
+      
+      searchFlights(searchData);
     }
-  }, [from, to, depart, returnDate, adults, children, infants, tripType, travelClass, searchFlights, autoSearch]);
+  }, [from, to, depart, returnDate, adults, children, infants, tripType, travelClass, searchFlights, autoSearch, isDebugMode]);
 
   // Handle price calendar date selection
   const handleDateSelect = (newDate: Date) => {
@@ -294,30 +323,64 @@ const FlightResults = () => {
         ) : flights.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
-              {depart && differenceInMonths(parseISO(depart), new Date()) > 9 ? (
+              {isFarFuture ? (
                 <Calendar className="w-10 h-10 text-muted-foreground" />
               ) : (
                 <Plane className="w-10 h-10 text-muted-foreground" />
               )}
             </div>
             <p className="text-xl text-foreground font-semibold mb-2">
-              {depart && differenceInMonths(parseISO(depart), new Date()) > 9 
+              {isFarFuture 
                 ? "Prices not available yet" 
                 : "No flights found"}
             </p>
             <p className="text-muted-foreground max-w-md mb-6">
-              {depart && differenceInMonths(parseISO(depart), new Date()) > 9 
-                ? "Flight prices are typically available 9-12 months in advance. Please choose dates closer to today."
-                : "We couldn't find any flights for your search. Try different dates or destinations."}
+              {isFarFuture 
+                ? "Flight prices are typically available 9-12 months in advance. Try closer dates for this route."
+                : "We couldn't find any flights for your search. Try different dates, nearby airports, or flexible travel days."}
             </p>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/flights")}
-              className="gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Modify Search
-            </Button>
+            
+            {/* Debug info panel */}
+            {isDebugMode && debugInfo && (
+              <div className="mb-6 p-4 bg-secondary/50 rounded-lg text-left max-w-lg w-full">
+                <div className="flex items-center gap-2 mb-2">
+                  <Info className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-semibold">Debug Info</span>
+                </div>
+                <pre className="text-xs text-muted-foreground overflow-auto">
+                  {JSON.stringify(debugInfo, null, 2)}
+                </pre>
+              </div>
+            )}
+            
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => navigate("/flights")}
+                className="gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Modify Search
+              </Button>
+              {isFarFuture && depart && (
+                <Button
+                  variant="default"
+                  onClick={() => {
+                    // Suggest dates 30 days from now instead
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.set("depart", format(addDays(new Date(), 30), "yyyy-MM-dd"));
+                    if (tripType === "roundtrip") {
+                      newParams.set("return", format(addDays(new Date(), 37), "yyyy-MM-dd"));
+                    }
+                    setSearchParams(newParams);
+                  }}
+                  className="gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Try Dates in 30 Days
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6 mt-6">

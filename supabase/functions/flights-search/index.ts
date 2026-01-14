@@ -139,6 +139,7 @@ serve(async (req) => {
   }
 
   try {
+    const requestBody = await req.json();
     const { 
       origin, 
       destination, 
@@ -148,20 +149,32 @@ serve(async (req) => {
       children = 0, 
       infants = 0, 
       tripType, 
-      travelClass = 'economy' 
-    } = await req.json();
+      travelClass = 'economy',
+      debug = false
+    } = requestBody;
     
-    console.log('Flight search request:', { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass });
+    console.log('=== FLIGHT SEARCH REQUEST ===');
+    console.log('Origin:', origin);
+    console.log('Destination:', destination);
+    console.log('Depart Date:', departDate);
+    console.log('Return Date:', returnDate);
+    console.log('Adults:', adults, 'Children:', children, 'Infants:', infants);
+    console.log('Trip Type:', tripType);
+    console.log('Travel Class:', travelClass);
 
     const apiToken = Deno.env.get('TRAVELPAYOUTS_API_TOKEN');
     const marker = Deno.env.get('TRAVELPAYOUTS_MARKER');
 
-    console.log('Using marker:', marker ? `${marker.substring(0, 3)}***` : 'NOT SET');
+    console.log('API Token configured:', !!apiToken);
+    console.log('Marker configured:', marker ? `${marker.substring(0, 6)}...` : 'NOT SET');
 
     if (!apiToken) {
       console.error('TRAVELPAYOUTS_API_TOKEN not configured');
       return new Response(
-        JSON.stringify({ error: 'API credentials not configured. Please add your Travelpayouts API token.' }),
+        JSON.stringify({ 
+          error: 'API credentials not configured. Please add your Travelpayouts API token.',
+          errorType: 'config'
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -169,7 +182,10 @@ serve(async (req) => {
     if (!marker) {
       console.error('TRAVELPAYOUTS_MARKER not configured');
       return new Response(
-        JSON.stringify({ error: 'Affiliate marker not configured. Please add your Travelpayouts marker.' }),
+        JSON.stringify({ 
+          error: 'Affiliate marker not configured. Please add your Travelpayouts marker.',
+          errorType: 'config'
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -189,25 +205,54 @@ serve(async (req) => {
     searchUrl.searchParams.set('limit', '30');
     searchUrl.searchParams.set('token', apiToken);
 
-    console.log('Calling Travelpayouts Prices API');
+    const apiUrlForLogging = searchUrl.toString().replace(apiToken, 'TOKEN_HIDDEN');
+    console.log('=== API REQUEST ===');
+    console.log('URL:', apiUrlForLogging);
 
     const response = await fetch(searchUrl.toString());
     const data = await response.json();
 
-    console.log('Travelpayouts API response status:', response.status);
-    console.log('Travelpayouts API raw response:', JSON.stringify(data));
+    console.log('=== API RESPONSE ===');
+    console.log('HTTP Status:', response.status);
+    console.log('Success:', data.success);
+    console.log('Data count:', data.data?.length || 0);
+    
+    if (debug || data.data?.length === 0) {
+      console.log('Raw response:', JSON.stringify(data, null, 2));
+    }
 
     if (!response.ok) {
-      console.error('Travelpayouts API error:', data);
+      console.error('API Error Response:', data);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch flights', details: data }),
+        JSON.stringify({ 
+          error: 'Failed to fetch flights from provider', 
+          errorType: 'api',
+          details: data,
+          debug: debug ? { url: apiUrlForLogging, status: response.status } : undefined
+        }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    // Log if no data returned
+    // Check for empty results - provide clear reason
     if (!data.data || data.data.length === 0) {
-      console.log('No flights found in API response - this could be due to dates too far in the future');
+      // Check if date is far in the future
+      const departDateObj = new Date(departDate);
+      const now = new Date();
+      const monthsDiff = (departDateObj.getFullYear() - now.getFullYear()) * 12 + (departDateObj.getMonth() - now.getMonth());
+      
+      console.log('No flights found. Months in future:', monthsDiff);
+      
+      return new Response(
+        JSON.stringify({ 
+          flights: [],
+          emptyReason: monthsDiff > 9 ? 'far_future' : 'no_results',
+          monthsAhead: monthsDiff,
+          searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass },
+          debug: debug ? { url: apiUrlForLogging, status: response.status, rawResponse: data } : undefined
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Transform API response with official redirect links
@@ -263,29 +308,34 @@ serve(async (req) => {
         durationMinutes,
         stops: flight.transfers || 0,
         price: Math.round(flight.price * adults),
-        deepLink, // Primary: Jetradar link (more reliable)
+        deepLink, // Primary: White Label link
         alternativeLink, // Backup: tp.media redirect
         returnAt: returnTime ? returnTime.toISOString() : null,
         foundAt: flight.found_at,
       };
     });
 
-    console.log(`Returning ${flights.length} flights with official redirect links`);
+    console.log(`=== SUCCESS: Returning ${flights.length} flights ===`);
 
     return new Response(
       JSON.stringify({ 
         flights,
         marker,
-        searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass }
+        searchParams: { origin, destination, departDate, returnDate, adults, children, infants, tripType, travelClass },
+        debug: debug ? { url: apiUrlForLogging, status: response.status, rawDataCount: data.data?.length } : undefined
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error in flights-search function:', error);
+    console.error('=== EDGE FUNCTION ERROR ===');
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: errorMessage,
+        errorType: 'exception'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

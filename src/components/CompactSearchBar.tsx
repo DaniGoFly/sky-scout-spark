@@ -4,7 +4,7 @@ import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format, parse } from "date-fns";
+import { format, parse, addDays } from "date-fns";
 import AirportAutocomplete from "./AirportAutocomplete";
 
 interface AirportSelection {
@@ -30,13 +30,14 @@ const CompactSearchBar = () => {
   const [to, setTo] = useState<AirportSelection | null>(
     toCode ? { code: toCode, display: toCode } : null
   );
+  // Dynamic default dates: today + 30 / today + 37 (no hardcoded 2026)
   const [departDate, setDepartDate] = useState<Date>(() => {
     const dateStr = searchParams.get("depart");
-    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : new Date(2026, 1, 15);
+    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : addDays(new Date(), 30);
   });
   const [returnDate, setReturnDate] = useState<Date>(() => {
     const dateStr = searchParams.get("return");
-    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : new Date(2026, 1, 22);
+    return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : addDays(new Date(), 37);
   });
   const [passengers, setPassengers] = useState(Number(searchParams.get("adults")) || 1);
 
@@ -51,11 +52,15 @@ const CompactSearchBar = () => {
   const handleSearch = () => {
     if (!isValid) return;
     
+    // Normalized parameters
     const params = new URLSearchParams({
       from: from.code,
       to: to.code,
       depart: format(departDate, "yyyy-MM-dd"),
       adults: passengers.toString(),
+      children: "0",
+      infants: "0",
+      class: "economy",
       trip: tripType,
     });
     
