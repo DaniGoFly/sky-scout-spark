@@ -8,6 +8,8 @@ import FlightDetailsModal from "./FlightDetailsModal";
 import FlightResultsSkeleton from "./FlightResultsSkeleton";
 import CompactSearchBar from "./CompactSearchBar";
 import PriceCalendar from "./PriceCalendar";
+import FlightSummaryBar from "./FlightSummaryBar";
+import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
 import { format, addDays } from "date-fns";
 import { getDefaultDates, parseDateSafe } from "@/lib/dateUtils";
@@ -607,8 +609,8 @@ const FlightResults = () => {
         ) : (
           /* Main Results View */
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Filters Sidebar */}
-            <div className="lg:w-72 shrink-0">
+            {/* Filters Sidebar - Desktop Only */}
+            <div className="hidden lg:block lg:w-72 shrink-0">
               <FlightFilters
                 onFiltersChange={setFilters}
               />
@@ -619,8 +621,32 @@ const FlightResults = () => {
               {/* Flexible dates banner */}
               <FlexibleDatesBanner />
               
-              {/* Sort & Count Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
+              {/* Skyscanner-style Summary Bar */}
+              <FlightSummaryBar 
+                flights={flights}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+              />
+
+              {/* Mobile Filter Button + Count */}
+              <div className="flex items-center justify-between gap-3 lg:hidden bg-card p-3 rounded-xl border border-border">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{totalFiltered}</span> flights found
+                </p>
+                <MobileFiltersDrawer 
+                  onFiltersChange={setFilters}
+                  activeFiltersCount={
+                    filters.stops.length + 
+                    filters.airlines.length + 
+                    filters.departureTime.length +
+                    (filters.priceRange[0] > 0 || filters.priceRange[1] < 5000 ? 1 : 0)
+                  }
+                  flightCount={totalFiltered}
+                />
+              </div>
+
+              {/* Desktop Sort & Count Bar */}
+              <div className="hidden lg:flex flex-wrap items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-semibold text-foreground">{totalFiltered}</span> flights found
                   {responseStatus === 'OK_FLEXIBLE' && <span className="text-primary ml-1">(nearby dates)</span>}
