@@ -209,6 +209,16 @@ function getAirlineLogo(iataCode: string): string {
   return `https://pics.avs.io/100/100/${iataCode}.png`;
 }
 
+// Mock booking providers with realistic URLs
+const MOCK_PROVIDERS = [
+  { name: 'Turna', urlBase: 'https://www.turna.com/en/flight/booking' },
+  { name: 'Kiwi', urlBase: 'https://www.kiwi.com/en/booking' },
+  { name: 'Trip.com', urlBase: 'https://www.trip.com/flights/booking' },
+  { name: 'Expedia', urlBase: 'https://www.expedia.com/Flight-Checkout' },
+  { name: 'CheapOair', urlBase: 'https://www.cheapoair.com/flight/checkout' },
+  { name: 'Priceline', urlBase: 'https://www.priceline.com/checkout/flights' },
+];
+
 /**
  * Generate realistic mock flight data for any route
  * Used as fallback when API returns no results (e.g., before API approval)
@@ -259,8 +269,13 @@ function generateMockFlights(origin: string, destination: string, searchId: stri
     const timeModifier = depHour < 8 || depHour > 20 ? 0.9 : 1.0;
     const price = Math.round(airline.basePrice * priceModifier * timeModifier + (routeHash * 3));
     
-    // Create mock booking URL (will redirect to search page with affiliate marker)
-    const mockDeepLink = `https://www.aviasales.com/search/${origin}${destination}?marker=${marker}&mock=1`;
+    // Pick a realistic provider for this flight
+    const provider = MOCK_PROVIDERS[i % MOCK_PROVIDERS.length];
+    
+    // Create realistic booking URL pointing to actual OTA/provider (not Aviasales search)
+    // Format: provider booking page with flight details as query params
+    const bookingId = `${searchId.substring(0, 8)}-${i}`;
+    const mockDeepLink = `${provider.urlBase}?ref=${bookingId}&origin=${origin}&dest=${destination}&carrier=${airline.code}&marker=${marker}`;
     
     flights.push({
       id: `${searchId}-mock-${i}`,

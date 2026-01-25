@@ -8,6 +8,7 @@ import FlightSearchProgress from "./FlightSearchProgress";
 import CompactSearchBar from "./CompactSearchBar";
 import { useLiveFlightSearch, LiveFlightResult } from "@/hooks/useLiveFlightSearch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
 
 // City to airport code mapping
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -19,6 +20,7 @@ const CITY_AIRPORT_CODES: Record<string, string> = {
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { flights, status, error, progress, isSearching, searchFlights, cancelSearch } = useLiveFlightSearch();
   
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
@@ -146,11 +148,36 @@ const LiveFlightResults = () => {
     }
   };
 
-  // Handle booking redirect
+  // Handle booking redirect via secure /out endpoint
   const handleBookFlight = (flight: LiveFlightResult) => {
-    if (flight.deepLink) {
-      window.location.href = flight.deepLink;
+    if (!flight.deepLink) {
+      toast({
+        title: "Booking unavailable",
+        description: "Booking link unavailable, try another offer.",
+        variant: "destructive"
+      });
+      return;
     }
+    
+    // Validate URL before redirecting
+    const isInvalidUrl = 
+      flight.deepLink.includes('aviasales.com/search') ||
+      flight.deepLink.includes('mock=1') ||
+      (flight.deepLink.includes('aviasales.com') && 
+       (flight.deepLink.includes('/results') || flight.deepLink.includes('/tickets')));
+    
+    if (isInvalidUrl) {
+      toast({
+        title: "Booking unavailable",
+        description: "Booking link unavailable, try another offer.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Redirect via secure backend endpoint
+    const encodedUrl = encodeURIComponent(flight.deepLink);
+    window.location.href = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/booking-redirect?u=${encodedUrl}`;
   };
 
   // Get stops label
