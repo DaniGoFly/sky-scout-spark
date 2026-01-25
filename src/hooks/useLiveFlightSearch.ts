@@ -138,7 +138,10 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           {
             body: {
               action: 'poll',
-              searchId
+              searchId,
+              // Pass origin/destination for mock data fallback
+              origin: params.origin,
+              destination: params.destination
             }
           }
         );

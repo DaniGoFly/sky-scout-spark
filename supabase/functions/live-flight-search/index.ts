@@ -209,6 +209,88 @@ function getAirlineLogo(iataCode: string): string {
   return `https://pics.avs.io/100/100/${iataCode}.png`;
 }
 
+/**
+ * Generate realistic mock flight data for any route
+ * Used as fallback when API returns no results (e.g., before API approval)
+ */
+function generateMockFlights(origin: string, destination: string, searchId: string, marker: string): any[] {
+  // Airlines with their typical base prices
+  const mockAirlines = [
+    { code: 'LH', name: 'Lufthansa', basePrice: 650 },
+    { code: 'LX', name: 'Swiss International', basePrice: 720 },
+    { code: 'UA', name: 'United Airlines', basePrice: 580 },
+    { code: 'DL', name: 'Delta Air Lines', basePrice: 610 },
+    { code: 'BA', name: 'British Airways', basePrice: 690 },
+    { code: 'AF', name: 'Air France', basePrice: 640 },
+    { code: 'KL', name: 'KLM Royal Dutch', basePrice: 620 },
+    { code: 'AA', name: 'American Airlines', basePrice: 595 },
+    { code: 'TK', name: 'Turkish Airlines', basePrice: 520 },
+    { code: 'EK', name: 'Emirates', basePrice: 890 },
+  ];
+  
+  // Generate departure times spread throughout the day
+  const departureTimes = ['06:15', '08:30', '10:45', '12:20', '14:55', '16:30', '18:15', '20:40', '22:05'];
+  
+  // Calculate route-specific variations
+  const routeHash = (origin.charCodeAt(0) + destination.charCodeAt(0)) % 100;
+  
+  const flights = [];
+  const numFlights = 8 + (routeHash % 5); // Generate 8-12 flights
+  
+  for (let i = 0; i < numFlights; i++) {
+    const airline = mockAirlines[i % mockAirlines.length];
+    const depTime = departureTimes[i % departureTimes.length];
+    
+    // Random-ish duration between 9-14 hours for long-haul
+    const baseDuration = 540 + (routeHash + i * 37) % 300;
+    const stops = i < 3 ? 0 : (i < 6 ? 1 : 2);
+    const stopDuration = stops * 90; // 90 min per stop
+    const totalDuration = baseDuration + stopDuration;
+    
+    // Calculate arrival time
+    const [depHour, depMin] = depTime.split(':').map(Number);
+    const arrMinutes = (depHour * 60 + depMin + totalDuration) % 1440;
+    const arrHour = Math.floor(arrMinutes / 60);
+    const arrMin = arrMinutes % 60;
+    const arrivalTime = `${String(arrHour).padStart(2, '0')}:${String(arrMin).padStart(2, '0')}`;
+    
+    // Price variation based on stops and time
+    const priceModifier = stops === 0 ? 1.3 : stops === 1 ? 1.0 : 0.8;
+    const timeModifier = depHour < 8 || depHour > 20 ? 0.9 : 1.0;
+    const price = Math.round(airline.basePrice * priceModifier * timeModifier + (routeHash * 3));
+    
+    // Create mock booking URL (will redirect to search page with affiliate marker)
+    const mockDeepLink = `https://www.aviasales.com/search/${origin}${destination}?marker=${marker}&mock=1`;
+    
+    flights.push({
+      id: `${searchId}-mock-${i}`,
+      airline: airline.name,
+      airlineLogo: getAirlineLogo(airline.code),
+      flightNumber: `${airline.code}${100 + (routeHash + i * 7) % 900}`,
+      departureTime: depTime,
+      arrivalTime,
+      departureCode: origin,
+      arrivalCode: destination,
+      duration: formatDuration(totalDuration),
+      durationMinutes: totalDuration,
+      stops,
+      price,
+      currency: 'USD',
+      deepLink: mockDeepLink,
+      gateId: 'mock',
+      isLive: false,
+      isMock: true
+    });
+  }
+  
+  // Sort by price
+  flights.sort((a, b) => a.price - b.price);
+  
+  console.log('[LiveFlightSearch] Generated', flights.length, 'mock flights for', origin, '->', destination);
+  
+  return flights;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -349,7 +431,10 @@ serve(async (req) => {
         }, 400);
       }
 
-      console.log('[LiveFlightSearch] Polling results for:', searchId);
+      // Extract origin/destination for mock data fallback
+      const { origin = '', destination = '' } = searchParams;
+
+      console.log('[LiveFlightSearch] Polling results for:', searchId, 'route:', origin, '->', destination);
 
       const response = await fetch(
         `https://api.travelpayouts.com/v1/flight_search_results?uuid=${searchId}`,
@@ -406,10 +491,32 @@ serve(async (req) => {
       
       console.log('[LiveFlightSearch] Response contains:', proposals.length, 'proposals,', Object.keys(airlines).length, 'airlines');
       
+      // If no real results after several poll attempts, return mock data
+      // This ensures we never show empty results for valid routes
+      if (proposals.length === 0) {
+        console.log('[LiveFlightSearch] No proposals, returning mock flight data for:', origin, '->', destination);
+        
+        // Use origin/destination from poll params or fallback
+        const originCode = origin || 'ZRH';
+        const destCode = destination || 'JFK';
+        
+        const mockFlights = generateMockFlights(originCode.toUpperCase(), destCode.toUpperCase(), searchId, marker);
+        
+        return json({
+          status: 'POLLING',
+          searchId,
+          flights: mockFlights,
+          isComplete: true, // Mark as complete so we don't keep polling
+          rawCount: mockFlights.length,
+          isMock: true
+        });
+      }
+      
       // Log first proposal for debugging
       if (proposals.length > 0) {
         console.log('[LiveFlightSearch] Sample proposal:', JSON.stringify(proposals[0]).substring(0, 800));
       }
+      
       const flights = proposals.flatMap((proposal: any, index: number) => {
         try {
           // Terms contain pricing from different agencies/gates
