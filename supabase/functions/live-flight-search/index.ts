@@ -318,6 +318,11 @@ serve(async (req) => {
 
     const token = Deno.env.get('TRAVELPAYOUTS_API_TOKEN') || '';
     const marker = Deno.env.get('TRAVELPAYOUTS_MARKER') || '';
+    
+    // Feature flag: enable/disable mock data fallback
+    // When LIVE_RESULTS_ENABLED is "true", we only return real API data
+    // When API returns no results and LIVE_RESULTS_ENABLED is true, we return empty + liveUnavailable flag
+    const liveResultsEnabled = Deno.env.get('LIVE_RESULTS_ENABLED') !== 'false'; // Default to true
 
     if (!token || !marker) {
       return json({ 
@@ -506,10 +511,26 @@ serve(async (req) => {
       
       console.log('[LiveFlightSearch] Response contains:', proposals.length, 'proposals,', Object.keys(airlines).length, 'airlines');
       
-      // If no real results after several poll attempts, return mock data
-      // This ensures we never show empty results for valid routes
+      // If no real results from API
       if (proposals.length === 0) {
-        console.log('[LiveFlightSearch] No proposals, returning mock flight data for:', origin, '->', destination);
+        console.log('[LiveFlightSearch] No proposals from API for:', origin, '->', destination);
+        
+        // If live results are enabled, don't return mock data - indicate live is unavailable
+        if (liveResultsEnabled) {
+          console.log('[LiveFlightSearch] Live results enabled but no API data - returning liveUnavailable flag');
+          return json({
+            status: 'COMPLETE',
+            searchId,
+            flights: [],
+            isComplete: true,
+            rawCount: 0,
+            liveUnavailable: true,
+            message: 'Live flight results are not available yet. API approval may be pending.'
+          });
+        }
+        
+        // Only return mock data when LIVE_RESULTS_ENABLED is explicitly set to 'false'
+        console.log('[LiveFlightSearch] LIVE_RESULTS_ENABLED=false, returning demo data for:', origin, '->', destination);
         
         // Use origin/destination from poll params or fallback
         const originCode = origin || 'ZRH';
@@ -523,7 +544,8 @@ serve(async (req) => {
           flights: mockFlights,
           isComplete: true, // Mark as complete so we don't keep polling
           rawCount: mockFlights.length,
-          isMock: true
+          isMock: true,
+          isDemo: true
         });
       }
       
