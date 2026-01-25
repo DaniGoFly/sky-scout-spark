@@ -15,6 +15,7 @@ import TermsAndConditions from "./pages/TermsAndConditions";
 import AffiliateDisclosure from "./pages/AffiliateDisclosure";
 import Contact from "./pages/Contact";
 import PriceDisclaimer from "./pages/PriceDisclaimer";
+import Out from "./pages/Out";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/search" element={<LiveFlightsResults />} />
           <Route path="/flights" element={<Flights />} />
           <Route path="/flights/results" element={<LiveFlightsResults />} />
+          <Route path="/out" element={<Out />} />
           <Route path="/hotels" element={<Hotels />} />
           
           {/* Removed features - show coming soon */}
