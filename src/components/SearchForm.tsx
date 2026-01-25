@@ -41,25 +41,22 @@ const SearchForm = () => {
   const handleSearch = () => {
     if (!isValid) return;
 
-    const AFFILIATE_MARKER = "694224";
-    
-    // Format dates as DDMM for Aviasales URL
-    const departFormatted = format(departDate, "ddMM");
-    
-    let urlPath = `${from.code}${departFormatted}${to.code}`;
-    
+    // Build search params for internal results page
+    const searchParams = new URLSearchParams({
+      from: from.code,
+      to: to.code,
+      depart: format(departDate, "yyyy-MM-dd"),
+      adults: passengers.toString(),
+      trip: tripType,
+    });
+
     // Add return date for roundtrip
     if (tripType === "roundtrip") {
-      const returnFormatted = format(returnDate, "ddMM");
-      urlPath += returnFormatted;
+      searchParams.set("return", format(returnDate, "yyyy-MM-dd"));
     }
-    
-    // Add passengers
-    urlPath += passengers;
-    
-    // Build Aviasales URL and redirect directly
-    const aviasalesUrl = `https://www.aviasales.com/search/${urlPath}?marker=${AFFILIATE_MARKER}`;
-    window.open(aviasalesUrl, "_blank", "noopener,noreferrer");
+
+    // Navigate to internal search results page
+    navigate(`/search?${searchParams.toString()}`);
   };
 
   return (
