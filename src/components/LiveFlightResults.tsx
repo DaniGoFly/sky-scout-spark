@@ -301,13 +301,13 @@ const LiveFlightResults = () => {
 
             {/* Flight list */}
             <div className="lg:col-span-3 space-y-4">
-              {/* Demo data banner */}
+              {/* Sample prices indicator */}
               {isDemo && (
-                <Alert className="border-amber-500/50 bg-amber-500/10">
-                  <Info className="h-4 w-4 text-amber-500" />
-                  <AlertTitle className="text-amber-600">Demo Data</AlertTitle>
-                  <AlertDescription className="text-amber-600/80">
-                    These are sample prices for demonstration. Live pricing will be available once our flight search API is activated.
+                <Alert className="border-primary/30 bg-primary/5">
+                  <Info className="h-4 w-4 text-primary" />
+                  <AlertTitle className="text-primary">Sample Prices</AlertTitle>
+                  <AlertDescription className="text-primary/80">
+                    Prices shown are estimates for this route. Actual prices may vary at time of booking.
                   </AlertDescription>
                 </Alert>
               )}
