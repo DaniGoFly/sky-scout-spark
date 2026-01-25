@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.hotels-search]
 verify_jwt = false
+
+[functions.live-flight-search]
+verify_jwt = false
+
+[functions.travel-assistant]
+verify_jwt = false
