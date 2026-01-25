@@ -107,9 +107,36 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         }
       );
 
-      if (createError || !createData?.searchId) {
-        console.error('[LiveSearch] Create failed:', createError || createData);
-        setError(createData?.error || createError?.message || 'Failed to start search');
+      if (createError) {
+        console.error('[LiveSearch] Create failed:', createError);
+        setError(createError.message || 'Failed to start search');
+        setStatus('error');
+        return;
+      }
+
+      // Check if we got immediate results (mock data fallback from backend)
+      if (createData?.status === 'COMPLETE' && createData?.flights?.length > 0) {
+        console.log('[LiveSearch] Got immediate results:', createData.flights.length);
+        
+        if (createData.isDemo || createData.isMock) {
+          setIsDemo(true);
+        }
+        
+        const resultFlights = createData.flights.map((f: any) => ({
+          ...f,
+          isDemo: createData.isDemo || createData.isMock
+        }));
+        
+        resultFlights.sort((a: LiveFlightResult, b: LiveFlightResult) => a.price - b.price);
+        setFlights(resultFlights);
+        setProgress(100);
+        setStatus('complete');
+        return;
+      }
+
+      if (!createData?.searchId) {
+        console.error('[LiveSearch] No searchId in response:', createData);
+        setError(createData?.error || 'Failed to start search');
         setStatus('error');
         return;
       }
@@ -146,7 +173,6 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
             body: {
               action: 'poll',
               searchId,
-              // Pass origin/destination for mock data fallback
               origin: params.origin,
               destination: params.destination
             }
@@ -158,15 +184,6 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           continue; // Keep trying
         }
 
-        // Check if live results are unavailable (API pending approval)
-        if (pollData?.liveUnavailable) {
-          console.log('[LiveSearch] Live results unavailable - API may be pending approval');
-          setLiveUnavailable(true);
-          setProgress(100);
-          setStatus('no_results');
-          return;
-        }
-
         // Check if this is demo data
         if (pollData?.isDemo || pollData?.isMock) {
           setIsDemo(true);
@@ -175,7 +192,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         // Add new flights
         if (pollData?.flights?.length > 0) {
           for (const flight of pollData.flights) {
-            // Use price+route as key for deduplication
+            // Use price+route+time as key for deduplication
             const key = `${flight.departureCode}-${flight.arrivalCode}-${flight.departureTime}-${flight.price}`;
             if (!allFlights.has(key)) {
               allFlights.set(key, { ...flight, isDemo: pollData?.isDemo || pollData?.isMock });
@@ -186,7 +203,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         }
 
         // Check if complete
-        if (pollData?.isComplete) {
+        if (pollData?.isComplete || pollData?.status === 'COMPLETE') {
           console.log('[LiveSearch] Search complete');
           break;
         }
@@ -198,6 +215,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       
       if (finalFlights.length === 0) {
         setStatus('no_results');
+        setLiveUnavailable(true);
       } else {
         // Sort by price
         finalFlights.sort((a, b) => a.price - b.price);
