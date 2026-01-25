@@ -18,6 +18,7 @@ export interface LiveFlightResult {
   deepLink: string;
   gateId?: string;
   isLive: boolean;
+  isDemo?: boolean;
 }
 
 export type SearchStatus = 
@@ -46,6 +47,8 @@ interface UseLiveFlightSearchResult {
   error: string | null;
   progress: number; // 0-100
   isSearching: boolean;
+  isDemo: boolean;
+  liveUnavailable: boolean;
   searchFlights: (params: SearchParams) => Promise<void>;
   cancelSearch: () => void;
 }
@@ -59,6 +62,8 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [status, setStatus] = useState<SearchStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [isDemo, setIsDemo] = useState(false);
+  const [liveUnavailable, setLiveUnavailable] = useState(false);
   
   const cancelRef = useRef(false);
   const pollCountRef = useRef(0);
@@ -77,6 +82,8 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     setError(null);
     setProgress(0);
     setStatus('creating');
+    setIsDemo(false);
+    setLiveUnavailable(false);
 
     try {
       console.log('[LiveSearch] Starting search:', params);
@@ -151,13 +158,27 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           continue; // Keep trying
         }
 
+        // Check if live results are unavailable (API pending approval)
+        if (pollData?.liveUnavailable) {
+          console.log('[LiveSearch] Live results unavailable - API may be pending approval');
+          setLiveUnavailable(true);
+          setProgress(100);
+          setStatus('no_results');
+          return;
+        }
+
+        // Check if this is demo data
+        if (pollData?.isDemo || pollData?.isMock) {
+          setIsDemo(true);
+        }
+
         // Add new flights
         if (pollData?.flights?.length > 0) {
           for (const flight of pollData.flights) {
             // Use price+route as key for deduplication
             const key = `${flight.departureCode}-${flight.arrivalCode}-${flight.departureTime}-${flight.price}`;
             if (!allFlights.has(key)) {
-              allFlights.set(key, flight);
+              allFlights.set(key, { ...flight, isDemo: pollData?.isDemo || pollData?.isMock });
             }
           }
           // Update UI with accumulated flights
@@ -199,6 +220,8 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     error,
     progress,
     isSearching: status === 'creating' || status === 'polling',
+    isDemo,
+    liveUnavailable,
     searchFlights,
     cancelSearch
   };

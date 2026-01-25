@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSummaryBar from "./FlightSummaryBar";
 import FlightSearchProgress from "./FlightSearchProgress";
@@ -21,7 +22,7 @@ const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { flights, status, error, progress, isSearching, searchFlights, cancelSearch } = useLiveFlightSearch();
+  const { flights, status, error, progress, isSearching, isDemo, liveUnavailable, searchFlights, cancelSearch } = useLiveFlightSearch();
   
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({
@@ -259,8 +260,23 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {/* No results state */}
-        {status === 'no_results' && (
+        {/* No results state - live unavailable */}
+        {status === 'no_results' && liveUnavailable && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center mb-6">
+              <Info className="w-10 h-10 text-amber-500" />
+            </div>
+            <p className="text-xl font-semibold text-foreground mb-2">Live results not active yet</p>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              Our live flight search is pending activation. Real-time pricing will be available soon.
+              In the meantime, try adjusting your search or check back later.
+            </p>
+            <Button onClick={() => navigate("/flights")}>New Search</Button>
+          </div>
+        )}
+
+        {/* No results state - no flights found */}
+        {status === 'no_results' && !liveUnavailable && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
               <Plane className="w-10 h-10 text-muted-foreground" />
@@ -285,6 +301,17 @@ const LiveFlightResults = () => {
 
             {/* Flight list */}
             <div className="lg:col-span-3 space-y-4">
+              {/* Demo data banner */}
+              {isDemo && (
+                <Alert className="border-amber-500/50 bg-amber-500/10">
+                  <Info className="h-4 w-4 text-amber-500" />
+                  <AlertTitle className="text-amber-600">Demo Data</AlertTitle>
+                  <AlertDescription className="text-amber-600/80">
+                    These are sample prices for demonstration. Live pricing will be available once our flight search API is activated.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Summary bar */}
               <FlightSummaryBar 
                 flights={processedFlights as any}
