@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Results from "./pages/Results";
 import Flights from "./pages/Flights";
-import FlightsResults from "./pages/FlightsResults";
+import LiveFlightsResults from "./pages/LiveFlightsResults";
 import Hotels from "./pages/Hotels";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
@@ -31,9 +31,9 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/results" element={<Results />} />
-          <Route path="/search" element={<FlightsResults />} />
+          <Route path="/search" element={<LiveFlightsResults />} />
           <Route path="/flights" element={<Flights />} />
-          <Route path="/flights/results" element={<FlightsResults />} />
+          <Route path="/flights/results" element={<LiveFlightsResults />} />
           <Route path="/hotels" element={<Hotels />} />
           
           {/* Removed features - show coming soon */}
