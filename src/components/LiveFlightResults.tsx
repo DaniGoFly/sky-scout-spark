@@ -149,9 +149,11 @@ const LiveFlightResults = () => {
     }
   };
 
-  // Handle booking redirect via secure /out endpoint
+  // Handle booking redirect via /out?u=... (which forwards to backend 302 redirect)
   const handleBookFlight = (flight: LiveFlightResult) => {
-    if (!flight.deepLink) {
+    const bookingUrl = flight.bookingUrl || flight.deepLink;
+
+    if (!bookingUrl) {
       toast({
         title: "Booking unavailable",
         description: "Booking link unavailable, try another offer.",
@@ -161,11 +163,19 @@ const LiveFlightResults = () => {
     }
     
     // Validate URL before redirecting
-    const isInvalidUrl = 
-      flight.deepLink.includes('aviasales.com/search') ||
-      flight.deepLink.includes('mock=1') ||
-      (flight.deepLink.includes('aviasales.com') && 
-       (flight.deepLink.includes('/results') || flight.deepLink.includes('/tickets')));
+    let isInvalidUrl = false;
+    try {
+      const parsed = new URL(bookingUrl);
+      const host = parsed.hostname.toLowerCase();
+      const path = parsed.pathname.toLowerCase();
+      const q = parsed.search.toLowerCase();
+      isInvalidUrl =
+        parsed.protocol !== "https:" ||
+        q.includes("mock=1") ||
+        (host.includes("aviasales") && (path.includes("/search") || path.includes("/results") || path.includes("/tickets")));
+    } catch {
+      isInvalidUrl = true;
+    }
     
     if (isInvalidUrl) {
       toast({
@@ -176,9 +186,9 @@ const LiveFlightResults = () => {
       return;
     }
     
-    // Redirect via secure backend endpoint
-    const encodedUrl = encodeURIComponent(flight.deepLink);
-    window.location.href = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/booking-redirect?u=${encodedUrl}`;
+    // Redirect via /out (masking), which then forwards to backend redirect (302)
+    const encodedUrl = encodeURIComponent(bookingUrl);
+    window.location.href = `/out?u=${encodedUrl}`;
   };
 
   // Get stops label

@@ -15,8 +15,13 @@ export interface LiveFlightResult {
   stops: number;
   price: number;
   currency: string;
+  // Final provider booking URL (OTA/airline). Must NOT be an aviasales search URL.
+  bookingUrl?: string | null;
+  // Backward-compat: some UI paths still reference deepLink.
   deepLink: string;
   gateId?: string;
+  proposalId?: string | null;
+  segments?: unknown[];
   isLive: boolean;
   isDemo?: boolean;
 }
@@ -54,8 +59,8 @@ interface UseLiveFlightSearchResult {
 }
 
 const POLL_INTERVAL = 1500; // 1.5 seconds between polls
-const MAX_POLL_ATTEMPTS = 40; // ~60 seconds max polling
-const POLL_TIMEOUT = 90000; // 90 second absolute timeout
+const MAX_POLL_ATTEMPTS = 25; // max 25 polls
+const POLL_TIMEOUT = 40000; // 40s absolute timeout
 
 export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [flights, setFlights] = useState<LiveFlightResult[]>([]);
@@ -114,7 +119,16 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         return;
       }
 
-      // Check if we got immediate results (mock data fallback from backend)
+      // Auth/approval failure: only case where we show “Live results not active yet”.
+      if (createData?.status === 'AUTH_ERROR' || createData?.liveUnavailable) {
+        console.warn('[LiveSearch] Live results unavailable:', createData);
+        setLiveUnavailable(true);
+        setStatus('no_results');
+        setProgress(100);
+        return;
+      }
+
+      // Check if we got immediate results (demo mode only)
       if (createData?.status === 'COMPLETE' && createData?.flights?.length > 0) {
         console.log('[LiveSearch] Got immediate results:', createData.flights.length);
         
@@ -142,6 +156,9 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       }
 
       const searchId = createData.searchId;
+      const resultsUrl = createData.resultsUrl;
+      let lastUpdateTimestamp: number | null = null;
+
       console.log('[LiveSearch] Search created:', searchId);
       setProgress(10);
 
@@ -174,7 +191,9 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
               action: 'poll',
               searchId,
               origin: params.origin,
-              destination: params.destination
+              destination: params.destination,
+              resultsUrl,
+              lastUpdateTimestamp
             }
           }
         );
@@ -182,6 +201,17 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         if (pollError) {
           console.warn('[LiveSearch] Poll error:', pollError);
           continue; // Keep trying
+        }
+
+        // Only show “Live results not active yet” on 401/403 propagated by backend.
+        if (pollData?.status === 'AUTH_ERROR' || pollData?.liveUnavailable) {
+          console.warn('[LiveSearch] Live results unavailable during poll');
+          setLiveUnavailable(true);
+          break;
+        }
+
+        if (pollData?.lastUpdateTimestamp != null) {
+          lastUpdateTimestamp = Number(pollData.lastUpdateTimestamp);
         }
 
         // Check if this is demo data
@@ -215,7 +245,6 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       
       if (finalFlights.length === 0) {
         setStatus('no_results');
-        setLiveUnavailable(true);
       } else {
         // Sort by price
         finalFlights.sort((a, b) => a.price - b.price);
