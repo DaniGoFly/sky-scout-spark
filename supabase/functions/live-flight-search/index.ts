@@ -222,7 +222,7 @@ const BOOKING_PROVIDERS = [
   { name: 'Priceline', urlBase: 'https://www.priceline.com/checkout/flights' },
 ];
 
-const AVIASALES_V3_BASE = 'https://api.travelpayouts.com/aviasales/v3';
+const TICKETS_API_START = 'https://tickets-api.travelpayouts.com/search/affiliate/start';
 
 /**
  * Generate realistic mock flight data with provider booking URLs
@@ -400,10 +400,10 @@ serve(async (req) => {
 
       const signature = generateV3Signature(token, marker, requestPayload);
       const finalPayload = { signature, ...requestPayload };
-      const url = `${AVIASALES_V3_BASE}/search`;
+      const url = TICKETS_API_START;
 
-      console.log('[LiveFlightSearch][V3] URL:', url);
-      console.log('[LiveFlightSearch][V3] Payload:', JSON.stringify(requestPayload));
+      console.log('[LiveFlightSearch] Start URL:', url);
+      console.log('[LiveFlightSearch] Payload:', JSON.stringify(requestPayload));
 
       const response = await fetch(url, {
         method: 'POST',
@@ -502,59 +502,43 @@ serve(async (req) => {
         });
       }
 
-      console.log('[LiveFlightSearch][V3] Polling:', searchId, 'route:', origin, '->', destination);
+      console.log('[LiveFlightSearch] Polling:', searchId, 'route:', origin, '->', destination);
 
-      // Preferred (as requested): GET /aviasales/v3/search/{search_id}
-      let response: Response | null = null;
-      let responseText = '';
-      let usedUrl = `${AVIASALES_V3_BASE}/search/${encodeURIComponent(String(searchId))}`;
+      // Determine polling URL from results_url returned by start search.
+      // Default to the same domain as tickets-api if no results_url present.
+      let resultsOrigin: string | null = null;
+      try {
+        if (resultsUrl) resultsOrigin = new URL(String(resultsUrl)).origin;
+      } catch {}
+      if (!resultsOrigin) {
+        resultsOrigin = 'https://tickets-api.travelpayouts.com';
+      }
 
-      response = await fetch(usedUrl, {
-        method: 'GET',
+      const usedUrl = `${resultsOrigin}/search/affiliate/results`;
+      const pollBody = {
+        search_id: String(searchId),
+        limit: 200,
+        last_update_timestamp: Number(lastUpdateTimestamp || 0),
+      };
+      const pollSignature = generateV3Signature(token, marker, pollBody);
+
+      console.log('[LiveFlightSearch] Poll URL:', usedUrl);
+
+      const response = await fetch(usedUrl, {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Accept': 'application/json',
           'x-affiliate-user-id': token,
+          'x-signature': pollSignature,
           'x-real-host': realHost,
           'x-user-ip': userIp,
         },
+        body: JSON.stringify({ signature: pollSignature, ...pollBody, marker }),
       });
 
-      responseText = await response.text();
-
-      // If this endpoint isn't supported, fall back to results_url domain flow (still v3 search).
-      if (!response.ok && (response.status === 404 || response.status === 405) && resultsUrl) {
-        try {
-          const resultsOrigin = new URL(String(resultsUrl)).origin;
-          usedUrl = `${resultsOrigin}/search/affiliate/results`;
-
-          const pollBody = {
-            search_id: String(searchId),
-            limit: 200,
-            last_update_timestamp: Number(lastUpdateTimestamp || 0),
-          };
-          const pollSignature = generateV3Signature(token, marker, pollBody);
-
-          console.log('[LiveFlightSearch][V3] Fallback poll URL:', usedUrl);
-
-          response = await fetch(usedUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'x-affiliate-user-id': token,
-              'x-signature': pollSignature,
-              'x-real-host': realHost,
-              'x-user-ip': userIp,
-            },
-            body: JSON.stringify({ signature: pollSignature, ...pollBody, marker }),
-          });
-          responseText = await response.text();
-        } catch (e) {
-          console.warn('[LiveFlightSearch][V3] Fallback poll failed to prepare:', e);
-        }
-      }
-
-      console.log('[LiveFlightSearch][V3] Poll URL used:', usedUrl);
+      const responseText = await response.text();
+      console.log('[LiveFlightSearch] Poll response status:', response.status);
 
       if (!response || !response.ok) {
         const status = response?.status ?? 0;
@@ -618,19 +602,19 @@ serve(async (req) => {
         if (l?.id != null) legsById.set(String(l.id), l);
       }
 
-      const resultsOrigin = (() => {
+      const bookingResultsOrigin = (() => {
         try {
           if (resultsUrl) return new URL(String(resultsUrl)).origin;
         } catch {}
         try {
           if (data?.results_url) return new URL(String(data.results_url)).origin;
         } catch {}
-        return null;
+        return resultsOrigin;
       })();
 
       async function resolveBookingUrl(proposalId: string): Promise<string | null> {
-        if (!resultsOrigin) return null;
-        const clickUrl = `${resultsOrigin}/searches/${encodeURIComponent(String(searchId))}/clicks/${encodeURIComponent(proposalId)}`;
+        if (!bookingResultsOrigin) return null;
+        const clickUrl = `${bookingResultsOrigin}/searches/${encodeURIComponent(String(searchId))}/clicks/${encodeURIComponent(proposalId)}`;
         try {
           const r = await fetch(clickUrl, {
             method: 'GET',
