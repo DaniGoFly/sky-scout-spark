@@ -46,7 +46,7 @@ const LiveFlightResults = () => {
   const tripType = searchParams.get("trip") || "roundtrip";
   const cabin = searchParams.get("cabin") || searchParams.get("class") || "economy";
 
-  // Map cabin class to API format
+// Map cabin class to API format
   const tripClassMap: Record<string, string> = {
     economy: "Y", premium_economy: "W", business: "C", first: "F"
   };
@@ -64,7 +64,7 @@ const LiveFlightResults = () => {
         children,
         infants,
         tripClass: tripClassMap[cabin] || "Y",
-        currency: "USD"
+        currency: "EUR" // Using EUR as specified
       });
     }
   }, [from, to, depart, returnDate, adults, children, infants, tripType, cabin, searchFlights, hasSearched]);
@@ -149,20 +149,20 @@ const LiveFlightResults = () => {
     }
   };
 
-  // Handle booking redirect via /out?u=... (which forwards to backend 302 redirect)
-  const handleBookFlight = (flight: LiveFlightResult) => {
-    const bookingUrl = flight.bookingUrl || flight.deepLink;
+  // Handle "View deal" - opens provider URL in new tab
+  const handleViewDeal = (flight: LiveFlightResult) => {
+    const bookingUrl = flight.bookingUrl;
 
     if (!bookingUrl) {
       toast({
-        title: "Booking unavailable",
-        description: "Booking link unavailable, try another offer.",
+        title: "Deal unavailable",
+        description: "Provider link unavailable for this offer.",
         variant: "destructive"
       });
       return;
     }
     
-    // Validate URL before redirecting
+    // Validate URL
     let isInvalidUrl = false;
     try {
       const parsed = new URL(bookingUrl);
@@ -179,16 +179,15 @@ const LiveFlightResults = () => {
     
     if (isInvalidUrl) {
       toast({
-        title: "Booking unavailable",
-        description: "Booking link unavailable, try another offer.",
+        title: "Deal unavailable",
+        description: "Provider link unavailable for this offer.",
         variant: "destructive"
       });
       return;
     }
     
-    // Redirect via /out (masking), which then forwards to backend redirect (302)
-    const encodedUrl = encodeURIComponent(bookingUrl);
-    window.location.href = `/out?u=${encodedUrl}`;
+    // Open provider URL in new tab (affiliate tracking preserved)
+    window.open(bookingUrl, '_blank', 'noopener,noreferrer');
   };
 
   // Get stops label
@@ -253,7 +252,7 @@ const LiveFlightResults = () => {
         {isSearching && (
           <FlightSearchProgress 
             progress={progress} 
-            status={status as 'creating' | 'polling' | 'complete' | 'error' | 'idle' | 'no_results'} 
+            status={status === 'searching' ? 'creating' : status as 'creating' | 'polling' | 'complete' | 'error' | 'idle' | 'no_results'} 
             flightsFound={flights.length} 
           />
         )}
@@ -397,11 +396,11 @@ const LiveFlightResults = () => {
                         <p className="text-xs text-muted-foreground">per person</p>
                       </div>
                       <Button
-                        onClick={() => handleBookFlight(flight)}
+                        onClick={() => handleViewDeal(flight)}
                         className="gap-2"
                         size="lg"
                       >
-                        Book Flight
+                        View Deal
                       </Button>
                     </div>
                   </div>
