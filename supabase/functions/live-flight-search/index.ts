@@ -52,10 +52,10 @@ serve(async (req) => {
     const { action } = body;
 
     const token = Deno.env.get('TRAVELPAYOUTS_API_TOKEN') || '';
-    const marker = Deno.env.get('TRAVELPAYOUTS_MARKER') || '';
+    const marker = '694224'; // Fixed marker for goflyfinder.com
 
-    if (!token || !marker) {
-      console.error('[FlightSearch] Missing credentials');
+    if (!token) {
+      console.error('[FlightSearch] Missing TRAVELPAYOUTS_API_TOKEN');
       return json({ ok: false, error: 'Missing API credentials' }, 500);
     }
 
@@ -65,7 +65,7 @@ serve(async (req) => {
       req.headers.get('x-real-ip') ||
       '127.0.0.1';
 
-    const realHost = 'www.goflyfinder.com';
+    const realHost = 'goflyfinder.com';
 
     // ===== ACTION: START SEARCH =====
     if (action === 'start') {
