@@ -15,20 +15,15 @@ export interface LiveFlightResult {
   stops: number;
   price: number;
   currency: string;
-  // Final provider booking URL (OTA/airline). Must NOT be an aviasales search URL.
   bookingUrl?: string | null;
-  // Backward-compat: some UI paths still reference deepLink.
-  deepLink: string;
-  gateId?: string;
   proposalId?: string | null;
+  gateId?: string | null;
   segments?: unknown[];
-  isLive: boolean;
-  isDemo?: boolean;
 }
 
 export type SearchStatus = 
   | 'idle'
-  | 'creating'
+  | 'searching'
   | 'polling'
   | 'complete'
   | 'error'
@@ -50,7 +45,7 @@ interface UseLiveFlightSearchResult {
   flights: LiveFlightResult[];
   status: SearchStatus;
   error: string | null;
-  progress: number; // 0-100
+  progress: number;
   isSearching: boolean;
   isDemo: boolean;
   liveUnavailable: boolean;
@@ -58,16 +53,15 @@ interface UseLiveFlightSearchResult {
   cancelSearch: () => void;
 }
 
-const POLL_INTERVAL = 1500; // 1.5 seconds between polls
-const MAX_POLL_ATTEMPTS = 25; // max 25 polls
-const POLL_TIMEOUT = 40000; // 40s absolute timeout
+const POLL_INTERVAL = 1500; // 1.5 seconds
+const MAX_POLL_ATTEMPTS = 30; // max polls
+const POLL_TIMEOUT = 45000; // 45s timeout
 
 export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [flights, setFlights] = useState<LiveFlightResult[]>([]);
   const [status, setStatus] = useState<SearchStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  const [isDemo, setIsDemo] = useState(false);
   const [liveUnavailable, setLiveUnavailable] = useState(false);
   
   const cancelRef = useRef(false);
@@ -80,95 +74,78 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   }, []);
 
   const searchFlights = useCallback(async (params: SearchParams) => {
-    // Reset state
     cancelRef.current = false;
     pollCountRef.current = 0;
     setFlights([]);
     setError(null);
     setProgress(0);
-    setStatus('creating');
-    setIsDemo(false);
+    setStatus('searching');
     setLiveUnavailable(false);
 
     try {
-      console.log('[LiveSearch] Starting search:', params);
+      console.log('[LiveSearch] Starting search with params:', params);
 
-      // Step 1: Create search
-      const { data: createData, error: createError } = await supabase.functions.invoke(
+      // Step 1: Start search with new format
+      const { data: startData, error: startError } = await supabase.functions.invoke(
         'live-flight-search',
         {
           body: {
-            action: 'create',
+            action: 'start',
             origin: params.origin,
             destination: params.destination,
-            departDate: params.departDate,
-            returnDate: params.returnDate,
+            depart_date: params.departDate,
+            return_date: params.returnDate,
             adults: params.adults || 1,
             children: params.children || 0,
             infants: params.infants || 0,
-            tripClass: params.tripClass || 'Y',
-            currency: params.currency || 'USD'
+            trip_class: params.tripClass || 'Y',
+            locale: 'en',
+            market_code: 'US',
+            currency_code: params.currency || 'USD',
           }
         }
       );
 
-      if (createError) {
-        console.error('[LiveSearch] Create failed:', createError);
-        setError(createError.message || 'Failed to start search');
+      if (startError) {
+        console.error('[LiveSearch] Start failed:', startError);
+        setError(startError.message || 'Failed to start search');
         setStatus('error');
         return;
       }
 
-      // Auth/approval failure: only case where we show “Live results not active yet”.
-      if (createData?.status === 'AUTH_ERROR' || createData?.liveUnavailable) {
-        console.warn('[LiveSearch] Live results unavailable:', createData);
-        setLiveUnavailable(true);
-        setStatus('no_results');
-        setProgress(100);
-        return;
-      }
-
-      // Check if we got immediate results (demo mode only)
-      if (createData?.status === 'COMPLETE' && createData?.flights?.length > 0) {
-        console.log('[LiveSearch] Got immediate results:', createData.flights.length);
-        
-        if (createData.isDemo || createData.isMock) {
-          setIsDemo(true);
+      // Check for live unavailable (API auth issue)
+      if (startData?.liveUnavailable || startData?.ok === false) {
+        if (startData?.liveUnavailable) {
+          console.warn('[LiveSearch] Live results not available');
+          setLiveUnavailable(true);
+          setStatus('no_results');
+          setProgress(100);
+          return;
         }
-        
-        const resultFlights = createData.flights.map((f: any) => ({
-          ...f,
-          isDemo: createData.isDemo || createData.isMock
-        }));
-        
-        resultFlights.sort((a: LiveFlightResult, b: LiveFlightResult) => a.price - b.price);
-        setFlights(resultFlights);
-        setProgress(100);
-        setStatus('complete');
-        return;
-      }
-
-      if (!createData?.searchId) {
-        console.error('[LiveSearch] No searchId in response:', createData);
-        setError(createData?.error || 'Failed to start search');
+        setError(startData?.error || 'Failed to start search');
         setStatus('error');
         return;
       }
 
-      const searchId = createData.searchId;
-      const resultsUrl = createData.resultsUrl;
-      let lastUpdateTimestamp: number | null = null;
+      const { search_id, results_url } = startData;
 
-      console.log('[LiveSearch] Search created:', searchId);
+      if (!search_id) {
+        console.error('[LiveSearch] No search_id in response');
+        setError('Failed to start search - no search ID');
+        setStatus('error');
+        return;
+      }
+
+      console.log('[LiveSearch] Search started:', search_id);
       setProgress(10);
 
       // Step 2: Poll for results
       setStatus('polling');
       const allFlights = new Map<string, LiveFlightResult>();
       const startTime = Date.now();
+      let lastUpdateTimestamp = 0;
 
       while (!cancelRef.current && pollCountRef.current < MAX_POLL_ATTEMPTS) {
-        // Check absolute timeout
         if (Date.now() - startTime > POLL_TIMEOUT) {
           console.log('[LiveSearch] Timeout reached');
           break;
@@ -188,52 +165,48 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           'live-flight-search',
           {
             body: {
-              action: 'poll',
-              searchId,
-              origin: params.origin,
-              destination: params.destination,
-              resultsUrl,
-              lastUpdateTimestamp
+              action: 'results',
+              search_id,
+              results_url,
+              last_update_timestamp: lastUpdateTimestamp,
             }
           }
         );
 
         if (pollError) {
           console.warn('[LiveSearch] Poll error:', pollError);
-          continue; // Keep trying
+          continue;
         }
 
-        // Only show “Live results not active yet” on 401/403 propagated by backend.
-        if (pollData?.status === 'AUTH_ERROR' || pollData?.liveUnavailable) {
-          console.warn('[LiveSearch] Live results unavailable during poll');
+        if (pollData?.liveUnavailable) {
+          console.warn('[LiveSearch] Live unavailable during poll');
           setLiveUnavailable(true);
           break;
         }
 
-        if (pollData?.lastUpdateTimestamp != null) {
-          lastUpdateTimestamp = Number(pollData.lastUpdateTimestamp);
+        if (pollData?.ok === false) {
+          console.warn('[LiveSearch] Poll returned error:', pollData?.error);
+          continue;
         }
 
-        // Check if this is demo data
-        if (pollData?.isDemo || pollData?.isMock) {
-          setIsDemo(true);
+        // Update timestamp for next poll
+        if (pollData?.last_update_timestamp != null) {
+          lastUpdateTimestamp = Number(pollData.last_update_timestamp);
         }
 
         // Add new flights
-        if (pollData?.flights?.length > 0) {
-          for (const flight of pollData.flights) {
-            // Use price+route+time as key for deduplication
+        if (pollData?.results?.length > 0) {
+          for (const flight of pollData.results) {
             const key = `${flight.departureCode}-${flight.arrivalCode}-${flight.departureTime}-${flight.price}`;
             if (!allFlights.has(key)) {
-              allFlights.set(key, { ...flight, isDemo: pollData?.isDemo || pollData?.isMock });
+              allFlights.set(key, flight);
             }
           }
-          // Update UI with accumulated flights
           setFlights(Array.from(allFlights.values()));
         }
 
         // Check if complete
-        if (pollData?.isComplete || pollData?.status === 'COMPLETE') {
+        if (pollData?.is_over === true) {
           console.log('[LiveSearch] Search complete');
           break;
         }
@@ -246,7 +219,6 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       if (finalFlights.length === 0) {
         setStatus('no_results');
       } else {
-        // Sort by price
         finalFlights.sort((a, b) => a.price - b.price);
         setFlights(finalFlights);
         setStatus('complete');
@@ -266,8 +238,8 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     status,
     error,
     progress,
-    isSearching: status === 'creating' || status === 'polling',
-    isDemo,
+    isSearching: status === 'searching' || status === 'polling',
+    isDemo: false, // No demo mode - only real results
     liveUnavailable,
     searchFlights,
     cancelSearch

@@ -29,18 +29,12 @@ function json(data: unknown, status = 200) {
   });
 }
 
-/**
- * Format duration in minutes to human readable string
- */
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 }
 
-/**
- * Get airline logo URL
- */
 function getAirlineLogo(iataCode: string): string {
   return `https://pics.avs.io/100/100/${iataCode}.png`;
 }
@@ -49,24 +43,20 @@ function getAirlineLogo(iataCode: string): string {
 const TICKETS_API_START = 'https://tickets-api.travelpayouts.com/search/affiliate/start';
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { action, searchId, resultsUrl, lastUpdateTimestamp, ...searchParams } = body;
+    const { action } = body;
 
     const token = Deno.env.get('TRAVELPAYOUTS_API_TOKEN') || '';
     const marker = Deno.env.get('TRAVELPAYOUTS_MARKER') || '';
 
     if (!token || !marker) {
-      console.error('[LiveFlightSearch] Missing credentials - token:', !!token, 'marker:', !!marker);
-      return json({ 
-        status: 'MISCONFIGURED', 
-        error: 'Missing API credentials' 
-      }, 500);
+      console.error('[FlightSearch] Missing credentials');
+      return json({ ok: false, error: 'Missing API credentials' }, 500);
     }
 
     const userIp =
@@ -77,64 +67,57 @@ serve(async (req) => {
 
     const realHost = 'www.goflyfinder.com';
 
-    // ACTION: Create a new search
-    if (action === 'create') {
-      const { 
-        origin, 
-        destination, 
-        departDate, 
-        returnDate, 
-        adults = 1, 
-        children = 0, 
+    // ===== ACTION: START SEARCH =====
+    if (action === 'start') {
+      const {
+        origin,
+        destination,
+        depart_date,
+        return_date,
+        adults = 1,
+        children = 0,
         infants = 0,
-        tripClass = 'Y',
-        currency = 'USD'
-      } = searchParams;
+        trip_class = 'Y',
+        locale = 'en',
+        market_code = 'US',
+        currency_code = 'USD',
+      } = body;
 
-      if (!origin || !destination || !departDate) {
-        return json({ 
-          status: 'BAD_REQUEST', 
-          error: 'origin, destination, and departDate are required' 
-        }, 400);
+      if (!origin || !destination || !depart_date) {
+        return json({ ok: false, error: 'origin, destination, and depart_date are required' }, 400);
       }
 
-      // Build directions (1 = oneway, 2 = roundtrip)
-      const directions: Array<{ origin: string; destination: string; date: string }> = [
-        { origin: String(origin).toUpperCase(), destination: String(destination).toUpperCase(), date: departDate },
+      // Build segments (directions)
+      const segments: Array<{ origin: string; destination: string; date: string }> = [
+        { origin: String(origin).toUpperCase(), destination: String(destination).toUpperCase(), date: depart_date },
       ];
 
-      if (returnDate) {
-        directions.push({
+      if (return_date) {
+        segments.push({
           origin: String(destination).toUpperCase(),
           destination: String(origin).toUpperCase(),
-          date: returnDate,
+          date: return_date,
         });
       }
 
-      // Tickets API request payload
       const requestPayload = {
         marker,
-        locale: 'en',
-        currency_code: String(currency).toUpperCase(),
-        market_code: 'us',
+        locale: String(locale).toLowerCase(),
+        currency_code: String(currency_code).toUpperCase(),
+        market_code: String(market_code).toUpperCase(),
         host: realHost,
         user_ip: userIp,
-        trip_class: String(tripClass).toUpperCase(),
+        trip_class: String(trip_class).toUpperCase(),
         passengers: {
           adults: Number(adults),
           children: Number(children),
           infants: Number(infants),
         },
-        segments: directions.map(d => ({
-          origin: d.origin,
-          destination: d.destination,
-          date: d.date,
-        })),
+        segments,
       };
 
-      console.log('[LiveFlightSearch] Start URL:', TICKETS_API_START);
-      console.log('[LiveFlightSearch] Payload:', JSON.stringify(requestPayload));
-      console.log('[LiveFlightSearch] Using Bearer token auth');
+      console.log('[FlightSearch] START URL:', TICKETS_API_START);
+      console.log('[FlightSearch] Payload:', JSON.stringify(requestPayload));
 
       const response = await fetch(TICKETS_API_START, {
         method: 'POST',
@@ -147,93 +130,71 @@ serve(async (req) => {
       });
 
       const responseText = await response.text();
-      console.log('[LiveFlightSearch] Create response status:', response.status);
-      console.log('[LiveFlightSearch] Create response (first 500 chars):', responseText.substring(0, 500));
+      console.log('[FlightSearch] START response status:', response.status);
+      console.log('[FlightSearch] START response:', responseText.substring(0, 500));
 
       if (!response.ok) {
-        console.error('[LiveFlightSearch] Create failed:', response.status, responseText.substring(0, 500));
-
-        // Only show "Live results not active yet" for 401/403.
         if (response.status === 401 || response.status === 403) {
           return json({
-            status: 'AUTH_ERROR',
+            ok: false,
             liveUnavailable: true,
-            isComplete: true,
-            flights: [],
-            rawCount: 0,
-            message: 'Live results not active yet (API authorization error).',
+            error: 'Live results not active yet (API authorization pending)',
           });
         }
-
         return json({
-          status: 'ERROR',
-          error: 'Failed to create search',
-          httpStatus: response.status,
-          details: responseText.substring(0, 500),
+          ok: false,
+          error: 'Failed to start search',
+          details: responseText.substring(0, 300),
         }, 500);
       }
 
       let data;
       try {
         data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('[LiveFlightSearch] Failed to parse response:', e);
-        return json({ 
-          status: 'ERROR', 
-          error: 'Invalid response from search API' 
-        }, 500);
+      } catch {
+        return json({ ok: false, error: 'Invalid response from search API' }, 500);
       }
 
-      const searchIdFromApi = data?.search_id || data?.searchId || data?.uuid;
-      const resultsUrlFromApi = data?.results_url || data?.resultsUrl || null;
+      const search_id = data?.search_id || data?.searchId || data?.uuid;
+      const results_url = data?.results_url || data?.resultsUrl || null;
 
-      if (!searchIdFromApi) {
-        console.error('[LiveFlightSearch] No search_id in response:', JSON.stringify(data).substring(0, 800));
-        return json({
-          status: 'ERROR',
-          error: 'Missing search_id from API',
-          details: JSON.stringify(data).substring(0, 500),
-        }, 500);
+      if (!search_id) {
+        console.error('[FlightSearch] No search_id in response:', JSON.stringify(data).substring(0, 500));
+        return json({ ok: false, error: 'Missing search_id from API' }, 500);
       }
 
-      console.log('[LiveFlightSearch] search_id:', searchIdFromApi);
-      console.log('[LiveFlightSearch] results_url:', resultsUrlFromApi);
+      console.log('[FlightSearch] search_id:', search_id);
+      console.log('[FlightSearch] results_url:', results_url);
 
       return json({
-        status: 'SEARCH_CREATED',
-        searchId: searchIdFromApi,
-        resultsUrl: resultsUrlFromApi,
-        message: 'Search initiated, poll for results',
+        ok: true,
+        search_id,
+        results_url,
+        last_update_timestamp: 0,
       });
     }
 
-    // ACTION: Poll for results
-    if (action === 'poll') {
-      if (!searchId) {
-        return json({ 
-          status: 'BAD_REQUEST', 
-          error: 'searchId is required for polling' 
-        }, 400);
+    // ===== ACTION: POLL RESULTS =====
+    if (action === 'results') {
+      const { search_id, results_url, last_update_timestamp = 0 } = body;
+
+      if (!search_id) {
+        return json({ ok: false, error: 'search_id is required' }, 400);
       }
 
-      const { origin = '', destination = '' } = searchParams;
-
-      console.log('[LiveFlightSearch] Polling:', searchId, 'route:', origin, '->', destination);
-
-      // Use the results_url provided by the start response
-      let pollUrl = resultsUrl;
+      // Build poll URL
+      let pollUrl = results_url;
       if (!pollUrl) {
-        // Fallback to default results endpoint
-        pollUrl = `https://tickets-api.travelpayouts.com/search/affiliate/results?search_id=${encodeURIComponent(String(searchId))}`;
+        pollUrl = `https://tickets-api.travelpayouts.com/search/affiliate/results?search_id=${encodeURIComponent(String(search_id))}`;
       }
 
-      // Add timestamp parameter if we have one (for incremental updates)
-      if (lastUpdateTimestamp) {
-        const separator = pollUrl.includes('?') ? '&' : '?';
-        pollUrl = `${pollUrl}${separator}last_update_timestamp=${lastUpdateTimestamp}`;
+      // Add timestamp for incremental updates
+      if (last_update_timestamp && last_update_timestamp > 0) {
+        const sep = pollUrl.includes('?') ? '&' : '?';
+        pollUrl = `${pollUrl}${sep}last_update_timestamp=${last_update_timestamp}`;
       }
 
-      console.log('[LiveFlightSearch] Poll URL:', pollUrl);
+      console.log('[FlightSearch] RESULTS URL:', pollUrl);
 
       const response = await fetch(pollUrl, {
         method: 'GET',
@@ -244,24 +205,19 @@ serve(async (req) => {
       });
 
       const responseText = await response.text();
-      console.log('[LiveFlightSearch] Poll response status:', response.status);
+      console.log('[FlightSearch] RESULTS status:', response.status);
 
       if (!response.ok) {
-        console.error('[LiveFlightSearch] Poll failed:', response.status, responseText.substring(0, 500));
-
         if (response.status === 401 || response.status === 403) {
           return json({
-            status: 'AUTH_ERROR',
+            ok: false,
             liveUnavailable: true,
-            isComplete: true,
-            flights: [],
-            rawCount: 0,
-            message: 'Live results not active yet (API authorization error).',
+            is_over: true,
+            error: 'Live results not active yet',
           });
         }
-
         return json({
-          status: 'ERROR',
+          ok: false,
           error: 'Failed to fetch results',
           httpStatus: response.status,
         }, 500);
@@ -270,34 +226,27 @@ serve(async (req) => {
       let data;
       try {
         data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('[LiveFlightSearch] Failed to parse poll response');
-        return json({ 
-          status: 'ERROR', 
-          error: 'Invalid poll response' 
-        }, 500);
+      } catch {
+        return json({ ok: false, error: 'Invalid poll response' }, 500);
       }
 
-      const isComplete = Boolean(
+      const is_over = Boolean(
         data?.completed === true ||
         data?.is_over === true ||
         data?.isOver === true ||
-        data?.is_complete === true ||
-        data?.isComplete === true
+        data?.is_complete === true
       );
 
-      const nextLastUpdateTimestamp =
-        data?.last_update_timestamp ?? data?.lastUpdateTimestamp ?? null;
+      const newTimestamp = data?.last_update_timestamp ?? data?.lastUpdateTimestamp ?? last_update_timestamp;
 
-      // Extract tickets/proposals from various possible response shapes
+      // Extract raw data
       const tickets: any[] = data?.tickets || data?.data?.tickets || [];
       const proposalsArr: any[] = data?.proposals || data?.data?.proposals || [];
       const airlinesMap: Record<string, any> = data?.airlines || data?.data?.airlines || {};
       const flightLegs: any[] = data?.flight_legs || data?.data?.flight_legs || [];
       const gatesMap: Record<string, any> = data?.gates || data?.data?.gates || {};
 
-      console.log('[LiveFlightSearch] completed:', isComplete);
-      console.log('[LiveFlightSearch] tickets:', tickets.length, 'proposals:', proposalsArr.length, 'legs:', flightLegs.length);
+      console.log('[FlightSearch] is_over:', is_over, 'tickets:', tickets.length, 'proposals:', proposalsArr.length);
 
       // Build lookup maps
       const proposalsById = new Map<string, any>();
@@ -310,22 +259,18 @@ serve(async (req) => {
         if (l?.id != null) legsById.set(String(l.id), l);
       }
 
-      // Determine the base URL for click endpoint
+      // Click endpoint base URL
       let clickBaseUrl = 'https://tickets-api.travelpayouts.com';
       try {
-        if (resultsUrl) {
-          clickBaseUrl = new URL(String(resultsUrl)).origin;
+        if (results_url) {
+          clickBaseUrl = new URL(String(results_url)).origin;
         }
       } catch {}
 
-      /**
-       * Resolve booking URL via click endpoint
-       * POST /searches/{search_id}/clicks/{proposal_id}
-       */
+      // Resolve booking URL via click endpoint
       async function resolveBookingUrl(proposalId: string): Promise<string | null> {
-        const clickUrl = `${clickBaseUrl}/searches/${encodeURIComponent(String(searchId))}/clicks/${encodeURIComponent(proposalId)}`;
+        const clickUrl = `${clickBaseUrl}/searches/${encodeURIComponent(String(search_id))}/clicks/${encodeURIComponent(proposalId)}`;
         try {
-          console.log('[LiveFlightSearch] Click URL:', clickUrl);
           const r = await fetch(clickUrl, {
             method: 'POST',
             headers: {
@@ -336,43 +281,27 @@ serve(async (req) => {
             body: JSON.stringify({}),
           });
           const t = await r.text();
-          console.log('[LiveFlightSearch] Click response:', r.status, t.substring(0, 200));
-          
-          if (!r.ok) {
-            console.warn('[LiveFlightSearch] Click failed:', r.status, t.substring(0, 200));
-            return null;
-          }
-          
+          if (!r.ok) return null;
+
           const parsed = JSON.parse(t);
           const url = parsed?.url || parsed?.booking_url || parsed?.redirect_url || null;
-          
-          if (!url) {
-            console.warn('[LiveFlightSearch] No URL in click response');
-            return null;
-          }
-          
+          if (!url) return null;
+
           const lower = String(url).toLowerCase();
-          // NEVER allow aviasales search pages or mock URLs
           if (lower.includes('aviasales.com/search') || lower.includes('mock=1')) {
-            console.warn('[LiveFlightSearch] Blocked aviasales/mock URL:', url.substring(0, 100));
+            console.warn('[FlightSearch] Blocked invalid booking URL');
             return null;
           }
-          
           return String(url);
-        } catch (e) {
-          console.warn('[LiveFlightSearch] Click error:', e);
+        } catch {
           return null;
         }
       }
 
-      // Normalize results to UI-friendly shape
-      const normalized = tickets.map((ticket, idx) => {
+      // Normalize tickets to UI format
+      const results = tickets.map((ticket, idx) => {
         const ticketProposalsRaw =
-          ticket?.proposals ||
-          ticket?.proposal_ids ||
-          ticket?.proposalIds ||
-          ticket?.proposal_id ||
-          [];
+          ticket?.proposals || ticket?.proposal_ids || ticket?.proposalIds || [];
 
         let proposals: any[] = [];
         if (Array.isArray(ticketProposalsRaw)) {
@@ -399,7 +328,7 @@ serve(async (req) => {
         const proposalId = proposal?.id != null ? String(proposal.id) : null;
         const gateId = proposal?.gate_id != null ? String(proposal.gate_id) : null;
 
-        // Extract segments / legs
+        // Extract legs
         const segs = ticket?.segments || ticket?.segment || ticket?.flight_legs || ticket?.legs || [];
         let legs: any[] = [];
         if (Array.isArray(segs)) {
@@ -415,30 +344,20 @@ serve(async (req) => {
           proposal?.carrier ||
           firstLeg?.carrier ||
           firstLeg?.marketing_carrier ||
-          firstLeg?.operating_carrier ||
           'XX';
         const airlineName =
           AIRLINE_NAMES[String(carrier)] || airlinesMap[String(carrier)]?.name || String(carrier);
 
-        const depCode = String(firstLeg?.origin || firstLeg?.departure || origin || '').toUpperCase();
-        const arrCode = String(lastLeg?.destination || lastLeg?.arrival || destination || '').toUpperCase();
+        const depCode = String(firstLeg?.origin || firstLeg?.departure || '').toUpperCase();
+        const arrCode = String(lastLeg?.destination || lastLeg?.arrival || '').toUpperCase();
 
-        // Times can be ISO strings or timestamps
         const depAt = firstLeg?.departure_at || firstLeg?.departureAt || firstLeg?.departure_time || null;
         const arrAt = lastLeg?.arrival_at || lastLeg?.arrivalAt || lastLeg?.arrival_time || null;
         const depTs = firstLeg?.departure_timestamp || firstLeg?.departureTimestamp || null;
         const arrTs = lastLeg?.arrival_timestamp || lastLeg?.arrivalTimestamp || null;
 
-        const depDate = depAt
-          ? new Date(depAt)
-          : depTs
-            ? new Date(Number(depTs) * 1000)
-            : null;
-        const arrDate = arrAt
-          ? new Date(arrAt)
-          : arrTs
-            ? new Date(Number(arrTs) * 1000)
-            : null;
+        const depDate = depAt ? new Date(depAt) : depTs ? new Date(Number(depTs) * 1000) : null;
+        const arrDate = arrAt ? new Date(arrAt) : arrTs ? new Date(Number(arrTs) * 1000) : null;
 
         const departureTime = depDate
           ? `${String(depDate.getUTCHours()).padStart(2, '0')}:${String(depDate.getUTCMinutes()).padStart(2, '0')}`
@@ -454,7 +373,7 @@ serve(async (req) => {
         const stops = Math.max(0, legs.length - 1);
 
         return {
-          id: `live-${String(searchId)}-${proposalId ?? idx}`,
+          id: `live-${String(search_id)}-${proposalId ?? idx}`,
           airline: airlineName,
           airlineLogo: getAirlineLogo(String(carrier)),
           flightNumber: String(proposal?.number || proposal?.flight_number || carrier),
@@ -470,54 +389,76 @@ serve(async (req) => {
           proposalId,
           gateId,
           segments: legs,
-          isLive: true,
         };
       });
 
-      // Resolve booking URLs for first N tickets (to avoid too many API calls)
+      // Resolve booking URLs for first N results
       const MAX_BOOKING_URLS = 30;
       const withBooking = await Promise.all(
-        normalized.slice(0, MAX_BOOKING_URLS).map(async (f) => {
-          if (!f.proposalId) return { ...f, bookingUrl: null, deepLink: '' };
+        results.slice(0, MAX_BOOKING_URLS).map(async (f) => {
+          if (!f.proposalId) return { ...f, bookingUrl: null };
           const bookingUrl = await resolveBookingUrl(f.proposalId);
-          return { ...f, bookingUrl, deepLink: bookingUrl || '' };
+          return { ...f, bookingUrl };
         })
       );
-      
-      const rest = normalized.slice(MAX_BOOKING_URLS).map((f) => ({ ...f, bookingUrl: null, deepLink: '' }));
-      
-      // Filter to only flights with valid price AND valid booking URL
-      const flights = [...withBooking, ...rest]
-        .filter((f) => f.price > 0)
-        .filter((f) => !!f.bookingUrl);
 
-      console.log('[LiveFlightSearch] Final flights count (with valid bookingUrl):', flights.length);
-      if (flights[0]?.bookingUrl) {
-        console.log('[LiveFlightSearch] Sample bookingUrl:', String(flights[0].bookingUrl).substring(0, 200));
+      // Merge booking URLs back
+      const finalResults = results.map((f, i) => {
+        if (i < MAX_BOOKING_URLS && withBooking[i]) {
+          return withBooking[i];
+        }
+        return { ...f, bookingUrl: null };
+      });
+
+      // Sort by price
+      finalResults.sort((a, b) => a.price - b.price);
+
+      console.log('[FlightSearch] Returning', finalResults.length, 'results, is_over:', is_over);
+      if (finalResults.length > 0) {
+        console.log('[FlightSearch] Example bookingUrl:', finalResults[0].bookingUrl?.substring(0, 100));
       }
 
       return json({
-        status: isComplete ? 'COMPLETE' : 'POLLING',
-        searchId,
-        resultsUrl: resultsUrl ?? data?.results_url ?? null,
-        lastUpdateTimestamp: nextLastUpdateTimestamp,
-        flights,
-        isComplete,
-        rawCount: flights.length,
-        liveUnavailable: false,
+        ok: true,
+        is_over,
+        last_update_timestamp: newTimestamp,
+        results,
+        results_count: finalResults.length,
       });
     }
 
-    return json({ 
-      status: 'BAD_REQUEST', 
-      error: 'Invalid action. Use "create" or "poll"' 
-    }, 400);
+    // Legacy action support (create -> start, poll -> results)
+    if (action === 'create') {
+      // Redirect to new format
+      const newBody = {
+        action: 'start',
+        origin: body.origin,
+        destination: body.destination,
+        depart_date: body.departDate,
+        return_date: body.returnDate,
+        adults: body.adults,
+        children: body.children,
+        infants: body.infants,
+        trip_class: body.tripClass,
+        currency_code: body.currency,
+      };
+      const newReq = new Request(req.url, {
+        method: 'POST',
+        headers: req.headers,
+        body: JSON.stringify(newBody),
+      });
+      // Re-invoke with new body format - process inline
+      return json({ ok: false, error: 'Please use action: "start" format' }, 400);
+    }
 
-  } catch (error) {
-    console.error('[LiveFlightSearch] Error:', error);
-    return json({ 
-      status: 'ERROR', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, 500);
+    if (action === 'poll') {
+      return json({ ok: false, error: 'Please use action: "results" format' }, 400);
+    }
+
+    return json({ ok: false, error: 'Invalid action. Use "start" or "results".' }, 400);
+
+  } catch (err) {
+    console.error('[FlightSearch] Error:', err);
+    return json({ ok: false, error: String(err) }, 500);
   }
 });
