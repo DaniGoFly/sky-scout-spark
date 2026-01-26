@@ -391,7 +391,7 @@ const LiveFlightResults = () => {
                     <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3">
                       <div className="text-right">
                         <p className="text-3xl font-bold text-foreground">
-                          ${flight.price}
+                          {flight.currency === 'EUR' ? '€' : flight.currency === 'USD' ? '$' : flight.currency}{flight.price}
                         </p>
                         <p className="text-xs text-muted-foreground">per person</p>
                       </div>
