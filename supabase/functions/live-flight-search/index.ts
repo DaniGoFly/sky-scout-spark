@@ -259,44 +259,13 @@ serve(async (req) => {
         if (l?.id != null) legsById.set(String(l.id), l);
       }
 
-      // Click endpoint base URL
+      // Click endpoint base URL (stored for frontend use)
       let clickBaseUrl = 'https://tickets-api.travelpayouts.com';
       try {
         if (results_url) {
           clickBaseUrl = new URL(String(results_url)).origin;
         }
       } catch {}
-
-      // Resolve booking URL via click endpoint
-      async function resolveBookingUrl(proposalId: string): Promise<string | null> {
-        const clickUrl = `${clickBaseUrl}/searches/${encodeURIComponent(String(search_id))}/clicks/${encodeURIComponent(proposalId)}`;
-        try {
-          const r = await fetch(clickUrl, {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json',
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({}),
-          });
-          const t = await r.text();
-          if (!r.ok) return null;
-
-          const parsed = JSON.parse(t);
-          const url = parsed?.url || parsed?.booking_url || parsed?.redirect_url || null;
-          if (!url) return null;
-
-          const lower = String(url).toLowerCase();
-          if (lower.includes('aviasales.com/search') || lower.includes('mock=1')) {
-            console.warn('[FlightSearch] Blocked invalid booking URL');
-            return null;
-          }
-          return String(url);
-        } catch {
-          return null;
-        }
-      }
 
       // Normalize tickets to UI format
       const results = tickets.map((ticket, idx) => {
@@ -326,7 +295,9 @@ serve(async (req) => {
         const price = cheapest?.price || 0;
         const currency = String(proposal?.currency || data?.currency_code || 'USD').toUpperCase();
         const proposalId = proposal?.id != null ? String(proposal.id) : null;
-        const gateId = proposal?.gate_id != null ? String(proposal.gate_id) : null;
+
+        // Get ticket signature for click action
+        const ticketSignature = ticket?.signature || ticket?.sign || null;
 
         // Extract legs
         const segs = ticket?.segments || ticket?.segment || ticket?.flight_legs || ticket?.legs || [];
@@ -387,44 +358,101 @@ serve(async (req) => {
           price: Math.round(price),
           currency,
           proposalId,
-          gateId,
+          signature: ticketSignature,
           segments: legs,
         };
       });
 
-      // Resolve booking URLs for first N results
-      const MAX_BOOKING_URLS = 30;
-      const withBooking = await Promise.all(
-        results.slice(0, MAX_BOOKING_URLS).map(async (f) => {
-          if (!f.proposalId) return { ...f, bookingUrl: null };
-          const bookingUrl = await resolveBookingUrl(f.proposalId);
-          return { ...f, bookingUrl };
-        })
-      );
-
-      // Merge booking URLs back
-      const finalResults = results.map((f, i) => {
-        if (i < MAX_BOOKING_URLS && withBooking[i]) {
-          return withBooking[i];
-        }
-        return { ...f, bookingUrl: null };
-      });
-
       // Sort by price
-      finalResults.sort((a, b) => a.price - b.price);
+      results.sort((a, b) => a.price - b.price);
 
-      console.log('[FlightSearch] Returning', finalResults.length, 'results, is_over:', is_over);
-      if (finalResults.length > 0) {
-        console.log('[FlightSearch] Example bookingUrl:', finalResults[0].bookingUrl?.substring(0, 100));
-      }
+      console.log('[FlightSearch] Returning', results.length, 'results, is_over:', is_over);
 
       return json({
         ok: true,
         is_over,
         last_update_timestamp: newTimestamp,
         results,
-        results_count: finalResults.length,
+        results_count: results.length,
       });
+    }
+
+    // ===== ACTION: CLICK (resolve booking URL) =====
+    if (action === 'click') {
+      const { search_id, proposal_id, signature, results_url } = body;
+
+      if (!search_id || !proposal_id) {
+        return json({ ok: false, error: 'search_id and proposal_id are required' }, 400);
+      }
+
+      // Build click URL
+      let clickBaseUrl = 'https://tickets-api.travelpayouts.com';
+      try {
+        if (results_url) {
+          clickBaseUrl = new URL(String(results_url)).origin;
+        }
+      } catch {}
+
+      const clickUrl = `${clickBaseUrl}/searches/${encodeURIComponent(String(search_id))}/clicks/${encodeURIComponent(String(proposal_id))}`;
+      console.log('[FlightSearch] CLICK URL:', clickUrl);
+
+      try {
+        const clickResp = await fetch(clickUrl, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ signature: signature || '' }),
+        });
+
+        const clickText = await clickResp.text();
+        console.log('[FlightSearch] CLICK response status:', clickResp.status);
+
+        if (!clickResp.ok) {
+          console.error('[FlightSearch] CLICK failed:', clickText.substring(0, 300));
+          return json({
+            ok: false,
+            error: 'Failed to resolve booking URL',
+            httpStatus: clickResp.status,
+          });
+        }
+
+        let clickData;
+        try {
+          clickData = JSON.parse(clickText);
+        } catch {
+          return json({ ok: false, error: 'Invalid click response' });
+        }
+
+        const bookingUrl = clickData?.url || clickData?.booking_url || clickData?.redirect_url || null;
+
+        if (!bookingUrl) {
+          console.warn('[FlightSearch] No URL in click response');
+          return json({ ok: false, error: 'No booking URL returned' });
+        }
+
+        // Validate URL - block aviasales search/mock links
+        const lower = String(bookingUrl).toLowerCase();
+        if (
+          lower.includes('aviasales.com/search') ||
+          lower.includes('aviasales.com/results') ||
+          lower.includes('mock=1')
+        ) {
+          console.warn('[FlightSearch] Blocked invalid booking URL:', bookingUrl.substring(0, 100));
+          return json({ ok: false, error: 'Provider link unavailable' });
+        }
+
+        console.log('[FlightSearch] Returning booking URL:', bookingUrl.substring(0, 100));
+        return json({
+          ok: true,
+          url: bookingUrl,
+        });
+      } catch (err) {
+        console.error('[FlightSearch] CLICK error:', err);
+        return json({ ok: false, error: 'Click request failed' });
+      }
     }
 
     // Legacy action support (create -> start, poll -> results)
