@@ -15,9 +15,11 @@ export interface LiveFlightResult {
   stops: number;
   price: number;
   currency: string;
-  bookingUrl?: string | null;
-  proposalId?: string | null;
-  gateId?: string | null;
+  // Booking data - required for backend click action
+  searchId: string;
+  resultsUrl: string;
+  proposalId: string | null;
+  signature: string | null;
   segments?: unknown[];
 }
 
@@ -134,6 +136,8 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       setStatus("polling");
       const allFlights = new Map<string, LiveFlightResult>();
       const startTime = Date.now();
+      const storedSearchId = search_id;
+      const storedResultsUrl = results_url || '';
       let lastUpdateTimestamp = 0;
 
       while (!cancelRef.current && pollCountRef.current < MAX_POLL_ATTEMPTS) {
@@ -182,12 +186,19 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           lastUpdateTimestamp = Number(pollData.last_update_timestamp);
         }
 
-        // Add new flights
+        // Add new flights with search context
         if (pollData?.results?.length > 0) {
           for (const flight of pollData.results) {
             const key = `${flight.departureCode}-${flight.arrivalCode}-${flight.departureTime}-${flight.price}`;
             if (!allFlights.has(key)) {
-              allFlights.set(key, flight);
+              // Enrich flight with search context for click action
+              allFlights.set(key, {
+                ...flight,
+                searchId: storedSearchId,
+                resultsUrl: storedResultsUrl,
+                proposalId: flight.proposalId || null,
+                signature: flight.signature || null,
+              });
             }
           }
           setFlights(Array.from(allFlights.values()));

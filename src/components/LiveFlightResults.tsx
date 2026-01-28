@@ -10,6 +10,7 @@ import CompactSearchBar from "./CompactSearchBar";
 import { useLiveFlightSearch, LiveFlightResult } from "@/hooks/useLiveFlightSearch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // City to airport code mapping
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -149,45 +150,60 @@ const LiveFlightResults = () => {
     }
   };
 
-  // Handle "View deal" - opens provider URL in new tab
-  const handleViewDeal = (flight: LiveFlightResult) => {
-    const bookingUrl = flight.bookingUrl;
+  // Handle "View deal" - calls backend click action then redirects
+  const handleViewDeal = async (flight: LiveFlightResult) => {
+    // Validate required booking data
+    if (!flight.searchId || !flight.proposalId) {
+      toast({
+        title: "Deal unavailable",
+        description: "Booking information is incomplete for this offer.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    if (!bookingUrl) {
-      toast({
-        title: "Deal unavailable",
-        description: "Provider link unavailable for this offer.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Validate URL
-    let isInvalidUrl = false;
     try {
-      const parsed = new URL(bookingUrl);
-      const host = parsed.hostname.toLowerCase();
-      const path = parsed.pathname.toLowerCase();
-      const q = parsed.search.toLowerCase();
-      isInvalidUrl =
-        parsed.protocol !== "https:" ||
-        q.includes("mock=1") ||
-        (host.includes("aviasales") && (path.includes("/search") || path.includes("/results") || path.includes("/tickets")));
-    } catch {
-      isInvalidUrl = true;
-    }
-    
-    if (isInvalidUrl) {
+      // Call backend click action
+      const { data, error } = await supabase.functions.invoke("live-flight-search", {
+        body: {
+          action: "click",
+          search_id: flight.searchId,
+          proposal_id: flight.proposalId,
+          signature: flight.signature || "",
+          results_url: flight.resultsUrl || "",
+        },
+      });
+
+      if (error) {
+        console.error("[ViewDeal] Backend error:", error);
+        toast({
+          title: "Unable to redirect",
+          description: "Could not connect to booking provider. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!data?.ok || !data?.url) {
+        console.warn("[ViewDeal] No URL returned:", data);
+        toast({
+          title: "Deal unavailable",
+          description: data?.error || "Provider link unavailable for this offer.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Redirect to the provider URL
+      window.location.href = data.url;
+    } catch (err) {
+      console.error("[ViewDeal] Error:", err);
       toast({
-        title: "Deal unavailable",
-        description: "Provider link unavailable for this offer.",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
-      return;
     }
-    
-    // Open provider URL in new tab (affiliate tracking preserved)
-    window.open(bookingUrl, '_blank', 'noopener,noreferrer');
   };
 
   // Get stops label
