@@ -7,10 +7,9 @@ import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSummaryBar from "./FlightSummaryBar";
 import FlightSearchProgress from "./FlightSearchProgress";
 import CompactSearchBar from "./CompactSearchBar";
-import { useLiveFlightSearch, LiveFlightResult } from "@/hooks/useLiveFlightSearch";
+import { useLiveFlightSearch, LiveFlightResult, handleFlightClick } from "@/hooks/useLiveFlightSearch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 // City to airport code mapping
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -163,39 +162,25 @@ const LiveFlightResults = () => {
     }
 
     try {
-      // Call backend click action
-      const { data, error } = await supabase.functions.invoke("live-flight-search", {
-        body: {
-          action: "click",
-          search_id: flight.searchId,
-          proposal_id: flight.proposalId,
-          signature: flight.signature || "",
-          results_url: flight.resultsUrl || "",
-        },
+      // Call backend click action using the external Supabase endpoint
+      const url = await handleFlightClick({
+        searchId: flight.searchId,
+        proposalId: flight.proposalId,
+        signature: flight.signature || "",
+        resultsUrl: flight.resultsUrl || "",
       });
 
-      if (error) {
-        console.error("[ViewDeal] Backend error:", error);
-        toast({
-          title: "Unable to redirect",
-          description: "Could not connect to booking provider. Please try again.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (!data?.ok || !data?.url) {
-        console.warn("[ViewDeal] No URL returned:", data);
+      if (!url) {
         toast({
           title: "Deal unavailable",
-          description: data?.error || "Provider link unavailable for this offer.",
+          description: "Provider link unavailable for this offer.",
           variant: "destructive"
         });
         return;
       }
 
       // Redirect to the provider URL
-      window.location.href = data.url;
+      window.location.href = url;
     } catch (err) {
       console.error("[ViewDeal] Error:", err);
       toast({
