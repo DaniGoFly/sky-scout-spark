@@ -149,37 +149,41 @@ const LiveFlightResults = () => {
     }
   };
 
+  // Check if flight has all required booking data
+  const hasValidBookingData = (flight: LiveFlightResult): boolean => {
+    return !!(flight.searchId && flight.proposalId && flight.signature && flight.resultsUrl);
+  };
+
   // Handle "View deal" - calls backend click action then redirects
   const handleViewDeal = async (flight: LiveFlightResult) => {
-    // Validate required booking data
-    if (!flight.searchId || !flight.proposalId) {
-      toast({
-        title: "Deal unavailable",
-        description: "Booking information is incomplete for this offer.",
-        variant: "destructive"
-      });
-      return;
-    }
+    const payload = {
+      searchId: flight.searchId,
+      proposalId: flight.proposalId,
+      signature: flight.signature,
+      resultsUrl: flight.resultsUrl,
+    };
+    
+    // Log payload before sending to backend
+    console.log("[ViewDeal] Sending click payload to backend:", payload);
 
     try {
-      // Call backend click action using the external Supabase endpoint
       const url = await handleFlightClick({
         searchId: flight.searchId,
-        proposalId: flight.proposalId,
-        signature: flight.signature || "",
-        resultsUrl: flight.resultsUrl || "",
+        proposalId: flight.proposalId!,
+        signature: flight.signature!,
+        resultsUrl: flight.resultsUrl,
       });
 
       if (!url) {
         toast({
-          title: "Deal unavailable",
-          description: "Provider link unavailable for this offer.",
+          title: "Redirect failed",
+          description: "Could not get provider link. Please try again.",
           variant: "destructive"
         });
         return;
       }
 
-      // Redirect to the provider URL
+      console.log("[ViewDeal] Redirecting to:", url);
       window.location.href = url;
     } catch (err) {
       console.error("[ViewDeal] Error:", err);
@@ -400,6 +404,8 @@ const LiveFlightResults = () => {
                         onClick={() => handleViewDeal(flight)}
                         className="gap-2"
                         size="lg"
+                        disabled={!hasValidBookingData(flight)}
+                        title={!hasValidBookingData(flight) ? "Booking data incomplete" : undefined}
                       >
                         View Deal
                       </Button>
