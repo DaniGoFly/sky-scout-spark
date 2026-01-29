@@ -10,6 +10,8 @@ import CompactSearchBar from "./CompactSearchBar";
 import { useLiveFlightSearch, LiveFlightResult, handleFlightClick } from "@/hooks/useLiveFlightSearch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import AirlineMark from "@/components/AirlineMark";
+import FlightResultsErrorBoundary from "@/components/FlightResultsErrorBoundary";
 
 // City to airport code mapping
 const CITY_AIRPORT_CODES: Record<string, string> = {
@@ -431,7 +433,9 @@ const LiveFlightResults = () => {
 
               {/* Results count */}
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>{processedFlights.length} flights found</span>
+                <span>
+                  {processedFlights.length.toLocaleString()} offers found · Showing {displayedFlights.length.toLocaleString()} of {processedFlights.length.toLocaleString()}
+                </span>
                 {isSearching && (
                   <span className="text-primary flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -441,123 +445,115 @@ const LiveFlightResults = () => {
               </div>
 
               {/* Flight cards - with defensive rendering */}
-              {displayedFlights.map((flight, index) => {
-                // Extra safety check - skip if flight became invalid
-                if (!isValidFlight(flight)) {
-                  return null;
-                }
+              <FlightResultsErrorBoundary>
+                {displayedFlights.map((flight, index) => {
+                  // Extra safety check - skip if flight became invalid
+                  if (!isValidFlight(flight)) {
+                    return null;
+                  }
 
-                const isLoading = loadingFlightId === flight.id;
-                const hasBookingData = !!(flight.searchId && flight.proposalId && flight.signature && flight.resultsUrl);
-                const isDisabled = !hasBookingData || isLoading;
-                
-                // Safe access to all display fields
-                const airlineName = flight.airline || "Unknown";
-                const airlineLogo = flight.airlineLogo || "/placeholder.svg";
-                const departTime = flight.departureTime || "--:--";
-                const arriveTime = flight.arrivalTime || "--:--";
-                const depCode = flight.departureCode || from.toUpperCase();
-                const arrCode = flight.arrivalCode || to.toUpperCase();
-                const duration = flight.duration || "N/A";
-                const stops = flight.stops ?? 0;
-                const price = flight.price ?? 0;
-                const currency = flight.currency || "EUR";
-                const stableKey = getStableKey(flight, index);
-                
-                return (
-                  <div
-                    key={stableKey}
-                    className={`bg-card rounded-xl p-6 border border-border hover:border-primary/30 transition-all hover:shadow-lg ${
-                      index === 0 && sortBy === 'best' ? 'ring-2 ring-primary' : ''
-                    }`}
-                  >
-                    {index === 0 && sortBy === 'best' && (
-                      <div className="inline-block bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full mb-4">
-                        Best Value
-                      </div>
-                    )}
-                    
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                      {/* Airline */}
-                      <div className="flex items-center gap-4 lg:w-40">
-                        <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
-                          <img
-                            src={airlineLogo}
-                            alt={airlineName}
-                            className="w-8 h-8 object-contain"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/placeholder.svg";
-                            }}
-                          />
+                  const isLoading = loadingFlightId === flight.id;
+                  const hasBookingData = !!(flight.searchId && flight.proposalId && flight.signature && flight.resultsUrl);
+                  const isDisabled = !hasBookingData || isLoading;
+
+                  // Safe access to all display fields (NO placeholders)
+                  const airlineCode = (flight.airlineCode || flight.airline || "??").toUpperCase();
+                  const airlineName = flight.airline || airlineCode;
+                  const airlineLogo = flight.airlineLogo || "";
+                  const departTime = flight.departureTime || "";
+                  const arriveTime = flight.arrivalTime || "";
+                  const depCode = (flight.departureCode || from.toUpperCase()).toUpperCase();
+                  const arrCode = (flight.arrivalCode || to.toUpperCase()).toUpperCase();
+                  const duration = flight.duration || "";
+                  const stops = flight.stops ?? 0;
+                  const price = flight.price ?? 0;
+                  const currency = flight.currency || "EUR";
+                  const stableKey = getStableKey(flight, index);
+
+                  return (
+                    <div
+                      key={stableKey}
+                      className={`bg-card rounded-xl p-6 border border-border hover:border-primary/30 transition-all hover:shadow-lg ${
+                        index === 0 && sortBy === "best" ? "ring-2 ring-primary" : ""
+                      }`}
+                    >
+                      {index === 0 && sortBy === "best" && (
+                        <div className="inline-block bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                          Best Value
                         </div>
-                        <span className="font-semibold text-foreground text-sm">{airlineName}</span>
-                      </div>
+                      )}
 
-                      {/* Times */}
-                      <div className="flex-1 flex items-center gap-4">
-                        <div className="text-center">
-                          <p className="text-2xl font-bold text-foreground">{departTime}</p>
-                          <p className="text-sm text-muted-foreground">{depCode}</p>
+                      <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                        {/* Airline */}
+                        <div className="flex items-center gap-4 lg:w-40">
+                          <AirlineMark airlineCode={airlineCode} airlineName={airlineName} logoUrl={airlineLogo} />
+                          <span className="font-semibold text-foreground text-sm">{airlineName}</span>
                         </div>
 
-                        <div className="flex-1 flex flex-col items-center px-4">
-                          <span className="text-sm text-muted-foreground">{duration}</span>
-                          <div className="w-full h-0.5 bg-border relative my-2">
-                            <Plane className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-primary rotate-90" />
+                        {/* Times (hide time text if missing; always show IATA codes) */}
+                        <div className="flex-1 flex items-center gap-4">
+                          <div className="text-center">
+                            {departTime ? <p className="text-2xl font-bold text-foreground">{departTime}</p> : null}
+                            <p className="text-sm text-muted-foreground">{depCode}</p>
                           </div>
-                          <span className={`text-xs ${stops === 0 ? "text-primary" : "text-muted-foreground"}`}>
-                            {getStopsLabel(stops)}
-                          </span>
+
+                          <div className="flex-1 flex flex-col items-center px-4">
+                            {duration ? <span className="text-sm text-muted-foreground">{duration}</span> : null}
+                            <div className="w-full h-0.5 bg-border relative my-2">
+                              <Plane className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-primary rotate-90" />
+                            </div>
+                            <span className={`text-xs ${stops === 0 ? "text-primary" : "text-muted-foreground"}`}>
+                              {getStopsLabel(stops)}
+                            </span>
+                          </div>
+
+                          <div className="text-center">
+                            {arriveTime ? <p className="text-2xl font-bold text-foreground">{arriveTime}</p> : null}
+                            <p className="text-sm text-muted-foreground">{arrCode}</p>
+                          </div>
                         </div>
 
-                        <div className="text-center">
-                          <p className="text-2xl font-bold text-foreground">{arriveTime}</p>
-                          <p className="text-sm text-muted-foreground">{arrCode}</p>
+                        {/* Price & Book */}
+                        <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3">
+                          <div className="text-right">
+                            <p className="text-3xl font-bold text-foreground">
+                              {currency === "EUR" ? "€" : currency === "USD" ? "$" : currency}
+                              {price}
+                            </p>
+                            <p className="text-xs text-muted-foreground">per person</p>
+                          </div>
+                          <Button
+                            onClick={() => handleViewDeal(flight)}
+                            className="gap-2 min-w-[120px]"
+                            size="lg"
+                            disabled={isDisabled}
+                            title={!hasBookingData ? "Booking data incomplete" : undefined}
+                          >
+                            {isLoading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Opening...
+                              </>
+                            ) : (
+                              "View Deal"
+                            )}
+                          </Button>
                         </div>
-                      </div>
-
-                      {/* Price & Book */}
-                      <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3">
-                        <div className="text-right">
-                          <p className="text-3xl font-bold text-foreground">
-                            {currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency}{price}
-                          </p>
-                          <p className="text-xs text-muted-foreground">per person</p>
-                        </div>
-                        <Button
-                          onClick={() => handleViewDeal(flight)}
-                          className="gap-2 min-w-[120px]"
-                          size="lg"
-                          disabled={isDisabled}
-                          title={!hasBookingData ? "Booking data incomplete" : undefined}
-                        >
-                          {isLoading ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Opening...
-                            </>
-                          ) : (
-                            "View Deal"
-                          )}
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
 
-              {/* Show more - SAFE state update, only reveals more flights */}
-              {hasMoreFlights && (
-                <div className="text-center pt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={handleShowMore}
-                  >
-                    Show {Math.min(remainingFlights, PAGE_SIZE)} more flights
-                    {remainingFlights > PAGE_SIZE && ` (${remainingFlights} remaining)`}
-                  </Button>
-                </div>
-              )}
+                {/* Show more - SAFE state update, only reveals more flights */}
+                {hasMoreFlights && (
+                  <div className="text-center pt-4">
+                    <Button variant="outline" onClick={handleShowMore}>
+                      Show {Math.min(remainingFlights, PAGE_SIZE)} more offers
+                      {remainingFlights > PAGE_SIZE && ` (${remainingFlights} remaining)`}
+                    </Button>
+                  </div>
+                )}
+              </FlightResultsErrorBoundary>
             </div>
           </div>
         )}
