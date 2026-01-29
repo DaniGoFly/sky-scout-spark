@@ -18,6 +18,41 @@ const CITY_AIRPORT_CODES: Record<string, string> = {
   "sydney": "SYD", "singapore": "SIN",
 };
 
+/**
+ * Validate that a flight has all required data for rendering
+ * This prevents white-screen crashes from incomplete API responses
+ */
+function isValidFlight(flight: LiveFlightResult | null | undefined): flight is LiveFlightResult {
+  if (!flight) return false;
+  
+  // Must have a valid price (number > 0)
+  if (typeof flight.price !== "number" || flight.price <= 0) return false;
+  
+  // Must have booking metadata for the click action
+  if (!flight.searchId || !flight.resultsUrl || !flight.proposalId || !flight.signature) return false;
+  
+  // Must have at least departure/arrival codes
+  if (!flight.departureCode || !flight.arrivalCode) return false;
+  
+  return true;
+}
+
+/**
+ * Generate a stable React key for a flight card
+ */
+function getStableKey(flight: LiveFlightResult, index: number): string {
+  // Prefer proposalId + signature combo (most unique)
+  if (flight.proposalId && flight.signature) {
+    return `${flight.proposalId}-${flight.signature}`;
+  }
+  // Fallback to flight.id
+  if (flight.id) {
+    return flight.id;
+  }
+  // Last resort: index-based
+  return `flight-${index}`;
+}
+
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -72,22 +107,28 @@ const LiveFlightResults = () => {
     }
   }, [from, to, depart, returnDate, adults, children, infants, tripType, cabin, searchFlights, hasSearched]);
 
-  // Get unique airlines for filters
-  const availableAirlines = useMemo(() => {
-    return [...new Set(flights.map(f => f.airline))].sort();
+  // DEFENSIVE: Filter out invalid flights BEFORE any processing
+  const validFlights = useMemo(() => {
+    return (flights || []).filter(isValidFlight);
   }, [flights]);
 
-  // Filter and sort flights
+  // Get unique airlines for filters (from valid flights only)
+  const availableAirlines = useMemo(() => {
+    return [...new Set(validFlights.map(f => f.airline).filter(Boolean))].sort();
+  }, [validFlights]);
+
+  // Filter and sort flights (using validated flights)
   const processedFlights = useMemo(() => {
-    let result = [...flights];
+    let result = [...validFlights];
 
     // Filter by stops
     if (filters.stops.length > 0) {
       result = result.filter((flight) => {
+        const stops = flight.stops ?? 0;
         return filters.stops.some((stop) => {
-          if (stop === "direct") return flight.stops === 0;
-          if (stop === "1stop") return flight.stops === 1;
-          if (stop === "2stops") return flight.stops >= 2;
+          if (stop === "direct") return stops === 0;
+          if (stop === "1stop") return stops === 1;
+          if (stop === "2stops") return stops >= 2;
           return true;
         });
       });
@@ -95,18 +136,22 @@ const LiveFlightResults = () => {
 
     // Filter by airlines
     if (filters.airlines.length > 0) {
-      result = result.filter((flight) => filters.airlines.includes(flight.airline));
+      result = result.filter((flight) => flight.airline && filters.airlines.includes(flight.airline));
     }
 
-    // Filter by price range
-    result = result.filter(
-      (flight) => flight.price >= filters.priceRange[0] && flight.price <= filters.priceRange[1]
-    );
+    // Filter by price range (with defensive check)
+    result = result.filter((flight) => {
+      const price = flight.price ?? 0;
+      return price >= filters.priceRange[0] && price <= filters.priceRange[1];
+    });
 
-    // Filter by departure time
+    // Filter by departure time (with defensive check)
     if (filters.departureTime.length > 0) {
       result = result.filter((flight) => {
-        const hour = parseInt(flight.departureTime.split(":")[0]);
+        const timeStr = flight.departureTime || "";
+        const hour = parseInt(timeStr.split(":")[0] || "0", 10);
+        if (isNaN(hour)) return true; // Don't filter if time is invalid
+        
         return filters.departureTime.some((time) => {
           if (time === "morning") return hour >= 6 && hour < 12;
           if (time === "afternoon") return hour >= 12 && hour < 18;
@@ -117,29 +162,33 @@ const LiveFlightResults = () => {
       });
     }
 
-    // Sort
+    // Sort with defensive number handling
     switch (sortBy) {
       case "cheapest":
-        result.sort((a, b) => a.price - b.price);
+        result.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
         break;
       case "fastest":
-        result.sort((a, b) => a.durationMinutes - b.durationMinutes);
+        result.sort((a, b) => (a.durationMinutes ?? 0) - (b.durationMinutes ?? 0));
         break;
       case "best":
       default:
         // Weighted score: price + stops penalty + duration penalty
         result.sort((a, b) => {
-          const scoreA = a.price + a.stops * 80 + a.durationMinutes * 0.5;
-          const scoreB = b.price + b.stops * 80 + b.durationMinutes * 0.5;
+          const scoreA = (a.price ?? 0) + (a.stops ?? 0) * 80 + (a.durationMinutes ?? 0) * 0.5;
+          const scoreB = (b.price ?? 0) + (b.stops ?? 0) * 80 + (b.durationMinutes ?? 0) * 0.5;
           return scoreA - scoreB;
         });
         break;
     }
 
     return result;
-  }, [flights, filters, sortBy]);
+  }, [validFlights, filters, sortBy]);
 
-  const displayedFlights = showAllFlights ? processedFlights : processedFlights.slice(0, 10);
+  // SAFE: Paginate with defensive slicing
+  const displayedFlights = useMemo(() => {
+    const safeProcessed = processedFlights || [];
+    return showAllFlights ? safeProcessed : safeProcessed.slice(0, 10);
+  }, [processedFlights, showAllFlights]);
 
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -366,14 +415,33 @@ const LiveFlightResults = () => {
                 )}
               </div>
 
-              {/* Flight cards */}
+              {/* Flight cards - with defensive rendering */}
               {displayedFlights.map((flight, index) => {
+                // Extra safety check - skip if flight became invalid
+                if (!isValidFlight(flight)) {
+                  return null;
+                }
+
                 const isLoading = loadingFlightId === flight.id;
-                const isDisabled = !hasValidBookingData(flight) || isLoading;
+                const hasBookingData = !!(flight.searchId && flight.proposalId && flight.signature && flight.resultsUrl);
+                const isDisabled = !hasBookingData || isLoading;
+                
+                // Safe access to all display fields
+                const airlineName = flight.airline || "Unknown";
+                const airlineLogo = flight.airlineLogo || "/placeholder.svg";
+                const departTime = flight.departureTime || "--:--";
+                const arriveTime = flight.arrivalTime || "--:--";
+                const depCode = flight.departureCode || from.toUpperCase();
+                const arrCode = flight.arrivalCode || to.toUpperCase();
+                const duration = flight.duration || "N/A";
+                const stops = flight.stops ?? 0;
+                const price = flight.price ?? 0;
+                const currency = flight.currency || "EUR";
+                const stableKey = getStableKey(flight, index);
                 
                 return (
                   <div
-                    key={flight.id}
+                    key={stableKey}
                     className={`bg-card rounded-xl p-6 border border-border hover:border-primary/30 transition-all hover:shadow-lg ${
                       index === 0 && sortBy === 'best' ? 'ring-2 ring-primary' : ''
                     }`}
@@ -389,37 +457,37 @@ const LiveFlightResults = () => {
                       <div className="flex items-center gap-4 lg:w-40">
                         <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
                           <img
-                            src={flight.airlineLogo}
-                            alt={flight.airline}
+                            src={airlineLogo}
+                            alt={airlineName}
                             className="w-8 h-8 object-contain"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = "/placeholder.svg";
                             }}
                           />
                         </div>
-                        <span className="font-semibold text-foreground text-sm">{flight.airline}</span>
+                        <span className="font-semibold text-foreground text-sm">{airlineName}</span>
                       </div>
 
                       {/* Times */}
                       <div className="flex-1 flex items-center gap-4">
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-foreground">{flight.departureTime}</p>
-                          <p className="text-sm text-muted-foreground">{flight.departureCode}</p>
+                          <p className="text-2xl font-bold text-foreground">{departTime}</p>
+                          <p className="text-sm text-muted-foreground">{depCode}</p>
                         </div>
 
                         <div className="flex-1 flex flex-col items-center px-4">
-                          <span className="text-sm text-muted-foreground">{flight.duration}</span>
+                          <span className="text-sm text-muted-foreground">{duration}</span>
                           <div className="w-full h-0.5 bg-border relative my-2">
                             <Plane className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-primary rotate-90" />
                           </div>
-                          <span className={`text-xs ${flight.stops === 0 ? "text-primary" : "text-muted-foreground"}`}>
-                            {getStopsLabel(flight.stops)}
+                          <span className={`text-xs ${stops === 0 ? "text-primary" : "text-muted-foreground"}`}>
+                            {getStopsLabel(stops)}
                           </span>
                         </div>
 
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-foreground">{flight.arrivalTime}</p>
-                          <p className="text-sm text-muted-foreground">{flight.arrivalCode}</p>
+                          <p className="text-2xl font-bold text-foreground">{arriveTime}</p>
+                          <p className="text-sm text-muted-foreground">{arrCode}</p>
                         </div>
                       </div>
 
@@ -427,7 +495,7 @@ const LiveFlightResults = () => {
                       <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3">
                         <div className="text-right">
                           <p className="text-3xl font-bold text-foreground">
-                            {flight.currency === 'EUR' ? '€' : flight.currency === 'USD' ? '$' : flight.currency}{flight.price}
+                            {currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency}{price}
                           </p>
                           <p className="text-xs text-muted-foreground">per person</p>
                         </div>
@@ -436,7 +504,7 @@ const LiveFlightResults = () => {
                           className="gap-2 min-w-[120px]"
                           size="lg"
                           disabled={isDisabled}
-                          title={!hasValidBookingData(flight) ? "Booking data incomplete" : undefined}
+                          title={!hasBookingData ? "Booking data incomplete" : undefined}
                         >
                           {isLoading ? (
                             <>
@@ -453,11 +521,17 @@ const LiveFlightResults = () => {
                 );
               })}
 
-              {/* Show more */}
-              {processedFlights.length > 10 && !showAllFlights && (
+              {/* Show more - SAFE state update, no navigation */}
+              {(processedFlights?.length ?? 0) > 10 && !showAllFlights && (
                 <div className="text-center pt-4">
-                  <Button variant="outline" onClick={() => setShowAllFlights(true)}>
-                    Show {processedFlights.length - 10} more flights
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      // Safe state update - just reveals more flights, no fetching
+                      setShowAllFlights(true);
+                    }}
+                  >
+                    Show {(processedFlights?.length ?? 0) - 10} more flights
                   </Button>
                 </div>
               )}
