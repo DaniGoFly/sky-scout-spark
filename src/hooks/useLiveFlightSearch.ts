@@ -69,10 +69,18 @@ const MAX_POLL_ATTEMPTS = 25; // max polls before giving up
 const POLL_TIMEOUT = 40000; // 40s total timeout
 
 /**
+ * Safely get a nested property with optional chaining and default
+ */
+function safeGet<T>(value: T | null | undefined, defaultValue: T): T {
+  return value ?? defaultValue;
+}
+
+/**
  * Parse tickets from API response into UI-friendly format
+ * DEFENSIVE: Handles missing/incomplete data gracefully
  */
 function parseTicketsToFlights(
-  tickets: Ticket[],
+  tickets: Ticket[] | undefined | null,
   flightInfoMap: Record<number, { departure: string; arrival: string; departureTime: string; arrivalTime: string; airline: string; duration: number }>,
   searchId: string,
   resultsUrl: string,
@@ -81,32 +89,81 @@ function parseTicketsToFlights(
 ): LiveFlightResult[] {
   const flights: LiveFlightResult[] = [];
 
+  // DEFENSIVE: Return empty if no tickets
+  if (!tickets || !Array.isArray(tickets)) {
+    console.warn("[parseTickets] No valid tickets array");
+    return flights;
+  }
+
   for (const ticket of tickets) {
-    for (const proposal of ticket.proposals) {
-      const key = `${proposal.id}-${ticket.signature}`;
+    // DEFENSIVE: Skip if ticket is invalid
+    if (!ticket || typeof ticket !== "object") {
+      continue;
+    }
+
+    // DEFENSIVE: Ensure proposals exist
+    const proposals = ticket.proposals;
+    if (!proposals || !Array.isArray(proposals) || proposals.length === 0) {
+      continue;
+    }
+
+    // DEFENSIVE: Ensure signature exists (required for click)
+    const ticketSignature = ticket.signature;
+    if (!ticketSignature || typeof ticketSignature !== "string") {
+      continue;
+    }
+
+    for (const proposal of proposals) {
+      // DEFENSIVE: Skip if proposal is invalid
+      if (!proposal || typeof proposal !== "object") {
+        continue;
+      }
+
+      // DEFENSIVE: Ensure proposal has ID (required for click)
+      if (!proposal.id) {
+        continue;
+      }
+
+      // DEFENSIVE: Ensure proposal has price
+      const priceValue = proposal.price_per_person?.value ?? proposal.price?.value ?? 0;
+      if (priceValue <= 0) {
+        continue; // Skip offers with invalid price
+      }
+
+      const key = `${proposal.id}-${ticketSignature}`;
       
-      // Get first segment info for display (outbound)
-      const firstSegment = ticket.segments[0];
-      const firstFlightIdx = firstSegment?.flights[0];
-      const lastFlightIdx = firstSegment?.flights[firstSegment.flights.length - 1];
+      // DEFENSIVE: Get first segment safely
+      const segments = ticket.segments;
+      const firstSegment = Array.isArray(segments) && segments.length > 0 ? segments[0] : null;
+      const segmentFlights = firstSegment?.flights;
+      const firstFlightIdx = Array.isArray(segmentFlights) && segmentFlights.length > 0 ? segmentFlights[0] : undefined;
+      const lastFlightIdx = Array.isArray(segmentFlights) && segmentFlights.length > 0 
+        ? segmentFlights[segmentFlights.length - 1] 
+        : undefined;
       
-      const firstFlightInfo = flightInfoMap[firstFlightIdx];
-      const lastFlightInfo = flightInfoMap[lastFlightIdx];
+      // DEFENSIVE: Get flight info with fallbacks
+      const firstFlightInfo = firstFlightIdx !== undefined ? flightInfoMap[firstFlightIdx] : undefined;
+      const lastFlightInfo = lastFlightIdx !== undefined ? flightInfoMap[lastFlightIdx] : undefined;
       
       // Count stops (connections in outbound segment)
-      const stops = firstSegment ? Math.max(0, firstSegment.flights.length - 1) : 0;
+      const stops = firstSegment && Array.isArray(segmentFlights) 
+        ? Math.max(0, segmentFlights.length - 1) 
+        : 0;
       
-      // Get airline from flight terms
-      const flightTermKeys = Object.keys(proposal.flight_terms || {});
+      // DEFENSIVE: Get airline from flight terms safely
+      const flightTerms = proposal.flight_terms;
+      const flightTermKeys = flightTerms && typeof flightTerms === "object" ? Object.keys(flightTerms) : [];
       const firstTermKey = flightTermKeys[0];
-      const firstTerm = proposal.flight_terms?.[firstTermKey];
-      const carrierCode = firstTerm?.marketing_carrier_designator?.carrier || "XX";
+      const firstTerm = firstTermKey ? flightTerms?.[firstTermKey] : undefined;
+      const carrierCode = firstTerm?.marketing_carrier_designator?.carrier || 
+                         firstFlightInfo?.airline || 
+                         "XX";
       const flightNumber = firstTerm?.marketing_carrier_designator?.number || "";
       
       // Calculate total duration for outbound
       let totalDuration = 0;
-      if (firstSegment) {
-        for (const flightIdx of firstSegment.flights) {
+      if (firstSegment && Array.isArray(segmentFlights)) {
+        for (const flightIdx of segmentFlights) {
           const info = flightInfoMap[flightIdx];
           if (info?.duration) totalDuration += info.duration;
         }
@@ -124,13 +181,13 @@ function parseTicketsToFlights(
         duration: formatDuration(totalDuration),
         durationMinutes: totalDuration,
         stops,
-        price: Math.round(proposal.price_per_person?.value || proposal.price?.value || 0),
+        price: Math.round(priceValue),
         currency: proposal.price?.currency_code || "EUR",
         // All booking metadata required for click
         searchId,
         resultsUrl,
         proposalId: proposal.id,
-        signature: ticket.signature,
+        signature: ticketSignature,
         segments: ticket.segments,
       };
 
@@ -138,6 +195,7 @@ function parseTicketsToFlights(
     }
   }
 
+  console.log(`[parseTickets] Parsed ${flights.length} valid flights from ${tickets.length} tickets`);
   return flights;
 }
 
