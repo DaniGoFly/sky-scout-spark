@@ -16,7 +16,11 @@ import {
  */
 export interface LiveFlightResult {
   id: string;
+  /** Airline code like "AA" (best-effort) */
+  airlineCode: string;
+  /** Airline display name if available; fallback to code */
   airline: string;
+  /** Optional; UI should provide a text/avatar fallback */
   airlineLogo: string;
   flightNumber: string;
   departureTime: string;
@@ -144,6 +148,14 @@ function parseTicketsToFlights(
       // DEFENSIVE: Get flight info with fallbacks
       const firstFlightInfo = firstFlightIdx !== undefined ? flightInfoMap[firstFlightIdx] : undefined;
       const lastFlightInfo = lastFlightIdx !== undefined ? flightInfoMap[lastFlightIdx] : undefined;
+
+      // Always render IATA codes (use defaults if flight_info is missing)
+      const departureCode = firstFlightInfo?.departure || defaultOrigin;
+      const arrivalCode = lastFlightInfo?.arrival || defaultDestination;
+
+      // Times are optional; never normalize to placeholders like "--:--"
+      const departureTime = firstFlightInfo?.departureTime && firstFlightInfo.departureTime !== "--:--" ? firstFlightInfo.departureTime : "";
+      const arrivalTime = lastFlightInfo?.arrivalTime && lastFlightInfo.arrivalTime !== "--:--" ? lastFlightInfo.arrivalTime : "";
       
       // Count stops (connections in outbound segment)
       const stops = firstSegment && Array.isArray(segmentFlights) 
@@ -169,20 +181,24 @@ function parseTicketsToFlights(
         }
       }
 
+      // Duration is optional; never normalize to placeholder "--"
+      const durationText = totalDuration > 0 ? formatDuration(totalDuration) : "";
+
       const flight: LiveFlightResult = {
         id: key,
+        airlineCode: carrierCode,
         airline: carrierCode,
-        airlineLogo: `https://pics.avs.io/60/60/${carrierCode}.png`,
-        flightNumber: `${carrierCode}${flightNumber}`,
-        departureTime: firstFlightInfo?.departureTime || "--:--",
-        arrivalTime: lastFlightInfo?.arrivalTime || "--:--",
-        departureCode: firstFlightInfo?.departure || defaultOrigin,
-        arrivalCode: lastFlightInfo?.arrival || defaultDestination,
-        duration: formatDuration(totalDuration),
+        airlineLogo: carrierCode && carrierCode !== "XX" ? `https://pics.avs.io/60/60/${carrierCode}.png` : "",
+        flightNumber: flightNumber ? `${carrierCode}${flightNumber}` : "",
+        departureTime,
+        arrivalTime,
+        departureCode,
+        arrivalCode,
+        duration: durationText,
         durationMinutes: totalDuration,
         stops,
         price: Math.round(priceValue),
-        currency: proposal.price?.currency_code || "EUR",
+        currency: proposal.price_per_person?.currency_code || proposal.price?.currency_code || "EUR",
         // All booking metadata required for click
         searchId,
         resultsUrl,
@@ -430,21 +446,28 @@ export async function handleFlightClick(params: {
   resultsUrl: string;
 }): Promise<string | null> {
   console.log("[FlightClick] Initiating click action:", params);
-  
-  const response = await clickBooking(params);
 
-  if (!response.ok || !response.data) {
-    console.error("[FlightClick] Click action failed:", response.error);
+  try {
+    const response = await clickBooking(params);
+
+    if (!response.ok || !response.data) {
+      console.error("[FlightClick] Click action failed:", response.error);
+      return null;
+    }
+
+    // Backend may return different key names; accept common variants without changing backend.
+    const raw = response.data as any;
+    const url: unknown = raw?.url ?? raw?.provider_url ?? raw?.providerUrl;
+
+    if (typeof url !== "string" || url.length < 8) {
+      console.error("[FlightClick] No valid URL in response:", response.data);
+      return null;
+    }
+
+    console.log("[FlightClick] Got redirect URL:", url);
+    return url;
+  } catch (e) {
+    console.error("[FlightClick] Unexpected error:", e);
     return null;
   }
-
-  const url = response.data.url;
-  
-  if (!url) {
-    console.error("[FlightClick] No URL in response:", response.data);
-    return null;
-  }
-
-  console.log("[FlightClick] Got redirect URL:", url);
-  return url;
 }
