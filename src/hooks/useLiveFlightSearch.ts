@@ -57,6 +57,21 @@ const EXTERNAL_SUPABASE_URL = "https://ycpqgsjhxzhkljlszbwc.supabase.co";
 const EXTERNAL_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcHFnc2poeHpoa2xqbHN6YndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzNDI2NzAsImV4cCI6MjA4MzkxODY3MH0.Nbm12ODC2-IWgQMR2o6ekcgy3tFL5c3AGJqvdjTO4IU";
 const FLIGHT_SEARCH_ENDPOINT = `${EXTERNAL_SUPABASE_URL}/functions/v1/flight-search`;
 
+// Helper to format Unix timestamp to HH:MM
+function formatTime(timestamp: number): string {
+  if (!timestamp) return '--:--';
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+// Helper to format duration in minutes to "Xh Ym"
+function formatDuration(minutes: number): string {
+  if (!minutes) return '--';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 // Helper to call the external edge function with proper headers
 async function callFlightSearchFunction(body: Record<string, unknown>): Promise<{ data: unknown; error: Error | null }> {
   try {
@@ -182,6 +197,16 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       const storedSearchId = search_id;
       const storedResultsUrl = results_url || '';
       let lastUpdateTimestamp = 0;
+      
+      // Store flight info from API for duration/time parsing
+      let flightInfoMap: Record<number, { 
+        departure: string; 
+        arrival: string; 
+        departureTime: string; 
+        arrivalTime: string;
+        airline: string;
+        duration: number;
+      }> = {};
 
       while (!cancelRef.current && pollCountRef.current < MAX_POLL_ATTEMPTS) {
         if (Date.now() - startTime > POLL_TIMEOUT) {
@@ -229,20 +254,102 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           lastUpdateTimestamp = Number(pollResponse.last_update_timestamp);
         }
 
-        // Add new flights with search context
-        const results = pollResponse?.results as LiveFlightResult[] | undefined;
-        if (results?.length) {
-          for (const flight of results) {
-            const key = `${flight.departureCode}-${flight.arrivalCode}-${flight.departureTime}-${flight.price}`;
-            if (!allFlights.has(key)) {
-              // Enrich flight with search context for click action
-              allFlights.set(key, {
-                ...flight,
+        // Parse flight_info for airport/time data
+        const flightInfo = pollResponse?.flight_info as Record<string, {
+          departure: string;
+          arrival: string;
+          departure_timestamp: number;
+          arrival_timestamp: number;
+          operating_carrier: string;
+          duration: number;
+        }> | undefined;
+        
+        if (flightInfo) {
+          // flight_info is an object with numeric string keys
+          for (const [key, info] of Object.entries(flightInfo)) {
+            const idx = parseInt(key);
+            if (!isNaN(idx) && info && typeof info === 'object') {
+              flightInfoMap[idx] = {
+                departure: info.departure || '',
+                arrival: info.arrival || '',
+                departureTime: formatTime(info.departure_timestamp),
+                arrivalTime: formatTime(info.arrival_timestamp),
+                airline: info.operating_carrier || '',
+                duration: info.duration || 0,
+              };
+            }
+          }
+        }
+
+        // Parse tickets from Travelpayouts format
+        const tickets = pollResponse?.tickets as {
+          segments: { flights: number[]; transfers: { recheck_baggage: boolean }[] }[];
+          proposals: {
+            id: string;
+            price: { currency_code: string; value: number };
+            price_per_person: { currency_code: string; value: number };
+            agent_id: number;
+            flight_terms: Record<string, { marketing_carrier_designator?: { carrier: string; number: string } }>;
+          }[];
+          signature: string;
+        }[] | undefined;
+
+        if (tickets?.length) {
+          for (const ticket of tickets) {
+            for (const proposal of ticket.proposals) {
+              const proposalId = proposal.id;
+              const key = `${proposalId}-${ticket.signature}`;
+              
+              if (allFlights.has(key)) continue;
+
+              // Get first segment info for display
+              const firstSegment = ticket.segments[0];
+              const firstFlightIdx = firstSegment?.flights[0];
+              const lastFlightIdx = firstSegment?.flights[firstSegment.flights.length - 1];
+              
+              const firstFlightInfo = flightInfoMap[firstFlightIdx];
+              const lastFlightInfo = flightInfoMap[lastFlightIdx];
+              
+              // Count total stops (sum of stops across all flights in outbound segment)
+              const stops = firstSegment ? Math.max(0, firstSegment.flights.length - 1) : 0;
+              
+              // Get airline from flight terms
+              const flightTermKeys = Object.keys(proposal.flight_terms || {});
+              const firstTermKey = flightTermKeys[0];
+              const firstTerm = proposal.flight_terms?.[firstTermKey];
+              const carrierCode = firstTerm?.marketing_carrier_designator?.carrier || 'XX';
+              
+              // Calculate total duration for outbound
+              let totalDuration = 0;
+              if (firstSegment) {
+                for (const flightIdx of firstSegment.flights) {
+                  const info = flightInfoMap[flightIdx];
+                  if (info?.duration) totalDuration += info.duration;
+                }
+              }
+
+              const flight: LiveFlightResult = {
+                id: key,
+                airline: carrierCode,
+                airlineLogo: `https://pics.avs.io/60/60/${carrierCode}.png`,
+                flightNumber: `${carrierCode}${firstTerm?.marketing_carrier_designator?.number || ''}`,
+                departureTime: firstFlightInfo?.departureTime || '--:--',
+                arrivalTime: lastFlightInfo?.arrivalTime || '--:--',
+                departureCode: firstFlightInfo?.departure || params.origin,
+                arrivalCode: lastFlightInfo?.arrival || params.destination,
+                duration: formatDuration(totalDuration),
+                durationMinutes: totalDuration,
+                stops,
+                price: Math.round(proposal.price_per_person?.value || proposal.price?.value || 0),
+                currency: proposal.price?.currency_code || 'EUR',
                 searchId: storedSearchId,
                 resultsUrl: storedResultsUrl,
-                proposalId: flight.proposalId || null,
-                signature: flight.signature || null,
-              });
+                proposalId: proposalId,
+                signature: ticket.signature,
+                segments: ticket.segments,
+              };
+
+              allFlights.set(key, flight);
             }
           }
           setFlights(Array.from(allFlights.values()));
