@@ -66,7 +66,9 @@ const LiveFlightResults = () => {
     priceRange: [0, 10000],
     departureTime: [],
   });
-  const [showAllFlights, setShowAllFlights] = useState(false);
+  // Pagination: show first PAGE_SIZE flights, then add PAGE_SIZE more on each "Show more"
+  const PAGE_SIZE = 25;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [hasSearched, setHasSearched] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   
@@ -184,11 +186,15 @@ const LiveFlightResults = () => {
     return result;
   }, [validFlights, filters, sortBy]);
 
-  // SAFE: Paginate with defensive slicing
+  // SAFE: Paginate with defensive slicing - show only visibleCount flights
   const displayedFlights = useMemo(() => {
     const safeProcessed = processedFlights || [];
-    return showAllFlights ? safeProcessed : safeProcessed.slice(0, 10);
-  }, [processedFlights, showAllFlights]);
+    return safeProcessed.slice(0, visibleCount);
+  }, [processedFlights, visibleCount]);
+  
+  // Calculate remaining flights for "Show more" button
+  const remainingFlights = Math.max(0, (processedFlights?.length ?? 0) - visibleCount);
+  const hasMoreFlights = remainingFlights > 0;
 
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -207,6 +213,7 @@ const LiveFlightResults = () => {
   };
 
   // Handle "View deal" - calls backend click action then redirects
+  // DEFENSIVE: Wrapped in try-catch to prevent white screen on any error
   const handleViewDeal = async (flight: LiveFlightResult) => {
     // Validate required booking data
     if (!hasValidBookingData(flight)) {
@@ -219,7 +226,8 @@ const LiveFlightResults = () => {
     }
 
     // Set loading state for this specific flight
-    setLoadingFlightId(flight.id);
+    const flightId = flight.id || `${flight.proposalId}-${flight.signature}`;
+    setLoadingFlightId(flightId);
 
     const payload = {
       searchId: flight.searchId,
@@ -243,8 +251,20 @@ const LiveFlightResults = () => {
         return;
       }
 
+      // Validate URL before redirect
+      if (typeof url !== "string" || !url.startsWith("http")) {
+        console.error("[ViewDeal] Invalid URL received:", url);
+        toast({
+          title: "Invalid redirect",
+          description: "Received an invalid booking link. Please try another offer.",
+          variant: "destructive"
+        });
+        setLoadingFlightId(null);
+        return;
+      }
+
       console.log("[ViewDeal] Redirecting to:", url);
-      // Redirect to the provider URL
+      // Redirect to the provider URL using window.location.href (NOT router)
       window.location.href = url;
     } catch (err) {
       console.error("[ViewDeal] Error:", err);
@@ -255,6 +275,11 @@ const LiveFlightResults = () => {
       });
       setLoadingFlightId(null);
     }
+  };
+  
+  // Handle "Show more" button - SAFE: only increments visible count, no fetching
+  const handleShowMore = () => {
+    setVisibleCount(prev => prev + PAGE_SIZE);
   };
 
   // Handle retry after error
@@ -348,8 +373,8 @@ const LiveFlightResults = () => {
         {/* No results state - live unavailable */}
         {status === 'no_results' && liveUnavailable && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center mb-6">
-              <Info className="w-10 h-10 text-amber-500" />
+            <div className="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mb-6">
+              <Info className="w-10 h-10 text-warning" />
             </div>
             <p className="text-xl font-semibold text-foreground mb-2">Live results not active yet</p>
             <p className="text-muted-foreground mb-6 max-w-md">
@@ -521,17 +546,15 @@ const LiveFlightResults = () => {
                 );
               })}
 
-              {/* Show more - SAFE state update, no navigation */}
-              {(processedFlights?.length ?? 0) > 10 && !showAllFlights && (
+              {/* Show more - SAFE state update, only reveals more flights */}
+              {hasMoreFlights && (
                 <div className="text-center pt-4">
                   <Button 
                     variant="outline" 
-                    onClick={() => {
-                      // Safe state update - just reveals more flights, no fetching
-                      setShowAllFlights(true);
-                    }}
+                    onClick={handleShowMore}
                   >
-                    Show {(processedFlights?.length ?? 0) - 10} more flights
+                    Show {Math.min(remainingFlights, PAGE_SIZE)} more flights
+                    {remainingFlights > PAGE_SIZE && ` (${remainingFlights} remaining)`}
                   </Button>
                 </div>
               )}
