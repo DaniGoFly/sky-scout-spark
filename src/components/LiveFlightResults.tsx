@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal, Info } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import FlightFilters, { FilterState } from "./FlightFilters";
@@ -34,6 +34,9 @@ const LiveFlightResults = () => {
   const [showAllFlights, setShowAllFlights] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  
+  // Track loading state for individual flight buttons
+  const [loadingFlightId, setLoadingFlightId] = useState<string | null>(null);
 
   // Extract search params
   const from = searchParams.get("from") || searchParams.get("origin") || "";
@@ -46,7 +49,7 @@ const LiveFlightResults = () => {
   const tripType = searchParams.get("trip") || "roundtrip";
   const cabin = searchParams.get("cabin") || searchParams.get("class") || "economy";
 
-// Map cabin class to API format
+  // Map cabin class to API format
   const tripClassMap: Record<string, string> = {
     economy: "Y", premium_economy: "W", business: "C", first: "F"
   };
@@ -64,7 +67,7 @@ const LiveFlightResults = () => {
         children,
         infants,
         tripClass: tripClassMap[cabin] || "Y",
-        currency: "EUR" // Using EUR as specified
+        currency: "EUR"
       });
     }
   }, [from, to, depart, returnDate, adults, children, infants, tripType, cabin, searchFlights, hasSearched]);
@@ -156,6 +159,19 @@ const LiveFlightResults = () => {
 
   // Handle "View deal" - calls backend click action then redirects
   const handleViewDeal = async (flight: LiveFlightResult) => {
+    // Validate required booking data
+    if (!hasValidBookingData(flight)) {
+      toast({
+        title: "Deal unavailable",
+        description: "Booking information is incomplete for this offer. Please try another.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Set loading state for this specific flight
+    setLoadingFlightId(flight.id);
+
     const payload = {
       searchId: flight.searchId,
       proposalId: flight.proposalId,
@@ -163,27 +179,23 @@ const LiveFlightResults = () => {
       resultsUrl: flight.resultsUrl,
     };
     
-    // Log payload before sending to backend
     console.log("[ViewDeal] Sending click payload to backend:", payload);
 
     try {
-      const url = await handleFlightClick({
-        searchId: flight.searchId,
-        proposalId: flight.proposalId!,
-        signature: flight.signature!,
-        resultsUrl: flight.resultsUrl,
-      });
+      const url = await handleFlightClick(payload);
 
       if (!url) {
         toast({
-          title: "Redirect failed",
-          description: "Could not get provider link. Please try again.",
+          title: "Deal unavailable",
+          description: "Could not get provider link. Please try another offer.",
           variant: "destructive"
         });
+        setLoadingFlightId(null);
         return;
       }
 
       console.log("[ViewDeal] Redirecting to:", url);
+      // Redirect to the provider URL
       window.location.href = url;
     } catch (err) {
       console.error("[ViewDeal] Error:", err);
@@ -192,7 +204,14 @@ const LiveFlightResults = () => {
         description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
+      setLoadingFlightId(null);
     }
+  };
+
+  // Handle retry after error
+  const handleRetry = () => {
+    setHasSearched(false);
+    setLoadingFlightId(null);
   };
 
   // Get stops label
@@ -262,15 +281,18 @@ const LiveFlightResults = () => {
           />
         )}
 
-        {/* Error state */}
+        {/* Error state - with retry button */}
         {status === 'error' && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
               <AlertCircle className="w-10 h-10 text-destructive" />
             </div>
             <p className="text-xl font-semibold text-foreground mb-2">Something went wrong</p>
-            <p className="text-muted-foreground mb-6">{error || "Failed to search flights"}</p>
-            <Button onClick={() => { setHasSearched(false); }}>Try Again</Button>
+            <p className="text-muted-foreground mb-6 max-w-md">{error || "Failed to search flights. Please check your connection and try again."}</p>
+            <div className="flex gap-3">
+              <Button onClick={handleRetry}>Try Again</Button>
+              <Button variant="outline" onClick={() => navigate("/flights")}>New Search</Button>
+            </div>
           </div>
         )}
 
@@ -289,8 +311,8 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {/* No results state - no flights found */}
-        {status === 'no_results' && !liveUnavailable && (
+        {/* No results state - no flights found (only after polling is done) */}
+        {status === 'no_results' && !liveUnavailable && !isSearching && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
               <Plane className="w-10 h-10 text-muted-foreground" />
@@ -336,83 +358,100 @@ const LiveFlightResults = () => {
               {/* Results count */}
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>{processedFlights.length} flights found</span>
-                {isSearching && <span className="text-primary">Still searching...</span>}
+                {isSearching && (
+                  <span className="text-primary flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Still searching...
+                  </span>
+                )}
               </div>
 
               {/* Flight cards */}
-              {displayedFlights.map((flight, index) => (
-                <div
-                  key={flight.id}
-                  className={`bg-card rounded-xl p-6 border border-border hover:border-primary/30 transition-all hover:shadow-lg ${
-                    index === 0 && sortBy === 'best' ? 'ring-2 ring-primary' : ''
-                  }`}
-                >
-                  {index === 0 && sortBy === 'best' && (
-                    <div className="inline-block bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full mb-4">
-                      Best Value
-                    </div>
-                  )}
-                  
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                    {/* Airline */}
-                    <div className="flex items-center gap-4 lg:w-40">
-                      <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
-                        <img
-                          src={flight.airlineLogo}
-                          alt={flight.airline}
-                          className="w-8 h-8 object-contain"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/placeholder.svg";
-                          }}
-                        />
+              {displayedFlights.map((flight, index) => {
+                const isLoading = loadingFlightId === flight.id;
+                const isDisabled = !hasValidBookingData(flight) || isLoading;
+                
+                return (
+                  <div
+                    key={flight.id}
+                    className={`bg-card rounded-xl p-6 border border-border hover:border-primary/30 transition-all hover:shadow-lg ${
+                      index === 0 && sortBy === 'best' ? 'ring-2 ring-primary' : ''
+                    }`}
+                  >
+                    {index === 0 && sortBy === 'best' && (
+                      <div className="inline-block bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                        Best Value
                       </div>
-                      <span className="font-semibold text-foreground text-sm">{flight.airline}</span>
-                    </div>
-
-                    {/* Times */}
-                    <div className="flex-1 flex items-center gap-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-foreground">{flight.departureTime}</p>
-                        <p className="text-sm text-muted-foreground">{flight.departureCode}</p>
-                      </div>
-
-                      <div className="flex-1 flex flex-col items-center px-4">
-                        <span className="text-sm text-muted-foreground">{flight.duration}</span>
-                        <div className="w-full h-0.5 bg-border relative my-2">
-                          <Plane className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-primary rotate-90" />
+                    )}
+                    
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                      {/* Airline */}
+                      <div className="flex items-center gap-4 lg:w-40">
+                        <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
+                          <img
+                            src={flight.airlineLogo}
+                            alt={flight.airline}
+                            className="w-8 h-8 object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/placeholder.svg";
+                            }}
+                          />
                         </div>
-                        <span className={`text-xs ${flight.stops === 0 ? "text-primary" : "text-muted-foreground"}`}>
-                          {getStopsLabel(flight.stops)}
-                        </span>
+                        <span className="font-semibold text-foreground text-sm">{flight.airline}</span>
                       </div>
 
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-foreground">{flight.arrivalTime}</p>
-                        <p className="text-sm text-muted-foreground">{flight.arrivalCode}</p>
-                      </div>
-                    </div>
+                      {/* Times */}
+                      <div className="flex-1 flex items-center gap-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-foreground">{flight.departureTime}</p>
+                          <p className="text-sm text-muted-foreground">{flight.departureCode}</p>
+                        </div>
 
-                    {/* Price & Book */}
-                    <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3">
-                      <div className="text-right">
-                        <p className="text-3xl font-bold text-foreground">
-                          {flight.currency === 'EUR' ? '€' : flight.currency === 'USD' ? '$' : flight.currency}{flight.price}
-                        </p>
-                        <p className="text-xs text-muted-foreground">per person</p>
+                        <div className="flex-1 flex flex-col items-center px-4">
+                          <span className="text-sm text-muted-foreground">{flight.duration}</span>
+                          <div className="w-full h-0.5 bg-border relative my-2">
+                            <Plane className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-primary rotate-90" />
+                          </div>
+                          <span className={`text-xs ${flight.stops === 0 ? "text-primary" : "text-muted-foreground"}`}>
+                            {getStopsLabel(flight.stops)}
+                          </span>
+                        </div>
+
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-foreground">{flight.arrivalTime}</p>
+                          <p className="text-sm text-muted-foreground">{flight.arrivalCode}</p>
+                        </div>
                       </div>
-                      <Button
-                        onClick={() => handleViewDeal(flight)}
-                        className="gap-2"
-                        size="lg"
-                        disabled={!hasValidBookingData(flight)}
-                        title={!hasValidBookingData(flight) ? "Booking data incomplete" : undefined}
-                      >
-                        View Deal
-                      </Button>
+
+                      {/* Price & Book */}
+                      <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3">
+                        <div className="text-right">
+                          <p className="text-3xl font-bold text-foreground">
+                            {flight.currency === 'EUR' ? '€' : flight.currency === 'USD' ? '$' : flight.currency}{flight.price}
+                          </p>
+                          <p className="text-xs text-muted-foreground">per person</p>
+                        </div>
+                        <Button
+                          onClick={() => handleViewDeal(flight)}
+                          className="gap-2 min-w-[120px]"
+                          size="lg"
+                          disabled={isDisabled}
+                          title={!hasValidBookingData(flight) ? "Booking data incomplete" : undefined}
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Opening...
+                            </>
+                          ) : (
+                            "View Deal"
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Show more */}
               {processedFlights.length > 10 && !showAllFlights && (
