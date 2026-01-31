@@ -147,25 +147,25 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }, []);
 
   return (
-    <div className="glass-strong rounded-3xl shadow-card p-6 md:p-8 w-full max-w-5xl mx-auto">
-      {/* Trip Type Toggle - Desktop only */}
-      <div className="hidden md:flex gap-2 mb-6">
+    <div className="bg-card rounded-2xl border border-border shadow-xl p-6 md:p-8 w-full max-w-5xl mx-auto">
+      {/* Trip Type Toggle */}
+      <div className="flex gap-2 mb-6">
         <button
           onClick={() => setTripType("roundtrip")}
-          className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
             tripType === "roundtrip"
-              ? "bg-primary text-primary-foreground shadow-button"
-              : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-muted-foreground hover:text-foreground"
           }`}
         >
           Round trip
         </button>
         <button
           onClick={() => setTripType("oneway")}
-          className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
             tripType === "oneway"
-              ? "bg-primary text-primary-foreground shadow-button"
-              : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-muted-foreground hover:text-foreground"
           }`}
         >
           One way
@@ -176,7 +176,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
         {/* From */}
         <div className="lg:col-span-3 relative">
-          <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">From</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-2">From</label>
           <AirportAutocomplete
             value={from}
             onChange={handleFromChange}
@@ -192,15 +192,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             variant="outline"
             size="icon"
             onClick={swapLocations}
-            className="rounded-full h-14 w-14 border-2 border-dashed hover:border-primary hover:text-primary hover:bg-primary/5 transition-all duration-200"
+            className="rounded-full h-12 w-12 border-2 border-dashed hover:border-primary hover:text-primary transition-all"
           >
-            <ArrowRightLeft className="w-5 h-5" />
+            <ArrowRightLeft className="w-4 h-4" />
           </Button>
         </div>
 
         {/* To */}
-        <div className={`lg:col-span-3 transition-all duration-500 ${highlightDestination ? "ring-2 ring-primary ring-offset-2 rounded-xl" : ""}`}>
-          <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">To</label>
+        <div className={`lg:col-span-3 transition-all duration-300 ${highlightDestination ? "ring-2 ring-primary ring-offset-2 rounded-lg" : ""}`}>
+          <label className="block text-xs font-medium text-muted-foreground mb-2">To</label>
           <AirportAutocomplete
             value={to}
             onChange={handleToChange}
@@ -244,19 +244,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           htmlFor="flexible-dates" 
           className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
         >
-          My dates are flexible (show cheapest options nearby)
+          My dates are flexible
         </Label>
       </div>
 
       {/* Search Button */}
-      <div className="mt-8 flex justify-center">
+      <div className="mt-6 flex justify-center md:justify-end">
         <Button 
-          variant="hero" 
-          size="xl" 
+          size="lg" 
           onClick={handleSearch}
-          className="gap-3 text-base"
+          className="gap-2 px-8"
         >
-          <Search className="w-5 h-5" />
+          <Search className="w-4 h-4" />
           Search Flights
         </Button>
       </div>
