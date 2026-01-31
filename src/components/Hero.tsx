@@ -1,16 +1,26 @@
 import FlightSearchForm from "./FlightSearchForm";
 import FlightPathsBackground from "./FlightPathsBackground";
+import { Plane } from "lucide-react";
 
 const Hero = () => {
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden">
-      {/* Base gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/10" />
+      {/* Base gradient background - Blue/Cyan theme for Flights */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-sky-500/10" />
       
-      {/* Floating orbs */}
-      <div className="absolute top-20 left-[10%] w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-float" />
-      <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-accent/15 rounded-full blur-[100px] animate-float-delayed" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[150px]" />
+      {/* Floating orbs - Sky blue theme */}
+      <div className="absolute top-20 left-[10%] w-96 h-96 bg-sky-500/20 rounded-full blur-[120px] animate-float" />
+      <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-cyan-400/15 rounded-full blur-[100px] animate-float-delayed" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[150px]" />
+      
+      {/* Subtle floating planes pattern */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <Plane className="absolute top-[15%] left-[5%] w-6 h-6 text-sky-500/10 rotate-45" />
+        <Plane className="absolute top-[25%] right-[8%] w-8 h-8 text-cyan-400/10 rotate-12" />
+        <Plane className="absolute bottom-[30%] left-[12%] w-5 h-5 text-sky-400/10 -rotate-12" />
+        <Plane className="absolute top-[60%] right-[15%] w-7 h-7 text-sky-500/10 rotate-45" />
+        <Plane className="absolute bottom-[20%] right-[25%] w-4 h-4 text-cyan-500/10 rotate-90" />
+      </div>
       
       {/* Flight paths background */}
       <FlightPathsBackground />
@@ -30,7 +40,7 @@ const Hero = () => {
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
               <span className="text-foreground">Find your next</span>
               <br />
-              <span className="gradient-text">adventure</span>
+              <span className="bg-gradient-to-r from-sky-400 to-cyan-400 bg-clip-text text-transparent">adventure</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
               Compare prices from hundreds of airlines and book your dream trip in seconds
