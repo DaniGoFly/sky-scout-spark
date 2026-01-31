@@ -1,8 +1,6 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import WhyUseSection from "@/components/WhyUseSection";
 import PopularDestinations from "@/components/PopularDestinations";
-import HotelSection from "@/components/HotelSection";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -10,9 +8,7 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       <Hero />
-      <WhyUseSection />
       <PopularDestinations />
-      <HotelSection />
       <Footer />
     </div>
   );
