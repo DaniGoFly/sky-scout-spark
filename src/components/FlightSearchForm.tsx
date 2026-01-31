@@ -182,6 +182,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             onChange={handleFromChange}
             placeholder="Where from?"
             icon="from"
+            hasError={!!errors.from}
           />
           {errors.from && <p className="text-destructive text-xs mt-1">{errors.from}</p>}
         </div>
@@ -206,6 +207,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             onChange={handleToChange}
             placeholder="Where to?"
             icon="to"
+            hasError={!!errors.to}
           />
           {errors.to && <p className="text-destructive text-xs mt-1">{errors.to}</p>}
         </div>
