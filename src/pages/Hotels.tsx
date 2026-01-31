@@ -12,6 +12,7 @@ import { useHotelSearch, HotelSearchParams } from "@/hooks/useHotelSearch";
 import HotelResults from "@/components/HotelResults";
 import { DateRange } from "react-day-picker";
 import { useSearchParams } from "react-router-dom";
+import HotelAssistant from "@/components/HotelAssistant";
 
 const destinations = [
   {
@@ -383,6 +384,11 @@ const Hotels = () => {
                   {isLoading ? "Searching..." : "Search Hotels"}
                 </Button>
               </div>
+            </div>
+
+            {/* AI Travel Assistant for Hotels */}
+            <div className="mt-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <HotelAssistant />
             </div>
           </div>
         </div>

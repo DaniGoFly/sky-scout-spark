@@ -1,8 +1,21 @@
+import { useState } from "react";
 import FlightSearchForm from "./FlightSearchForm";
 import FlightPathsBackground from "./FlightPathsBackground";
+import TravelAssistant from "./TravelAssistant";
 import { Plane } from "lucide-react";
+import type { AISearchParams } from "./FlightSearchHero";
 
 const Hero = () => {
+  const [aiSearchParams, setAiSearchParams] = useState<AISearchParams | null>(null);
+
+  const handleDestinationSelect = (params: AISearchParams) => {
+    setAiSearchParams(params);
+  };
+
+  const handleParamsConsumed = () => {
+    setAiSearchParams(null);
+  };
+
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden">
       {/* Base gradient background - Blue/Cyan theme for Flights */}
@@ -49,7 +62,15 @@ const Hero = () => {
 
           {/* Flight Search Form */}
           <div className="animate-fade-in glow-primary rounded-2xl" style={{ animationDelay: '0.1s' }}>
-            <FlightSearchForm />
+            <FlightSearchForm 
+              aiSearchParams={aiSearchParams}
+              onParamsConsumed={handleParamsConsumed}
+            />
+          </div>
+
+          {/* AI Travel Assistant */}
+          <div className="mt-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <TravelAssistant onDestinationSelect={handleDestinationSelect} />
           </div>
         </div>
       </div>
