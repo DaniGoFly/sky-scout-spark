@@ -209,7 +209,7 @@ const Hotels = () => {
             <div 
               ref={searchFormRef}
               data-hotel-search-form
-              className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto"
+              className="gradient-border-amber bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto"
             >
               {/* Search Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
