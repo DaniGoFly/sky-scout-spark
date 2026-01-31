@@ -359,7 +359,7 @@ const Hotels = () => {
                           </div>
                         </div>
                         <Button
-                          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 text-white"
                           size="sm"
                           onClick={() => setGuestPopoverOpen(false)}
                         >
@@ -375,7 +375,7 @@ const Hotels = () => {
               <div className="mt-6 flex justify-center md:justify-end">
                 <Button
                   size="lg"
-                  className="gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+                  className="gap-2 px-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 transition-opacity text-white"
                   onClick={handleSearch}
                   disabled={isLoading}
                 >
