@@ -188,6 +188,12 @@ const LiveFlightResults = () => {
   // Handle "View Deal" click - opens in NEW TAB
   const handleViewDeal = useCallback(
     async (flight: NormalizedFlight) => {
+      // Prevent double-clicks
+      if (loadingFlightId) {
+        console.log("[ViewDeal] Already processing a click, ignoring");
+        return;
+      }
+
       if (!flight.hasValidBookingUrl) {
         toast({
           title: "Deal unavailable",
@@ -223,9 +229,19 @@ const LiveFlightResults = () => {
         }
 
         console.log("[ViewDeal] Opening in new tab:", url);
-        // Open in new tab (Skyscanner-style)
-        window.open(url, "_blank", "noopener,noreferrer");
-        setLoadingFlightId(null);
+        
+        // Open in new tab (Skyscanner-style) - use noopener,noreferrer for security
+        const newWindow = window.open(url, "_blank", "noopener,noreferrer");
+        
+        // If popup was blocked, show a toast with fallback
+        if (!newWindow) {
+          console.warn("[ViewDeal] Popup blocked, trying direct navigation");
+          // Fallback: open in current tab if popup blocked
+          window.location.href = url;
+        }
+        
+        // Clear loading state after a short delay to prevent rapid re-clicks
+        setTimeout(() => setLoadingFlightId(null), 500);
       } catch (err) {
         console.error("[ViewDeal] Error:", err);
         toast({
@@ -236,7 +252,7 @@ const LiveFlightResults = () => {
         setLoadingFlightId(null);
       }
     },
-    [toast]
+    [toast, loadingFlightId]
   );
 
   // Retry search

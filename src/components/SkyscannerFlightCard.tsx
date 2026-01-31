@@ -138,7 +138,13 @@ const SkyscannerFlightCard = ({
               <p className="text-xs text-muted-foreground">per person</p>
             </div>
             <Button
-              onClick={onViewDeal}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isLoading && canBook) {
+                  onViewDeal();
+                }
+              }}
               disabled={!canBook || isLoading}
               size="lg"
               className="gap-2 min-w-[130px] font-semibold"

@@ -12,6 +12,49 @@ import {
 } from "@/lib/flightSearchApi";
 
 /**
+ * Common airline code to name mapping
+ */
+const AIRLINE_NAMES: Record<string, string> = {
+  AA: "American Airlines",
+  AC: "Air Canada",
+  AF: "Air France",
+  AS: "Alaska Airlines",
+  AY: "Finnair",
+  AZ: "ITA Airways",
+  BA: "British Airways",
+  CX: "Cathay Pacific",
+  DE: "Condor",
+  DL: "Delta Air Lines",
+  EK: "Emirates",
+  EW: "Eurowings",
+  EY: "Etihad Airways",
+  F9: "Frontier Airlines",
+  IB: "Iberia",
+  JL: "Japan Airlines",
+  KL: "KLM",
+  LH: "Lufthansa",
+  LO: "LOT Polish Airlines",
+  LX: "SWISS",
+  NK: "Spirit Airlines",
+  OS: "Austrian Airlines",
+  QF: "Qantas",
+  QR: "Qatar Airways",
+  SK: "SAS",
+  SQ: "Singapore Airlines",
+  TK: "Turkish Airlines",
+  UA: "United Airlines",
+  VS: "Virgin Atlantic",
+  WN: "Southwest Airlines",
+  WS: "WestJet",
+  X3: "TUI fly",
+};
+
+function getAirlineName(code: string): string {
+  const upperCode = code?.toUpperCase() || "";
+  return AIRLINE_NAMES[upperCode] || upperCode;
+}
+
+/**
  * Processed flight result for UI display
  */
 export interface LiveFlightResult {
@@ -37,8 +80,6 @@ export interface LiveFlightResult {
   resultsUrl: string;
   proposalId: string;
   signature: string;
-  // Raw segments for potential future use
-  segments?: unknown[];
 }
 
 export type SearchStatus = "idle" | "searching" | "polling" | "complete" | "error" | "no_results";
@@ -184,12 +225,14 @@ function parseTicketsToFlights(
       // Duration is optional; never normalize to placeholder "--"
       const durationText = totalDuration > 0 ? formatDuration(totalDuration) : "";
 
+      const upperCarrierCode = carrierCode.toUpperCase();
+
       const flight: LiveFlightResult = {
         id: key,
-        airlineCode: carrierCode,
-        airline: carrierCode,
-        airlineLogo: carrierCode && carrierCode !== "XX" ? `https://pics.avs.io/60/60/${carrierCode}.png` : "",
-        flightNumber: flightNumber ? `${carrierCode}${flightNumber}` : "",
+        airlineCode: upperCarrierCode,
+        airline: getAirlineName(upperCarrierCode),
+        airlineLogo: upperCarrierCode && upperCarrierCode !== "XX" ? `https://pics.avs.io/60/60/${upperCarrierCode}.png` : "",
+        flightNumber: flightNumber ? `${upperCarrierCode}${flightNumber}` : "",
         departureTime,
         arrivalTime,
         departureCode,
@@ -204,7 +247,6 @@ function parseTicketsToFlights(
         resultsUrl,
         proposalId: proposal.id,
         signature: ticketSignature,
-        segments: ticket.segments,
       };
 
       flights.push(flight);
