@@ -12,6 +12,53 @@ import {
 } from "@/lib/flightSearchApi";
 
 /**
+ * Common airline code to name mapping
+ * This maps IATA codes to human-readable airline names
+ */
+const AIRLINE_NAMES: Record<string, string> = {
+  AA: "American Airlines",
+  AC: "Air Canada",
+  AF: "Air France",
+  AS: "Alaska Airlines",
+  AY: "Finnair",
+  AZ: "ITA Airways",
+  BA: "British Airways",
+  CX: "Cathay Pacific",
+  DE: "Condor",
+  DL: "Delta Air Lines",
+  EK: "Emirates",
+  EW: "Eurowings",
+  EY: "Etihad Airways",
+  F9: "Frontier Airlines",
+  IB: "Iberia",
+  JL: "Japan Airlines",
+  KL: "KLM",
+  LH: "Lufthansa",
+  LO: "LOT Polish Airlines",
+  LX: "SWISS",
+  NK: "Spirit Airlines",
+  OS: "Austrian Airlines",
+  QF: "Qantas",
+  QR: "Qatar Airways",
+  SK: "SAS",
+  SQ: "Singapore Airlines",
+  TK: "Turkish Airlines",
+  UA: "United Airlines",
+  VS: "Virgin Atlantic",
+  WN: "Southwest Airlines",
+  WS: "WestJet",
+  X3: "TUI fly",
+};
+
+/**
+ * Get human-readable airline name from IATA code
+ */
+function getAirlineName(code: string): string {
+  const upperCode = code?.toUpperCase() || "";
+  return AIRLINE_NAMES[upperCode] || upperCode;
+}
+
+/**
  * Normalized flight object - ONLY these fields are used by the UI
  */
 export interface NormalizedFlight {
@@ -50,7 +97,7 @@ export interface NormalizedFlight {
   proposalId: string;
   signature: string;
 
-  // Validity flag
+  // Validity flag - true when all booking metadata is present
   hasValidBookingUrl: boolean;
 }
 
@@ -211,16 +258,31 @@ function normalizeTicket(
     const flightNumber = firstTerm?.marketing_carrier_designator?.number || "";
 
     const id = `${proposal.id}-${ticket.signature}`;
+    const upperCarrierCode = carrierCode.toUpperCase();
+
+    // Validate booking metadata - all fields must be non-empty strings
+    const hasValidBooking = Boolean(
+      searchId && 
+      typeof searchId === "string" && 
+      searchId.length > 0 &&
+      resultsUrl && 
+      typeof resultsUrl === "string" && 
+      resultsUrl.length > 0 &&
+      proposal.id && 
+      typeof proposal.id === "string" &&
+      ticket.signature && 
+      typeof ticket.signature === "string"
+    );
 
     results.push({
       id,
-      airlineCode: carrierCode.toUpperCase(),
-      airlineName: carrierCode.toUpperCase(),
+      airlineCode: upperCarrierCode,
+      airlineName: getAirlineName(upperCarrierCode),
       airlineLogo:
-        carrierCode && carrierCode !== "XX"
-          ? `https://pics.avs.io/60/60/${carrierCode}.png`
+        upperCarrierCode && upperCarrierCode !== "XX"
+          ? `https://pics.avs.io/60/60/${upperCarrierCode}.png`
           : "",
-      flightNumber: flightNumber ? `${carrierCode}${flightNumber}` : "",
+      flightNumber: flightNumber ? `${upperCarrierCode}${flightNumber}` : "",
       originIata,
       destinationIata,
       departureTime,
@@ -235,7 +297,7 @@ function normalizeTicket(
       resultsUrl,
       proposalId: proposal.id,
       signature: ticket.signature,
-      hasValidBookingUrl: !!(searchId && resultsUrl && proposal.id && ticket.signature),
+      hasValidBookingUrl: hasValidBooking,
     });
   }
 
