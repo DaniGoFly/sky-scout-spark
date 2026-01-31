@@ -85,11 +85,11 @@
 
 /* Glow effects */
 .glow-primary {
-  box-shadow: 0 0 40px -10px hsl(265 90% 65% / 0.5);
+  box-shadow: 0 0 60px -15px hsl(265 90% 65% / 0.4);
 }
 
 .glow-accent {
-  box-shadow: 0 0 40px -10px hsl(200 100% 60% / 0.5);
+  box-shadow: 0 0 60px -15px hsl(200 100% 60% / 0.4);
 }
 
 /* Animated gradient border */

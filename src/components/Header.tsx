@@ -9,6 +9,7 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const isHotels = location.pathname === "/hotels";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/50">
@@ -25,7 +26,7 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
-          {/* Flights - Active and unclickable on home page */}
+          {/* Flights */}
           {isHome ? (
             <span className="px-4 py-2 rounded-lg text-sm font-medium text-primary bg-primary/10 cursor-default">
               Flights
@@ -35,27 +36,29 @@ const Header = () => {
               to="/"
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                location.pathname === "/flights"
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
               Flights
             </Link>
           )}
           
-          {/* Hotels - Always clickable */}
-          <Link
-            to="/hotels"
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-              location.pathname === "/hotels"
-                ? "text-primary bg-primary/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-            )}
-          >
-            Hotels
-          </Link>
+          {/* Hotels */}
+          {isHotels ? (
+            <span className="px-4 py-2 rounded-lg text-sm font-medium text-primary bg-primary/10 cursor-default">
+              Hotels
+            </span>
+          ) : (
+            <Link
+              to="/hotels"
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+            >
+              Hotels
+            </Link>
+          )}
         </nav>
 
         {/* Mobile Menu */}
@@ -79,7 +82,7 @@ const Header = () => {
               </div>
               
               <nav className="flex flex-col gap-1 flex-1">
-                {/* Flights - Active and unclickable on home page */}
+                {/* Flights */}
                 {isHome ? (
                   <span className="px-4 py-3 rounded-xl font-medium text-primary bg-primary/10 cursor-default">
                     Flights
@@ -88,30 +91,26 @@ const Header = () => {
                   <Link
                     to="/"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={cn(
-                      "px-4 py-3 rounded-xl font-medium transition-all",
-                      location.pathname === "/flights"
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:bg-secondary"
-                    )}
+                    className="px-4 py-3 rounded-xl font-medium text-muted-foreground hover:bg-secondary transition-all"
                   >
                     Flights
                   </Link>
                 )}
                 
-                {/* Hotels - Always clickable */}
-                <Link
-                  to="/hotels"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    "px-4 py-3 rounded-xl font-medium transition-all",
-                    location.pathname === "/hotels"
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:bg-secondary"
-                  )}
-                >
-                  Hotels
-                </Link>
+                {/* Hotels */}
+                {isHotels ? (
+                  <span className="px-4 py-3 rounded-xl font-medium text-primary bg-primary/10 cursor-default">
+                    Hotels
+                  </span>
+                ) : (
+                  <Link
+                    to="/hotels"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-3 rounded-xl font-medium text-muted-foreground hover:bg-secondary transition-all"
+                  >
+                    Hotels
+                  </Link>
+                )}
               </nav>
             </div>
           </SheetContent>
