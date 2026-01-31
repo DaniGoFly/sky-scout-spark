@@ -17,9 +17,10 @@ interface AirportAutocompleteProps {
   placeholder: string;
   icon?: "from" | "to";
   compact?: boolean;
+  hasError?: boolean;
 }
 
-const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", compact = false }: AirportAutocompleteProps) => {
+const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", compact = false, hasError = false }: AirportAutocompleteProps) => {
   const [query, setQuery] = useState(value?.display || "");
   const [suggestions, setSuggestions] = useState<Place[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -134,9 +135,9 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
           onFocus={() => query.length >= 2 && setIsOpen(true)}
           onKeyDown={handleKeyDown}
           className={compact 
-            ? `pl-9 h-10 bg-secondary/50 border-transparent rounded-lg text-sm ${!value ? "border border-destructive/50" : ""}`
+            ? `pl-9 h-10 bg-secondary/50 border-transparent rounded-lg text-sm ${hasError ? "border border-destructive/50" : ""}`
             : `pl-12 h-14 bg-secondary/50 border-2 rounded-xl focus:bg-card focus:ring-0 text-base font-medium transition-all ${
-                value ? "border-transparent focus:border-primary" : "border-destructive/50 focus:border-destructive"
+                hasError ? "border-destructive/50 focus:border-destructive" : "border-transparent focus:border-primary"
               }`
           }
           placeholder={placeholder}
