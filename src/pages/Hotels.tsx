@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Search, MapPin, Calendar, Users, AlertCircle } from "lucide-react";
+import { ArrowRight, Search, MapPin, Calendar, Users, AlertCircle, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useRef, useEffect } from "react";
 import { format, addDays, isBefore } from "date-fns";
@@ -12,27 +12,32 @@ import { useHotelSearch, HotelSearchParams } from "@/hooks/useHotelSearch";
 import HotelResults from "@/components/HotelResults";
 import { DateRange } from "react-day-picker";
 import { useSearchParams } from "react-router-dom";
+import FlightPathsBackground from "@/components/FlightPathsBackground";
 
 const destinations = [
   {
     city: "New York",
     country: "USA",
     image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&h=300&fit=crop",
+    color: "from-cyan-500/80 to-blue-900/90",
   },
   {
     city: "London",
     country: "UK",
     image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400&h=300&fit=crop",
+    color: "from-amber-500/80 to-orange-900/90",
   },
   {
     city: "Paris",
     country: "France",
     image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&h=300&fit=crop",
+    color: "from-violet-500/80 to-purple-900/90",
   },
   {
     city: "Tokyo",
     country: "Japan",
     image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=300&fit=crop",
+    color: "from-pink-500/80 to-rose-900/90",
   },
 ];
 
@@ -160,26 +165,37 @@ const Hotels = () => {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative min-h-[400px] flex flex-col">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&auto=format&fit=crop&q=80"
-            alt="Hotels background"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />
-        </div>
+      <section className="relative min-h-screen flex flex-col overflow-hidden">
+        {/* Base gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-accent/10" />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-20 left-[10%] w-96 h-96 bg-accent/20 rounded-full blur-[120px] animate-float" />
+        <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-primary/15 rounded-full blur-[100px] animate-float-delayed" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[150px]" />
+        
+        {/* Flight paths background */}
+        <FlightPathsBackground />
+        
+        {/* Subtle noise overlay */}
+        <div className="absolute inset-0 opacity-[0.015] pointer-events-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
+          }}
+        />
 
         {/* Content */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center pt-20 pb-12 px-4">
-          <div className="container mx-auto">
-            <div className="text-center mb-8 max-w-3xl mx-auto">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3">
-                Find your perfect stay
+        <div className="relative z-10 flex-1 flex flex-col justify-center pt-24 pb-16 px-4">
+          <div className="container mx-auto max-w-5xl">
+            {/* Hero Text */}
+            <div className="text-center mb-12 animate-fade-in">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
+                <span className="text-foreground">Find your perfect</span>
+                <br />
+                <span className="gradient-text">stay</span>
               </h1>
-              <p className="text-lg text-white/80">
-                Compare hotel prices from all major booking sites
+              <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                Compare hotel prices from all major booking sites in seconds
               </p>
             </div>
 
@@ -187,22 +203,29 @@ const Hotels = () => {
             <div 
               ref={searchFormRef}
               data-hotel-search-form
-              className="bg-white rounded-xl shadow-2xl p-5 max-w-4xl mx-auto"
+              className="gradient-border bg-card rounded-2xl p-6 md:p-8 glow-accent animate-fade-in"
+              style={{ animationDelay: '0.1s' }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Destination */}
                 <div className="md:col-span-2 relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
-                  <Input
-                    ref={destinationInputRef}
-                    placeholder="Where are you going?"
-                    className={cn("pl-10 h-12 bg-secondary/50 border-0", errors.destination && "ring-2 ring-destructive")}
-                    value={destination}
-                    onChange={(e) => {
-                      setDestination(e.target.value);
-                      if (errors.destination) setErrors((prev) => ({ ...prev, destination: undefined }));
-                    }}
-                  />
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">Destination</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
+                    <Input
+                      ref={destinationInputRef}
+                      placeholder="Where are you going?"
+                      className={cn(
+                        "pl-10 h-12 bg-secondary border-border",
+                        errors.destination && "ring-2 ring-destructive"
+                      )}
+                      value={destination}
+                      onChange={(e) => {
+                        setDestination(e.target.value);
+                        if (errors.destination) setErrors((prev) => ({ ...prev, destination: undefined }));
+                      }}
+                    />
+                  </div>
                   {errors.destination && (
                     <p className="text-destructive text-xs mt-1 text-left flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
@@ -213,12 +236,13 @@ const Hotels = () => {
 
                 {/* Date Picker */}
                 <div className="relative">
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">Dates</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         className={cn(
-                          "w-full h-12 justify-start text-left font-normal pl-10 bg-secondary/50 hover:bg-secondary/70",
+                          "w-full h-12 justify-start text-left font-normal pl-10 bg-secondary border-border hover:bg-secondary/80",
                           !dateRange?.from && "text-muted-foreground",
                           errors.dates && "ring-2 ring-destructive"
                         )}
@@ -238,7 +262,7 @@ const Hotels = () => {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent 
-                      className="w-auto p-0" 
+                      className="w-auto p-0 bg-card border-border" 
                       align="start"
                       side="bottom"
                       sideOffset={8}
@@ -267,17 +291,18 @@ const Hotels = () => {
 
                 {/* Guests & Rooms */}
                 <div className="relative">
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">Guests</label>
                   <Popover open={guestPopoverOpen} onOpenChange={setGuestPopoverOpen}>
                     <PopoverTrigger asChild>
                       <Button
-                        variant="ghost"
-                        className="w-full h-12 justify-start text-left font-normal pl-10 bg-secondary/50 hover:bg-secondary/70"
+                        variant="outline"
+                        className="w-full h-12 justify-start text-left font-normal pl-10 bg-secondary border-border hover:bg-secondary/80"
                       >
                         <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         {guests} guest{guests > 1 ? "s" : ""}, {rooms} room{rooms > 1 ? "s" : ""}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-64 p-4" align="end">
+                    <PopoverContent className="w-64 p-4 bg-card border-border" align="end">
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">Guests</span>
@@ -328,7 +353,7 @@ const Hotels = () => {
                           </div>
                         </div>
                         <Button
-                          className="w-full"
+                          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
                           size="sm"
                           onClick={() => setGuestPopoverOpen(false)}
                         >
@@ -339,14 +364,18 @@ const Hotels = () => {
                   </Popover>
                 </div>
               </div>
-              <Button
-                className="w-full mt-4 h-12 text-base font-semibold"
-                onClick={handleSearch}
-                disabled={isLoading}
-              >
-                <Search className="w-5 h-5 mr-2" />
-                {isLoading ? "Searching..." : "Search Hotels"}
-              </Button>
+              
+              <div className="mt-6 flex justify-center md:justify-end">
+                <Button
+                  size="lg"
+                  className="gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                  onClick={handleSearch}
+                  disabled={isLoading}
+                >
+                  <Search className="w-4 h-4" />
+                  {isLoading ? "Searching..." : "Search Hotels"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -355,8 +384,8 @@ const Hotels = () => {
       {/* Results Section */}
       <div ref={resultsRef}>
         {(hasSearched || isLoading) && (
-          <section className="px-4 py-8 bg-secondary/30">
-            <div className="container mx-auto">
+          <section className="px-4 py-12 bg-background">
+            <div className="container mx-auto max-w-6xl">
               <HotelResults
                 hotels={hotels}
                 isLoading={isLoading}
@@ -369,34 +398,52 @@ const Hotels = () => {
 
       {/* Popular Destinations */}
       {!hasSearched && (
-        <section className="py-16 px-4 bg-background flex-1">
-          <div className="container mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2 text-center">
-              Popular hotel destinations
-            </h2>
-            <p className="text-muted-foreground text-center mb-8">
-              Explore our most popular cities
-            </p>
+        <section className="py-24 px-4 bg-background relative overflow-hidden">
+          {/* Background accent */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/5 rounded-full blur-[120px]" />
+          
+          <div className="container mx-auto max-w-6xl relative z-10">
+            <div className="flex items-end justify-between mb-12">
+              <div>
+                <span className="text-accent text-sm font-semibold uppercase tracking-widest mb-2 block">
+                  Trending now
+                </span>
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                  Popular destinations
+                </h2>
+              </div>
+            </div>
             
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
-              {destinations.map((dest) => (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              {destinations.map((dest, index) => (
                 <div
                   key={dest.city}
                   onClick={() => handleDestinationClick(dest.city)}
-                  className="group relative rounded-xl overflow-hidden aspect-[4/3] cursor-pointer"
+                  className="group relative rounded-2xl overflow-hidden aspect-[3/4] cursor-pointer animate-fade-in"
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <img
                     src={dest.image}
                     alt={`${dest.city}, ${dest.country}`}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h3 className="text-lg font-bold text-white">{dest.city}</h3>
-                    <p className="text-white/70 text-sm">{dest.country}</p>
-                  </div>
-                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ArrowRight className="w-4 h-4 text-white" />
+                  
+                  {/* Gradient overlay */}
+                  <div className={`absolute inset-0 bg-gradient-to-t ${dest.color} opacity-60 group-hover:opacity-70 transition-opacity`} />
+                  
+                  {/* Content */}
+                  <div className="absolute inset-0 p-5 flex flex-col justify-end">
+                    <div className="flex items-center gap-1.5 text-white/80 text-xs mb-2">
+                      <MapPin className="w-3 h-3" />
+                      <span>{dest.country}</span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2">
+                      {dest.city}
+                    </h3>
+                    <div className="flex items-center gap-2 text-white/80 text-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                      <span>Explore hotels</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
               ))}
