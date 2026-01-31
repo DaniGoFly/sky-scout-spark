@@ -204,16 +204,17 @@ const Hotels = () => {
               </p>
             </div>
 
-            {/* Search Form */}
+            {/* Search Form - Matching flight search panel structure */}
             <div 
               ref={searchFormRef}
               data-hotel-search-form
-              className="gradient-border bg-card rounded-2xl p-6 md:p-8 glow-accent animate-fade-in"
+              className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto animate-fade-in"
               style={{ animationDelay: '0.1s' }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Search Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
                 {/* Destination */}
-                <div className="md:col-span-2 relative">
+                <div className="lg:col-span-4">
                   <label className="block text-xs font-medium text-muted-foreground mb-2">Destination</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
@@ -232,7 +233,7 @@ const Hotels = () => {
                     />
                   </div>
                   {errors.destination && (
-                    <p className="text-destructive text-xs mt-1 text-left flex items-center gap-1">
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       {errors.destination}
                     </p>
@@ -240,8 +241,8 @@ const Hotels = () => {
                 </div>
 
                 {/* Date Picker */}
-                <div className="relative">
-                  <label className="block text-xs font-medium text-muted-foreground mb-2">Dates</label>
+                <div className="lg:col-span-4">
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">Check-in / Check-out</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -262,7 +263,7 @@ const Hotels = () => {
                             format(dateRange.from, "MMM d, yyyy")
                           )
                         ) : (
-                          <span>Check-in - Check-out</span>
+                          <span>Select dates</span>
                         )}
                       </Button>
                     </PopoverTrigger>
@@ -287,7 +288,7 @@ const Hotels = () => {
                     </PopoverContent>
                   </Popover>
                   {errors.dates && (
-                    <p className="text-destructive text-xs mt-1 text-left flex items-center gap-1">
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       {errors.dates}
                     </p>
@@ -295,8 +296,8 @@ const Hotels = () => {
                 </div>
 
                 {/* Guests & Rooms */}
-                <div className="relative">
-                  <label className="block text-xs font-medium text-muted-foreground mb-2">Guests</label>
+                <div className="lg:col-span-4">
+                  <label className="block text-xs font-medium text-muted-foreground mb-2">Guests & Rooms</label>
                   <Popover open={guestPopoverOpen} onOpenChange={setGuestPopoverOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -358,7 +359,7 @@ const Hotels = () => {
                           </div>
                         </div>
                         <Button
-                          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 text-white"
                           size="sm"
                           onClick={() => setGuestPopoverOpen(false)}
                         >
@@ -370,10 +371,11 @@ const Hotels = () => {
                 </div>
               </div>
               
+              {/* Search Button */}
               <div className="mt-6 flex justify-center md:justify-end">
                 <Button
                   size="lg"
-                  className="gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                  className="gap-2 px-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 transition-opacity text-white"
                   onClick={handleSearch}
                   disabled={isLoading}
                 >
