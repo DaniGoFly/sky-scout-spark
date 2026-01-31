@@ -12,7 +12,6 @@ import { useHotelSearch, HotelSearchParams } from "@/hooks/useHotelSearch";
 import HotelResults from "@/components/HotelResults";
 import { DateRange } from "react-day-picker";
 import { useSearchParams } from "react-router-dom";
-import FlightPathsBackground from "@/components/FlightPathsBackground";
 
 const destinations = [
   {
@@ -166,16 +165,22 @@ const Hotels = () => {
       
       {/* Hero Section */}
       <section className="relative min-h-screen flex flex-col overflow-hidden">
-        {/* Base gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-accent/10" />
+        {/* Base gradient background - Warm amber/orange theme for Hotels */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-amber-500/10" />
         
-        {/* Floating orbs */}
-        <div className="absolute top-20 left-[10%] w-96 h-96 bg-accent/20 rounded-full blur-[120px] animate-float" />
-        <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-primary/15 rounded-full blur-[100px] animate-float-delayed" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[150px]" />
+        {/* Floating orbs - Warm amber theme */}
+        <div className="absolute top-20 left-[10%] w-96 h-96 bg-amber-500/20 rounded-full blur-[120px] animate-float" />
+        <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-orange-400/15 rounded-full blur-[100px] animate-float-delayed" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[150px]" />
         
-        {/* Flight paths background */}
-        <FlightPathsBackground />
+        {/* Subtle floating buildings pattern */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <Building2 className="absolute top-[15%] left-[5%] w-6 h-6 text-amber-500/10" />
+          <Building2 className="absolute top-[25%] right-[8%] w-8 h-8 text-orange-400/10" />
+          <Building2 className="absolute bottom-[30%] left-[12%] w-5 h-5 text-amber-400/10" />
+          <Building2 className="absolute top-[60%] right-[15%] w-7 h-7 text-amber-500/10" />
+          <Building2 className="absolute bottom-[20%] right-[25%] w-4 h-4 text-orange-500/10" />
+        </div>
         
         {/* Subtle noise overlay */}
         <div className="absolute inset-0 opacity-[0.015] pointer-events-none"
@@ -192,7 +197,7 @@ const Hotels = () => {
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
                 <span className="text-foreground">Find your perfect</span>
                 <br />
-                <span className="gradient-text">stay</span>
+                <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">stay</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
                 Compare hotel prices from all major booking sites in seconds
