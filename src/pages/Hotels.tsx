@@ -209,8 +209,7 @@ const Hotels = () => {
             <div 
               ref={searchFormRef}
               data-hotel-search-form
-              className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto animate-fade-in glow-amber"
-              style={{ animationDelay: '0.1s' }}
+              className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto"
             >
               {/* Search Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
@@ -360,7 +359,7 @@ const Hotels = () => {
                           </div>
                         </div>
                         <Button
-                          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 text-white"
+                          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
                           size="sm"
                           onClick={() => setGuestPopoverOpen(false)}
                         >
@@ -376,7 +375,7 @@ const Hotels = () => {
               <div className="mt-6 flex justify-center md:justify-end">
                 <Button
                   size="lg"
-                  className="gap-2 px-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 transition-opacity text-white"
+                  className="gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
                   onClick={handleSearch}
                   disabled={isLoading}
                 >
