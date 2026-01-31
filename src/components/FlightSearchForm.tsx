@@ -147,14 +147,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }, []);
 
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-xl p-6 md:p-8 w-full max-w-5xl mx-auto">
+    <div className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto">
       {/* Trip Type Toggle */}
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setTripType("roundtrip")}
           className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
             tripType === "roundtrip"
-              ? "bg-primary text-primary-foreground"
+              ? "bg-gradient-to-r from-primary to-accent text-white"
               : "bg-secondary text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -164,7 +164,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           onClick={() => setTripType("oneway")}
           className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
             tripType === "oneway"
-              ? "bg-primary text-primary-foreground"
+              ? "bg-gradient-to-r from-primary to-accent text-white"
               : "bg-secondary text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -192,14 +192,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             variant="outline"
             size="icon"
             onClick={swapLocations}
-            className="rounded-full h-12 w-12 border-2 border-dashed hover:border-primary hover:text-primary transition-all"
+            className="rounded-full h-12 w-12 border-2 border-dashed border-border hover:border-primary hover:text-primary transition-all bg-background"
           >
             <ArrowRightLeft className="w-4 h-4" />
           </Button>
         </div>
 
         {/* To */}
-        <div className={`lg:col-span-3 transition-all duration-300 ${highlightDestination ? "ring-2 ring-primary ring-offset-2 rounded-lg" : ""}`}>
+        <div className={`lg:col-span-3 transition-all duration-300 ${highlightDestination ? "ring-2 ring-primary ring-offset-2 ring-offset-card rounded-lg" : ""}`}>
           <label className="block text-xs font-medium text-muted-foreground mb-2">To</label>
           <AirportAutocomplete
             value={to}
@@ -239,6 +239,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           id="flexible-dates"
           checked={flexibleDates}
           onCheckedChange={(checked) => setFlexibleDates(checked === true)}
+          className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
         />
         <Label 
           htmlFor="flexible-dates" 
@@ -253,7 +254,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         <Button 
           size="lg" 
           onClick={handleSearch}
-          className="gap-2 px-8"
+          className="gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
         >
           <Search className="w-4 h-4" />
           Search Flights
