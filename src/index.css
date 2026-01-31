@@ -114,6 +114,24 @@
   z-index: -1;
 }
 
+/* Amber variant for Hotels */
+.gradient-border-amber {
+  position: relative;
+  background: hsl(var(--card));
+  border-radius: var(--radius);
+}
+
+.gradient-border-amber::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: calc(var(--radius) + 1px);
+  background: linear-gradient(135deg, hsl(38 92% 50%), hsl(25 95% 53%), hsl(38 92% 50%));
+  background-size: 200% 200%;
+  animation: gradient-rotate 4s linear infinite;
+  z-index: -1;
+}
+
 @keyframes gradient-rotate {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
