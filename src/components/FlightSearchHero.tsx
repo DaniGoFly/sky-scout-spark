@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import FlightSearchForm from "./FlightSearchForm";
+import FlightPathsBackground from "./FlightPathsBackground";
 
 export interface AISearchParams {
   destinationCode: string;
@@ -14,25 +15,16 @@ const FlightSearchHero = () => {
   }, []);
 
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden noise-overlay">
-      {/* Animated background gradients */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/20" />
-        
-        {/* Floating orbs */}
-        <div className="absolute top-20 left-[10%] w-96 h-96 bg-primary/30 rounded-full blur-[120px] animate-float" />
-        <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-accent/20 rounded-full blur-[100px] animate-float-delayed" />
-        
-        {/* Grid pattern */}
-        <div 
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px),
-                              linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px'
-          }}
-        />
-      </div>
+    <section className="relative min-h-screen flex flex-col overflow-hidden">
+      {/* Base gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/10" />
+      
+      {/* Floating orbs */}
+      <div className="absolute top-20 left-[10%] w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-float" />
+      <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-accent/15 rounded-full blur-[100px] animate-float-delayed" />
+      
+      {/* Flight paths background */}
+      <FlightPathsBackground />
 
       {/* Content */}
       <div className="relative z-10 flex-1 flex flex-col justify-center pt-24 pb-16 px-4">

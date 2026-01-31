@@ -1,28 +1,27 @@
-import { Plane, Sparkles, Globe, ArrowRight } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import FlightSearchForm from "./FlightSearchForm";
+import FlightPathsBackground from "./FlightPathsBackground";
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden noise-overlay">
-      {/* Animated background gradients */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/20" />
-        
-        {/* Floating orbs */}
-        <div className="absolute top-20 left-[10%] w-96 h-96 bg-primary/30 rounded-full blur-[120px] animate-float" />
-        <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-accent/20 rounded-full blur-[100px] animate-float-delayed" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px]" />
-        
-        {/* Grid pattern */}
-        <div 
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px),
-                              linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px'
-          }}
-        />
-      </div>
+    <section className="relative min-h-screen flex flex-col overflow-hidden">
+      {/* Base gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/10" />
+      
+      {/* Floating orbs */}
+      <div className="absolute top-20 left-[10%] w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-float" />
+      <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-accent/15 rounded-full blur-[100px] animate-float-delayed" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[150px]" />
+      
+      {/* Flight paths background */}
+      <FlightPathsBackground />
+      
+      {/* Subtle noise overlay */}
+      <div className="absolute inset-0 opacity-[0.015] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
+        }}
+      />
 
       {/* Content */}
       <div className="relative z-10 flex-1 flex flex-col justify-center pt-24 pb-16 px-4">
