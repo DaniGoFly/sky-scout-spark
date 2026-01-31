@@ -208,7 +208,7 @@ const Hotels = () => {
             <div 
               ref={searchFormRef}
               data-hotel-search-form
-              className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto animate-fade-in"
+              className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto animate-fade-in glow-amber"
               style={{ animationDelay: '0.1s' }}
             >
               {/* Search Fields */}
