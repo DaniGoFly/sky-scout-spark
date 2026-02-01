@@ -45,6 +45,7 @@ export interface StartSearchResponse {
 export interface ResultsResponse {
   ok: boolean;
   step: "results";
+  status?: "pending"; // Case B: pending state - no tickets yet
   is_over?: boolean;
   last_update_timestamp?: number;
   tickets?: Ticket[];

@@ -40,9 +40,19 @@ interface UseLiveFlightSearchResult {
 }
 
 // Polling configuration
-const POLL_INTERVAL = 1500; // 1.5 seconds
+const POLL_INTERVAL = 1200; // 1.2 seconds (as per requirements)
 const MAX_POLL_ATTEMPTS = 25; // max polls before giving up
-const POLL_TIMEOUT = 40000; // 40s total timeout
+const POLL_TIMEOUT = 25000; // 25s total timeout for pending state
+const DEV_MODE = import.meta.env.DEV;
+
+/**
+ * Check if tickets have valid segment data
+ */
+function hasValidTicketData(tickets: any[]): boolean {
+  if (!Array.isArray(tickets) || tickets.length === 0) return false;
+  // At least one ticket must have segments
+  return tickets.some(t => t?.segments && Array.isArray(t.segments) && t.segments.length > 0);
+}
 
 /**
  * Hook for live flight search with polling
@@ -76,7 +86,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     clearPersistedSearchContext();
 
     try {
-      console.log("[LiveSearch] Starting search with params:", params);
+      if (DEV_MODE) console.log("[LiveSearch] Starting search with params:", params);
 
       // Step 1: Start search
       const startResponse = await startSearch({
@@ -121,10 +131,10 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         return;
       }
 
-      console.log("[LiveSearch] Search started:", { search_id, results_url });
+      if (DEV_MODE) console.log("[LiveSearch] Search started:", { search_id, results_url });
       setProgress(10);
 
-      // Step 2: Poll for results
+      // Step 2: Poll for results - PERSIST results_url for all subsequent calls
       setStatus("polling");
       const allFlights = new Map<string, NormalizedFlight>();
       const startTime = Date.now();
@@ -132,11 +142,18 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       
       // Build flight info map from API responses - accumulates across polls
       let flightInfoMap: FlightInfoMap = {};
+      let pendingAttempts = 0;
 
       while (!cancelRef.current && pollCountRef.current < MAX_POLL_ATTEMPTS) {
         // Check timeout
         if (Date.now() - startTime > POLL_TIMEOUT) {
-          console.log("[LiveSearch] Timeout reached");
+          if (DEV_MODE) console.log("[LiveSearch] Timeout reached after", (Date.now() - startTime) / 1000, "seconds");
+          // If we still have no results, set error with friendly message
+          if (allFlights.size === 0) {
+            setError("Still fetching live results. Please retry.");
+            setStatus("error");
+            return;
+          }
           break;
         }
 
@@ -149,8 +166,9 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         const progressPercent = Math.min(10 + (pollCountRef.current / MAX_POLL_ATTEMPTS) * 85, 95);
         setProgress(progressPercent);
 
-        console.log("[LiveSearch] Polling attempt:", pollCountRef.current);
+        if (DEV_MODE) console.log("[LiveSearch] Polling attempt:", pollCountRef.current);
 
+        // Always pass the persisted results_url from start response
         const pollResponse = await pollResults({
           searchId: search_id,
           resultsUrl: results_url,
@@ -163,6 +181,16 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         }
 
         const pollData = pollResponse.data;
+
+        // Handle Case B: Pending state - { ok:true, step:"results", status:"pending", ... }
+        if (pollData.status === "pending") {
+          pendingAttempts++;
+          if (DEV_MODE) {
+            console.log(`[LiveSearch] Status is PENDING, attempt #${pendingAttempts}`);
+          }
+          // Don't try to render, just continue polling
+          continue;
+        }
 
         // Check for live unavailable
         if (pollData.liveUnavailable) {
@@ -183,10 +211,15 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           flightInfoMap = { ...flightInfoMap, ...newFlightInfo };
         }
 
-        // Parse tickets using the proper normalizer
-        if (pollData.tickets?.length) {
+        // Case A: Check if we have valid ticket data with segments
+        const tickets = pollData.tickets;
+        if (tickets && hasValidTicketData(tickets)) {
+          if (DEV_MODE && pendingAttempts > 0) {
+            console.log(`[LiveSearch] Results ready after ${pendingAttempts} pending attempts, ${tickets.length} tickets`);
+          }
+
           const newFlights = normalizeFlights(
-            pollData.tickets,
+            tickets,
             flightInfoMap,
             search_id,
             results_url,
@@ -195,7 +228,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           );
 
           // Log sample data on first batch (dev only)
-          if (pollCountRef.current === 1 && newFlights.length > 0) {
+          if (pollCountRef.current === 1 && newFlights.length > 0 && DEV_MODE) {
             const sample = newFlights[0];
             console.log("[LiveSearch] Sample normalized flight:", {
               id: sample.id,
@@ -220,11 +253,13 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
           // Update UI incrementally
           setFlights(Array.from(allFlights.values()));
+        } else if (DEV_MODE && tickets) {
+          console.log("[LiveSearch] Tickets received but no valid segments, continuing to poll");
         }
 
         // Check if complete
         if (pollData.is_over === true) {
-          console.log("[LiveSearch] Search complete (is_over=true)");
+          if (DEV_MODE) console.log("[LiveSearch] Search complete (is_over=true)");
           break;
         }
       }
@@ -234,11 +269,13 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       const finalFlights = Array.from(allFlights.values());
 
       // Data integrity check (dev warning)
-      const flightsWithTimes = finalFlights.filter(f => f.departureTime && f.arrivalTime);
-      if (finalFlights.length > 0 && flightsWithTimes.length < finalFlights.length * 0.5) {
-        console.warn(
-          `[LiveSearch] Data integrity warning: Only ${flightsWithTimes.length}/${finalFlights.length} flights have times. Check API response mapping.`
-        );
+      if (DEV_MODE) {
+        const flightsWithTimes = finalFlights.filter(f => f.departureTime && f.arrivalTime);
+        if (finalFlights.length > 0 && flightsWithTimes.length < finalFlights.length * 0.5) {
+          console.warn(
+            `[LiveSearch] Data integrity warning: Only ${flightsWithTimes.length}/${finalFlights.length} flights have times. Check API response mapping.`
+          );
+        }
       }
 
       if (finalFlights.length === 0) {
@@ -250,7 +287,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         setStatus("complete");
       }
 
-      console.log("[LiveSearch] Final result:", finalFlights.length, "flights");
+      if (DEV_MODE) console.log("[LiveSearch] Final result:", finalFlights.length, "flights");
     } catch (err) {
       console.error("[LiveSearch] Unexpected error:", err);
       setError(err instanceof Error ? err.message : "Search failed");
