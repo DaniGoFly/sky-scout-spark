@@ -50,6 +50,11 @@ export interface ResultsResponse {
   last_update_timestamp?: number;
   tickets?: Ticket[];
   flight_info?: Record<string, FlightInfo>;
+  // Travelpayouts affiliate lookup collections (may be present instead of flight_info)
+  flights?: unknown;
+  airports?: unknown;
+  airlines?: unknown;
+  segments?: unknown;
   error?: string;
   liveUnavailable?: boolean;
 }
