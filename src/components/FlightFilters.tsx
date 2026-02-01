@@ -161,7 +161,14 @@ const FlightFilters = ({
     priceRange[0] !== actualPriceRange[0] || priceRange[1] !== actualPriceRange[1] || directOnly;
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 space-y-5 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+    <div 
+      className="bg-card border border-border rounded-2xl p-5 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+      style={{ 
+        position: 'sticky',
+        top: '6rem',
+        maxHeight: 'calc(100vh - 7rem)',
+      }}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-foreground font-semibold">
           <Filter className="w-5 h-5" />

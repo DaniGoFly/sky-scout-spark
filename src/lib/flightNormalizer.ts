@@ -59,6 +59,20 @@ function getAirlineName(code: string): string {
 }
 
 /**
+ * Return leg info for roundtrip flights
+ */
+export interface ReturnLegInfo {
+  departureTime: string;
+  arrivalTime: string;
+  originIata: string;
+  destinationIata: string;
+  duration: string;
+  durationMinutes: number;
+  stops: number;
+  stopAirports: string[];
+}
+
+/**
  * Normalized flight object - ONLY these fields are used by the UI
  */
 export interface NormalizedFlight {
@@ -71,7 +85,7 @@ export interface NormalizedFlight {
   airlineLogo: string;
   flightNumber: string;
 
-  // Route info
+  // Route info (outbound)
   originIata: string;
   destinationIata: string;
 
@@ -87,9 +101,15 @@ export interface NormalizedFlight {
   stops: number;
   stopAirports: string[]; // e.g., ["FRA", "LHR"]
 
+  // Return leg (for roundtrip)
+  returnLeg?: ReturnLegInfo;
+
   // Price
   price: number;
   currency: string;
+  
+  // Deals count - number of providers offering this itinerary
+  dealsCount: number;
   
   // Price confidence - used to determine if price should be trusted
   isPriceValid: boolean; // true if price > 0 and is finite
@@ -201,6 +221,84 @@ export function buildFlightInfoMap(
   }
 
   return map;
+}
+
+/**
+ * Parse return leg from a ticket (second segment for roundtrip)
+ */
+function parseReturnLeg(
+  ticket: Ticket,
+  flightInfoMap: FlightInfoMap
+): ReturnLegInfo | undefined {
+  const segments = ticket.segments;
+  if (!Array.isArray(segments) || segments.length < 2) {
+    return undefined; // One-way or no return segment
+  }
+
+  const returnSegment = segments[1];
+  const returnFlights = returnSegment?.flights;
+  
+  if (!Array.isArray(returnFlights) || returnFlights.length === 0) {
+    return undefined;
+  }
+
+  const firstFlightIdx = returnFlights[0];
+  const lastFlightIdx = returnFlights[returnFlights.length - 1];
+  
+  const firstFlightInfo = firstFlightIdx !== undefined ? flightInfoMap[firstFlightIdx] : undefined;
+  const lastFlightInfo = lastFlightIdx !== undefined ? flightInfoMap[lastFlightIdx] : undefined;
+
+  // Return leg origin/destination
+  const originIata = (firstFlightInfo?.departure || "").toUpperCase();
+  const destinationIata = (lastFlightInfo?.arrival || "").toUpperCase();
+  
+  // Times
+  const departureTime = 
+    firstFlightInfo?.departureTime && firstFlightInfo.departureTime !== "--:--"
+      ? firstFlightInfo.departureTime
+      : "";
+  const arrivalTime =
+    lastFlightInfo?.arrivalTime && lastFlightInfo.arrivalTime !== "--:--"
+      ? lastFlightInfo.arrivalTime
+      : "";
+
+  // Stops
+  const stops = Math.max(0, returnFlights.length - 1);
+  
+  // Stop airports
+  const stopAirports: string[] = [];
+  if (returnFlights.length > 2) {
+    for (let i = 1; i < returnFlights.length - 1; i++) {
+      const stopInfo = flightInfoMap[returnFlights[i]];
+      if (stopInfo?.departure) {
+        stopAirports.push(stopInfo.departure.toUpperCase());
+      }
+    }
+  } else if (returnFlights.length === 2) {
+    const stopInfo = flightInfoMap[returnFlights[0]];
+    if (stopInfo?.arrival) {
+      stopAirports.push(stopInfo.arrival.toUpperCase());
+    }
+  }
+
+  // Duration
+  let totalDuration = 0;
+  for (const flightIdx of returnFlights) {
+    const info = flightInfoMap[flightIdx];
+    if (info?.duration) totalDuration += info.duration;
+  }
+  const durationText = totalDuration > 0 ? formatDuration(totalDuration) : "";
+
+  return {
+    departureTime,
+    arrivalTime,
+    originIata,
+    destinationIata,
+    duration: durationText,
+    durationMinutes: totalDuration,
+    stops,
+    stopAirports,
+  };
 }
 
 /**
@@ -355,9 +453,13 @@ function normalizeTicket(
       durationMinutes: totalDuration,
       stops,
       stopAirports,
+      // Return leg - parsed from second segment if roundtrip
+      returnLeg: parseReturnLeg(ticket, flightInfoMap),
       // Round to 0 decimals like Skyscanner - only once, no double conversion
       price: Math.round(priceValue),
       currency: proposal.price_per_person?.currency_code || proposal.price?.currency_code || "EUR",
+      // Deals count - number of proposals for this ticket
+      dealsCount: proposals.length,
       isPriceValid,
       searchId,
       resultsUrl,
