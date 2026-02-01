@@ -90,15 +90,73 @@ export interface NormalizedFlight {
   // Price
   price: number;
   currency: string;
-
+  
+  // Price confidence - used to determine if price should be trusted
+  isPriceValid: boolean; // true if price > 0 and is finite
+  
   // Booking metadata - required for click action
   searchId: string;
   resultsUrl: string;
   proposalId: string;
   signature: string;
 
-  // Validity flag - true when all booking metadata is present
+  // Validity flag - true when all booking metadata is present AND URL is valid
   hasValidBookingUrl: boolean;
+}
+
+/**
+ * Validate a price value
+ * Returns true only if price is a finite positive number
+ */
+export function isValidPrice(price: unknown): price is number {
+  return typeof price === 'number' && 
+         Number.isFinite(price) && 
+         price > 0 && 
+         !Number.isNaN(price);
+}
+
+/**
+ * Validate a booking URL
+ * Must exist and start with http:// or https://
+ */
+export function isValidBookingUrl(url: unknown): url is string {
+  if (typeof url !== 'string' || !url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Calculate price confidence score for sorting
+ * Returns a penalty to add to the sort score if price is unreliable
+ * Stale or invalid prices get deprioritized slightly
+ */
+export function getPriceConfidencePenalty(
+  flight: NormalizedFlight,
+  fetchedAt?: number,
+  staleThresholdMs: number = 120000 // 2 minutes
+): number {
+  let penalty = 0;
+  
+  // Invalid price = big penalty
+  if (!flight.isPriceValid) {
+    penalty += 10000;
+  }
+  
+  // No valid booking URL = medium penalty
+  if (!flight.hasValidBookingUrl) {
+    penalty += 5000;
+  }
+  
+  // Stale price = small penalty
+  if (fetchedAt && Date.now() - fetchedAt > staleThresholdMs) {
+    penalty += 500;
+  }
+  
+  return penalty;
 }
 
 /**
@@ -240,8 +298,14 @@ function normalizeTicket(
     if (!proposal || typeof proposal !== "object") continue;
     if (!proposal.id) continue;
 
-    // VALIDATION: Must have valid price
-    const priceValue = proposal.price_per_person?.value ?? proposal.price?.value ?? 0;
+    // Get raw price value - DO NOT convert, trust backend
+    const rawPrice = proposal.price_per_person?.value ?? proposal.price?.value ?? 0;
+    const priceValue = typeof rawPrice === 'number' ? rawPrice : Number(rawPrice) || 0;
+    
+    // Validate price using our helper
+    const isPriceValid = isValidPrice(priceValue);
+    
+    // Skip flights with completely invalid prices (0 or negative)
     if (priceValue <= 0) continue;
 
     // Get airline from flight terms
@@ -291,8 +355,10 @@ function normalizeTicket(
       durationMinutes: totalDuration,
       stops,
       stopAirports,
+      // Round to 0 decimals like Skyscanner - only once, no double conversion
       price: Math.round(priceValue),
       currency: proposal.price_per_person?.currency_code || proposal.price?.currency_code || "EUR",
+      isPriceValid,
       searchId,
       resultsUrl,
       proposalId: proposal.id,
@@ -340,26 +406,36 @@ export function normalizeFlights(
 
 /**
  * Sort flights by different criteria
+ * Optionally takes fetchedAt to factor in price freshness
  */
 export function sortFlights(
   flights: NormalizedFlight[],
-  sortBy: "best" | "cheapest" | "fastest"
+  sortBy: "best" | "cheapest" | "fastest",
+  fetchedAt?: number
 ): NormalizedFlight[] {
   const sorted = [...flights];
 
   switch (sortBy) {
     case "cheapest":
-      sorted.sort((a, b) => a.price - b.price);
+      sorted.sort((a, b) => {
+        // Valid prices first, then by price
+        if (a.isPriceValid !== b.isPriceValid) {
+          return a.isPriceValid ? -1 : 1;
+        }
+        return a.price - b.price;
+      });
       break;
     case "fastest":
       sorted.sort((a, b) => a.durationMinutes - b.durationMinutes);
       break;
     case "best":
     default:
-      // Weighted score: price + stops penalty + duration penalty
+      // Weighted score: price + stops penalty + duration penalty + confidence penalty
       sorted.sort((a, b) => {
-        const scoreA = a.price + a.stops * 80 + a.durationMinutes * 0.5;
-        const scoreB = b.price + b.stops * 80 + b.durationMinutes * 0.5;
+        const penaltyA = getPriceConfidencePenalty(a, fetchedAt);
+        const penaltyB = getPriceConfidencePenalty(b, fetchedAt);
+        const scoreA = a.price + a.stops * 80 + a.durationMinutes * 0.5 + penaltyA;
+        const scoreB = b.price + b.stops * 80 + b.durationMinutes * 0.5 + penaltyB;
         return scoreA - scoreB;
       });
       break;
@@ -369,23 +445,61 @@ export function sortFlights(
 }
 
 /**
- * Get summary stats for the flight list
+ * Check if a flight is eligible to be "Best Value"
+ * Must have valid price, valid booking URL, and not be stale
  */
-export function getFlightStats(flights: NormalizedFlight[]) {
+export function isEligibleForBestValue(
+  flight: NormalizedFlight,
+  fetchedAt?: number,
+  staleThresholdMs: number = 120000
+): boolean {
+  // Must have valid price
+  if (!flight.isPriceValid || flight.price <= 0) return false;
+  
+  // Must have valid booking URL metadata
+  if (!flight.hasValidBookingUrl) return false;
+  
+  // Must not be stale
+  if (fetchedAt && Date.now() - fetchedAt > staleThresholdMs) return false;
+  
+  return true;
+}
+
+/**
+ * Get summary stats for the flight list
+ * Only considers flights with valid prices for "best" calculation
+ */
+export function getFlightStats(flights: NormalizedFlight[], fetchedAt?: number) {
   if (flights.length === 0) return null;
 
-  const cheapest = flights.reduce((min, f) => (f.price < min.price ? f : min), flights[0]);
+  // Filter to only valid-priced flights for cheapest calculation
+  const validPriceFlights = flights.filter(f => f.isPriceValid && f.price > 0);
+  
+  // If no valid prices, use all flights but mark as uncertain
+  const priceFlights = validPriceFlights.length > 0 ? validPriceFlights : flights;
+
+  const cheapest = priceFlights.reduce((min, f) => (f.price < min.price ? f : min), priceFlights[0]);
   const fastest = flights.reduce(
     (min, f) => (f.durationMinutes < min.durationMinutes ? f : min),
     flights[0]
   );
 
-  // Best uses same weighted score
-  const best = flights.reduce((best, f) => {
-    const scoreA = f.price + f.stops * 80 + f.durationMinutes * 0.5;
-    const scoreB = best.price + best.stops * 80 + best.durationMinutes * 0.5;
+  // Best uses weighted score with confidence penalty
+  const eligibleForBest = flights.filter(f => isEligibleForBestValue(f, fetchedAt));
+  const bestCandidates = eligibleForBest.length > 0 ? eligibleForBest : priceFlights;
+  
+  const best = bestCandidates.reduce((best, f) => {
+    const penaltyA = getPriceConfidencePenalty(f, fetchedAt);
+    const penaltyB = getPriceConfidencePenalty(best, fetchedAt);
+    const scoreA = f.price + f.stops * 80 + f.durationMinutes * 0.5 + penaltyA;
+    const scoreB = best.price + best.stops * 80 + best.durationMinutes * 0.5 + penaltyB;
     return scoreA < scoreB ? f : best;
-  }, flights[0]);
+  }, bestCandidates[0]);
 
-  return { cheapest, fastest, best };
+  return { 
+    cheapest, 
+    fastest, 
+    best,
+    hasValidPrices: validPriceFlights.length > 0 
+  };
 }
