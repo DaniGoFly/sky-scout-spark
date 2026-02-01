@@ -445,7 +445,7 @@ const FlightResults = () => {
             <div className="hidden lg:block lg:w-72 shrink-0">
               <FlightFilters
                 onFiltersChange={setFilters}
-                flights={flights}
+                flights={normalizedFlights}
                 showDirectOnly={!directOnly}
                 onDirectOnlyChange={(checked) => {
                   setFilters(prev => ({ ...prev, directOnly: checked }));
@@ -480,6 +480,7 @@ const FlightResults = () => {
                     (filters.priceRange[0] > 0 || filters.priceRange[1] < 5000 ? 1 : 0)
                   }
                   flightCount={totalFiltered}
+                  flights={normalizedFlights}
                 />
               </div>
 

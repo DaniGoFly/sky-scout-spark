@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Filter, RotateCcw, Plane } from "lucide-react";
-import { LiveFlight } from "@/hooks/useFlightSearch";
+import { NormalizedFlight } from "@/lib/flightNormalizer";
 
 interface FlightFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
-  flights?: LiveFlight[];
+  flights?: NormalizedFlight[];
   showDirectOnly?: boolean;
   onDirectOnlyChange?: (checked: boolean) => void;
 }
@@ -35,6 +35,7 @@ const DEPARTURE_TIMES = [
 ];
 
 const DEFAULT_PRICE_RANGE: [number, number] = [0, 2000];
+const DEBOUNCE_MS = 200;
 
 const FlightFilters = ({ 
   onFiltersChange, 
@@ -47,18 +48,21 @@ const FlightFilters = ({
   const [priceRange, setPriceRange] = useState<[number, number]>(DEFAULT_PRICE_RANGE);
   const [departureTime, setDepartureTime] = useState<string[]>([]);
   const [directOnly, setDirectOnly] = useState(false);
+  
+  // Debounce timer ref for slider
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get unique airlines from actual flight data
+  // Get unique airlines from normalized flight data
   const availableAirlines = useMemo(() => {
     if (!flights.length) return [];
-    const uniqueAirlines = [...new Set(flights.map(f => f.airline))].filter(Boolean);
+    const uniqueAirlines = [...new Set(flights.map(f => f.airlineName))].filter(Boolean);
     return uniqueAirlines.sort();
   }, [flights]);
 
-  // Get price range from actual flight data
+  // Get price range from normalized flight data
   const actualPriceRange = useMemo((): [number, number] => {
     if (!flights.length) return DEFAULT_PRICE_RANGE;
-    const prices = flights.map(f => f.price).filter(p => p > 0);
+    const prices = flights.map(f => f.price).filter(p => p > 0 && Number.isFinite(p));
     if (!prices.length) return DEFAULT_PRICE_RANGE;
     const min = Math.floor(Math.min(...prices) / 25) * 25;
     const max = Math.ceil(Math.max(...prices) / 25) * 25;
@@ -72,23 +76,37 @@ const FlightFilters = ({
     }
   }, [actualPriceRange, flights.length]);
 
-  const updateFilters = (newFilters: Partial<FilterState>) => {
-    const filters = {
-      stops: newFilters.stops ?? stops,
-      airlines: newFilters.airlines ?? airlines,
-      priceRange: newFilters.priceRange ?? priceRange,
-      departureTime: newFilters.departureTime ?? departureTime,
-      directOnly: newFilters.directOnly ?? directOnly,
-    };
-    onFiltersChange(filters);
-  };
+  // Emit filter change (immediate for checkboxes)
+  const emitFilters = useCallback((overrides: Partial<FilterState> = {}) => {
+    onFiltersChange({
+      stops: overrides.stops ?? stops,
+      airlines: overrides.airlines ?? airlines,
+      priceRange: overrides.priceRange ?? priceRange,
+      departureTime: overrides.departureTime ?? departureTime,
+      directOnly: overrides.directOnly ?? directOnly,
+    });
+  }, [stops, airlines, priceRange, departureTime, directOnly, onFiltersChange]);
+
+  // Debounced emit for slider
+  const emitFiltersDebounced = useCallback((newPriceRange: [number, number]) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      onFiltersChange({
+        stops,
+        airlines,
+        priceRange: newPriceRange,
+        departureTime,
+        directOnly,
+      });
+    }, DEBOUNCE_MS);
+  }, [stops, airlines, departureTime, directOnly, onFiltersChange]);
 
   const toggleStop = (value: string) => {
     const newStops = stops.includes(value)
       ? stops.filter((s) => s !== value)
       : [...stops, value];
     setStops(newStops);
-    updateFilters({ stops: newStops });
+    emitFilters({ stops: newStops });
   };
 
   const toggleAirline = (value: string) => {
@@ -96,7 +114,7 @@ const FlightFilters = ({
       ? airlines.filter((a) => a !== value)
       : [...airlines, value];
     setAirlines(newAirlines);
-    updateFilters({ airlines: newAirlines });
+    emitFilters({ airlines: newAirlines });
   };
 
   const toggleDepartureTime = (value: string) => {
@@ -104,13 +122,13 @@ const FlightFilters = ({
       ? departureTime.filter((t) => t !== value)
       : [...departureTime, value];
     setDepartureTime(newTimes);
-    updateFilters({ departureTime: newTimes });
+    emitFilters({ departureTime: newTimes });
   };
 
   const handlePriceChange = (value: number[]) => {
     const newRange: [number, number] = [value[0], value[1]];
     setPriceRange(newRange);
-    updateFilters({ priceRange: newRange });
+    emitFiltersDebounced(newRange);
   };
 
   const handleDirectOnlyChange = (checked: boolean) => {
@@ -118,7 +136,7 @@ const FlightFilters = ({
     if (onDirectOnlyChange) {
       onDirectOnlyChange(checked);
     }
-    updateFilters({ directOnly: checked });
+    emitFilters({ directOnly: checked });
   };
 
   const handleReset = () => {
@@ -143,7 +161,7 @@ const FlightFilters = ({
     priceRange[0] !== actualPriceRange[0] || priceRange[1] !== actualPriceRange[1] || directOnly;
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-6 space-y-6 h-fit max-h-[calc(100vh-8rem)] overflow-y-auto sticky top-24">
+    <div className="bg-card border border-border rounded-2xl p-5 space-y-5 h-fit max-h-[calc(100vh-8rem)] overflow-y-auto sticky top-24">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-foreground font-semibold">
           <Filter className="w-5 h-5" />
@@ -157,7 +175,7 @@ const FlightFilters = ({
             className="text-xs text-muted-foreground hover:text-foreground gap-1"
           >
             <RotateCcw className="w-3 h-3" />
-            Reset
+            Clear all
           </Button>
         )}
       </div>
@@ -189,12 +207,12 @@ const FlightFilters = ({
           {STOPS.map((stop) => (
             <div key={stop.value} className="flex items-center space-x-2">
               <Checkbox
-                id={stop.value}
+                id={`stop-${stop.value}`}
                 checked={stops.includes(stop.value)}
                 onCheckedChange={() => toggleStop(stop.value)}
               />
               <Label
-                htmlFor={stop.value}
+                htmlFor={`stop-${stop.value}`}
                 className="text-sm text-muted-foreground cursor-pointer truncate"
               >
                 {stop.label}
@@ -204,10 +222,10 @@ const FlightFilters = ({
         </div>
       </div>
 
-      {/* Price Range - Dual Handle */}
+      {/* Price Range - Dual Handle with Debounce */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-foreground">Price Range</h3>
-        <div className="pt-2">
+        <div className="pt-2 px-1">
           <Slider
             value={priceRange}
             onValueChange={handlePriceChange}
@@ -232,13 +250,13 @@ const FlightFilters = ({
             {availableAirlines.map((airline) => (
               <div key={airline} className="flex items-center space-x-2 min-w-0">
                 <Checkbox
-                  id={airline}
+                  id={`airline-${airline}`}
                   checked={airlines.includes(airline)}
                   onCheckedChange={() => toggleAirline(airline)}
                   className="shrink-0"
                 />
                 <Label
-                  htmlFor={airline}
+                  htmlFor={`airline-${airline}`}
                   className="text-sm text-muted-foreground cursor-pointer truncate min-w-0"
                   title={airline}
                 >
@@ -257,12 +275,12 @@ const FlightFilters = ({
           {DEPARTURE_TIMES.map((time) => (
             <div key={time.value} className="flex items-center space-x-2">
               <Checkbox
-                id={time.value}
+                id={`time-${time.value}`}
                 checked={departureTime.includes(time.value)}
                 onCheckedChange={() => toggleDepartureTime(time.value)}
               />
               <Label
-                htmlFor={time.value}
+                htmlFor={`time-${time.value}`}
                 className="text-sm text-muted-foreground cursor-pointer truncate"
               >
                 {time.label}
