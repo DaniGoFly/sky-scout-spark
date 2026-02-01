@@ -39,6 +39,7 @@ const LiveFlightResults = () => {
     airlines: [],
     priceRange: [0, 10000],
     departureTime: [],
+    directOnly: false,
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -133,8 +134,13 @@ const LiveFlightResults = () => {
   const filteredFlights = useMemo(() => {
     let result = [...normalizedFlights];
 
-    // Filter by stops
-    if (filters.stops.length > 0) {
+    // Apply direct-only filter if enabled
+    if (filters.directOnly) {
+      result = result.filter(f => f.stops === 0);
+    }
+
+    // Filter by stops (only if direct-only is not enabled)
+    if (filters.stops.length > 0 && !filters.directOnly) {
       result = result.filter((flight) => {
         return filters.stops.some((stop) => {
           if (stop === "direct") return flight.stops === 0;
@@ -297,8 +303,17 @@ const LiveFlightResults = () => {
     setVisibleCount(RESULTS_PER_PAGE);
   };
 
-  // Filters sidebar
-  const FiltersContent = () => <FlightFilters onFiltersChange={setFilters} />;
+  // Filters sidebar - pass normalized flights for dynamic airline list and price range
+  const FiltersContent = () => (
+    <FlightFilters 
+      onFiltersChange={setFilters} 
+      flights={normalizedFlights}
+      showDirectOnly={true}
+      onDirectOnlyChange={(checked) => {
+        setFilters(prev => ({ ...prev, directOnly: checked }));
+      }}
+    />
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -403,16 +418,16 @@ const LiveFlightResults = () => {
 
         {/* Results */}
         {(status === "complete" || (isSearching && rawFlights.length > 0)) && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Desktop Filters */}
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+            {/* Desktop Filters - Sticky with independent scroll */}
             <aside className="hidden lg:block">
-              <div className="sticky top-32 bg-card rounded-xl p-4 border border-border">
+              <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-hidden">
                 <FiltersContent />
               </div>
             </aside>
 
             {/* Flight list */}
-            <div className="lg:col-span-3 space-y-4">
+            <div className="space-y-4 min-w-0">
               {/* Sample prices banner */}
               {isDemo && (
                 <Alert className="border-primary/30 bg-primary/5">
