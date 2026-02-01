@@ -4,7 +4,6 @@ import {
   pollResults,
   clickBooking,
   clearPersistedSearchContext,
-  formatTime,
 } from "@/lib/flightSearchApi";
 import {
   NormalizedFlight,
@@ -12,6 +11,12 @@ import {
   normalizeFlights,
   FlightInfoMap,
 } from "@/lib/flightNormalizer";
+import {
+  applyAirlineMetaToFlights,
+  buildAirlineMetaByCodeFromAffiliate,
+  buildFlightInfoMapFromAffiliate,
+  hasResolvableTicketData,
+} from "@/lib/travelpayoutsAffiliateResolver";
 
 export type SearchStatus = "idle" | "searching" | "polling" | "complete" | "error" | "no_results";
 
@@ -45,14 +50,8 @@ const MAX_POLL_ATTEMPTS = 25; // max polls before giving up
 const POLL_TIMEOUT = 25000; // 25s total timeout for pending state
 const DEV_MODE = import.meta.env.DEV;
 
-/**
- * Check if tickets have valid segment data
- */
-function hasValidTicketData(tickets: any[]): boolean {
-  if (!Array.isArray(tickets) || tickets.length === 0) return false;
-  // At least one ticket must have segments
-  return tickets.some(t => t?.segments && Array.isArray(t.segments) && t.segments.length > 0);
-}
+// NOTE: ticket readiness is stricter for affiliate responses (must include segment flight refs)
+// so we don't normalize/render cards without resolvable legs.
 
 /**
  * Hook for live flight search with polling
@@ -67,6 +66,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
   const cancelRef = useRef(false);
   const pollCountRef = useRef(0);
+  const devSampleLoggedRef = useRef(false);
 
   const cancelSearch = useCallback(() => {
     cancelRef.current = true;
@@ -142,6 +142,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       
       // Build flight info map from API responses - accumulates across polls
       let flightInfoMap: FlightInfoMap = {};
+      let airlineMetaByCode: Record<string, { name?: string; logoUrl?: string }> = {};
       let pendingAttempts = 0;
 
       while (!cancelRef.current && pollCountRef.current < MAX_POLL_ATTEMPTS) {
@@ -204,8 +205,13 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           lastUpdateTimestamp = pollData.last_update_timestamp;
         }
 
-        // Build/update flight info map from API response
-        if (pollData.flight_info) {
+        // Build/update lookup-derived flight info map (affiliate response)
+        // Prefer affiliate lookups when present; fallback to legacy flight_info.
+        const affiliateFlightInfoMap = buildFlightInfoMapFromAffiliate(pollData);
+        if (affiliateFlightInfoMap) {
+          flightInfoMap = { ...flightInfoMap, ...affiliateFlightInfoMap };
+          airlineMetaByCode = { ...airlineMetaByCode, ...buildAirlineMetaByCodeFromAffiliate(pollData) };
+        } else if (pollData.flight_info) {
           const newFlightInfo = buildFlightInfoMap(pollData.flight_info);
           // Merge with existing - newer data overwrites
           flightInfoMap = { ...flightInfoMap, ...newFlightInfo };
@@ -213,12 +219,12 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
         // Case A: Check if we have valid ticket data with segments
         const tickets = pollData.tickets;
-        if (tickets && hasValidTicketData(tickets)) {
+        if (tickets && hasResolvableTicketData(tickets)) {
           if (DEV_MODE && pendingAttempts > 0) {
             console.log(`[LiveSearch] Results ready after ${pendingAttempts} pending attempts, ${tickets.length} tickets`);
           }
 
-          const newFlights = normalizeFlights(
+          const normalized = normalizeFlights(
             tickets,
             flightInfoMap,
             search_id,
@@ -227,22 +233,12 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
             params.destination
           );
 
-          // Log sample data on first batch (dev only)
-          if (pollCountRef.current === 1 && newFlights.length > 0 && DEV_MODE) {
-            const sample = newFlights[0];
-            console.log("[LiveSearch] Sample normalized flight:", {
-              id: sample.id,
-              departureTime: sample.departureTime,
-              arrivalTime: sample.arrivalTime,
-              duration: sample.duration,
-              stops: sample.stops,
-              stopAirports: sample.stopAirports,
-              returnLeg: sample.returnLeg ? {
-                departureTime: sample.returnLeg.departureTime,
-                arrivalTime: sample.returnLeg.arrivalTime,
-                stops: sample.returnLeg.stops,
-              } : null,
-            });
+          const newFlights = applyAirlineMetaToFlights(normalized, airlineMetaByCode);
+
+          // Dev-only: log exactly one full normalized object to verify times + airport codes
+          if (DEV_MODE && !devSampleLoggedRef.current && newFlights.length > 0) {
+            devSampleLoggedRef.current = true;
+            console.log("[LiveSearch] Normalized flight example:", newFlights[0]);
           }
 
           for (const flight of newFlights) {
