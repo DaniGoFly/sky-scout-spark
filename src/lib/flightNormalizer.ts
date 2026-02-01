@@ -233,20 +233,41 @@ interface ResolvedLeg {
 
 /**
  * Extract flight_info map from ANY response shape
- * The API may return flight_info at different levels
+ * The API may return flight_info at different levels:
+ * - response.flight_info
+ * - response.flightInfo
+ * - response.flights
+ * - response.data.flight_info
+ * - response.data.flights
  */
 export function getFlightInfoMap(raw: unknown): Record<string, RawFlightInfo> {
   if (!raw || typeof raw !== 'object') return {};
   
   const r = raw as Record<string, unknown>;
+  const data = r.data as Record<string, unknown> | undefined;
   
-  // Try all possible locations
-  const flightInfo = 
+  // Try all possible locations in order of preference
+  let flightInfo: unknown = 
     r.flight_info ||
     r.flightInfo ||
-    (r.data as Record<string, unknown>)?.flight_info ||
-    (r.data as Record<string, unknown>)?.flightInfo ||
-    {};
+    r.flights ||
+    data?.flight_info ||
+    data?.flightInfo ||
+    data?.flights ||
+    null;
+  
+  // If flights is an array, convert to object keyed by index
+  if (Array.isArray(flightInfo)) {
+    const map: Record<string, RawFlightInfo> = {};
+    flightInfo.forEach((f, idx) => {
+      if (f && typeof f === 'object') {
+        // Use flight's id if available, otherwise use index
+        const key = f.id !== undefined ? String(f.id) : String(idx);
+        map[key] = f as RawFlightInfo;
+      }
+    });
+    return map;
+  }
   
   if (typeof flightInfo !== 'object' || flightInfo === null) return {};
   
