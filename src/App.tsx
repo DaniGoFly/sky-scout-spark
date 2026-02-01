@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Results from "./pages/Results";
 import Flights from "./pages/Flights";
 import LiveFlightsResults from "./pages/LiveFlightsResults";
+import MultiCityResults from "./pages/MultiCityResults";
 import Hotels from "./pages/Hotels";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
@@ -16,12 +17,26 @@ import AffiliateDisclosure from "./pages/AffiliateDisclosure";
 import Contact from "./pages/Contact";
 import PriceDisclaimer from "./pages/PriceDisclaimer";
 import Out from "./pages/Out";
+import FlightErrorBoundary from "./components/FlightErrorBoundary";
 
 const queryClient = new QueryClient();
 
 // Feature coming soon wrapper
 const FeatureComingSoon = () => <ComingSoon type="feature" />;
 const AuthComingSoon = () => <ComingSoon type="auth" />;
+
+// Wrap flight pages with error boundary
+const FlightsWithBoundary = () => (
+  <FlightErrorBoundary>
+    <Flights />
+  </FlightErrorBoundary>
+);
+
+const FlightResultsWithBoundary = () => (
+  <FlightErrorBoundary>
+    <LiveFlightsResults />
+  </FlightErrorBoundary>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -32,9 +47,10 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/results" element={<Results />} />
-          <Route path="/search" element={<LiveFlightsResults />} />
-          <Route path="/flights" element={<Flights />} />
-          <Route path="/flights/results" element={<LiveFlightsResults />} />
+          <Route path="/search" element={<FlightResultsWithBoundary />} />
+          <Route path="/flights" element={<FlightsWithBoundary />} />
+          <Route path="/flights/results" element={<FlightResultsWithBoundary />} />
+          <Route path="/flights/multicity" element={<MultiCityResults />} />
           <Route path="/out" element={<Out />} />
           <Route path="/hotels" element={<Hotels />} />
           
