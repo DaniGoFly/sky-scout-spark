@@ -1,12 +1,12 @@
 /**
  * Flight Search API Helper
- * Centralized API layer for calling the external Supabase Edge Function
+ * Centralized API layer for calling the Supabase Edge Function
  */
 
-// External Supabase project configuration
-const EXTERNAL_SUPABASE_URL = "https://ycpqgsjhxzhkljlszbwc.supabase.co";
-const EXTERNAL_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcHFnc2poeHpoa2xqbHN6YndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzNDI2NzAsImV4cCI6MjA4MzkxODY3MH0.Nbm12ODC2-IWgQMR2o6ekcgy3tFL5c3AGJqvdjTO4IU";
-const FLIGHT_SEARCH_ENDPOINT = `${EXTERNAL_SUPABASE_URL}/functions/v1/flight-search`;
+// Use this project's flights-search edge function
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://kvhykvuvsbmcselojbcn.supabase.co";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2aHlrdnV2c2JtY3NlbG9qYmNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzEzODAsImV4cCI6MjA4MzA0NzM4MH0.ChYyprBwbeebvr9nr1xGuexrmciMqIsA2irToTCEQUc";
+const FLIGHT_SEARCH_ENDPOINT = `${SUPABASE_URL}/functions/v1/flights-search`;
 
 // Default user IP (required by Travelpayouts)
 const DEFAULT_USER_IP = "1.1.1.1";
@@ -41,13 +41,18 @@ export interface StartSearchResponse {
 
 /**
  * Results poll response from the edge function
+ * Note: live-flight-search returns pre-normalized 'results' instead of raw 'tickets'
  */
 export interface ResultsResponse {
   ok: boolean;
-  step: "results";
-  status?: "pending"; // Case B: pending state - no tickets yet
+  step?: "results";
+  status?: "pending"; // Case B: pending state - no results yet
   is_over?: boolean;
   last_update_timestamp?: number;
+  // Pre-normalized results from live-flight-search
+  results?: LiveSearchResult[];
+  results_count?: number;
+  // Legacy: raw tickets format (kept for compatibility)
   tickets?: Ticket[];
   flight_info?: Record<string, FlightInfo>;
   // Travelpayouts affiliate lookup collections (may be present instead of flight_info)
@@ -57,6 +62,28 @@ export interface ResultsResponse {
   segments?: unknown;
   error?: string;
   liveUnavailable?: boolean;
+}
+
+/**
+ * Pre-normalized result from live-flight-search edge function
+ */
+export interface LiveSearchResult {
+  id: string;
+  airline: string;
+  airlineLogo: string;
+  flightNumber: string;
+  departureTime: string;
+  arrivalTime: string;
+  departureCode: string;
+  arrivalCode: string;
+  duration: string;
+  durationMinutes: number;
+  stops: number;
+  price: number;
+  currency: string;
+  proposalId: string | null;
+  signature: string | null;
+  segments?: unknown[];
 }
 
 /**
@@ -152,8 +179,8 @@ export async function callEdgeFunction<T = unknown>(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "apikey": EXTERNAL_SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${EXTERNAL_SUPABASE_ANON_KEY}`,
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify(payload),
     });
