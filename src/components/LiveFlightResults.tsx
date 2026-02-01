@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal, Info, Loader2 } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal, Info, Loader2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import FlightFilters, { FilterState } from "./FlightFilters";
@@ -14,8 +14,9 @@ import { NormalizedFlight, sortFlights } from "@/lib/flightNormalizer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 
-// Maximum flights to display (Skyscanner-style limit)
-const MAX_DISPLAY_FLIGHTS = 25;
+// Pagination configuration (Skyscanner-style)
+const RESULTS_PER_PAGE = 25;
+const MAX_VISIBLE_RESULTS = 100; // Hard cap - never show more than this
 
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
@@ -41,6 +42,8 @@ const LiveFlightResults = () => {
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(RESULTS_PER_PAGE);
+  const fetchedAtRef = useRef<number>(Date.now());
   const [loadingFlightId, setLoadingFlightId] = useState<string | null>(null);
 
   // Extract search params
@@ -172,11 +175,37 @@ const LiveFlightResults = () => {
     return result;
   }, [normalizedFlights, filters]);
 
-  // Sort and limit flights
-  const displayFlights = useMemo(() => {
-    const sorted = sortFlights(filteredFlights, sortBy);
-    return sorted.slice(0, MAX_DISPLAY_FLIGHTS);
+  // Update fetchedAt when raw flights change
+  useEffect(() => {
+    if (rawFlights.length > 0) {
+      fetchedAtRef.current = Date.now();
+    }
+  }, [rawFlights]);
+
+  // Reset visible count when sort or filters change
+  useEffect(() => {
+    setVisibleCount(RESULTS_PER_PAGE);
+  }, [sortBy, filters]);
+
+  // Sort all filtered flights (sorting happens BEFORE limiting)
+  const sortedFlights = useMemo(() => {
+    return sortFlights(filteredFlights, sortBy, fetchedAtRef.current);
   }, [filteredFlights, sortBy]);
+
+  // Slice to visible count (capped at MAX_VISIBLE_RESULTS)
+  const displayFlights = useMemo(() => {
+    const cappedVisible = Math.min(visibleCount, MAX_VISIBLE_RESULTS);
+    return sortedFlights.slice(0, cappedVisible);
+  }, [sortedFlights, visibleCount]);
+
+  // Pagination helpers
+  const totalResults = filteredFlights.length;
+  const canShowMore = visibleCount < Math.min(totalResults, MAX_VISIBLE_RESULTS);
+  const remainingToShow = Math.min(RESULTS_PER_PAGE, Math.min(totalResults, MAX_VISIBLE_RESULTS) - visibleCount);
+
+  const handleShowMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + RESULTS_PER_PAGE, MAX_VISIBLE_RESULTS));
+  }, []);
 
   // Format date
   const formatDate = (dateStr: string) => {
@@ -265,6 +294,7 @@ const LiveFlightResults = () => {
   const handleRetry = () => {
     setHasSearched(false);
     setLoadingFlightId(null);
+    setVisibleCount(RESULTS_PER_PAGE);
   };
 
   // Filters sidebar
@@ -395,13 +425,15 @@ const LiveFlightResults = () => {
               )}
 
               {/* Sort tabs */}
-              <FlightSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={setSortBy} />
+              <FlightSortTabs flights={sortedFlights} sortBy={sortBy} onSortChange={setSortBy} />
 
-              {/* Results count */}
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              {/* Results count - Skyscanner style */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground bg-card p-3 rounded-xl border border-border">
                 <span>
-                  {filteredFlights.length.toLocaleString()} offers found · Showing{" "}
-                  {displayFlights.length.toLocaleString()} of {filteredFlights.length.toLocaleString()}
+                  <span className="font-semibold text-foreground">{totalResults.toLocaleString()}</span> results found
+                  {displayFlights.length < totalResults && (
+                    <span> · Showing top {displayFlights.length}</span>
+                  )}
                 </span>
                 {isSearching && (
                   <span className="text-primary flex items-center gap-2">
@@ -427,17 +459,38 @@ const LiveFlightResults = () => {
                         isBestValue={index === 0 && sortBy === "best"}
                         isLoading={loadingFlightId === flight.id}
                         onViewDeal={() => handleViewDeal(flight)}
+                        fetchedAt={fetchedAtRef.current}
                       />
                     ))
                   )}
                 </div>
               </FlightResultsErrorBoundary>
 
-              {/* Show limited message */}
-              {filteredFlights.length > MAX_DISPLAY_FLIGHTS && (
-                <div className="text-center pt-4 text-sm text-muted-foreground">
+              {/* Show More Button - Progressive Loading */}
+              {canShowMore && (
+                <div className="text-center pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleShowMore}
+                    className="gap-2"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                    Show {remainingToShow} more
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Showing {displayFlights.length} of {Math.min(totalResults, MAX_VISIBLE_RESULTS).toLocaleString()} results
+                    {totalResults > MAX_VISIBLE_RESULTS && (
+                      <span className="text-muted-foreground/70"> (capped at {MAX_VISIBLE_RESULTS})</span>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {/* Max results reached message */}
+              {visibleCount >= MAX_VISIBLE_RESULTS && totalResults > MAX_VISIBLE_RESULTS && (
+                <div className="text-center pt-4 text-sm text-muted-foreground border-t border-border">
                   <p>
-                    Showing top {MAX_DISPLAY_FLIGHTS} results. Adjust filters to see different options.
+                    Showing top {MAX_VISIBLE_RESULTS} results. Use filters to narrow your search.
                   </p>
                 </div>
               )}
