@@ -12,7 +12,7 @@ import FlightSortTabs from "./FlightSortTabs";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import SkyscannerFlightCard from "./SkyscannerFlightCard";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
-import { NormalizedFlight, normalizeFlights, buildFlightInfoMap, sortFlights } from "@/lib/flightNormalizer";
+import { NormalizedFlight, normalizeFlights, buildFlightInfoMap, sortFlights, isEligibleForBestValue } from "@/lib/flightNormalizer";
 import { format, addDays } from "date-fns";
 import { getDefaultDates, parseDateSafe } from "@/lib/dateUtils";
 
@@ -68,28 +68,34 @@ const FlightResults = () => {
     if (!flights.length) return [];
     
     // Since we're using LiveFlight from the hook, convert to NormalizedFlight format
-    return flights.map((f): NormalizedFlight => ({
-      id: f.id,
-      airlineCode: f.airline?.substring(0, 2).toUpperCase() || "XX",
-      airlineName: f.airline || "Unknown Airline",
-      airlineLogo: f.airlineLogo || "",
-      flightNumber: f.flightNumber || "",
-      originIata: f.departureCode || from.split(",")[0],
-      destinationIata: f.arrivalCode || to.split(",")[0],
-      departureTime: f.departureTime || "",
-      arrivalTime: f.arrivalTime || "",
-      duration: f.duration || "",
-      durationMinutes: f.durationMinutes || 0,
-      stops: f.stops || 0,
-      stopAirports: [], // Not available in LiveFlight
-      price: Math.round(f.price),
-      currency: "USD",
-      searchId: "",
-      resultsUrl: "",
-      proposalId: f.id,
-      signature: f.id,
-      hasValidBookingUrl: !!f.deepLink,
-    }));
+    return flights.map((f): NormalizedFlight => {
+      const priceValue = Math.round(f.price);
+      const isPriceValid = typeof f.price === 'number' && Number.isFinite(f.price) && f.price > 0;
+      
+      return {
+        id: f.id,
+        airlineCode: f.airline?.substring(0, 2).toUpperCase() || "XX",
+        airlineName: f.airline || "Unknown Airline",
+        airlineLogo: f.airlineLogo || "",
+        flightNumber: f.flightNumber || "",
+        originIata: f.departureCode || from.split(",")[0],
+        destinationIata: f.arrivalCode || to.split(",")[0],
+        departureTime: f.departureTime || "",
+        arrivalTime: f.arrivalTime || "",
+        duration: f.duration || "",
+        durationMinutes: f.durationMinutes || 0,
+        stops: f.stops || 0,
+        stopAirports: [], // Not available in LiveFlight
+        price: priceValue,
+        currency: "USD",
+        isPriceValid,
+        searchId: "",
+        resultsUrl: "",
+        proposalId: f.id,
+        signature: f.id,
+        hasValidBookingUrl: !!f.deepLink && f.deepLink.startsWith('http'),
+      };
+    });
   }, [flights, from, to]);
 
   // Update fetchedAt when flights change
@@ -192,8 +198,8 @@ const FlightResults = () => {
       });
     }
 
-    // Sort using the normalizer's sort function
-    return sortFlights(result, sortBy);
+    // Sort using the normalizer's sort function with fetchedAt for price confidence
+    return sortFlights(result, sortBy, fetchedAtRef.current);
   }, [normalizedFlights, filters, sortBy, directOnly]);
 
   const displayedFlights = processedFlights.slice(0, visibleCount);
@@ -489,16 +495,21 @@ const FlightResults = () => {
               </div>
 
               {/* Flight Cards */}
-              {displayedFlights.map((flight, index) => (
-                <SkyscannerFlightCard
-                  key={flight.id}
-                  flight={flight}
-                  isBestValue={index === 0 && sortBy === "best"}
-                  isLoading={loadingFlightId === flight.id}
-                  onViewDeal={() => handleViewDeal(flight)}
-                  fetchedAt={fetchedAtRef.current}
-                />
-              ))}
+              {displayedFlights.map((flight, index) => {
+                // Only show Best Value for first flight if it's eligible
+                const showBestValue = index === 0 && sortBy === "best" && isEligibleForBestValue(flight, fetchedAtRef.current);
+                
+                return (
+                  <SkyscannerFlightCard
+                    key={flight.id}
+                    flight={flight}
+                    isBestValue={showBestValue}
+                    isLoading={loadingFlightId === flight.id}
+                    onViewDeal={() => handleViewDeal(flight)}
+                    fetchedAt={fetchedAtRef.current}
+                  />
+                );
+              })}
 
               {/* Show More Button */}
               {hasMore && (

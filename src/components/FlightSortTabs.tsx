@@ -12,10 +12,11 @@ interface FlightSortTabsProps {
   flights: NormalizedFlight[];
   sortBy: "best" | "cheapest" | "fastest";
   onSortChange: (sort: "best" | "cheapest" | "fastest") => void;
+  fetchedAt?: number;
 }
 
-const FlightSortTabs = ({ flights, sortBy, onSortChange }: FlightSortTabsProps) => {
-  const stats = getFlightStats(flights);
+const FlightSortTabs = ({ flights, sortBy, onSortChange, fetchedAt }: FlightSortTabsProps) => {
+  const stats = getFlightStats(flights, fetchedAt);
 
   if (!stats) return null;
 

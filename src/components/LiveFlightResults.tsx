@@ -91,28 +91,34 @@ const LiveFlightResults = () => {
         if (!f.departureCode || !f.arrivalCode) return false;
         return true;
       })
-      .map((f) => ({
-        id: f.id || `${f.proposalId}-${f.signature}`,
-        airlineCode: f.airlineCode || f.airline || "XX",
-        airlineName: f.airline || f.airlineCode || "Unknown",
-        airlineLogo: f.airlineLogo || "",
-        flightNumber: f.flightNumber || "",
-        originIata: (f.departureCode || from).toUpperCase(),
-        destinationIata: (f.arrivalCode || to).toUpperCase(),
-        departureTime: f.departureTime || "",
-        arrivalTime: f.arrivalTime || "",
-        duration: f.duration || "",
-        durationMinutes: f.durationMinutes || 0,
-        stops: f.stops ?? 0,
-        stopAirports: [], // Could be populated from segments if available
-        price: f.price,
-        currency: f.currency || "EUR",
-        searchId: f.searchId,
-        resultsUrl: f.resultsUrl,
-        proposalId: f.proposalId,
-        signature: f.signature,
-        hasValidBookingUrl: !!(f.searchId && f.resultsUrl && f.proposalId && f.signature),
-      }));
+      .map((f) => {
+        const priceValue = f.price;
+        const isPriceValid = typeof priceValue === 'number' && Number.isFinite(priceValue) && priceValue > 0;
+        
+        return {
+          id: f.id || `${f.proposalId}-${f.signature}`,
+          airlineCode: f.airlineCode || f.airline || "XX",
+          airlineName: f.airline || f.airlineCode || "Unknown",
+          airlineLogo: f.airlineLogo || "",
+          flightNumber: f.flightNumber || "",
+          originIata: (f.departureCode || from).toUpperCase(),
+          destinationIata: (f.arrivalCode || to).toUpperCase(),
+          departureTime: f.departureTime || "",
+          arrivalTime: f.arrivalTime || "",
+          duration: f.duration || "",
+          durationMinutes: f.durationMinutes || 0,
+          stops: f.stops ?? 0,
+          stopAirports: [], // Could be populated from segments if available
+          price: priceValue,
+          currency: f.currency || "EUR",
+          isPriceValid,
+          searchId: f.searchId,
+          resultsUrl: f.resultsUrl,
+          proposalId: f.proposalId,
+          signature: f.signature,
+          hasValidBookingUrl: !!(f.searchId && f.resultsUrl && f.proposalId && f.signature),
+        };
+      });
   }, [rawFlights, from, to]);
 
   // Get available airlines for filter
