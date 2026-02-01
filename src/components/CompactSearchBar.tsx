@@ -24,9 +24,9 @@ const CompactSearchBar = () => {
     (searchParams.get("trip") as "roundtrip" | "oneway") || "roundtrip"
   );
   
-  // Initialize from URL params
-  const fromCode = searchParams.get("from") || "";
-  const toCode = searchParams.get("to") || "";
+  // Initialize from URL params - handle comma-separated nearby airports
+  const fromCode = searchParams.get("from")?.split(",")[0] || "";
+  const toCode = searchParams.get("to")?.split(",")[0] || "";
   
   const [from, setFrom] = useState<AirportSelection | null>(
     fromCode ? { code: fromCode, display: fromCode } : null
@@ -77,13 +77,13 @@ const CompactSearchBar = () => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl shadow-card p-4">
+    <div className="bg-card border border-border rounded-2xl shadow-card p-4 overflow-hidden">
       <div className="flex flex-wrap items-center gap-3">
         {/* Trip Type */}
-        <div className="flex gap-1">
+        <div className="flex gap-1 shrink-0">
           <button
             onClick={() => setTripType("roundtrip")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
               tripType === "roundtrip"
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -93,7 +93,7 @@ const CompactSearchBar = () => {
           </button>
           <button
             onClick={() => setTripType("oneway")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
               tripType === "oneway"
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -104,7 +104,7 @@ const CompactSearchBar = () => {
         </div>
 
         {/* From */}
-        <div className="flex-1 min-w-[140px]">
+        <div className="flex-1 min-w-[120px] max-w-[200px]">
           <AirportAutocomplete
             value={from}
             onChange={setFrom}
@@ -119,13 +119,13 @@ const CompactSearchBar = () => {
           variant="ghost"
           size="icon"
           onClick={swapLocations}
-          className="h-10 w-10 rounded-full hover:bg-secondary"
+          className="h-10 w-10 rounded-full hover:bg-secondary shrink-0"
         >
           <ArrowRightLeft className="w-4 h-4" />
         </Button>
 
         {/* To */}
-        <div className="flex-1 min-w-[140px]">
+        <div className="flex-1 min-w-[120px] max-w-[200px]">
           <AirportAutocomplete
             value={to}
             onChange={setTo}
@@ -140,10 +140,11 @@ const CompactSearchBar = () => {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm min-w-[130px]"
+              className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm shrink-0"
+              style={{ minWidth: '100px' }}
             >
-              <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-              {format(departDate, "MMM d")}
+              <Calendar className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="truncate">{format(departDate, "MMM d")}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0 bg-card" align="start">
@@ -164,10 +165,11 @@ const CompactSearchBar = () => {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm min-w-[130px]"
+                className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm shrink-0"
+                style={{ minWidth: '100px' }}
               >
-                <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                {format(returnDate, "MMM d")}
+                <Calendar className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="truncate">{format(returnDate, "MMM d")}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 bg-card" align="start">
@@ -188,10 +190,10 @@ const CompactSearchBar = () => {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm"
+              className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm shrink-0"
             >
-              <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-              {passengers}
+              <Users className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{passengers}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-48 bg-card" align="start">
@@ -221,9 +223,9 @@ const CompactSearchBar = () => {
         </Popover>
 
         {/* Search */}
-        <Button onClick={handleSearch} disabled={!isValid} className="h-10 gap-2">
+        <Button onClick={handleSearch} disabled={!isValid} className="h-10 gap-2 shrink-0">
           <Search className="w-4 h-4" />
-          Search
+          <span className="hidden sm:inline">Search</span>
         </Button>
       </div>
     </div>

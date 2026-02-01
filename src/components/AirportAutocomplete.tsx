@@ -121,10 +121,10 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
   };
 
   return (
-    <div ref={wrapperRef} className="relative">
-      <div className="relative group">
+    <div ref={wrapperRef} className="relative min-w-0">
+      <div className="relative group min-w-0">
         <Plane 
-          className={`absolute top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors ${
+          className={`absolute top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors shrink-0 ${
             icon === "to" ? "rotate-90" : ""
           } ${compact ? "left-3 w-4 h-4" : "left-4 w-5 h-5"}`} 
         />
@@ -135,8 +135,8 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
           onFocus={() => query.length >= 2 && setIsOpen(true)}
           onKeyDown={handleKeyDown}
           className={compact 
-            ? `pl-9 h-10 bg-secondary/50 border-transparent rounded-lg text-sm ${hasError ? "border border-destructive/50" : ""}`
-            : `pl-12 h-14 bg-secondary/50 border-2 rounded-xl focus:bg-card focus:ring-0 text-base font-medium transition-all ${
+            ? `pl-9 h-10 bg-secondary/50 border-transparent rounded-lg text-sm truncate ${hasError ? "border border-destructive/50" : ""}`
+            : `pl-12 h-14 bg-secondary/50 border-2 rounded-xl focus:bg-card focus:ring-0 text-base font-medium transition-all truncate ${
                 hasError ? "border-destructive/50 focus:border-destructive" : "border-transparent focus:border-primary"
               }`
           }
@@ -144,12 +144,12 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
           autoComplete="off"
         />
         {isLoading && (
-          <Loader2 className={`absolute top-1/2 -translate-y-1/2 animate-spin text-muted-foreground ${compact ? "right-3 w-3 h-3" : "right-4 w-4 h-4"}`} />
+          <Loader2 className={`absolute top-1/2 -translate-y-1/2 animate-spin text-muted-foreground shrink-0 ${compact ? "right-3 w-3 h-3" : "right-4 w-4 h-4"}`} />
         )}
       </div>
 
       {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
+        <div className="absolute z-50 w-full mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden max-h-80 overflow-y-auto">
           {suggestions.map((place, index) => (
             <button
               key={`${place.code}-${index}`}
@@ -173,7 +173,7 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
                     <span className="text-muted-foreground"> – {place.main_airport_name}</span>
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground truncate">
                   {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Users, ChevronDown, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -57,29 +57,26 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
     const min = field === "adults" ? 1 : 0;
     if (value[field] <= min) return;
     
+    // Auto-reduce infants if adults go down
+    if (field === "adults" && value[field] === totalInfants) {
+      // Need to reduce infants first
+      if (value.infantsLap > 0) {
+        updateValue({ [field]: value[field] - 1, infantsLap: value.infantsLap - 1 });
+        return;
+      } else if (value.infantsSeat > 0) {
+        updateValue({ [field]: value[field] - 1, infantsSeat: value.infantsSeat - 1 });
+        return;
+      }
+    }
+    
     updateValue({ [field]: value[field] - 1 });
   };
 
-  // Adjust infants if adults decrease
-  useEffect(() => {
-    if (totalInfants > value.adults) {
-      const excess = totalInfants - value.adults;
-      const newInfantsLap = Math.max(0, value.infantsLap - excess);
-      const remainingExcess = excess - (value.infantsLap - newInfantsLap);
-      const newInfantsSeat = Math.max(0, value.infantsSeat - remainingExcess);
-      updateValue({ infantsLap: newInfantsLap, infantsSeat: newInfantsSeat });
-    }
-  }, [value.adults, totalInfants, value.infantsLap, value.infantsSeat, updateValue]);
-
   const getDisplayText = () => {
-    const parts = [];
     const passengerCount = value.adults + value.children + value.infantsSeat;
-    parts.push(`${passengerCount} traveler${passengerCount !== 1 ? "s" : ""}`);
-    
+    const travelerText = `${passengerCount} traveler${passengerCount !== 1 ? "s" : ""}`;
     const classLabel = CABIN_CLASSES.find(c => c.value === value.cabinClass)?.label || "Economy";
-    parts.push(classLabel);
-    
-    return parts.join(", ");
+    return `${travelerText}, ${classLabel}`;
   };
 
   const helperText = totalTravelers >= MAX_TRAVELERS 
@@ -95,12 +92,12 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
         <h4 className="font-semibold text-sm text-foreground">Passengers</h4>
         
         {/* Adults */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-medium text-foreground">Adults</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-medium text-foreground truncate">Adults</p>
             <p className="text-xs text-muted-foreground">12+ years</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Button
               variant="outline"
               size="icon"
@@ -124,12 +121,12 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
         </div>
 
         {/* Children */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-medium text-foreground">Children</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-medium text-foreground truncate">Children</p>
             <p className="text-xs text-muted-foreground">2–11 years</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Button
               variant="outline"
               size="icon"
@@ -153,12 +150,12 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
         </div>
 
         {/* Infants in Seat */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-medium text-foreground">Infants</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-medium text-foreground truncate">Infants</p>
             <p className="text-xs text-muted-foreground">In seat, under 2</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Button
               variant="outline"
               size="icon"
@@ -182,12 +179,12 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
         </div>
 
         {/* Infants on Lap */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-medium text-foreground">Infants</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-medium text-foreground truncate">Infants</p>
             <p className="text-xs text-muted-foreground">On lap, under 2</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Button
               variant="outline"
               size="icon"
@@ -226,7 +223,7 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
               key={cabin.value}
               onClick={() => updateValue({ cabinClass: cabin.value })}
               className={cn(
-                "px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                "px-3 py-2.5 rounded-lg text-sm font-medium transition-all truncate",
                 value.cabinClass === cabin.value
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
@@ -249,7 +246,7 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
 
   if (isMobile) {
     return (
-      <div>
+      <div className="min-w-0">
         <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
           Travelers
         </label>
@@ -257,13 +254,13 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
           <SheetTrigger asChild>
             <Button
               variant="outline"
-              className="w-full h-14 justify-between text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all"
+              className="w-full h-14 justify-between text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all min-w-0"
             >
-              <div className="flex items-center">
-                <Users className="mr-3 h-5 w-5 text-muted-foreground" />
+              <div className="flex items-center min-w-0 flex-1">
+                <Users className="mr-3 h-5 w-5 text-muted-foreground shrink-0" />
                 <span className="truncate">{getDisplayText()}</span>
               </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
             </Button>
           </SheetTrigger>
           <SheetContent side="bottom" className="h-auto max-h-[85vh] rounded-t-2xl">
@@ -278,7 +275,7 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
         Travelers
       </label>
@@ -286,13 +283,13 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="w-full h-14 justify-between text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all"
+            className="w-full h-14 justify-between text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all min-w-0"
           >
-            <div className="flex items-center">
-              <Users className="mr-3 h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center min-w-0 flex-1">
+              <Users className="mr-3 h-5 w-5 text-muted-foreground shrink-0" />
               <span className="truncate">{getDisplayText()}</span>
             </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-4" align="start">
