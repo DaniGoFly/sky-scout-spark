@@ -17,8 +17,9 @@ import { NormalizedFlight, normalizeFlights, buildFlightInfoMap, sortFlights, is
 import { format, addDays } from "date-fns";
 import { getDefaultDates, parseDateSafe } from "@/lib/dateUtils";
 
-// Results configuration
+// Pagination configuration (Skyscanner-style)
 const RESULTS_PER_PAGE = 25;
+const MAX_VISIBLE_RESULTS = 100; // Hard cap - never render more than this
 
 const FlightResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -124,6 +125,11 @@ const FlightResults = () => {
     }
   }, [flights]);
 
+  // Reset visible count when sort or filters change
+  useEffect(() => {
+    setVisibleCount(RESULTS_PER_PAGE);
+  }, [sortBy, filters]);
+
   // Fetch flights when params change
   useEffect(() => {
     if (from && to && depart) {
@@ -221,12 +227,18 @@ const FlightResults = () => {
     return sortFlights(result, sortBy, fetchedAtRef.current);
   }, [normalizedFlights, filters, sortBy, directOnly]);
 
-  const displayedFlights = processedFlights.slice(0, visibleCount);
+  // Slice to visible count (capped at MAX_VISIBLE_RESULTS)
+  const displayedFlights = useMemo(() => {
+    const cappedVisible = Math.min(visibleCount, MAX_VISIBLE_RESULTS);
+    return processedFlights.slice(0, cappedVisible);
+  }, [processedFlights, visibleCount]);
+
   const totalFiltered = processedFlights.length;
-  const hasMore = visibleCount < totalFiltered;
+  const canShowMore = visibleCount < Math.min(totalFiltered, MAX_VISIBLE_RESULTS);
+  const remainingToShow = Math.min(RESULTS_PER_PAGE, Math.min(totalFiltered, MAX_VISIBLE_RESULTS) - visibleCount);
 
   const handleShowMore = () => {
-    setVisibleCount(prev => prev + RESULTS_PER_PAGE);
+    setVisibleCount(prev => Math.min(prev + RESULTS_PER_PAGE, MAX_VISIBLE_RESULTS));
   };
 
   const handleViewDeal = async (flight: NormalizedFlight) => {
@@ -503,14 +515,14 @@ const FlightResults = () => {
                 />
               </div>
 
-              {/* Desktop Results Count */}
+              {/* Desktop Results Count - Skyscanner style */}
               <div className="hidden lg:flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
                 <p className="text-sm text-muted-foreground truncate">
-                  <span className="font-semibold text-foreground">{totalFiltered}</span> flights found
+                  <span className="font-semibold text-foreground">{totalFiltered.toLocaleString()}</span> results found
+                  {displayedFlights.length < totalFiltered && (
+                    <span> · Showing top {displayedFlights.length}</span>
+                  )}
                   {responseStatus === 'OK_FLEXIBLE' && <span className="text-primary ml-1">(nearby dates)</span>}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Showing {Math.min(visibleCount, totalFiltered)} of {totalFiltered}
                 </p>
               </div>
 
@@ -531,18 +543,30 @@ const FlightResults = () => {
                 );
               })}
 
-              {/* Show More Button */}
-              {hasMore && (
+              {/* Show More Button - Progressive Loading */}
+              {canShowMore && (
                 <div className="text-center pt-4">
                   <Button
                     variant="outline"
                     onClick={handleShowMore}
                     className="gap-2"
                   >
-                    Show {Math.min(RESULTS_PER_PAGE, totalFiltered - visibleCount)} more flights
+                    Show {remainingToShow} more flights
                   </Button>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Showing {visibleCount} of {totalFiltered} results
+                    Showing {displayedFlights.length} of {Math.min(totalFiltered, MAX_VISIBLE_RESULTS).toLocaleString()} results
+                    {totalFiltered > MAX_VISIBLE_RESULTS && (
+                      <span className="text-muted-foreground/70"> (capped at {MAX_VISIBLE_RESULTS})</span>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {/* Max results reached message */}
+              {visibleCount >= MAX_VISIBLE_RESULTS && totalFiltered > MAX_VISIBLE_RESULTS && (
+                <div className="text-center pt-4 text-sm text-muted-foreground border-t border-border">
+                  <p>
+                    Showing top {MAX_VISIBLE_RESULTS} results. Use filters to narrow your search.
                   </p>
                 </div>
               )}
