@@ -307,19 +307,29 @@ export function clearPersistedSearchContext(): void {
 }
 
 /**
- * Format Unix timestamp to HH:MM
+ * Format Unix timestamp to readable time like "6:50 AM"
  */
-export function formatTime(timestamp: number): string {
-  if (!timestamp) return "--:--";
-  const date = new Date(timestamp * 1000);
-  return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+export function formatTime(timestamp: number | undefined): string {
+  if (!timestamp || timestamp <= 0) return "";
+  try {
+    const date = new Date(timestamp * 1000);
+    // Return empty string if invalid date
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString("en-US", { 
+      hour: "numeric", 
+      minute: "2-digit", 
+      hour12: true 
+    });
+  } catch {
+    return "";
+  }
 }
 
 /**
  * Format duration in minutes to "Xh Ym"
  */
-export function formatDuration(minutes: number): string {
-  if (!minutes) return "--";
+export function formatDuration(minutes: number | undefined): string {
+  if (!minutes || minutes <= 0) return "";
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;

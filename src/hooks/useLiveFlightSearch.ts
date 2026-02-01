@@ -3,84 +3,15 @@ import {
   startSearch,
   pollResults,
   clickBooking,
-  getPersistedSearchContext,
   clearPersistedSearchContext,
   formatTime,
-  formatDuration,
-  Ticket,
-  FlightInfo,
 } from "@/lib/flightSearchApi";
-
-/**
- * Common airline code to name mapping
- */
-const AIRLINE_NAMES: Record<string, string> = {
-  AA: "American Airlines",
-  AC: "Air Canada",
-  AF: "Air France",
-  AS: "Alaska Airlines",
-  AY: "Finnair",
-  AZ: "ITA Airways",
-  BA: "British Airways",
-  CX: "Cathay Pacific",
-  DE: "Condor",
-  DL: "Delta Air Lines",
-  EK: "Emirates",
-  EW: "Eurowings",
-  EY: "Etihad Airways",
-  F9: "Frontier Airlines",
-  IB: "Iberia",
-  JL: "Japan Airlines",
-  KL: "KLM",
-  LH: "Lufthansa",
-  LO: "LOT Polish Airlines",
-  LX: "SWISS",
-  NK: "Spirit Airlines",
-  OS: "Austrian Airlines",
-  QF: "Qantas",
-  QR: "Qatar Airways",
-  SK: "SAS",
-  SQ: "Singapore Airlines",
-  TK: "Turkish Airlines",
-  UA: "United Airlines",
-  VS: "Virgin Atlantic",
-  WN: "Southwest Airlines",
-  WS: "WestJet",
-  X3: "TUI fly",
-};
-
-function getAirlineName(code: string): string {
-  const upperCode = code?.toUpperCase() || "";
-  return AIRLINE_NAMES[upperCode] || upperCode;
-}
-
-/**
- * Processed flight result for UI display
- */
-export interface LiveFlightResult {
-  id: string;
-  /** Airline code like "AA" (best-effort) */
-  airlineCode: string;
-  /** Airline display name if available; fallback to code */
-  airline: string;
-  /** Optional; UI should provide a text/avatar fallback */
-  airlineLogo: string;
-  flightNumber: string;
-  departureTime: string;
-  arrivalTime: string;
-  departureCode: string;
-  arrivalCode: string;
-  duration: string;
-  durationMinutes: number;
-  stops: number;
-  price: number;
-  currency: string;
-  // Booking metadata - ALL required for click action
-  searchId: string;
-  resultsUrl: string;
-  proposalId: string;
-  signature: string;
-}
+import {
+  NormalizedFlight,
+  buildFlightInfoMap,
+  normalizeFlights,
+  FlightInfoMap,
+} from "@/lib/flightNormalizer";
 
 export type SearchStatus = "idle" | "searching" | "polling" | "complete" | "error" | "no_results";
 
@@ -97,7 +28,7 @@ interface SearchParams {
 }
 
 interface UseLiveFlightSearchResult {
-  flights: LiveFlightResult[];
+  flights: NormalizedFlight[];
   status: SearchStatus;
   error: string | null;
   progress: number;
@@ -114,154 +45,11 @@ const MAX_POLL_ATTEMPTS = 25; // max polls before giving up
 const POLL_TIMEOUT = 40000; // 40s total timeout
 
 /**
- * Safely get a nested property with optional chaining and default
- */
-function safeGet<T>(value: T | null | undefined, defaultValue: T): T {
-  return value ?? defaultValue;
-}
-
-/**
- * Parse tickets from API response into UI-friendly format
- * DEFENSIVE: Handles missing/incomplete data gracefully
- */
-function parseTicketsToFlights(
-  tickets: Ticket[] | undefined | null,
-  flightInfoMap: Record<number, { departure: string; arrival: string; departureTime: string; arrivalTime: string; airline: string; duration: number }>,
-  searchId: string,
-  resultsUrl: string,
-  defaultOrigin: string,
-  defaultDestination: string
-): LiveFlightResult[] {
-  const flights: LiveFlightResult[] = [];
-
-  // DEFENSIVE: Return empty if no tickets
-  if (!tickets || !Array.isArray(tickets)) {
-    console.warn("[parseTickets] No valid tickets array");
-    return flights;
-  }
-
-  for (const ticket of tickets) {
-    // DEFENSIVE: Skip if ticket is invalid
-    if (!ticket || typeof ticket !== "object") {
-      continue;
-    }
-
-    // DEFENSIVE: Ensure proposals exist
-    const proposals = ticket.proposals;
-    if (!proposals || !Array.isArray(proposals) || proposals.length === 0) {
-      continue;
-    }
-
-    // DEFENSIVE: Ensure signature exists (required for click)
-    const ticketSignature = ticket.signature;
-    if (!ticketSignature || typeof ticketSignature !== "string") {
-      continue;
-    }
-
-    for (const proposal of proposals) {
-      // DEFENSIVE: Skip if proposal is invalid
-      if (!proposal || typeof proposal !== "object") {
-        continue;
-      }
-
-      // DEFENSIVE: Ensure proposal has ID (required for click)
-      if (!proposal.id) {
-        continue;
-      }
-
-      // DEFENSIVE: Ensure proposal has price
-      const priceValue = proposal.price_per_person?.value ?? proposal.price?.value ?? 0;
-      if (priceValue <= 0) {
-        continue; // Skip offers with invalid price
-      }
-
-      const key = `${proposal.id}-${ticketSignature}`;
-      
-      // DEFENSIVE: Get first segment safely
-      const segments = ticket.segments;
-      const firstSegment = Array.isArray(segments) && segments.length > 0 ? segments[0] : null;
-      const segmentFlights = firstSegment?.flights;
-      const firstFlightIdx = Array.isArray(segmentFlights) && segmentFlights.length > 0 ? segmentFlights[0] : undefined;
-      const lastFlightIdx = Array.isArray(segmentFlights) && segmentFlights.length > 0 
-        ? segmentFlights[segmentFlights.length - 1] 
-        : undefined;
-      
-      // DEFENSIVE: Get flight info with fallbacks
-      const firstFlightInfo = firstFlightIdx !== undefined ? flightInfoMap[firstFlightIdx] : undefined;
-      const lastFlightInfo = lastFlightIdx !== undefined ? flightInfoMap[lastFlightIdx] : undefined;
-
-      // Always render IATA codes (use defaults if flight_info is missing)
-      const departureCode = firstFlightInfo?.departure || defaultOrigin;
-      const arrivalCode = lastFlightInfo?.arrival || defaultDestination;
-
-      // Times are optional; never normalize to placeholders like "--:--"
-      const departureTime = firstFlightInfo?.departureTime && firstFlightInfo.departureTime !== "--:--" ? firstFlightInfo.departureTime : "";
-      const arrivalTime = lastFlightInfo?.arrivalTime && lastFlightInfo.arrivalTime !== "--:--" ? lastFlightInfo.arrivalTime : "";
-      
-      // Count stops (connections in outbound segment)
-      const stops = firstSegment && Array.isArray(segmentFlights) 
-        ? Math.max(0, segmentFlights.length - 1) 
-        : 0;
-      
-      // DEFENSIVE: Get airline from flight terms safely
-      const flightTerms = proposal.flight_terms;
-      const flightTermKeys = flightTerms && typeof flightTerms === "object" ? Object.keys(flightTerms) : [];
-      const firstTermKey = flightTermKeys[0];
-      const firstTerm = firstTermKey ? flightTerms?.[firstTermKey] : undefined;
-      const carrierCode = firstTerm?.marketing_carrier_designator?.carrier || 
-                         firstFlightInfo?.airline || 
-                         "XX";
-      const flightNumber = firstTerm?.marketing_carrier_designator?.number || "";
-      
-      // Calculate total duration for outbound
-      let totalDuration = 0;
-      if (firstSegment && Array.isArray(segmentFlights)) {
-        for (const flightIdx of segmentFlights) {
-          const info = flightInfoMap[flightIdx];
-          if (info?.duration) totalDuration += info.duration;
-        }
-      }
-
-      // Duration is optional; never normalize to placeholder "--"
-      const durationText = totalDuration > 0 ? formatDuration(totalDuration) : "";
-
-      const upperCarrierCode = carrierCode.toUpperCase();
-
-      const flight: LiveFlightResult = {
-        id: key,
-        airlineCode: upperCarrierCode,
-        airline: getAirlineName(upperCarrierCode),
-        airlineLogo: upperCarrierCode && upperCarrierCode !== "XX" ? `https://pics.avs.io/60/60/${upperCarrierCode}.png` : "",
-        flightNumber: flightNumber ? `${upperCarrierCode}${flightNumber}` : "",
-        departureTime,
-        arrivalTime,
-        departureCode,
-        arrivalCode,
-        duration: durationText,
-        durationMinutes: totalDuration,
-        stops,
-        price: Math.round(priceValue),
-        currency: proposal.price_per_person?.currency_code || proposal.price?.currency_code || "EUR",
-        // All booking metadata required for click
-        searchId,
-        resultsUrl,
-        proposalId: proposal.id,
-        signature: ticketSignature,
-      };
-
-      flights.push(flight);
-    }
-  }
-
-  console.log(`[parseTickets] Parsed ${flights.length} valid flights from ${tickets.length} tickets`);
-  return flights;
-}
-
-/**
  * Hook for live flight search with polling
+ * Returns NormalizedFlight[] with full itinerary details including return leg
  */
 export function useLiveFlightSearch(): UseLiveFlightSearchResult {
-  const [flights, setFlights] = useState<LiveFlightResult[]>([]);
+  const [flights, setFlights] = useState<NormalizedFlight[]>([]);
   const [status, setStatus] = useState<SearchStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -338,19 +126,12 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
       // Step 2: Poll for results
       setStatus("polling");
-      const allFlights = new Map<string, LiveFlightResult>();
+      const allFlights = new Map<string, NormalizedFlight>();
       const startTime = Date.now();
       let lastUpdateTimestamp = 0;
       
-      // Build flight info map from API responses
-      const flightInfoMap: Record<number, { 
-        departure: string; 
-        arrival: string; 
-        departureTime: string; 
-        arrivalTime: string;
-        airline: string;
-        duration: number;
-      }> = {};
+      // Build flight info map from API responses - accumulates across polls
+      let flightInfoMap: FlightInfoMap = {};
 
       while (!cancelRef.current && pollCountRef.current < MAX_POLL_ATTEMPTS) {
         // Check timeout
@@ -395,26 +176,16 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           lastUpdateTimestamp = pollData.last_update_timestamp;
         }
 
-        // Parse flight_info for airport/time data
+        // Build/update flight info map from API response
         if (pollData.flight_info) {
-          for (const [key, info] of Object.entries(pollData.flight_info)) {
-            const idx = parseInt(key);
-            if (!isNaN(idx) && info && typeof info === "object") {
-              flightInfoMap[idx] = {
-                departure: info.departure || "",
-                arrival: info.arrival || "",
-                departureTime: formatTime(info.departure_timestamp),
-                arrivalTime: formatTime(info.arrival_timestamp),
-                airline: info.operating_carrier || "",
-                duration: info.duration || 0,
-              };
-            }
-          }
+          const newFlightInfo = buildFlightInfoMap(pollData.flight_info);
+          // Merge with existing - newer data overwrites
+          flightInfoMap = { ...flightInfoMap, ...newFlightInfo };
         }
 
-        // Parse tickets
+        // Parse tickets using the proper normalizer
         if (pollData.tickets?.length) {
-          const newFlights = parseTicketsToFlights(
+          const newFlights = normalizeFlights(
             pollData.tickets,
             flightInfoMap,
             search_id,
@@ -422,6 +193,24 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
             params.origin,
             params.destination
           );
+
+          // Log sample data on first batch (dev only)
+          if (pollCountRef.current === 1 && newFlights.length > 0) {
+            const sample = newFlights[0];
+            console.log("[LiveSearch] Sample normalized flight:", {
+              id: sample.id,
+              departureTime: sample.departureTime,
+              arrivalTime: sample.arrivalTime,
+              duration: sample.duration,
+              stops: sample.stops,
+              stopAirports: sample.stopAirports,
+              returnLeg: sample.returnLeg ? {
+                departureTime: sample.returnLeg.departureTime,
+                arrivalTime: sample.returnLeg.arrivalTime,
+                stops: sample.returnLeg.stops,
+              } : null,
+            });
+          }
 
           for (const flight of newFlights) {
             if (!allFlights.has(flight.id)) {
@@ -444,12 +233,16 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       setProgress(100);
       const finalFlights = Array.from(allFlights.values());
 
+      // Data integrity check (dev warning)
+      const flightsWithTimes = finalFlights.filter(f => f.departureTime && f.arrivalTime);
+      if (finalFlights.length > 0 && flightsWithTimes.length < finalFlights.length * 0.5) {
+        console.warn(
+          `[LiveSearch] Data integrity warning: Only ${flightsWithTimes.length}/${finalFlights.length} flights have times. Check API response mapping.`
+        );
+      }
+
       if (finalFlights.length === 0) {
-        if (liveUnavailable) {
-          setStatus("no_results");
-        } else {
-          setStatus("no_results");
-        }
+        setStatus("no_results");
       } else {
         // Sort by price by default
         finalFlights.sort((a, b) => a.price - b.price);
@@ -497,19 +290,21 @@ export async function handleFlightClick(params: {
       return null;
     }
 
-    // Backend may return different key names; accept common variants without changing backend.
-    const raw = response.data as any;
-    const url: unknown = raw?.url ?? raw?.provider_url ?? raw?.providerUrl;
+    // Get URL from response - may use different key names
+    const url = response.data.url;
 
-    if (typeof url !== "string" || url.length < 8) {
+    if (!url || typeof url !== "string") {
       console.error("[FlightClick] No valid URL in response:", response.data);
       return null;
     }
 
     console.log("[FlightClick] Got redirect URL:", url);
     return url;
-  } catch (e) {
-    console.error("[FlightClick] Unexpected error:", e);
+  } catch (err) {
+    console.error("[FlightClick] Error:", err);
     return null;
   }
 }
+
+// Re-export NormalizedFlight for convenience
+export type { NormalizedFlight } from "@/lib/flightNormalizer";
