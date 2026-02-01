@@ -264,6 +264,8 @@ export async function pollResults(params: {
     results_url: params.resultsUrl,
     last_update_timestamp: params.lastUpdateTimestamp || 0,
     user_ip: DEFAULT_USER_IP,
+    // IMPORTANT: Request full flight details, not compact summary
+    compact: false,
   });
 }
 
