@@ -252,15 +252,9 @@ function parseReturnLeg(
   const originIata = (firstFlightInfo?.departure || "").toUpperCase();
   const destinationIata = (lastFlightInfo?.arrival || "").toUpperCase();
   
-  // Times
-  const departureTime = 
-    firstFlightInfo?.departureTime && firstFlightInfo.departureTime !== "--:--"
-      ? firstFlightInfo.departureTime
-      : "";
-  const arrivalTime =
-    lastFlightInfo?.arrivalTime && lastFlightInfo.arrivalTime !== "--:--"
-      ? lastFlightInfo.arrivalTime
-      : "";
+  // Times - formatTime now returns empty string for invalid timestamps
+  const departureTime = firstFlightInfo?.departureTime || "";
+  const arrivalTime = lastFlightInfo?.arrivalTime || "";
 
   // Stops
   const stops = Math.max(0, returnFlights.length - 1);
@@ -348,15 +342,9 @@ function normalizeTicket(
   const originIata = (firstFlightInfo?.departure || defaultOrigin).toUpperCase();
   const destinationIata = (lastFlightInfo?.arrival || defaultDestination).toUpperCase();
 
-  // Times (empty if not available)
-  const departureTime =
-    firstFlightInfo?.departureTime && firstFlightInfo.departureTime !== "--:--"
-      ? firstFlightInfo.departureTime
-      : "";
-  const arrivalTime =
-    lastFlightInfo?.arrivalTime && lastFlightInfo.arrivalTime !== "--:--"
-      ? lastFlightInfo.arrivalTime
-      : "";
+  // Times - formatTime now returns empty string for invalid timestamps
+  const departureTime = firstFlightInfo?.departureTime || "";
+  const arrivalTime = lastFlightInfo?.arrivalTime || "";
 
   // Stops and stop airports
   const stops =

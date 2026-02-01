@@ -83,48 +83,19 @@ const LiveFlightResults = () => {
     }
   }, [from, to, depart, returnDate, adults, children, infants, tripType, cabin, searchFlights, hasSearched]);
 
-  // Convert raw flights to normalized format
+  // The hook now returns NormalizedFlight[] directly with full itinerary details
+  // No conversion needed - use rawFlights directly as normalizedFlights
   const normalizedFlights = useMemo((): NormalizedFlight[] => {
     if (!rawFlights || !Array.isArray(rawFlights)) return [];
-
-    return rawFlights
-      .filter((f) => {
-        // Validate essential fields
-        if (!f || typeof f.price !== "number" || f.price <= 0) return false;
-        if (!f.proposalId || !f.signature || !f.searchId || !f.resultsUrl) return false;
-        if (!f.departureCode || !f.arrivalCode) return false;
-        return true;
-      })
-      .map((f) => {
-        const priceValue = f.price;
-        const isPriceValid = typeof priceValue === 'number' && Number.isFinite(priceValue) && priceValue > 0;
-        
-        return {
-          id: f.id || `${f.proposalId}-${f.signature}`,
-          airlineCode: f.airlineCode || f.airline || "XX",
-          airlineName: f.airline || f.airlineCode || "Unknown",
-          airlineLogo: f.airlineLogo || "",
-          flightNumber: f.flightNumber || "",
-          originIata: (f.departureCode || from).toUpperCase(),
-          destinationIata: (f.arrivalCode || to).toUpperCase(),
-          departureTime: f.departureTime || "",
-          arrivalTime: f.arrivalTime || "",
-          duration: f.duration || "",
-          durationMinutes: f.durationMinutes || 0,
-          stops: f.stops ?? 0,
-          stopAirports: [], // Could be populated from segments if available
-          price: priceValue,
-          currency: f.currency || "EUR",
-          dealsCount: 1, // Default to 1 deal per flight
-          isPriceValid,
-          searchId: f.searchId,
-          resultsUrl: f.resultsUrl,
-          proposalId: f.proposalId,
-          signature: f.signature,
-          hasValidBookingUrl: !!(f.searchId && f.resultsUrl && f.proposalId && f.signature),
-        };
-      });
-  }, [rawFlights, from, to]);
+    
+    // Filter out invalid flights
+    return rawFlights.filter((f) => {
+      if (!f || typeof f.price !== "number" || f.price <= 0) return false;
+      if (!f.proposalId || !f.signature || !f.searchId || !f.resultsUrl) return false;
+      if (!f.originIata || !f.destinationIata) return false;
+      return true;
+    });
+  }, [rawFlights]);
 
   // Get available airlines for filter
   const availableAirlines = useMemo(() => {

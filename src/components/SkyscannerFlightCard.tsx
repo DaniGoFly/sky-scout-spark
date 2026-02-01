@@ -155,6 +155,7 @@ const SkyscannerFlightCard = ({
 
             {/* Outbound Itinerary Row */}
             <ItineraryRow
+              label={returnLeg ? "Outbound" : undefined}
               departureTime={flight.departureTime}
               arrivalTime={flight.arrivalTime}
               originIata={flight.originIata}
