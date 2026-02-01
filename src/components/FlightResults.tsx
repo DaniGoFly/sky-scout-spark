@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar, Info, Clock, Database, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightDetailsModal from "./FlightDetailsModal";
@@ -62,6 +63,24 @@ const FlightResults = () => {
   const tripType = searchParams.get("trip") || "roundtrip";
   const travelClass = searchParams.get("class") || "economy";
   const directOnly = searchParams.get("direct") === "true";
+
+  // Redirect multi-city searches to the dedicated page
+  useEffect(() => {
+    if (tripType === "multicity") {
+      // Preserve all params and redirect
+      navigate(`/flights/multicity?${searchParams.toString()}`, { replace: true });
+    }
+  }, [tripType, searchParams, navigate]);
+
+  // Validate required params for non-multicity
+  useEffect(() => {
+    if (tripType !== "multicity" && (!from || !to)) {
+      toast.error("Missing search parameters", {
+        description: "Please enter origin and destination.",
+      });
+      navigate("/flights");
+    }
+  }, [from, to, tripType, navigate]);
 
   // Normalize flights for UI
   const normalizedFlights = useMemo((): NormalizedFlight[] => {

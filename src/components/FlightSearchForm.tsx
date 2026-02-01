@@ -182,6 +182,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }, []);
 
   const handleMultiCitySearch = useCallback((segments: any[], travelersData: TravelersData) => {
+    // Validate all segments are complete
+    const validSegments = segments.filter(
+      (seg) => seg.from?.code && seg.to?.code && seg.date
+    );
+    
+    if (validSegments.length < 2) {
+      return; // Form validation should prevent this
+    }
+
     // Build URL with all segments
     const params = new URLSearchParams({
       trip: "multicity",
@@ -192,14 +201,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     });
 
     // Add segment data
-    segments.forEach((seg, i) => {
+    validSegments.forEach((seg, i) => {
       params.set(`seg${i}_from`, seg.from.code);
       params.set(`seg${i}_to`, seg.to.code);
       params.set(`seg${i}_date`, format(seg.date, "yyyy-MM-dd"));
     });
-    params.set("segments", segments.length.toString());
+    params.set("segments", validSegments.length.toString());
 
-    navigate(`/flights/results?${params.toString()}`);
+    // Navigate to dedicated multi-city results page
+    navigate(`/flights/multicity?${params.toString()}`);
   }, [navigate]);
 
   // Multi-city mode
