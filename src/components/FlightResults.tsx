@@ -108,6 +108,7 @@ const FlightResults = () => {
         stopAirports: [], // Not available in LiveFlight
         price: priceValue,
         currency: "USD",
+        dealsCount: 1, // Default to 1 deal
         isPriceValid,
         searchId: "",
         resultsUrl: "",

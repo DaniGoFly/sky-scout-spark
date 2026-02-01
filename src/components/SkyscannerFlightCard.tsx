@@ -20,17 +20,6 @@ interface SkyscannerFlightCardProps {
   fetchedAt?: number;
   isNearbyAirport?: boolean;
   originalAirport?: string;
-  dealsCount?: number;
-  // For roundtrip display
-  returnFlight?: {
-    departureTime: string;
-    arrivalTime: string;
-    originIata: string;
-    destinationIata: string;
-    duration: string;
-    stops: number;
-    stopAirports?: string[];
-  };
 }
 
 const STALE_THRESHOLD_MS = 120000;
@@ -67,10 +56,12 @@ const SkyscannerFlightCard = ({
   fetchedAt,
   isNearbyAirport = false,
   originalAirport,
-  dealsCount = 1,
-  returnFlight,
 }: SkyscannerFlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
+  
+  // Use return leg from the normalized flight data
+  const returnLeg = flight.returnLeg;
+  const dealsCount = flight.dealsCount || 1;
 
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -174,17 +165,17 @@ const SkyscannerFlightCard = ({
             />
 
             {/* Return Itinerary Row (if roundtrip) */}
-            {returnFlight && (
+            {returnLeg && (
               <div className="pt-3 border-t border-border/50">
                 <ItineraryRow
                   label="Return"
-                  departureTime={returnFlight.departureTime}
-                  arrivalTime={returnFlight.arrivalTime}
-                  originIata={returnFlight.originIata}
-                  destinationIata={returnFlight.destinationIata}
-                  duration={returnFlight.duration}
-                  stops={returnFlight.stops}
-                  stopAirports={returnFlight.stopAirports}
+                  departureTime={returnLeg.departureTime}
+                  arrivalTime={returnLeg.arrivalTime}
+                  originIata={returnLeg.originIata}
+                  destinationIata={returnLeg.destinationIata}
+                  duration={returnLeg.duration}
+                  stops={returnLeg.stops}
+                  stopAirports={returnLeg.stopAirports}
                 />
               </div>
             )}

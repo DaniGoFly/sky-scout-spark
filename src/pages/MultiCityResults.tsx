@@ -141,6 +141,7 @@ const MultiCityResultsContent = () => {
           stopAirports: [],
           price: Math.round(f.price || 0),
           currency: "USD",
+          dealsCount: 1, // Default to 1 deal
           isPriceValid: typeof f.price === 'number' && f.price > 0,
           searchId: "",
           resultsUrl: "",

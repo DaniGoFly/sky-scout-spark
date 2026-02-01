@@ -115,6 +115,7 @@ const LiveFlightResults = () => {
           stopAirports: [], // Could be populated from segments if available
           price: priceValue,
           currency: f.currency || "EUR",
+          dealsCount: 1, // Default to 1 deal per flight
           isPriceValid,
           searchId: f.searchId,
           resultsUrl: f.resultsUrl,
@@ -418,12 +419,10 @@ const LiveFlightResults = () => {
 
         {/* Results */}
         {(status === "complete" || (isSearching && rawFlights.length > 0)) && (
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-            {/* Desktop Filters - Sticky with independent scroll */}
-            <aside className="hidden lg:block">
-              <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-hidden">
-                <FiltersContent />
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
+            {/* Desktop Filters - Sticky sidebar with independent scroll */}
+            <aside className="hidden lg:block h-fit">
+              <FiltersContent />
             </aside>
 
             {/* Flight list */}
