@@ -664,28 +664,55 @@ export function normalizeFlightsFromResponse(
   defaultOrigin: string,
   defaultDestination: string
 ): NormalizedFlight[] {
+  const DEV_MODE = import.meta.env.DEV;
+  
   if (!rawResponse || typeof rawResponse !== 'object') {
-    console.warn("[Normalizer] Invalid response");
+    if (DEV_MODE) console.warn("[Normalizer] Invalid response - not an object");
     return [];
   }
   
   const response = rawResponse as Record<string, unknown>;
   
+  // DEV: Log available keys in response to help debug
+  if (DEV_MODE) {
+    const keys = Object.keys(response);
+    console.log("[Normalizer] Response keys:", keys);
+    
+    // Check for flight_info/flights presence
+    const hasFlightInfo = 'flight_info' in response || 'flightInfo' in response;
+    const hasFlights = 'flights' in response;
+    const hasData = 'data' in response;
+    
+    if (!hasFlightInfo && !hasFlights) {
+      console.warn("[Normalizer] ⚠️ WARNING: No flight_info or flights in response! Times will be missing.");
+      console.warn("[Normalizer] Available keys:", keys);
+      if (hasData && typeof response.data === 'object') {
+        console.warn("[Normalizer] data keys:", Object.keys(response.data as object));
+      }
+    }
+  }
+  
   // Extract tickets array
   const tickets = response.tickets as Ticket[] | undefined;
   if (!Array.isArray(tickets) || tickets.length === 0) {
-    console.warn("[Normalizer] No tickets array in response");
+    if (DEV_MODE) console.warn("[Normalizer] No tickets array in response");
     return [];
   }
   
-  // Extract flight_info map
+  // Extract flight_info map from ALL possible locations
   const flightInfo = getFlightInfoMap(rawResponse);
   const flightInfoCount = Object.keys(flightInfo).length;
   
   if (flightInfoCount === 0) {
-    console.warn("[Normalizer] No flight_info in response - times will be missing");
-  } else {
-    console.log(`[Normalizer] Found ${flightInfoCount} flight_info entries`);
+    if (DEV_MODE) {
+      console.warn("[Normalizer] ⚠️ CRITICAL: flight_info map is EMPTY - cannot resolve flight times!");
+      console.warn("[Normalizer] Tickets will have missing departure/arrival times.");
+    }
+  } else if (DEV_MODE) {
+    console.log(`[Normalizer] ✓ Found ${flightInfoCount} flight_info entries`);
+    // Log sample flight_info entry
+    const sampleKey = Object.keys(flightInfo)[0];
+    console.log("[Normalizer] Sample flight_info entry:", sampleKey, flightInfo[sampleKey]);
   }
   
   // Normalize all tickets
