@@ -1,36 +1,29 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar, Info, Clock, Database, ExternalLink, AlertTriangle } from "lucide-react";
+import { Loader2, AlertCircle, Plane, ArrowLeft, Search, Calendar, Info, Clock, Database, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import FlightCard from "./FlightCard";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightDetailsModal from "./FlightDetailsModal";
 import FlightResultsSkeleton from "./FlightResultsSkeleton";
 import CompactSearchBar from "./CompactSearchBar";
 import PriceCalendar from "./PriceCalendar";
 import FlightSummaryBar from "./FlightSummaryBar";
+import FlightSortTabs from "./FlightSortTabs";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
+import SkyscannerFlightCard from "./SkyscannerFlightCard";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
+import { NormalizedFlight, normalizeFlights, buildFlightInfoMap, sortFlights } from "@/lib/flightNormalizer";
 import { format, addDays } from "date-fns";
 import { getDefaultDates, parseDateSafe } from "@/lib/dateUtils";
 
-// City to airport code mapping for auto-search
-const CITY_AIRPORT_CODES: Record<string, string> = {
-  "paris": "CDG",
-  "tokyo": "NRT",
-  "new york": "JFK",
-  "dubai": "DXB",
-  "london": "LHR",
-  "barcelona": "BCN",
-  "los angeles": "LAX",
-  "miami": "MIA",
-  "sydney": "SYD",
-  "singapore": "SIN",
-};
+// Results configuration
+const RESULTS_PER_PAGE = 25;
 
 const FlightResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const fetchedAtRef = useRef<number>(Date.now());
+  
   const { 
     flights, 
     isLoading, 
@@ -42,24 +35,23 @@ const FlightResults = () => {
     suggestedReturnDate,
     aviasalesDirectUrl,
     flexibleDatesUsed,
-    debugInfo: apiDebugInfo, 
     searchFlights 
   } = useFlightSearch();
+  
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({
     stops: [],
     airlines: [],
     priceRange: [0, 5000],
     departureTime: [],
+    directOnly: false,
   });
-  const [showAllFlights, setShowAllFlights] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(RESULTS_PER_PAGE);
   const [selectedFlight, setSelectedFlight] = useState<LiveFlight | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [loadingFlightId, setLoadingFlightId] = useState<string | null>(null);
 
-  // Check for debug mode
-  const isDebugMode = searchParams.get("debug") === "1";
-
-  // Extract search params - unified schema
+  // Extract search params
   const from = searchParams.get("from") || "";
   const to = searchParams.get("to") || "";
   const depart = searchParams.get("depart") || "";
@@ -69,40 +61,54 @@ const FlightResults = () => {
   const infants = Number(searchParams.get("infants")) || 0;
   const tripType = searchParams.get("trip") || "roundtrip";
   const travelClass = searchParams.get("class") || "economy";
-  const autoSearch = searchParams.get("autoSearch") === "true";
+  const directOnly = searchParams.get("direct") === "true";
 
-  // Handle auto-search from destination cards
+  // Normalize flights for UI
+  const normalizedFlights = useMemo((): NormalizedFlight[] => {
+    if (!flights.length) return [];
+    
+    // Since we're using LiveFlight from the hook, convert to NormalizedFlight format
+    return flights.map((f): NormalizedFlight => ({
+      id: f.id,
+      airlineCode: f.airline?.substring(0, 2).toUpperCase() || "XX",
+      airlineName: f.airline || "Unknown Airline",
+      airlineLogo: f.airlineLogo || "",
+      flightNumber: f.flightNumber || "",
+      originIata: f.departureCode || from.split(",")[0],
+      destinationIata: f.arrivalCode || to.split(",")[0],
+      departureTime: f.departureTime || "",
+      arrivalTime: f.arrivalTime || "",
+      duration: f.duration || "",
+      durationMinutes: f.durationMinutes || 0,
+      stops: f.stops || 0,
+      stopAirports: [], // Not available in LiveFlight
+      price: Math.round(f.price),
+      currency: "USD",
+      searchId: "",
+      resultsUrl: "",
+      proposalId: f.id,
+      signature: f.id,
+      hasValidBookingUrl: !!f.deepLink,
+    }));
+  }, [flights, from, to]);
+
+  // Update fetchedAt when flights change
   useEffect(() => {
-    if (autoSearch && to && !from) {
-      const airportCode = CITY_AIRPORT_CODES[to.toLowerCase()] || to.toUpperCase().slice(0, 3);
-      const defaults = getDefaultDates();
-      const defaultDepart = format(defaults.depart, "yyyy-MM-dd");
-      const defaultReturn = format(defaults.return, "yyyy-MM-dd");
-      
-      setShowAllFlights(false);
-      setHasSearched(true);
-      
-      searchFlights({
-        origin: "NYC",
-        destination: airportCode,
-        departDate: defaultDepart,
-        returnDate: defaultReturn,
-        adults: 1,
-        tripType: "roundtrip",
-        debug: isDebugMode,
-      });
+    if (flights.length > 0) {
+      fetchedAtRef.current = Date.now();
     }
-  }, [autoSearch, to, from, searchFlights, isDebugMode]);
+  }, [flights]);
 
-  // Fetch flights when params change (regular search)
+  // Fetch flights when params change
   useEffect(() => {
-    if (from && to && depart && !autoSearch) {
-      setShowAllFlights(false);
+    if (from && to && depart) {
+      setVisibleCount(RESULTS_PER_PAGE);
       setHasSearched(true);
+      fetchedAtRef.current = Date.now();
       
       searchFlights({
-        origin: from,
-        destination: to,
+        origin: from.split(",")[0], // Use primary airport
+        destination: to.split(",")[0],
         departDate: depart,
         returnDate: returnDate || undefined,
         adults,
@@ -110,10 +116,9 @@ const FlightResults = () => {
         infants,
         tripType,
         travelClass,
-        debug: isDebugMode,
       });
     }
-  }, [from, to, depart, returnDate, adults, children, infants, tripType, travelClass, searchFlights, autoSearch, isDebugMode]);
+  }, [from, to, depart, returnDate, adults, children, infants, tripType, travelClass, searchFlights]);
 
   // Handle price calendar date selection
   const handleDateSelect = (newDate: Date) => {
@@ -129,13 +134,6 @@ const FlightResults = () => {
       newParams.set("depart", suggestedSearchDate);
       if (suggestedReturnDate && tripType === "roundtrip") {
         newParams.set("return", suggestedReturnDate);
-      } else if (tripType === "roundtrip") {
-        // Calculate return date if not provided
-        const suggestedDepart = parseDateSafe(suggestedSearchDate);
-        if (suggestedDepart) {
-          const newReturn = addDays(suggestedDepart, 7);
-          newParams.set("return", format(newReturn, "yyyy-MM-dd"));
-        }
       }
       setSearchParams(newParams);
     }
@@ -143,15 +141,20 @@ const FlightResults = () => {
 
   // Get base price for calendar
   const basePrice = useMemo(() => {
-    if (flights.length === 0) return 350;
-    return Math.min(...flights.map(f => f.price));
-  }, [flights]);
+    if (normalizedFlights.length === 0) return 350;
+    return Math.min(...normalizedFlights.map(f => f.price));
+  }, [normalizedFlights]);
 
   // Filter and sort flights
   const processedFlights = useMemo(() => {
-    let result = [...flights];
+    let result = [...normalizedFlights];
 
-    if (filters.stops.length > 0) {
+    // Apply direct-only filter from URL params or filter state
+    if (directOnly || filters.directOnly) {
+      result = result.filter(f => f.stops === 0);
+    }
+
+    if (filters.stops.length > 0 && !directOnly && !filters.directOnly) {
       result = result.filter((flight) => {
         return filters.stops.some((stop) => {
           if (stop === "direct") return flight.stops === 0;
@@ -164,7 +167,7 @@ const FlightResults = () => {
 
     if (filters.airlines.length > 0) {
       result = result.filter((flight) =>
-        filters.airlines.includes(flight.airline)
+        filters.airlines.includes(flight.airlineName)
       );
     }
 
@@ -176,7 +179,9 @@ const FlightResults = () => {
 
     if (filters.departureTime.length > 0) {
       result = result.filter((flight) => {
+        if (!flight.departureTime) return true;
         const hour = parseInt(flight.departureTime.split(":")[0]);
+        if (isNaN(hour)) return true;
         return filters.departureTime.some((time) => {
           if (time === "morning") return hour >= 6 && hour < 12;
           if (time === "afternoon") return hour >= 12 && hour < 18;
@@ -187,26 +192,31 @@ const FlightResults = () => {
       });
     }
 
-    switch (sortBy) {
-      case "cheapest":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "fastest":
-        result.sort((a, b) => a.durationMinutes - b.durationMinutes);
-        break;
-      case "best":
-      default:
-        result.sort((a, b) => a.price + a.stops * 100 - (b.price + b.stops * 100));
-        break;
-    }
+    // Sort using the normalizer's sort function
+    return sortFlights(result, sortBy);
+  }, [normalizedFlights, filters, sortBy, directOnly]);
 
-    return result;
-  }, [flights, filters, sortBy]);
-
-  const displayedFlights = showAllFlights
-    ? processedFlights
-    : processedFlights.slice(0, 6);
+  const displayedFlights = processedFlights.slice(0, visibleCount);
   const totalFiltered = processedFlights.length;
+  const hasMore = visibleCount < totalFiltered;
+
+  const handleShowMore = () => {
+    setVisibleCount(prev => prev + RESULTS_PER_PAGE);
+  };
+
+  const handleViewDeal = async (flight: NormalizedFlight) => {
+    // Find the original flight with deepLink
+    const originalFlight = flights.find(f => f.id === flight.id);
+    if (!originalFlight?.deepLink) return;
+    
+    setLoadingFlightId(flight.id);
+    
+    // Open in new tab
+    window.open(originalFlight.deepLink, "_blank", "noopener,noreferrer");
+    
+    // Reset loading state after a short delay
+    setTimeout(() => setLoadingFlightId(null), 1500);
+  };
 
   const formatDate = (dateStr: string) => {
     try {
@@ -222,104 +232,14 @@ const FlightResults = () => {
 
   // Get display values
   const defaults = getDefaultDates();
-  const displayFrom = from || (autoSearch ? "NYC" : "");
-  const displayTo = to || "";
-  const displayDepart = depart || (autoSearch ? format(defaults.depart, "yyyy-MM-dd") : "");
-  const displayReturn = returnDate || (autoSearch ? format(defaults.return, "yyyy-MM-dd") : "");
+  const displayFrom = from.split(",")[0] || "";
+  const displayTo = to.split(",")[0] || "";
+  const displayDepart = depart || format(defaults.depart, "yyyy-MM-dd");
+  const displayReturn = returnDate || format(defaults.return, "yyyy-MM-dd");
   
   const departDateObj = parseDateSafe(depart);
 
-  // Debug panel component
-  const DebugPanel = () => {
-    if (!isDebugMode) return null;
-    
-    return (
-      <div className="mb-6 p-4 bg-secondary/50 rounded-lg text-left max-w-4xl mx-auto overflow-hidden border border-border">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold">Debug Panel</span>
-            <span className="text-xs text-muted-foreground">(add ?debug=1 to URL)</span>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const debugData = {
-                frontend: {
-                  params: { from, to, depart, returnDate, adults, children, infants, tripType, travelClass },
-                  responseStatus,
-                  emptyReason,
-                  userMessage,
-                  flightCount: flights.length,
-                  flexibleDatesUsed,
-                  aviasalesDirectUrl,
-                  timestamp: new Date().toISOString()
-                },
-                backend: apiDebugInfo
-              };
-              navigator.clipboard.writeText(JSON.stringify(debugData, null, 2));
-              alert('Debug info copied to clipboard!');
-            }}
-            className="text-xs"
-          >
-            Copy All Debug Info
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mb-3">
-          <div className="bg-background p-2 rounded">
-            <span className="font-semibold block text-muted-foreground">Status</span>
-            <span className={responseStatus === 'OK' || responseStatus === 'OK_FLEXIBLE' ? 'text-green-500' : responseStatus === 'ERROR' ? 'text-red-500' : 'text-yellow-500'}>
-              {responseStatus || 'N/A'}
-            </span>
-          </div>
-          <div className="bg-background p-2 rounded">
-            <span className="font-semibold block text-muted-foreground">Empty Reason</span>
-            <span>{emptyReason || 'N/A'}</span>
-          </div>
-          <div className="bg-background p-2 rounded">
-            <span className="font-semibold block text-muted-foreground">Flights</span>
-            <span>{flights.length}</span>
-          </div>
-          <div className="bg-background p-2 rounded">
-            <span className="font-semibold block text-muted-foreground">HTTP Status</span>
-            <span>{apiDebugInfo?.httpStatus || 'N/A'}</span>
-          </div>
-        </div>
-        
-        {apiDebugInfo?.requestUrl && (
-          <div className="text-xs mb-2">
-            <span className="font-semibold">API URL:</span>
-            <code className="ml-1 break-all text-[10px] bg-background p-1 rounded">{apiDebugInfo.requestUrl}</code>
-          </div>
-        )}
-
-        {userMessage && (
-          <div className="text-xs mb-2 p-2 bg-background rounded">
-            <span className="font-semibold">User Message:</span> {userMessage}
-          </div>
-        )}
-
-        {flexibleDatesUsed.length > 0 && (
-          <div className="text-xs mb-2 p-2 bg-background rounded">
-            <span className="font-semibold">Flexible Dates Used:</span> {flexibleDatesUsed.join(', ')}
-          </div>
-        )}
-        
-        {apiDebugInfo && (
-          <details className="mt-2">
-            <summary className="cursor-pointer text-xs font-semibold text-primary">Full Backend Response</summary>
-            <pre className="text-xs text-muted-foreground overflow-auto mt-2 max-h-48 bg-background p-2 rounded">
-              {JSON.stringify(apiDebugInfo, null, 2)}
-            </pre>
-          </details>
-        )}
-      </div>
-    );
-  };
-
-  // Empty state for "no cached prices" (NOT an error)
+  // Empty states
   const NoCachedPricesState = () => (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
@@ -327,71 +247,29 @@ const FlightResults = () => {
       </div>
       <p className="text-2xl text-foreground font-bold mb-3">No cached prices available</p>
       <p className="text-muted-foreground max-w-lg mb-4">
-        These results use historical data. For live prices, search Aviasales directly.
-      </p>
-      <p className="text-sm text-muted-foreground max-w-md mb-6">
-        Airlines usually release prices 9–12 months in advance. Try nearer dates or use the live search below.
+        These results use historical data. For live prices, search directly.
       </p>
       
-      {/* Primary CTA - Search Live Prices */}
-      <div className="mb-6">
-        {aviasalesDirectUrl && (
-          <Button 
-            size="lg"
-            onClick={() => window.open(aviasalesDirectUrl, '_blank')}
-            className="gap-2 text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-shadow"
-          >
-            <ExternalLink className="w-5 h-5" />
-            Search Live Prices
-          </Button>
-        )}
-      </div>
-      
-      <div className="bg-muted/50 border border-border rounded-xl p-5 mb-6 max-w-lg text-left">
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-foreground mb-1">About cached prices</p>
-            <p className="text-sm text-muted-foreground">
-              Our site uses cached historical pricing data for inspiration. When no cached prices are available, 
-              it doesn't mean flights don't exist. Click "Search Live Prices" to see real-time availability on Aviasales.
-            </p>
-          </div>
-        </div>
-      </div>
+      {aviasalesDirectUrl && (
+        <Button 
+          size="lg"
+          onClick={() => window.open(aviasalesDirectUrl, '_blank')}
+          className="gap-2 mb-6"
+        >
+          <ExternalLink className="w-5 h-5" />
+          Search Live Prices
+        </Button>
+      )}
       
       <div className="flex flex-wrap gap-3 justify-center">
         <Button variant="outline" onClick={() => navigate("/flights")} className="gap-2">
           <Calendar className="w-4 h-4" />
           Try Different Dates
         </Button>
-        <Button variant="ghost" onClick={() => {
-          // Try +30 days
-          const currentDepart = parseDateSafe(depart);
-          if (currentDepart) {
-            const newDepart = addDays(currentDepart, 30);
-            const newParams = new URLSearchParams(searchParams);
-            newParams.set("depart", format(newDepart, "yyyy-MM-dd"));
-            if (tripType === "roundtrip" && returnDate) {
-              const returnParsed = parseDateSafe(returnDate);
-              if (returnParsed) {
-                const tripLength = Math.round((returnParsed.getTime() - currentDepart.getTime()) / (1000 * 60 * 60 * 24));
-                newParams.set("return", format(addDays(newDepart, tripLength), "yyyy-MM-dd"));
-              }
-            }
-            setSearchParams(newParams);
-          }
-        }} className="gap-2">
-          <Calendar className="w-4 h-4" />
-          Try +30 Days
-        </Button>
       </div>
-      
-      <DebugPanel />
     </div>
   );
 
-  // Empty state for "far future" (beyond airline publish window)
   const FarFutureState = () => (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-24 h-24 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
@@ -399,111 +277,69 @@ const FlightResults = () => {
       </div>
       <p className="text-2xl text-foreground font-bold mb-3">Prices not available yet</p>
       <p className="text-muted-foreground max-w-lg mb-6">
-        {userMessage || "Airlines typically publish fares 9-11 months in advance. Your selected date is beyond the current booking window."}
+        {userMessage || "Airlines typically publish fares 9-11 months in advance."}
       </p>
       
-      {/* Primary CTA - Suggested dates */}
       {suggestedSearchDate && (
-        <div className="mb-6">
-          <p className="text-sm text-muted-foreground mb-3">Try the nearest available dates:</p>
-          <Button size="lg" onClick={handleSuggestedDateClick} className="gap-2 px-8 py-6 shadow-lg">
-            <Calendar className="w-5 h-5" />
-            Search {formatDate(suggestedSearchDate)}
-            {suggestedReturnDate && tripType === "roundtrip" && ` – ${formatDate(suggestedReturnDate)}`}
-          </Button>
-        </div>
+        <Button size="lg" onClick={handleSuggestedDateClick} className="gap-2 mb-6">
+          <Calendar className="w-5 h-5" />
+          Search {formatDate(suggestedSearchDate)}
+        </Button>
       )}
       
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-5 mb-6 max-w-lg text-left">
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-foreground mb-1">Why can't I book this far ahead?</p>
-            <p className="text-sm text-muted-foreground">
-              Airlines release their schedules and prices approximately 330 days (about 11 months) before departure. 
-              Your selected date is beyond this window. Try a nearer date or check back closer to when prices are released.
-            </p>
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex flex-wrap gap-3 justify-center">
-        {aviasalesDirectUrl && (
-          <Button 
-            variant="outline"
-            onClick={() => window.open(aviasalesDirectUrl, '_blank')}
-            className="gap-2"
-          >
-            <ExternalLink className="w-4 h-4" />
-            Try Direct Search Anyway
-          </Button>
-        )}
-        <Button variant="outline" onClick={() => navigate("/flights")} className="gap-2">
-          <Search className="w-4 h-4" />
-          Modify Search
-        </Button>
-      </div>
-      
-      <DebugPanel />
+      <Button variant="outline" onClick={() => navigate("/flights")} className="gap-2">
+        <Search className="w-4 h-4" />
+        Modify Search
+      </Button>
     </div>
   );
 
-  // Error state (real service errors only)
   const ErrorState = () => (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
         <AlertCircle className="w-10 h-10 text-destructive" />
       </div>
       <p className="text-xl text-foreground font-semibold mb-2">Service temporarily unavailable</p>
-      <p className="text-muted-foreground max-w-md mb-6">{error || userMessage || "We're having trouble connecting to our flight data service."}</p>
+      <p className="text-muted-foreground max-w-md mb-6">{error || "We're having trouble connecting."}</p>
       
-      <div className="flex flex-wrap gap-3 justify-center mb-6">
+      <div className="flex flex-wrap gap-3 justify-center">
         {aviasalesDirectUrl && (
-          <Button 
-            onClick={() => window.open(aviasalesDirectUrl, '_blank')}
-            className="gap-2"
-          >
+          <Button onClick={() => window.open(aviasalesDirectUrl, '_blank')} className="gap-2">
             <ExternalLink className="w-4 h-4" />
-            Search on Aviasales
+            Search Directly
           </Button>
         )}
         <Button
           variant="outline"
-          onClick={() =>
-            searchFlights({
-              origin: displayFrom,
-              destination: displayTo,
-              departDate: displayDepart,
-              returnDate: displayReturn || undefined,
-              adults,
-              tripType,
-              debug: isDebugMode,
-            })
-          }
+          onClick={() => searchFlights({
+            origin: displayFrom,
+            destination: displayTo,
+            departDate: displayDepart,
+            returnDate: displayReturn || undefined,
+            adults,
+            tripType,
+          })}
           className="gap-2"
         >
           <Search className="w-4 h-4" />
           Try Again
         </Button>
       </div>
-      
-      <DebugPanel />
     </div>
   );
 
-  // Flexible dates banner
   const FlexibleDatesBanner = () => {
     if (flexibleDatesUsed.length === 0) return null;
     
     return (
       <div className="mb-4 p-3 bg-primary/10 border border-primary/30 rounded-lg flex items-center gap-3">
-        <Calendar className="w-5 h-5 text-primary flex-shrink-0" />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-foreground">
+        <Calendar className="w-5 h-5 text-primary shrink-0" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">
             Showing prices for nearby dates
           </p>
-          <p className="text-xs text-muted-foreground">
-            No exact matches for {formatDate(depart)}. Showing results for: {flexibleDatesUsed.map(d => formatDate(d)).join(', ')}
+          <p className="text-xs text-muted-foreground truncate">
+            Results for: {flexibleDatesUsed.map(d => formatDate(d)).join(', ')}
           </p>
         </div>
       </div>
@@ -520,34 +356,32 @@ const FlightResults = () => {
 
         {/* Search Summary Header */}
         <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-3">
-              <Plane className="w-7 h-7 text-primary" />
-              {displayFrom.toUpperCase()} → {displayTo.toUpperCase()}
+              <Plane className="w-7 h-7 text-primary shrink-0" />
+              <span className="truncate">{displayFrom.toUpperCase()} → {displayTo.toUpperCase()}</span>
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 truncate">
               {formatDate(displayDepart)}
               {tripType === "roundtrip" && displayReturn && ` – ${formatDate(displayReturn)}`}
               {" • "}{adults + children + infants} traveler{(adults + children + infants) > 1 ? "s" : ""}
               {travelClass !== "economy" && ` • ${travelClass.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}`}
+              {directOnly && " • Direct only"}
             </p>
           </div>
           
           <Button
             variant="outline"
             onClick={() => navigate("/flights")}
-            className="gap-2 self-start"
+            className="gap-2 self-start shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
             New Search
           </Button>
         </div>
 
-        {/* Debug Panel (shown at top when debug mode is on and we have results or loading) */}
-        {isDebugMode && !error && flights.length > 0 && <DebugPanel />}
-
         {/* Price Calendar */}
-        {!isLoading && !error && flights.length > 0 && departDateObj && (
+        {!isLoading && !error && normalizedFlights.length > 0 && departDateObj && (
           <PriceCalendar
             departDate={departDateObj}
             basePrice={basePrice}
@@ -557,7 +391,7 @@ const FlightResults = () => {
 
         {isLoading ? (
           <div className="flex flex-col lg:flex-row gap-6 mt-6">
-            <div className="lg:w-72 shrink-0">
+            <div className="hidden lg:block lg:w-72 shrink-0">
               <div className="bg-card border border-border rounded-2xl p-6 space-y-6">
                 <div className="flex items-center gap-2 text-foreground font-semibold">
                   <div className="w-5 h-5 bg-muted rounded animate-pulse" />
@@ -576,10 +410,10 @@ const FlightResults = () => {
               </div>
             </div>
             
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-4 bg-card p-3 rounded-xl border border-border">
-                <span className="text-sm text-muted-foreground">Searching flights...</span>
-                <Loader2 className="w-4 h-4 text-primary animate-spin ml-auto" />
+                <span className="text-sm text-muted-foreground truncate">Searching flights...</span>
+                <Loader2 className="w-4 h-4 text-primary animate-spin ml-auto shrink-0" />
               </div>
               <FlightResultsSkeleton />
             </div>
@@ -596,41 +430,38 @@ const FlightResults = () => {
               Enter your travel details above to find the best flight deals
             </p>
           </div>
-        ) : flights.length === 0 ? (
-          // Determine which empty state to show based on emptyReason
-          emptyReason === 'far_future' ? (
-            <FarFutureState />
-          ) : emptyReason === 'no_cached_prices' ? (
-            <NoCachedPricesState />
-          ) : (
-            // This shouldn't happen often now, but fallback to cache empty state
-            <NoCachedPricesState />
-          )
+        ) : normalizedFlights.length === 0 ? (
+          emptyReason === 'far_future' ? <FarFutureState /> : <NoCachedPricesState />
         ) : (
-          /* Main Results View */
+          /* Main Results View with Independent Scrolling */
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Filters Sidebar - Desktop Only */}
+            {/* Filters Sidebar - Sticky & Independently Scrollable */}
             <div className="hidden lg:block lg:w-72 shrink-0">
               <FlightFilters
                 onFiltersChange={setFilters}
+                flights={flights}
+                showDirectOnly={!directOnly}
+                onDirectOnlyChange={(checked) => {
+                  setFilters(prev => ({ ...prev, directOnly: checked }));
+                }}
               />
             </div>
 
-            {/* Results */}
-            <div className="flex-1 space-y-4">
+            {/* Results Column */}
+            <div className="flex-1 space-y-4 min-w-0">
               {/* Flexible dates banner */}
               <FlexibleDatesBanner />
               
-              {/* Skyscanner-style Summary Bar */}
-              <FlightSummaryBar 
-                flights={flights}
+              {/* Skyscanner-style Sort Tabs */}
+              <FlightSortTabs 
+                flights={processedFlights}
                 sortBy={sortBy}
                 onSortChange={setSortBy}
               />
 
               {/* Mobile Filter Button + Count */}
               <div className="flex items-center justify-between gap-3 lg:hidden bg-card p-3 rounded-xl border border-border">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground truncate">
                   <span className="font-semibold text-foreground">{totalFiltered}</span> flights found
                 </p>
                 <MobileFiltersDrawer 
@@ -639,60 +470,57 @@ const FlightResults = () => {
                     filters.stops.length + 
                     filters.airlines.length + 
                     filters.departureTime.length +
+                    (filters.directOnly ? 1 : 0) +
                     (filters.priceRange[0] > 0 || filters.priceRange[1] < 5000 ? 1 : 0)
                   }
                   flightCount={totalFiltered}
                 />
               </div>
 
-              {/* Desktop Sort & Count Bar */}
-              <div className="hidden lg:flex flex-wrap items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
-                <p className="text-sm text-muted-foreground">
+              {/* Desktop Results Count */}
+              <div className="hidden lg:flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
+                <p className="text-sm text-muted-foreground truncate">
                   <span className="font-semibold text-foreground">{totalFiltered}</span> flights found
                   {responseStatus === 'OK_FLEXIBLE' && <span className="text-primary ml-1">(nearby dates)</span>}
                 </p>
-                <div className="flex gap-2">
-                  {(["best", "cheapest", "fastest"] as const).map((option) => (
-                    <Button
-                      key={option}
-                      variant={sortBy === option ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setSortBy(option)}
-                      className="text-xs capitalize"
-                    >
-                      {option}
-                    </Button>
-                  ))}
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Showing {Math.min(visibleCount, totalFiltered)} of {totalFiltered}
+                </p>
               </div>
 
               {/* Flight Cards */}
-              {displayedFlights.map((flight) => (
-                <FlightCard
+              {displayedFlights.map((flight, index) => (
+                <SkyscannerFlightCard
                   key={flight.id}
                   flight={flight}
-                  onViewDetails={() => setSelectedFlight(flight)}
+                  isBestValue={index === 0 && sortBy === "best"}
+                  isLoading={loadingFlightId === flight.id}
+                  onViewDeal={() => handleViewDeal(flight)}
+                  fetchedAt={fetchedAtRef.current}
                 />
               ))}
 
-              {/* Show More */}
-              {!showAllFlights && totalFiltered > 6 && (
+              {/* Show More Button */}
+              {hasMore && (
                 <div className="text-center pt-4">
                   <Button
                     variant="outline"
-                    onClick={() => setShowAllFlights(true)}
+                    onClick={handleShowMore}
                     className="gap-2"
                   >
-                    Show all {totalFiltered} flights
+                    Show {Math.min(RESULTS_PER_PAGE, totalFiltered - visibleCount)} more flights
                   </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Showing {visibleCount} of {totalFiltered} results
+                  </p>
                 </div>
               )}
 
-              {/* Direct search fallback - always show for transparency */}
+              {/* Direct search fallback */}
               {aviasalesDirectUrl && (
                 <div className="text-center pt-4 pb-2 border-t border-border mt-4">
                   <p className="text-sm text-muted-foreground mb-2">
-                    These are cached historical prices. For live availability and booking:
+                    For live availability and booking:
                   </p>
                   <Button
                     variant="outline"
