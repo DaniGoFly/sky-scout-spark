@@ -205,16 +205,22 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           lastUpdateTimestamp = pollData.last_update_timestamp;
         }
 
-        // Build/update lookup-derived flight info map (affiliate response)
-        // Prefer affiliate lookups when present; fallback to legacy flight_info.
+        // Build/update lookup-derived flight info map
+        // The affiliate resolver handles both flights array AND flight_info object
         const affiliateFlightInfoMap = buildFlightInfoMapFromAffiliate(pollData);
-        if (affiliateFlightInfoMap) {
+        if (affiliateFlightInfoMap && Object.keys(affiliateFlightInfoMap).length > 0) {
           flightInfoMap = { ...flightInfoMap, ...affiliateFlightInfoMap };
           airlineMetaByCode = { ...airlineMetaByCode, ...buildAirlineMetaByCodeFromAffiliate(pollData) };
+          if (DEV_MODE) {
+            console.log("[LiveSearch] FlightInfoMap updated, total entries:", Object.keys(flightInfoMap).length);
+          }
         } else if (pollData.flight_info) {
+          // Legacy fallback - build from flight_info directly
           const newFlightInfo = buildFlightInfoMap(pollData.flight_info);
-          // Merge with existing - newer data overwrites
           flightInfoMap = { ...flightInfoMap, ...newFlightInfo };
+          if (DEV_MODE) {
+            console.log("[LiveSearch] FlightInfoMap from legacy flight_info, entries:", Object.keys(newFlightInfo).length);
+          }
         }
 
         // Case A: Check if we have valid ticket data with segments
@@ -235,10 +241,31 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
           const newFlights = applyAirlineMetaToFlights(normalized, airlineMetaByCode);
 
-          // Dev-only: log exactly one full normalized object to verify times + airport codes
+          // Dev-only: log sample normalized flight to verify times + airport codes exist
           if (DEV_MODE && !devSampleLoggedRef.current && newFlights.length > 0) {
             devSampleLoggedRef.current = true;
-            console.log("[LiveSearch] Normalized flight example:", newFlights[0]);
+            const sample = newFlights[0];
+            console.log("[LiveSearch] normalized sample flight:", {
+              id: sample.id,
+              departureTime: sample.departureTime || "—",
+              arrivalTime: sample.arrivalTime || "—",
+              originIata: sample.originIata || "—",
+              destinationIata: sample.destinationIata || "—",
+              duration: sample.duration || "—",
+              durationMinutes: sample.durationMinutes,
+              stops: sample.stops,
+              stopAirports: sample.stopAirports,
+              airlineName: sample.airlineName || "—",
+              airlineLogo: sample.airlineLogo || "—",
+              returnLeg: sample.returnLeg ? {
+                departureTime: sample.returnLeg.departureTime || "—",
+                arrivalTime: sample.returnLeg.arrivalTime || "—",
+                originIata: sample.returnLeg.originIata || "—",
+                destinationIata: sample.returnLeg.destinationIata || "—",
+                duration: sample.returnLeg.duration || "—",
+                stops: sample.returnLeg.stops,
+              } : null,
+            });
           }
 
           for (const flight of newFlights) {
