@@ -13,7 +13,7 @@ import FlightSortTabs from "./FlightSortTabs";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import SkyscannerFlightCard from "./SkyscannerFlightCard";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
-import { NormalizedFlight, normalizeFlights, buildFlightInfoMap, sortFlights, isEligibleForBestValue } from "@/lib/flightNormalizer";
+import { NormalizedFlight, sortFlights, isEligibleForBestValue } from "@/lib/flightNormalizer";
 import { format, addDays } from "date-fns";
 import { getDefaultDates, parseDateSafe } from "@/lib/dateUtils";
 

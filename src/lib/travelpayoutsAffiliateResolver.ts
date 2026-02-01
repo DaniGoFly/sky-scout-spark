@@ -9,7 +9,20 @@
  * the existing UI normalizer (src/lib/flightNormalizer.ts).
  */
 
-import type { FlightInfoMap, NormalizedFlight } from "@/lib/flightNormalizer";
+import type { NormalizedFlight } from "@/lib/flightNormalizer";
+
+// Local FlightInfoMap type to avoid circular dependency
+export type FlightInfoMap = Record<
+  number,
+  {
+    departure: string;
+    arrival: string;
+    departureTime: string;
+    arrivalTime: string;
+    airline: string;
+    duration: number;
+  }
+>;
 
 const DEV_MODE = import.meta.env.DEV;
 

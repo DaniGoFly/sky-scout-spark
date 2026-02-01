@@ -4,13 +4,6 @@
  * This is the ONLY source of truth for what the UI renders.
  */
 
-import {
-  Ticket,
-  FlightInfo,
-  formatTime,
-  formatDuration,
-} from "@/lib/flightSearchApi";
-
 /**
  * Common airline code to name mapping
  * This maps IATA codes to human-readable airline names
@@ -48,6 +41,11 @@ const AIRLINE_NAMES: Record<string, string> = {
   WN: "Southwest Airlines",
   WS: "WestJet",
   X3: "TUI fly",
+  U2: "easyJet",
+  FR: "Ryanair",
+  W6: "Wizz Air",
+  VY: "Vueling",
+  FI: "Icelandair",
 };
 
 /**
@@ -89,7 +87,7 @@ export interface NormalizedFlight {
   originIata: string;
   destinationIata: string;
 
-  // Times (empty string if unavailable - UI will hide)
+  // Times (empty string if unavailable - UI will show "—")
   departureTime: string;
   arrivalTime: string;
 
@@ -179,128 +177,332 @@ export function getPriceConfidencePenalty(
   return penalty;
 }
 
-/**
- * Flight info map from API response
- */
-export type FlightInfoMap = Record<
-  number,
-  {
-    departure: string;
-    arrival: string;
-    departureTime: string;
-    arrivalTime: string;
-    airline: string;
-    duration: number;
-  }
->;
+// =============================
+// FLIGHT INFO EXTRACTION HELPERS
+// =============================
 
 /**
- * Build a flight info map from raw API flight_info
+ * Raw flight info from Travelpayouts API
+ * Supports multiple field naming conventions
  */
-export function buildFlightInfoMap(
-  rawFlightInfo: Record<string, FlightInfo> | undefined | null
-): FlightInfoMap {
-  const map: FlightInfoMap = {};
-
-  if (!rawFlightInfo || typeof rawFlightInfo !== "object") {
-    return map;
-  }
-
-  for (const [key, info] of Object.entries(rawFlightInfo)) {
-    const idx = parseInt(key, 10);
-    if (isNaN(idx) || !info) continue;
-
-    map[idx] = {
-      departure: info.departure || "",
-      arrival: info.arrival || "",
-      departureTime: formatTime(info.departure_timestamp),
-      arrivalTime: formatTime(info.arrival_timestamp),
-      airline: info.operating_carrier || "",
-      duration: info.duration || 0,
-    };
-  }
-
-  return map;
+interface RawFlightInfo {
+  // IATA codes
+  departure?: string;
+  arrival?: string;
+  origin?: string;
+  destination?: string;
+  
+  // Timestamps (ISO string or Unix seconds)
+  departure_at?: string | number;
+  arrival_at?: string | number;
+  departureAt?: string | number;
+  arrivalAt?: string | number;
+  departure_timestamp?: number;
+  arrival_timestamp?: number;
+  dep_time?: string | number;
+  arr_time?: string | number;
+  
+  // Duration in minutes
+  duration?: number;
+  
+  // Airline info
+  operating_carrier?: string;
+  marketing_carrier?: string;
+  airline?: string;
+  carrier?: string;
+  
+  // Flight number
+  flight_number?: string | number;
+  number?: string | number;
 }
 
 /**
- * Parse return leg from a ticket (second segment for roundtrip)
+ * Resolved leg data from flight IDs
  */
-function parseReturnLeg(
-  ticket: Ticket,
-  flightInfoMap: FlightInfoMap
-): ReturnLegInfo | undefined {
-  const segments = ticket.segments;
-  if (!Array.isArray(segments) || segments.length < 2) {
-    return undefined; // One-way or no return segment
+interface ResolvedLeg {
+  departAt: string;
+  arriveAt: string;
+  origin: string;
+  destination: string;
+  durationMins: number;
+  stopAirports: string[];
+  stopCount: number;
+  marketingCarrier: string;
+  flightNumber: string;
+}
+
+/**
+ * Extract flight_info map from ANY response shape
+ * The API may return flight_info at different levels
+ */
+export function getFlightInfoMap(raw: unknown): Record<string, RawFlightInfo> {
+  if (!raw || typeof raw !== 'object') return {};
+  
+  const r = raw as Record<string, unknown>;
+  
+  // Try all possible locations
+  const flightInfo = 
+    r.flight_info ||
+    r.flightInfo ||
+    (r.data as Record<string, unknown>)?.flight_info ||
+    (r.data as Record<string, unknown>)?.flightInfo ||
+    {};
+  
+  if (typeof flightInfo !== 'object' || flightInfo === null) return {};
+  
+  return flightInfo as Record<string, RawFlightInfo>;
+}
+
+/**
+ * Parse a timestamp to a Date object
+ * Handles ISO strings, Unix seconds, and Unix milliseconds
+ */
+function parseTimestamp(value: string | number | undefined): Date | null {
+  if (value === undefined || value === null || value === '') return null;
+  
+  try {
+    if (typeof value === 'string') {
+      // ISO string like "2026-03-03T06:50:00"
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) return date;
+      return null;
+    }
+    
+    if (typeof value === 'number') {
+      // Unix seconds (10 digits) vs milliseconds (13 digits)
+      const ts = value < 10000000000 ? value * 1000 : value;
+      const date = new Date(ts);
+      if (!isNaN(date.getTime())) return date;
+      return null;
+    }
+  } catch {
+    return null;
   }
-
-  const returnSegment = segments[1];
-  const returnFlights = returnSegment?.flights;
   
-  if (!Array.isArray(returnFlights) || returnFlights.length === 0) {
-    return undefined;
+  return null;
+}
+
+/**
+ * Format a Date to "6:50 AM" style
+ */
+function formatTimeFromDate(date: Date | null): string {
+  if (!date) return "";
+  try {
+    return date.toLocaleTimeString("en-US", { 
+      hour: "numeric", 
+      minute: "2-digit", 
+      hour12: true 
+    });
+  } catch {
+    return "";
   }
+}
 
-  const firstFlightIdx = returnFlights[0];
-  const lastFlightIdx = returnFlights[returnFlights.length - 1];
-  
-  const firstFlightInfo = firstFlightIdx !== undefined ? flightInfoMap[firstFlightIdx] : undefined;
-  const lastFlightInfo = lastFlightIdx !== undefined ? flightInfoMap[lastFlightIdx] : undefined;
+/**
+ * Format duration in minutes to "Xh Ym"
+ */
+function formatDuration(minutes: number): string {
+  if (!minutes || minutes <= 0) return "";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 
-  // Return leg origin/destination
-  const originIata = (firstFlightInfo?.departure || "").toUpperCase();
-  const destinationIata = (lastFlightInfo?.arrival || "").toUpperCase();
-  
-  // Times - formatTime now returns empty string for invalid timestamps
-  const departureTime = firstFlightInfo?.departureTime || "";
-  const arrivalTime = lastFlightInfo?.arrivalTime || "";
+/**
+ * Get departure timestamp from a flight info object
+ */
+function getDepartureDate(info: RawFlightInfo): Date | null {
+  return (
+    parseTimestamp(info.departure_at) ||
+    parseTimestamp(info.departureAt) ||
+    parseTimestamp(info.departure_timestamp) ||
+    parseTimestamp(info.dep_time) ||
+    null
+  );
+}
 
-  // Stops
-  const stops = Math.max(0, returnFlights.length - 1);
+/**
+ * Get arrival timestamp from a flight info object
+ */
+function getArrivalDate(info: RawFlightInfo): Date | null {
+  return (
+    parseTimestamp(info.arrival_at) ||
+    parseTimestamp(info.arrivalAt) ||
+    parseTimestamp(info.arrival_timestamp) ||
+    parseTimestamp(info.arr_time) ||
+    null
+  );
+}
+
+/**
+ * Get origin IATA from a flight info object
+ */
+function getOriginIata(info: RawFlightInfo): string {
+  const code = info.departure || info.origin || "";
+  return typeof code === 'string' ? code.toUpperCase() : "";
+}
+
+/**
+ * Get destination IATA from a flight info object
+ */
+function getDestinationIata(info: RawFlightInfo): string {
+  const code = info.arrival || info.destination || "";
+  return typeof code === 'string' ? code.toUpperCase() : "";
+}
+
+/**
+ * Get airline code from a flight info object
+ */
+function getAirlineCode(info: RawFlightInfo): string {
+  const code = info.operating_carrier || info.marketing_carrier || info.airline || info.carrier || "";
+  return typeof code === 'string' ? code.toUpperCase() : "";
+}
+
+/**
+ * Get flight number from a flight info object
+ */
+function getFlightNumber(info: RawFlightInfo): string {
+  const num = info.flight_number || info.number || "";
+  return String(num);
+}
+
+/**
+ * Resolve flight IDs to actual leg data
+ * This is the CORE function that extracts times from flight_info
+ */
+export function resolveFlightLegFromIds(
+  flightIds: unknown[],
+  flightInfo: Record<string, RawFlightInfo>
+): ResolvedLeg {
+  // Default empty result
+  const empty: ResolvedLeg = {
+    departAt: "",
+    arriveAt: "",
+    origin: "",
+    destination: "",
+    durationMins: 0,
+    stopAirports: [],
+    stopCount: 0,
+    marketingCarrier: "",
+    flightNumber: "",
+  };
   
-  // Stop airports
+  // Must have valid flight IDs
+  if (!Array.isArray(flightIds) || flightIds.length === 0) {
+    return empty;
+  }
+  
+  // Resolve each flight ID to its info object
+  const resolvedFlights: RawFlightInfo[] = [];
+  for (const id of flightIds) {
+    const key = String(id);
+    const info = flightInfo[key];
+    if (info && typeof info === 'object') {
+      resolvedFlights.push(info);
+    }
+  }
+  
+  if (resolvedFlights.length === 0) {
+    return empty;
+  }
+  
+  // First and last flights for this leg
+  const firstFlight = resolvedFlights[0];
+  const lastFlight = resolvedFlights[resolvedFlights.length - 1];
+  
+  // Departure = first flight's departure
+  const departDate = getDepartureDate(firstFlight);
+  const departAt = formatTimeFromDate(departDate);
+  
+  // Arrival = last flight's arrival
+  const arriveDate = getArrivalDate(lastFlight);
+  const arriveAt = formatTimeFromDate(arriveDate);
+  
+  // Origin = first flight's origin
+  const origin = getOriginIata(firstFlight);
+  
+  // Destination = last flight's destination
+  const destination = getDestinationIata(lastFlight);
+  
+  // Duration: sum individual durations or compute from timestamps
+  let durationMins = 0;
+  for (const info of resolvedFlights) {
+    if (typeof info.duration === 'number' && info.duration > 0) {
+      durationMins += info.duration;
+    }
+  }
+  // If no duration fields, compute from timestamps
+  if (durationMins === 0 && departDate && arriveDate) {
+    const diffMs = arriveDate.getTime() - departDate.getTime();
+    if (diffMs > 0) {
+      durationMins = Math.round(diffMs / 60000);
+    }
+  }
+  
+  // Stop airports: destinations of all flights except the last
   const stopAirports: string[] = [];
-  if (returnFlights.length > 2) {
-    for (let i = 1; i < returnFlights.length - 1; i++) {
-      const stopInfo = flightInfoMap[returnFlights[i]];
-      if (stopInfo?.departure) {
-        stopAirports.push(stopInfo.departure.toUpperCase());
-      }
-    }
-  } else if (returnFlights.length === 2) {
-    const stopInfo = flightInfoMap[returnFlights[0]];
-    if (stopInfo?.arrival) {
-      stopAirports.push(stopInfo.arrival.toUpperCase());
+  for (let i = 0; i < resolvedFlights.length - 1; i++) {
+    const stopIata = getDestinationIata(resolvedFlights[i]);
+    if (stopIata) {
+      stopAirports.push(stopIata);
     }
   }
-
-  // Duration
-  let totalDuration = 0;
-  for (const flightIdx of returnFlights) {
-    const info = flightInfoMap[flightIdx];
-    if (info?.duration) totalDuration += info.duration;
-  }
-  const durationText = totalDuration > 0 ? formatDuration(totalDuration) : "";
-
+  
+  // Stop count
+  const stopCount = stopAirports.length;
+  
+  // Marketing carrier from first flight
+  const marketingCarrier = getAirlineCode(firstFlight);
+  
+  // Flight number from first flight
+  const flightNumber = getFlightNumber(firstFlight);
+  
   return {
-    departureTime,
-    arrivalTime,
-    originIata,
-    destinationIata,
-    duration: durationText,
-    durationMinutes: totalDuration,
-    stops,
+    departAt,
+    arriveAt,
+    origin,
+    destination,
+    durationMins,
     stopAirports,
+    stopCount,
+    marketingCarrier,
+    flightNumber,
   };
 }
 
+// =============================
+// TICKET NORMALIZATION
+// =============================
+
 /**
- * Normalize a single ticket into multiple flight offers (one per proposal)
+ * Ticket from the API
+ */
+interface Ticket {
+  signature: string;
+  segments?: Array<{
+    flights?: number[];
+    transfers?: Array<{ recheck_baggage?: boolean; night_transfer?: boolean }>;
+  }>;
+  proposals?: Array<{
+    id?: string;
+    price?: { currency_code?: string; value?: number };
+    price_per_person?: { currency_code?: string; value?: number };
+    agent_id?: number;
+    flight_terms?: Record<string, {
+      marketing_carrier_designator?: {
+        carrier?: string;
+        number?: string;
+      };
+    }>;
+  }>;
+}
+
+/**
+ * Normalize a single ticket into NormalizedFlight objects
  */
 function normalizeTicket(
   ticket: Ticket,
-  flightInfoMap: FlightInfoMap,
+  flightInfo: Record<string, RawFlightInfo>,
   searchId: string,
   resultsUrl: string,
   defaultOrigin: string,
@@ -319,119 +521,92 @@ function normalizeTicket(
     return results;
   }
 
-  // Get first segment for route info
+  // Get segments
   const segments = ticket.segments;
-  const firstSegment = Array.isArray(segments) && segments.length > 0 ? segments[0] : null;
-  const segmentFlights = firstSegment?.flights;
-
-  // Get flight indices
-  const firstFlightIdx =
-    Array.isArray(segmentFlights) && segmentFlights.length > 0
-      ? segmentFlights[0]
-      : undefined;
-  const lastFlightIdx =
-    Array.isArray(segmentFlights) && segmentFlights.length > 0
-      ? segmentFlights[segmentFlights.length - 1]
-      : undefined;
-
-  // Get flight info
-  const firstFlightInfo = firstFlightIdx !== undefined ? flightInfoMap[firstFlightIdx] : undefined;
-  const lastFlightInfo = lastFlightIdx !== undefined ? flightInfoMap[lastFlightIdx] : undefined;
-
-  // Route (always show, use defaults if needed)
-  const originIata = (firstFlightInfo?.departure || defaultOrigin).toUpperCase();
-  const destinationIata = (lastFlightInfo?.arrival || defaultDestination).toUpperCase();
-
-  // Times - formatTime now returns empty string for invalid timestamps
-  const departureTime = firstFlightInfo?.departureTime || "";
-  const arrivalTime = lastFlightInfo?.arrivalTime || "";
-
-  // Stops and stop airports
-  const stops =
-    firstSegment && Array.isArray(segmentFlights)
-      ? Math.max(0, segmentFlights.length - 1)
-      : 0;
-
-  // Collect intermediate stop airports
-  const stopAirports: string[] = [];
-  if (Array.isArray(segmentFlights) && segmentFlights.length > 2) {
-    for (let i = 1; i < segmentFlights.length - 1; i++) {
-      const stopInfo = flightInfoMap[segmentFlights[i]];
-      if (stopInfo?.departure) {
-        stopAirports.push(stopInfo.departure.toUpperCase());
-      }
-    }
-  } else if (Array.isArray(segmentFlights) && segmentFlights.length === 2) {
-    // For 1 stop, the arrival of first flight is the stop
-    const stopInfo = flightInfoMap[segmentFlights[0]];
-    if (stopInfo?.arrival) {
-      stopAirports.push(stopInfo.arrival.toUpperCase());
+  const outboundSegment = Array.isArray(segments) && segments.length > 0 ? segments[0] : null;
+  const returnSegment = Array.isArray(segments) && segments.length > 1 ? segments[1] : null;
+  
+  // Resolve OUTBOUND leg from flight IDs
+  const outboundFlightIds = outboundSegment?.flights || [];
+  const outboundLeg = resolveFlightLegFromIds(outboundFlightIds, flightInfo);
+  
+  // Use resolved values or fall back to defaults
+  const originIata = outboundLeg.origin || defaultOrigin.toUpperCase();
+  const destinationIata = outboundLeg.destination || defaultDestination.toUpperCase();
+  const departureTime = outboundLeg.departAt;
+  const arrivalTime = outboundLeg.arriveAt;
+  const stops = outboundLeg.stopCount;
+  const stopAirports = outboundLeg.stopAirports;
+  const totalDuration = outboundLeg.durationMins;
+  const durationText = formatDuration(totalDuration);
+  const marketingCarrier = outboundLeg.marketingCarrier;
+  const flightNum = outboundLeg.flightNumber;
+  
+  // Resolve RETURN leg if roundtrip
+  let returnLeg: ReturnLegInfo | undefined;
+  if (returnSegment) {
+    const returnFlightIds = returnSegment.flights || [];
+    const resolvedReturn = resolveFlightLegFromIds(returnFlightIds, flightInfo);
+    
+    if (resolvedReturn.origin || resolvedReturn.departAt) {
+      returnLeg = {
+        departureTime: resolvedReturn.departAt,
+        arrivalTime: resolvedReturn.arriveAt,
+        originIata: resolvedReturn.origin || destinationIata,
+        destinationIata: resolvedReturn.destination || originIata,
+        duration: formatDuration(resolvedReturn.durationMins),
+        durationMinutes: resolvedReturn.durationMins,
+        stops: resolvedReturn.stopCount,
+        stopAirports: resolvedReturn.stopAirports,
+      };
     }
   }
-
-  // Calculate total duration
-  let totalDuration = 0;
-  if (Array.isArray(segmentFlights)) {
-    for (const flightIdx of segmentFlights) {
-      const info = flightInfoMap[flightIdx];
-      if (info?.duration) totalDuration += info.duration;
-    }
-  }
-  const durationText = totalDuration > 0 ? formatDuration(totalDuration) : "";
 
   // Process each proposal
   for (const proposal of proposals) {
     if (!proposal || typeof proposal !== "object") continue;
     if (!proposal.id) continue;
 
-    // Get raw price value - DO NOT convert, trust backend
+    // Get raw price value
     const rawPrice = proposal.price_per_person?.value ?? proposal.price?.value ?? 0;
     const priceValue = typeof rawPrice === 'number' ? rawPrice : Number(rawPrice) || 0;
     
-    // Validate price using our helper
+    // Validate price
     const isPriceValid = isValidPrice(priceValue);
     
     // Skip flights with completely invalid prices (0 or negative)
     if (priceValue <= 0) continue;
 
-    // Get airline from flight terms
+    // Get airline from flight terms or resolved leg
     const flightTerms = proposal.flight_terms;
-    const flightTermKeys =
-      flightTerms && typeof flightTerms === "object" ? Object.keys(flightTerms) : [];
+    const flightTermKeys = flightTerms && typeof flightTerms === "object" ? Object.keys(flightTerms) : [];
     const firstTermKey = flightTermKeys[0];
     const firstTerm = firstTermKey ? flightTerms?.[firstTermKey] : undefined;
 
     const carrierCode =
       firstTerm?.marketing_carrier_designator?.carrier ||
-      firstFlightInfo?.airline ||
+      marketingCarrier ||
       "XX";
-    const flightNumber = firstTerm?.marketing_carrier_designator?.number || "";
+    const flightNumber = firstTerm?.marketing_carrier_designator?.number || flightNum;
 
     const id = `${proposal.id}-${ticket.signature}`;
     const upperCarrierCode = carrierCode.toUpperCase();
 
-    // Validate booking metadata - all fields must be non-empty strings
+    // Validate booking metadata
     const hasValidBooking = Boolean(
-      searchId && 
-      typeof searchId === "string" && 
-      searchId.length > 0 &&
-      resultsUrl && 
-      typeof resultsUrl === "string" && 
-      resultsUrl.length > 0 &&
-      proposal.id && 
-      typeof proposal.id === "string" &&
-      ticket.signature && 
-      typeof ticket.signature === "string"
+      searchId && typeof searchId === "string" && searchId.length > 0 &&
+      resultsUrl && typeof resultsUrl === "string" && resultsUrl.length > 0 &&
+      proposal.id && typeof proposal.id === "string" &&
+      ticket.signature && typeof ticket.signature === "string"
     );
 
     results.push({
       id,
       airlineCode: upperCarrierCode,
       airlineName: getAirlineName(upperCarrierCode),
-      airlineLogo:
-        upperCarrierCode && upperCarrierCode !== "XX"
-          ? `https://pics.avs.io/60/60/${upperCarrierCode}.png`
-          : "",
+      airlineLogo: upperCarrierCode && upperCarrierCode !== "XX"
+        ? `https://pics.avs.io/60/60/${upperCarrierCode}.png`
+        : "",
       flightNumber: flightNumber ? `${upperCarrierCode}${flightNumber}` : "",
       originIata,
       destinationIata,
@@ -441,12 +616,9 @@ function normalizeTicket(
       durationMinutes: totalDuration,
       stops,
       stopAirports,
-      // Return leg - parsed from second segment if roundtrip
-      returnLeg: parseReturnLeg(ticket, flightInfoMap),
-      // Round to 0 decimals like Skyscanner - only once, no double conversion
+      returnLeg,
       price: Math.round(priceValue),
       currency: proposal.price_per_person?.currency_code || proposal.price?.currency_code || "EUR",
-      // Deals count - number of proposals for this ticket
       dealsCount: proposals.length,
       isPriceValid,
       searchId,
@@ -461,27 +633,47 @@ function normalizeTicket(
 }
 
 /**
- * Normalize all tickets from API response
+ * Normalize all flights from a RAW API response
+ * This is the main entry point - pass the FULL raw response
  */
-export function normalizeFlights(
-  tickets: Ticket[] | undefined | null,
-  flightInfoMap: FlightInfoMap,
+export function normalizeFlightsFromResponse(
+  rawResponse: unknown,
   searchId: string,
   resultsUrl: string,
   defaultOrigin: string,
   defaultDestination: string
 ): NormalizedFlight[] {
-  if (!Array.isArray(tickets)) {
-    console.warn("[Normalizer] No valid tickets array");
+  if (!rawResponse || typeof rawResponse !== 'object') {
+    console.warn("[Normalizer] Invalid response");
     return [];
   }
-
+  
+  const response = rawResponse as Record<string, unknown>;
+  
+  // Extract tickets array
+  const tickets = response.tickets as Ticket[] | undefined;
+  if (!Array.isArray(tickets) || tickets.length === 0) {
+    console.warn("[Normalizer] No tickets array in response");
+    return [];
+  }
+  
+  // Extract flight_info map
+  const flightInfo = getFlightInfoMap(rawResponse);
+  const flightInfoCount = Object.keys(flightInfo).length;
+  
+  if (flightInfoCount === 0) {
+    console.warn("[Normalizer] No flight_info in response - times will be missing");
+  } else {
+    console.log(`[Normalizer] Found ${flightInfoCount} flight_info entries`);
+  }
+  
+  // Normalize all tickets
   const allFlights: NormalizedFlight[] = [];
-
+  
   for (const ticket of tickets) {
     const normalized = normalizeTicket(
       ticket,
-      flightInfoMap,
+      flightInfo,
       searchId,
       resultsUrl,
       defaultOrigin,
@@ -489,14 +681,45 @@ export function normalizeFlights(
     );
     allFlights.push(...normalized);
   }
-
+  
   console.log(`[Normalizer] Normalized ${allFlights.length} flights from ${tickets.length} tickets`);
+  
+  // DEV ONLY: Log sample normalized flight
+  if (import.meta.env.DEV && allFlights.length > 0) {
+    const sample = allFlights[0];
+    console.log("normalized sample flight", {
+      id: sample.id,
+      originIata: sample.originIata,
+      destinationIata: sample.destinationIata,
+      departureTime: sample.departureTime || "—",
+      arrivalTime: sample.arrivalTime || "—",
+      duration: sample.duration || "—",
+      durationMinutes: sample.durationMinutes,
+      stops: sample.stops,
+      stopAirports: sample.stopAirports,
+      returnLeg: sample.returnLeg ? {
+        originIata: sample.returnLeg.originIata,
+        destinationIata: sample.returnLeg.destinationIata,
+        departureTime: sample.returnLeg.departureTime || "—",
+        arrivalTime: sample.returnLeg.arrivalTime || "—",
+        duration: sample.returnLeg.duration || "—",
+        stops: sample.returnLeg.stops,
+        stopAirports: sample.returnLeg.stopAirports,
+      } : null,
+      airlineName: sample.airlineName,
+      price: sample.price,
+    });
+  }
+  
   return allFlights;
 }
 
+// =============================
+// SORTING & STATS
+// =============================
+
 /**
  * Sort flights by different criteria
- * Optionally takes fetchedAt to factor in price freshness
  */
 export function sortFlights(
   flights: NormalizedFlight[],
@@ -536,36 +759,25 @@ export function sortFlights(
 
 /**
  * Check if a flight is eligible to be "Best Value"
- * Must have valid price, valid booking URL, and not be stale
  */
 export function isEligibleForBestValue(
   flight: NormalizedFlight,
   fetchedAt?: number,
   staleThresholdMs: number = 120000
 ): boolean {
-  // Must have valid price
   if (!flight.isPriceValid || flight.price <= 0) return false;
-  
-  // Must have valid booking URL metadata
   if (!flight.hasValidBookingUrl) return false;
-  
-  // Must not be stale
   if (fetchedAt && Date.now() - fetchedAt > staleThresholdMs) return false;
-  
   return true;
 }
 
 /**
  * Get summary stats for the flight list
- * Only considers flights with valid prices for "best" calculation
  */
 export function getFlightStats(flights: NormalizedFlight[], fetchedAt?: number) {
   if (flights.length === 0) return null;
 
-  // Filter to only valid-priced flights for cheapest calculation
   const validPriceFlights = flights.filter(f => f.isPriceValid && f.price > 0);
-  
-  // If no valid prices, use all flights but mark as uncertain
   const priceFlights = validPriceFlights.length > 0 ? validPriceFlights : flights;
 
   const cheapest = priceFlights.reduce((min, f) => (f.price < min.price ? f : min), priceFlights[0]);
@@ -574,7 +786,6 @@ export function getFlightStats(flights: NormalizedFlight[], fetchedAt?: number) 
     flights[0]
   );
 
-  // Best uses weighted score with confidence penalty
   const eligibleForBest = flights.filter(f => isEligibleForBestValue(f, fetchedAt));
   const bestCandidates = eligibleForBest.length > 0 ? eligibleForBest : priceFlights;
   
