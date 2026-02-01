@@ -9,13 +9,28 @@ interface SkyscannerFlightCardProps {
   isBestValue?: boolean;
   isLoading?: boolean;
   onViewDeal: () => void;
+  fetchedAt?: number; // timestamp when price was fetched
 }
+
+const getTimeAgo = (timestamp: number): string => {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 5) return "Updated just now";
+  if (seconds < 60) return `Updated ${seconds}s ago`;
+  if (seconds < 120) return `Updated ${Math.floor(seconds / 60)}m ago`;
+  return "Price may be outdated";
+};
+
+const isPriceStale = (timestamp?: number): boolean => {
+  if (!timestamp) return false;
+  return Date.now() - timestamp > 120000; // 2 minutes
+};
 
 const SkyscannerFlightCard = ({
   flight,
   isBestValue = false,
   isLoading = false,
   onViewDeal,
+  fetchedAt,
 }: SkyscannerFlightCardProps) => {
   const getStopsLabel = (stops: number, stopAirports?: string[]): string => {
     if (stops === 0) return "Direct";
@@ -39,6 +54,10 @@ const SkyscannerFlightCard = ({
   };
 
   const canBook = flight.hasValidBookingUrl;
+  const priceInvalid = !flight.price || flight.price <= 0 || isNaN(flight.price);
+  const stale = isPriceStale(fetchedAt);
+  const showCheckPrice = priceInvalid || stale;
+  const isDisabled = !canBook || showCheckPrice;
 
   return (
     <div
@@ -78,7 +97,7 @@ const SkyscannerFlightCard = ({
           </div>
 
           {/* Row 2: Flight Times & Route */}
-          <div className="flex-1 flex items-center gap-3 md:gap-6">
+          <div className="flex-1 flex items-center gap-3 md:gap-6 min-w-0">
             {/* Departure */}
             <div className="text-left min-w-[60px]">
               {flight.departureTime ? (
@@ -94,9 +113,9 @@ const SkyscannerFlightCard = ({
             </div>
 
             {/* Flight Path Visual */}
-            <div className="flex-1 flex flex-col items-center px-2">
+            <div className="flex-1 flex flex-col items-center px-2 min-w-0">
               {flight.duration && (
-                <span className="text-xs text-muted-foreground mb-1">
+                <span className="text-xs text-muted-foreground mb-1 truncate">
                   {flight.duration}
                 </span>
               )}
@@ -106,7 +125,7 @@ const SkyscannerFlightCard = ({
                 <div className="absolute right-0 w-2 h-2 bg-primary rounded-full -translate-y-[3px]" />
               </div>
               <span
-                className={`text-xs mt-1 font-medium ${
+                className={`text-xs mt-1 font-medium truncate ${
                   flight.stops === 0 ? "text-green-600" : "text-muted-foreground"
                 }`}
               >
@@ -130,25 +149,41 @@ const SkyscannerFlightCard = ({
           </div>
 
           {/* Row 3: Price & CTA */}
-          <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3 lg:w-36 shrink-0">
+          <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3 lg:w-40 shrink-0">
             <div className="text-right">
-              <p className="text-2xl md:text-3xl font-bold text-foreground">
-                {formatPrice(flight.price, flight.currency)}
+              {showCheckPrice ? (
+                <p className="text-xl md:text-2xl font-bold text-muted-foreground">
+                  Check price
+                </p>
+              ) : (
+                <>
+                  <p className="text-2xl md:text-3xl font-bold text-foreground">
+                    From {formatPrice(flight.price, flight.currency)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">per person</p>
+                </>
+              )}
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                Price may change when you book
               </p>
-              <p className="text-xs text-muted-foreground">per person</p>
+              {fetchedAt && (
+                <p className="text-[10px] text-muted-foreground/60">
+                  {getTimeAgo(fetchedAt)}
+                </p>
+              )}
             </div>
             <Button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!isLoading && canBook) {
+                if (!isLoading && !isDisabled) {
                   onViewDeal();
                 }
               }}
-              disabled={!canBook || isLoading}
+              disabled={isDisabled || isLoading}
               size="lg"
               className="gap-2 min-w-[130px] font-semibold"
-              title={!canBook ? "Booking unavailable" : "View this deal"}
+              title={!canBook ? "Booking unavailable" : showCheckPrice ? "Price unavailable" : "View this deal"}
             >
               {isLoading ? (
                 <>
