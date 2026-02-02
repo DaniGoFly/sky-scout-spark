@@ -4,8 +4,8 @@
  */
 
 import { 
-  FLIGHT_SEARCH_ENDPOINT, 
-  getFlightSearchHeaders 
+  EDGE_FUNCTION_URL,
+  EDGE_HEADERS
 } from "./flightSearchConfig";
 
 // Default user IP (required by Travelpayouts)
@@ -175,9 +175,11 @@ export async function callEdgeFunction<T = unknown>(
   console.log(`[FlightAPI] Request (${action}):`, sanitizeForLog(payload));
   
   try {
-    const response = await fetch(FLIGHT_SEARCH_ENDPOINT, {
+    const headers = EDGE_HEADERS();
+
+    const response = await fetch(EDGE_FUNCTION_URL, {
       method: "POST",
-      headers: getFlightSearchHeaders(),
+      headers,
       body: JSON.stringify(payload),
     });
 

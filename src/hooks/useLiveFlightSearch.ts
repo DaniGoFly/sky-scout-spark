@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef } from "react";
 import { Flight } from "@/lib/flightNormalizer";
 import { 
-  FLIGHT_SEARCH_ENDPOINT, 
-  getFlightSearchHeaders 
+  EDGE_FUNCTION_URL,
+  EDGE_HEADERS
 } from "@/lib/flightSearchConfig";
 
 /**
@@ -20,6 +20,7 @@ interface ErrorDetails {
   status?: number;
   step?: string;
   responseText?: string;
+  authHeaderExists?: boolean;
 }
 
 interface SearchParams {
@@ -107,12 +108,11 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         sort: params.sort || "best",
       };
 
-      console.log("[FlightSearch] Calling:", FLIGHT_SEARCH_ENDPOINT);
-      console.log("[FlightSearch] Request:", requestBody);
+      const headers = EDGE_HEADERS();
 
-      const response = await fetch(FLIGHT_SEARCH_ENDPOINT, {
+      const response = await fetch(EDGE_FUNCTION_URL, {
         method: "POST",
-        headers: getFlightSearchHeaders(),
+        headers,
         body: JSON.stringify(requestBody),
       });
 
@@ -128,9 +128,10 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         // JSON parse failed
         const details: ErrorDetails = {
           message: "Invalid JSON response",
-          url: FLIGHT_SEARCH_ENDPOINT,
+          url: EDGE_FUNCTION_URL,
           status: response.status,
           responseText: responseText.substring(0, 500),
+          authHeaderExists: Boolean(headers?.authorization),
         };
         console.error("[FlightSearch] Parse error:", details);
         setError(details.message);
@@ -138,28 +139,16 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         setStatus("error");
         return;
       }
-      
-      // Dev-only debug log
-      if (import.meta.env.DEV) {
-        console.log("[FlightSearch] Response:", {
-          url: FLIGHT_SEARCH_ENDPOINT,
-          status: response.status,
-          ok: data.ok,
-          step: data.step,
-          search_id: data.search_id,
-          flights_count: data.flights?.length || 0,
-          error: data.error,
-        });
-      }
 
       if (!response.ok || !data.ok) {
         const errorMsg = data.error || data.upstream || `HTTP ${response.status}`;
         const details: ErrorDetails = {
           message: errorMsg,
-          url: FLIGHT_SEARCH_ENDPOINT,
+          url: EDGE_FUNCTION_URL,
           status: response.status,
           step: data.step,
           responseText: responseText.substring(0, 500),
+          authHeaderExists: Boolean(headers?.authorization),
         };
         console.error("[FlightSearch] Error:", details);
         setError(errorMsg);
@@ -182,13 +171,23 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
       setFlights(flightResults);
       setStatus("complete");
-      
-      console.log("[FlightSearch] Complete:", flightResults.length, "flights");
+
+      // Small dev-only debug log
+      try {
+        const host = window.location.hostname;
+        const isDev = host === "localhost" || host.endsWith(".lovableproject.com") || host.endsWith(".lovable.app");
+        if (isDev) {
+          console.log("[FlightSearch] OK", { search_id: data.search_id, flights: flightResults.length });
+        }
+      } catch {
+        // ignore
+      }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Network error";
       const details: ErrorDetails = {
         message: errorMsg,
-        url: FLIGHT_SEARCH_ENDPOINT,
+        url: EDGE_FUNCTION_URL,
+        authHeaderExists: false,
       };
       console.error("[FlightSearch] Error:", details);
       setError(errorMsg);
