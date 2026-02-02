@@ -13,7 +13,7 @@ export type NormalizedFlight = Flight;
  * Backwards compatible function for legacy components
  */
 export function isEligibleForBestValue(flight: Flight): boolean {
-  return hasValidClickUrl(flight) && flight.price.amount > 0;
+  return hasValidBookingUrl(flight) && flight.price.amount > 0;
 }
 
 /**
@@ -49,9 +49,58 @@ export interface Flight {
     amount: number;
     currency: string;
   };
-  clickUrl: string;
+  /**
+   * May be present for backwards compatibility.
+   * IMPORTANT: this can be a Travelpayouts click endpoint (JSON), so it must NOT be used as a booking href.
+   */
+  clickUrl?: string;
   proposalId?: string;
+  /** Identifier used to resolve the deal server-side (alias of proposalId in current backend) */
+  clickId?: string;
+  /** Search context required for resolving clickId */
+  searchId?: string;
+  resultsBase?: string;
+  /** Final external partner URL (must start with http(s)) */
+  bookingUrl?: string;
   return?: ReturnLegInfo;
+}
+
+export function isHttpUrl(url: string | undefined | null): boolean {
+  if (!url) return false;
+  return url.startsWith("http://") || url.startsWith("https://");
+}
+
+export function isTravelpayoutsClickUrl(url: string | undefined | null): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return lower.includes("travelpayouts.com/searches/") && lower.includes("/clicks/");
+}
+
+export function getFlightClickId(flight: Flight): string {
+  return flight.clickId || flight.proposalId || "";
+}
+
+/**
+ * Get the safest booking URL to render as a normal <a href>.
+ * Never returns the Travelpayouts click endpoint.
+ */
+export function getFlightBookingUrl(flight: Flight): string {
+  const anyFlight = flight as any;
+  const raw =
+    flight.bookingUrl ||
+    anyFlight.booking_url ||
+    anyFlight.deep_link ||
+    anyFlight.deepLink ||
+    anyFlight.link ||
+    "";
+
+  if (isHttpUrl(raw)) return raw;
+
+  // Back-compat fallback: allow clickUrl only if it isn't a Travelpayouts click endpoint.
+  const clickUrl = flight.clickUrl || "";
+  if (isHttpUrl(clickUrl) && !isTravelpayoutsClickUrl(clickUrl)) return clickUrl;
+
+  return "";
 }
 
 /**
@@ -157,8 +206,8 @@ export function getAirlineLogo(airlineCode: string): string {
 /**
  * Check if a flight has a valid booking URL
  */
-export function hasValidClickUrl(flight: Flight): boolean {
-  return Boolean(flight.clickUrl && flight.clickUrl.startsWith("http"));
+export function hasValidBookingUrl(flight: Flight): boolean {
+  return Boolean(getFlightBookingUrl(flight));
 }
 
 /**
