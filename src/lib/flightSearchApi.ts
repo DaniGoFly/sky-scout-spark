@@ -5,7 +5,8 @@
 
 import { 
   FLIGHT_SEARCH_URL,
-  FLIGHT_SEARCH_HEADERS
+  FLIGHT_SEARCH_HEADERS,
+  assertSupabaseEnv
 } from "./flightSearchConfig";
 import { Flight } from "./flightNormalizer";
 
@@ -59,6 +60,7 @@ export async function searchFlights(params: SearchParams): Promise<SearchRespons
     limit: params.limit || 25,
     sort: params.sort || "best",
   };
+  assertSupabaseEnv();
 
   try {
     const response = await fetch(FLIGHT_SEARCH_URL, {
@@ -99,6 +101,7 @@ export async function resolveClick(params: {
     proposal_id: params.proposal_id,
     results_base: params.results_base,
   };
+  assertSupabaseEnv();
 
   try {
     const response = await fetch(FLIGHT_SEARCH_URL, {
