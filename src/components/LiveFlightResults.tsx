@@ -8,7 +8,7 @@ import CompactSearchBar from "./CompactSearchBar";
 import FlightCard from "./SkyscannerFlightCard";
 import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
 import { useLiveFlightSearch, Flight } from "@/hooks/useLiveFlightSearch";
-import { sortFlights, getAirlineName, hasValidClickUrl } from "@/lib/flightNormalizer";
+import { getAirlineName, hasValidClickUrl } from "@/lib/flightNormalizer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,23 +54,38 @@ const LiveFlightResults = () => {
     first: "F",
   };
 
-  // Trigger search
+  // Trigger search when params change or sort changes
+  const doSearch = useCallback((sort: "best" | "cheapest" | "fastest") => {
+    if (!from || !to || !depart) return;
+    
+    searchFlights({
+      origin: from.toUpperCase(),
+      destination: to.toUpperCase(),
+      departDate: depart,
+      returnDate: tripType === "roundtrip" ? returnDate : undefined,
+      adults,
+      children,
+      infants,
+      tripClass: tripClassMap[cabin] || "Y",
+      currency: "EUR",
+      sort,
+      limit: 25,
+    });
+  }, [from, to, depart, returnDate, adults, children, infants, tripType, cabin, searchFlights]);
+
+  // Initial search on mount
   useEffect(() => {
     if (from && to && depart && !hasSearched) {
       setHasSearched(true);
-      searchFlights({
-        origin: from.toUpperCase(),
-        destination: to.toUpperCase(),
-        departDate: depart,
-        returnDate: tripType === "roundtrip" ? returnDate : undefined,
-        adults,
-        children,
-        infants,
-        tripClass: tripClassMap[cabin] || "Y",
-        currency: "EUR",
-      });
+      doSearch(sortBy);
     }
-  }, [from, to, depart, returnDate, adults, children, infants, tripType, cabin, searchFlights, hasSearched]);
+  }, [from, to, depart, hasSearched, doSearch, sortBy]);
+
+  // Re-fetch when sort changes (after initial search)
+  const handleSortChange = useCallback((newSort: "best" | "cheapest" | "fastest") => {
+    setSortBy(newSort);
+    doSearch(newSort);
+  }, [doSearch]);
 
   // Get available airlines for filter
   const availableAirlines = useMemo(() => {
@@ -139,10 +154,8 @@ const LiveFlightResults = () => {
     return result;
   }, [rawFlights, filters]);
 
-  // Sort flights
-  const sortedFlights = useMemo(() => {
-    return sortFlights(filteredFlights, sortBy);
-  }, [filteredFlights, sortBy]);
+  // Backend already sorted, just filter
+  const sortedFlights = filteredFlights;
 
   // Format date
   const formatDate = (dateStr: string) => {
@@ -307,7 +320,7 @@ const LiveFlightResults = () => {
             {/* Flight list */}
             <div className="space-y-4 min-w-0">
               {/* Sort tabs */}
-              <FlightSortTabs flights={sortedFlights} sortBy={sortBy} onSortChange={setSortBy} />
+              <FlightSortTabs flights={sortedFlights} sortBy={sortBy} onSortChange={handleSortChange} />
 
               {/* Results count */}
               <div className="text-sm text-muted-foreground bg-card p-3 rounded-xl border border-border">
