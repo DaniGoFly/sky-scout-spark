@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef } from "react";
 import { Flight } from "@/lib/flightNormalizer";
 import { 
-  EDGE_FUNCTION_URL,
-  EDGE_HEADERS
+  FLIGHT_SEARCH_URL,
+  FLIGHT_SEARCH_HEADERS
 } from "@/lib/flightSearchConfig";
 
 /**
@@ -21,6 +21,7 @@ interface ErrorDetails {
   step?: string;
   responseText?: string;
   authHeaderExists?: boolean;
+  responseJson?: unknown;
 }
 
 interface SearchParams {
@@ -99,20 +100,15 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         depart_date: params.departDate,
         return_date: params.returnDate || "",
         adults: params.adults || 1,
-        children: params.children || 0,
-        infants: params.infants || 0,
-        trip_class: params.tripClass || "Y",
         currency: params.currency || "EUR",
         locale: "en",
         limit: params.limit || 25,
         sort: params.sort || "best",
       };
 
-      const headers = EDGE_HEADERS();
-
-      const response = await fetch(EDGE_FUNCTION_URL, {
+      const response = await fetch(FLIGHT_SEARCH_URL, {
         method: "POST",
-        headers,
+        headers: FLIGHT_SEARCH_HEADERS,
         body: JSON.stringify(requestBody),
       });
 
@@ -120,18 +116,20 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
       // Get raw response text for debugging
       const responseText = await response.text();
+      let parsedJson: unknown;
       let data: SearchResponse;
       
       try {
-        data = JSON.parse(responseText);
+        parsedJson = JSON.parse(responseText);
+        data = parsedJson as SearchResponse;
       } catch {
         // JSON parse failed
         const details: ErrorDetails = {
           message: "Invalid JSON response",
-          url: EDGE_FUNCTION_URL,
+          url: FLIGHT_SEARCH_URL,
           status: response.status,
-          responseText: responseText.substring(0, 500),
-          authHeaderExists: Boolean(headers?.authorization),
+          responseText,
+          authHeaderExists: Boolean(FLIGHT_SEARCH_HEADERS.authorization),
         };
         console.error("[FlightSearch] Parse error:", details);
         setError(details.message);
@@ -144,11 +142,12 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         const errorMsg = data.error || data.upstream || `HTTP ${response.status}`;
         const details: ErrorDetails = {
           message: errorMsg,
-          url: EDGE_FUNCTION_URL,
+          url: FLIGHT_SEARCH_URL,
           status: response.status,
           step: data.step,
-          responseText: responseText.substring(0, 500),
-          authHeaderExists: Boolean(headers?.authorization),
+          responseText,
+          authHeaderExists: Boolean(FLIGHT_SEARCH_HEADERS.authorization),
+          responseJson: parsedJson,
         };
         console.error("[FlightSearch] Error:", details);
         setError(errorMsg);
@@ -172,22 +171,13 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       setFlights(flightResults);
       setStatus("complete");
 
-      // Small dev-only debug log
-      try {
-        const host = window.location.hostname;
-        const isDev = host === "localhost" || host.endsWith(".lovableproject.com") || host.endsWith(".lovable.app");
-        if (isDev) {
-          console.log("[FlightSearch] OK", { search_id: data.search_id, flights: flightResults.length });
-        }
-      } catch {
-        // ignore
-      }
+      // Keep logs minimal
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Network error";
       const details: ErrorDetails = {
         message: errorMsg,
-        url: EDGE_FUNCTION_URL,
-        authHeaderExists: false,
+        url: FLIGHT_SEARCH_URL,
+        authHeaderExists: Boolean(FLIGHT_SEARCH_HEADERS.authorization),
       };
       console.error("[FlightSearch] Error:", details);
       setError(errorMsg);
