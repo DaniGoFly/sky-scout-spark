@@ -299,16 +299,20 @@ const LiveFlightResults = () => {
                     <span className="font-semibold">Status:</span> {errorDetails.status}
                   </p>
                 )}
+                 {errorDetails.authHeaderExists !== undefined && (
+                   <p className="text-muted-foreground mb-1">
+                     <span className="font-semibold">Auth header present:</span> {String(errorDetails.authHeaderExists)}
+                   </p>
+                 )}
                 {errorDetails.step && (
                   <p className="text-muted-foreground mb-1">
                     <span className="font-semibold">Step:</span> {errorDetails.step}
                   </p>
                 )}
                 {errorDetails.responseText && (
-                  <p className="text-muted-foreground break-all">
-                    <span className="font-semibold">Response:</span> {errorDetails.responseText.substring(0, 200)}
-                    {errorDetails.responseText.length > 200 && "..."}
-                  </p>
+                   <p className="text-muted-foreground whitespace-pre-wrap break-words">
+                     <span className="font-semibold">Response:</span> {errorDetails.responseText}
+                   </p>
                 )}
               </div>
             )}
