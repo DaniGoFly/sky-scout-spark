@@ -3,10 +3,12 @@
  * Centralized API layer for calling the Supabase Edge Function
  */
 
-// Use this project's flights-search edge function
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://kvhykvuvsbmcselojbcn.supabase.co";
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2aHlrdnV2c2JtY3NlbG9qYmNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzEzODAsImV4cCI6MjA4MzA0NzM4MH0.ChYyprBwbeebvr9nr1xGuexrmciMqIsA2irToTCEQUc";
-const FLIGHT_SEARCH_ENDPOINT = `${SUPABASE_URL}/functions/v1/flights-search`;
+// EXTERNAL Supabase project for flight search (NOT this project's Lovable Cloud)
+const FLIGHT_SEARCH_SUPABASE_URL = "https://ycpqgsjhxzhkljlszbwc.supabase.co";
+const FLIGHT_SEARCH_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcHFnc2poeHpoa2xqbHN6YndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NDMxNzAsImV4cCI6MjA1OTAxOTE3MH0.2e99RmdP8sNmB7QGelMgSxsFxBb12pmyhJcgZD5274E";
+
+// Correct endpoint (singular "flight-search")
+const FLIGHT_SEARCH_ENDPOINT = `${FLIGHT_SEARCH_SUPABASE_URL}/functions/v1/flight-search`;
 
 // Default user IP (required by Travelpayouts)
 const DEFAULT_USER_IP = "1.1.1.1";
@@ -179,8 +181,8 @@ export async function callEdgeFunction<T = unknown>(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "apikey": FLIGHT_SEARCH_ANON_KEY,
+        "Authorization": `Bearer ${FLIGHT_SEARCH_ANON_KEY}`,
       },
       body: JSON.stringify(payload),
     });
