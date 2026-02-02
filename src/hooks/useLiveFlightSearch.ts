@@ -4,13 +4,15 @@ import { Flight } from "@/lib/flightNormalizer";
 /**
  * Flight Search Hook
  * 
- * Calls the Supabase Edge Function and returns flights directly.
- * NO transformation - backend response is source of truth.
+ * Calls the Supabase Edge Function /functions/v1/flight-search
+ * Backend returns normalized data - no transformation needed.
  */
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://kvhykvuvsbmcselojbcn.supabase.co";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2aHlrdnV2c2JtY3NlbG9qYmNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzEzODAsImV4cCI6MjA4MzA0NzM4MH0.ChYyprBwbeebvr9nr1xGuexrmciMqIsA2irToTCEQUc";
-const FLIGHT_SEARCH_ENDPOINT = `${SUPABASE_URL}/functions/v1/flights-search`;
+
+// Use the correct endpoint (singular "flight-search")
+const FLIGHT_SEARCH_ENDPOINT = `${SUPABASE_URL}/functions/v1/flight-search`;
 
 export type SearchStatus = "idle" | "searching" | "complete" | "error" | "no_results";
 
@@ -24,6 +26,22 @@ interface SearchParams {
   infants?: number;
   tripClass?: string;
   currency?: string;
+  sort?: "best" | "cheapest" | "fastest";
+  limit?: number;
+}
+
+interface SearchResponse {
+  ok: boolean;
+  step?: string;
+  search_id?: string;
+  results_base?: string;
+  flights?: Flight[];
+  error?: string;
+  upstream?: string;
+  meta?: {
+    returned?: number;
+    sort?: string;
+  };
 }
 
 interface UseLiveFlightSearchResult {
@@ -31,6 +49,8 @@ interface UseLiveFlightSearchResult {
   status: SearchStatus;
   error: string | null;
   isSearching: boolean;
+  searchId: string | null;
+  resultsBase: string | null;
   searchFlights: (params: SearchParams) => Promise<void>;
   cancelSearch: () => void;
 }
@@ -43,6 +63,8 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [status, setStatus] = useState<SearchStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [searchId, setSearchId] = useState<string | null>(null);
+  const [resultsBase, setResultsBase] = useState<string | null>(null);
   const cancelRef = useRef(false);
 
   const cancelSearch = useCallback(() => {
@@ -55,10 +77,29 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     cancelRef.current = false;
     setFlights([]);
     setError(null);
+    setSearchId(null);
+    setResultsBase(null);
     setStatus("searching");
 
     try {
-      console.log("[FlightSearch] Starting search:", params);
+      const requestBody = {
+        action: "search",
+        origin: params.origin.toUpperCase(),
+        destination: params.destination.toUpperCase(),
+        depart_date: params.departDate,
+        return_date: params.returnDate || undefined,
+        adults: params.adults || 1,
+        children: params.children || 0,
+        infants: params.infants || 0,
+        trip_class: params.tripClass || "Y",
+        currency: params.currency || "EUR",
+        locale: "en",
+        limit: params.limit || 25,
+        sort: params.sort || "best",
+      };
+
+      console.log("[FlightSearch] Calling:", FLIGHT_SEARCH_ENDPOINT);
+      console.log("[FlightSearch] Request:", requestBody);
 
       const response = await fetch(FLIGHT_SEARCH_ENDPOINT, {
         method: "POST",
@@ -67,36 +108,35 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           "apikey": SUPABASE_ANON_KEY,
           "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({
-          action: "search",
-          origin: params.origin.toUpperCase(),
-          destination: params.destination.toUpperCase(),
-          depart_date: params.departDate,
-          return_date: params.returnDate || undefined,
-          adults: params.adults || 1,
-          children: params.children || 0,
-          infants: params.infants || 0,
-          trip_class: params.tripClass || "Y",
-          currency: params.currency || "EUR",
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (cancelRef.current) return;
 
-      const data = await response.json();
+      const data: SearchResponse = await response.json();
       
-      console.log("[FlightSearch] Response:", {
-        ok: data.ok,
-        flightsCount: data.flights?.length || 0,
-        error: data.error,
-      });
+      // Dev-only debug log
+      if (import.meta.env.DEV) {
+        console.log("[FlightSearch] Response:", {
+          ok: data.ok,
+          step: data.step,
+          search_id: data.search_id,
+          flights_count: data.flights?.length || 0,
+          error: data.error,
+        });
+      }
 
       if (!response.ok || !data.ok) {
-        console.error("[FlightSearch] Error:", data.error);
-        setError(data.error || "Search failed");
+        const errorMsg = data.error || data.upstream || "Search failed";
+        console.error("[FlightSearch] Error:", errorMsg);
+        setError(errorMsg);
         setStatus("error");
         return;
       }
+
+      // Store search context
+      if (data.search_id) setSearchId(data.search_id);
+      if (data.results_base) setResultsBase(data.results_base);
 
       // Use flights directly from backend - NO transformation
       const flightResults: Flight[] = data.flights || [];
@@ -106,7 +146,6 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         return;
       }
 
-      // Set flights directly - backend is source of truth
       setFlights(flightResults);
       setStatus("complete");
       
@@ -123,6 +162,8 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     status,
     error,
     isSearching: status === "searching",
+    searchId,
+    resultsBase,
     searchFlights,
     cancelSearch,
   };
