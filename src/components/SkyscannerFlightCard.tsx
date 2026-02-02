@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import { Loader2, Heart, MapPin, ChevronRight, Plane } from "lucide-react";
+import { Heart, Plane, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel, hasValidClickUrl } from "@/lib/flightNormalizer";
@@ -12,8 +12,7 @@ import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, ge
 interface FlightCardProps {
   flight: Flight;
   isBestValue?: boolean;
-  isLoading?: boolean;
-  onViewDeal: () => void;
+  onViewDeal?: () => void;
 }
 
 const safeText = (value: string | undefined | null, fallback = "—"): string => {
@@ -21,15 +20,25 @@ const safeText = (value: string | undefined | null, fallback = "—"): string =>
   return value;
 };
 
+/**
+ * Check if a URL is valid (starts with http:// or https://)
+ */
+const isValidUrl = (url: string | undefined | null): boolean => {
+  if (!url) return false;
+  return url.startsWith("http://") || url.startsWith("https://");
+};
+
 const FlightCard = ({
   flight,
   isBestValue = false,
-  isLoading = false,
   onViewDeal,
 }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   
-  const canBook = hasValidClickUrl(flight);
+  // Get the booking URL - prioritize clickUrl
+  const bookingUrl = flight.clickUrl || "";
+  const canBook = isValidUrl(bookingUrl);
+  
   const airlineCode = flight.airlines?.[0] || "";
   const airlineName = getAirlineName(airlineCode);
   const airlineLogo = getAirlineLogo(airlineCode);
@@ -209,31 +218,34 @@ const FlightCard = ({
                 <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
               </Button>
               
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (!isLoading && canBook) onViewDeal();
-                }}
-                disabled={!canBook || isLoading}
-                size="default"
-                className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap"
-                style={{ minWidth: "120px" }}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Opening</span>
-                  </>
-                ) : !canBook ? (
-                  <span>Unavailable</span>
-                ) : (
-                  <>
-                    <span>View Deal</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
+              {/* Render as anchor link if valid URL, otherwise disabled button */}
+              {canBook ? (
+                <a
+                  href={bookingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-1 font-semibold text-sm px-6 h-10 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-1 lg:flex-none whitespace-nowrap"
+                  style={{ minWidth: "120px" }}
+                  onClick={(e) => {
+                    // If there's an onViewDeal callback (for tracking/analytics), call it
+                    if (onViewDeal) {
+                      onViewDeal();
+                    }
+                  }}
+                >
+                  <span>View Deal</span>
+                  <ChevronRight className="w-4 h-4" />
+                </a>
+              ) : (
+                <Button
+                  disabled
+                  size="default"
+                  className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap opacity-50"
+                  style={{ minWidth: "120px" }}
+                >
+                  <span>No deal available</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
