@@ -2,11 +2,6 @@ import { useState, useCallback, useRef } from "react";
 import { Flight } from "@/lib/flightNormalizer";
 import { searchFlights as apiSearchFlights, SearchParams, SearchResponse } from "@/lib/flightSearchApi";
 
-/**
- * Flight Search Hook
- * Calls the flight-search edge function and returns normalized data
- */
-
 export type SearchStatus = "idle" | "searching" | "complete" | "error" | "no_results";
 
 export interface SearchParamsHook {
@@ -15,9 +10,6 @@ export interface SearchParamsHook {
   departDate: string;
   returnDate?: string;
   adults?: number;
-  children?: number;
-  infants?: number;
-  tripClass?: string;
   currency?: string;
   sort?: "best" | "cheapest" | "fastest";
   limit?: number;
@@ -70,6 +62,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       if (data.search_id) setSearchId(data.search_id);
       if (data.results_base) setResultsBase(data.results_base);
 
+      // Return flights directly from backend
       const flightResults: Flight[] = data.flights || [];
 
       if (flightResults.length === 0) {
@@ -80,8 +73,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       setFlights(flightResults);
       setStatus("complete");
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Network error";
-      setError(errorMsg);
+      setError(err instanceof Error ? err.message : "Network error");
       setStatus("error");
     }
   }, []);

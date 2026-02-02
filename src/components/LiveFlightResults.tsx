@@ -48,14 +48,6 @@ const LiveFlightResults = () => {
   const children = Number(searchParams.get("children")) || 0;
   const infants = Number(searchParams.get("infants")) || 0;
   const tripType = searchParams.get("trip") || "roundtrip";
-  const cabin = searchParams.get("cabin") || searchParams.get("class") || "economy";
-
-  const tripClassMap: Record<string, string> = {
-    economy: "Y",
-    premium_economy: "W",
-    business: "C",
-    first: "F",
-  };
 
   // Trigger search when params change
   const doSearch = useCallback((sort: "best" | "cheapest" | "fastest") => {
@@ -66,15 +58,12 @@ const LiveFlightResults = () => {
       destination: to.toUpperCase(),
       departDate: depart,
       returnDate: tripType === "roundtrip" ? returnDate : undefined,
-      adults,
-      children,
-      infants,
-      tripClass: tripClassMap[cabin] || "Y",
+      adults: adults + children + infants,
       currency: "EUR",
       sort,
       limit: 25,
     });
-  }, [from, to, depart, returnDate, adults, children, infants, tripType, cabin, searchFlights]);
+  }, [from, to, depart, returnDate, adults, children, infants, tripType, searchFlights]);
 
   // Initial search on mount
   useEffect(() => {
