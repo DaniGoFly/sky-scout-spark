@@ -184,29 +184,31 @@ export function getPriceConfidencePenalty(
 /**
  * Raw flight info from Travelpayouts API
  * Supports multiple field naming conventions
+ * Travelpayouts returns flight_info as an object keyed by numeric flight IDs
+ * Each entry contains: departure, arrival, departure_timestamp, arrival_timestamp, duration, operating_carrier
  */
 interface RawFlightInfo {
-  // IATA codes
+  // IATA codes - Travelpayouts uses "departure" for origin airport, "arrival" for destination
   departure?: string;
   arrival?: string;
   origin?: string;
   destination?: string;
   
-  // Timestamps (ISO string or Unix seconds)
+  // Timestamps - Travelpayouts uses Unix seconds in departure_timestamp/arrival_timestamp
   departure_at?: string | number;
   arrival_at?: string | number;
   departureAt?: string | number;
   arrivalAt?: string | number;
-  departure_timestamp?: number;
-  arrival_timestamp?: number;
+  departure_timestamp?: number;  // PRIMARY: Unix seconds from Travelpayouts
+  arrival_timestamp?: number;    // PRIMARY: Unix seconds from Travelpayouts
   dep_time?: string | number;
   arr_time?: string | number;
   
-  // Duration in minutes
+  // Duration in minutes - Travelpayouts provides this directly
   duration?: number;
   
-  // Airline info
-  operating_carrier?: string;
+  // Airline info - Travelpayouts uses operating_carrier
+  operating_carrier?: string;  // PRIMARY: e.g., "LH", "UA"
   marketing_carrier?: string;
   airline?: string;
   carrier?: string;
@@ -233,8 +235,12 @@ interface ResolvedLeg {
 
 /**
  * Extract flight_info map from ANY response shape
- * The API may return flight_info at different levels:
- * - response.flight_info
+ * The Travelpayouts API returns flight_info as an object where:
+ * - Keys are numeric IDs (matching ticket.segments[].flights[])
+ * - Values contain departure, arrival, departure_timestamp, arrival_timestamp, duration, operating_carrier
+ * 
+ * We also check multiple possible locations:
+ * - response.flight_info (PRIMARY from Travelpayouts)
  * - response.flightInfo
  * - response.flights
  * - response.data.flight_info
@@ -243,10 +249,12 @@ interface ResolvedLeg {
 export function getFlightInfoMap(raw: unknown): Record<string, RawFlightInfo> {
   if (!raw || typeof raw !== 'object') return {};
   
+  const DEV_MODE = import.meta.env.DEV;
   const r = raw as Record<string, unknown>;
   const data = r.data as Record<string, unknown> | undefined;
   
   // Try all possible locations in order of preference
+  // Travelpayouts uses flight_info as an object keyed by flight IDs
   let flightInfo: unknown = 
     r.flight_info ||
     r.flightInfo ||
@@ -255,6 +263,15 @@ export function getFlightInfoMap(raw: unknown): Record<string, RawFlightInfo> {
     data?.flightInfo ||
     data?.flights ||
     null;
+  
+  if (DEV_MODE) {
+    console.log("[getFlightInfoMap] Checking locations:", {
+      "r.flight_info": r.flight_info ? "found" : "missing",
+      "r.flightInfo": r.flightInfo ? "found" : "missing", 
+      "r.flights": r.flights ? "found" : "missing",
+      "data?.flight_info": data?.flight_info ? "found" : "missing",
+    });
+  }
   
   // If flights is an array, convert to object keyed by index
   if (Array.isArray(flightInfo)) {
@@ -266,12 +283,39 @@ export function getFlightInfoMap(raw: unknown): Record<string, RawFlightInfo> {
         map[key] = f as RawFlightInfo;
       }
     });
+    if (DEV_MODE) {
+      console.log(`[getFlightInfoMap] Converted array of ${flightInfo.length} flights to map`);
+    }
     return map;
   }
   
-  if (typeof flightInfo !== 'object' || flightInfo === null) return {};
+  if (typeof flightInfo !== 'object' || flightInfo === null) {
+    if (DEV_MODE) {
+      console.warn("[getFlightInfoMap] No valid flight_info found in response");
+    }
+    return {};
+  }
   
-  return flightInfo as Record<string, RawFlightInfo>;
+  // flight_info is already an object (Travelpayouts format)
+  const result = flightInfo as Record<string, RawFlightInfo>;
+  if (DEV_MODE) {
+    const keys = Object.keys(result);
+    console.log(`[getFlightInfoMap] Found flight_info object with ${keys.length} entries`);
+    if (keys.length > 0) {
+      const sampleKey = keys[0];
+      const sample = result[sampleKey];
+      console.log(`[getFlightInfoMap] Sample entry [${sampleKey}]:`, {
+        departure: sample?.departure,
+        arrival: sample?.arrival,
+        departure_timestamp: sample?.departure_timestamp,
+        arrival_timestamp: sample?.arrival_timestamp,
+        duration: sample?.duration,
+        operating_carrier: sample?.operating_carrier,
+      });
+    }
+  }
+  
+  return result;
 }
 
 /**
@@ -331,12 +375,14 @@ function formatDuration(minutes: number): string {
 
 /**
  * Get departure timestamp from a flight info object
+ * Travelpayouts returns Unix seconds in departure_timestamp field
  */
 function getDepartureDate(info: RawFlightInfo): Date | null {
+  // Priority: departure_timestamp (Travelpayouts) > other formats
   return (
+    parseTimestamp(info.departure_timestamp) ||
     parseTimestamp(info.departure_at) ||
     parseTimestamp(info.departureAt) ||
-    parseTimestamp(info.departure_timestamp) ||
     parseTimestamp(info.dep_time) ||
     null
   );
@@ -344,12 +390,14 @@ function getDepartureDate(info: RawFlightInfo): Date | null {
 
 /**
  * Get arrival timestamp from a flight info object
+ * Travelpayouts returns Unix seconds in arrival_timestamp field
  */
 function getArrivalDate(info: RawFlightInfo): Date | null {
+  // Priority: arrival_timestamp (Travelpayouts) > other formats
   return (
+    parseTimestamp(info.arrival_timestamp) ||
     parseTimestamp(info.arrival_at) ||
     parseTimestamp(info.arrivalAt) ||
-    parseTimestamp(info.arrival_timestamp) ||
     parseTimestamp(info.arr_time) ||
     null
   );
@@ -390,11 +438,17 @@ function getFlightNumber(info: RawFlightInfo): string {
 /**
  * Resolve flight IDs to actual leg data
  * This is the CORE function that extracts times from flight_info
+ * 
+ * Travelpayouts format:
+ * - ticket.segments[0].flights = [123, 456, 789] (array of numeric flight IDs)
+ * - flight_info = { "123": { departure: "ZRH", arrival: "FRA", departure_timestamp: 1234567890, ... }, ... }
  */
 export function resolveFlightLegFromIds(
   flightIds: unknown[],
   flightInfo: Record<string, RawFlightInfo>
 ): ResolvedLeg {
+  const DEV_MODE = import.meta.env.DEV;
+  
   // Default empty result
   const empty: ResolvedLeg = {
     departAt: "",
@@ -410,6 +464,14 @@ export function resolveFlightLegFromIds(
   
   // Must have valid flight IDs
   if (!Array.isArray(flightIds) || flightIds.length === 0) {
+    if (DEV_MODE) console.log("[resolveFlightLeg] No flight IDs provided");
+    return empty;
+  }
+  
+  // Check if flight_info map is available
+  const flightInfoKeys = Object.keys(flightInfo);
+  if (flightInfoKeys.length === 0) {
+    if (DEV_MODE) console.warn("[resolveFlightLeg] ⚠️ flight_info map is empty - cannot resolve times");
     return empty;
   }
   
@@ -420,11 +482,21 @@ export function resolveFlightLegFromIds(
     const info = flightInfo[key];
     if (info && typeof info === 'object') {
       resolvedFlights.push(info);
+    } else if (DEV_MODE) {
+      console.warn(`[resolveFlightLeg] Could not find flight_info for ID: ${key}`);
     }
   }
   
   if (resolvedFlights.length === 0) {
+    if (DEV_MODE) {
+      console.warn("[resolveFlightLeg] ⚠️ No flights resolved from IDs:", flightIds);
+      console.warn("[resolveFlightLeg] Available flight_info keys:", flightInfoKeys.slice(0, 10));
+    }
     return empty;
+  }
+  
+  if (DEV_MODE) {
+    console.log(`[resolveFlightLeg] Resolved ${resolvedFlights.length} flights from ${flightIds.length} IDs`);
   }
   
   // First and last flights for this leg
@@ -439,10 +511,10 @@ export function resolveFlightLegFromIds(
   const arriveDate = getArrivalDate(lastFlight);
   const arriveAt = formatTimeFromDate(arriveDate);
   
-  // Origin = first flight's origin
+  // Origin = first flight's origin (Travelpayouts uses "departure" for origin IATA)
   const origin = getOriginIata(firstFlight);
   
-  // Destination = last flight's destination
+  // Destination = last flight's destination (Travelpayouts uses "arrival" for destination IATA)
   const destination = getDestinationIata(lastFlight);
   
   // Duration: sum individual durations or compute from timestamps
@@ -472,11 +544,24 @@ export function resolveFlightLegFromIds(
   // Stop count
   const stopCount = stopAirports.length;
   
-  // Marketing carrier from first flight
+  // Marketing carrier from first flight (Travelpayouts uses operating_carrier)
   const marketingCarrier = getAirlineCode(firstFlight);
   
   // Flight number from first flight
   const flightNumber = getFlightNumber(firstFlight);
+  
+  if (DEV_MODE) {
+    console.log("[resolveFlightLeg] Resolved leg:", {
+      origin,
+      destination,
+      departAt,
+      arriveAt,
+      durationMins,
+      stops: stopCount,
+      stopAirports,
+      carrier: marketingCarrier,
+    });
+  }
   
   return {
     departAt,
