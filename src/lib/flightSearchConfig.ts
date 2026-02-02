@@ -4,10 +4,11 @@
  */
 
 // Environment variables - ONLY source of truth
+// Priority: VITE_SUPABASE_URL > fallback to publishable key URL if needed
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 export const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) as string;
 
-// Runtime validation
+// Runtime validation - fail fast if missing
 if (!SUPABASE_URL) {
   throw new Error("Missing VITE_SUPABASE_URL environment variable");
 }
