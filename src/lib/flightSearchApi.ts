@@ -43,6 +43,12 @@ export interface ClickResolveResponse {
   error?: string;
 }
 
+export interface ResolveDealResponse {
+  ok: boolean;
+  booking_url?: string;
+  error?: string;
+}
+
 /**
  * Search flights via edge function
  */
@@ -117,6 +123,46 @@ export async function resolveClick(params: {
     }
 
     return data as ClickResolveResponse;
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Network error",
+    };
+  }
+}
+
+/**
+ * Resolve a deal to a FINAL partner booking URL (never the click endpoint).
+ */
+export async function resolveDeal(params: {
+  search_id: string;
+  click_id: string;
+  results_base?: string;
+}): Promise<ResolveDealResponse> {
+  const body = {
+    action: "resolve_deal",
+    search_id: params.search_id,
+    click_id: params.click_id,
+    results_base: params.results_base || undefined,
+  };
+
+  try {
+    const response = await fetch(FLIGHT_SEARCH_URL, {
+      method: "POST",
+      headers: FLIGHT_SEARCH_HEADERS,
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      return {
+        ok: false,
+        error: data.error || "Failed to resolve deal",
+      };
+    }
+
+    return data as ResolveDealResponse;
   } catch (err) {
     return {
       ok: false,

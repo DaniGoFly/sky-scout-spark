@@ -7,12 +7,13 @@ import { useState } from "react";
 import { Heart, Plane, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel, hasValidClickUrl } from "@/lib/flightNormalizer";
+import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel, getFlightBookingUrl } from "@/lib/flightNormalizer";
 
 interface FlightCardProps {
   flight: Flight;
   isBestValue?: boolean;
-  onViewDeal?: () => void;
+  onViewDeal?: (flight: Flight) => void;
+  isOpeningDeal?: boolean;
 }
 
 const safeText = (value: string | undefined | null, fallback = "—"): string => {
@@ -32,11 +33,12 @@ const FlightCard = ({
   flight,
   isBestValue = false,
   onViewDeal,
+  isOpeningDeal = false,
 }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   
-  // Get the booking URL - prioritize clickUrl
-  const bookingUrl = flight.clickUrl || "";
+  // Final booking URL (must be a REAL partner URL, never the click endpoint)
+  const bookingUrl = getFlightBookingUrl(flight);
   const canBook = isValidUrl(bookingUrl);
   
   const airlineCode = flight.airlines?.[0] || "";
@@ -229,13 +231,25 @@ const FlightCard = ({
                   onClick={(e) => {
                     // If there's an onViewDeal callback (for tracking/analytics), call it
                     if (onViewDeal) {
-                      onViewDeal();
+                      onViewDeal(flight);
                     }
                   }}
                 >
                   <span>View Deal</span>
                   <ChevronRight className="w-4 h-4" />
                 </a>
+              ) : onViewDeal ? (
+                <Button
+                  type="button"
+                  onClick={() => onViewDeal(flight)}
+                  disabled={isOpeningDeal}
+                  size="default"
+                  className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap"
+                  style={{ minWidth: "120px" }}
+                >
+                  <span>{isOpeningDeal ? "Opening…" : "View Deal"}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
               ) : (
                 <Button
                   disabled
@@ -243,7 +257,7 @@ const FlightCard = ({
                   className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap opacity-50"
                   style={{ minWidth: "120px" }}
                 >
-                  <span>No deal available</span>
+                  <span>{isOpeningDeal ? "Opening…" : "No deal available"}</span>
                 </Button>
               )}
             </div>
