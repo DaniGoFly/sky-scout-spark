@@ -53,7 +53,7 @@ const LiveFlightResults = () => {
 
   const handleViewDeal = useCallback(
     async (flight: Flight) => {
-      if (openingFlightId === flight.id) return; // prevent double-clicks on same CTA
+      if (openingFlightId) return; // prevent double-clicks while resolving
 
       setOpeningFlightId(flight.id);
 
@@ -66,26 +66,55 @@ const LiveFlightResults = () => {
           bookingUrl = "";
         }
 
-        if (!bookingUrl) {
-          const search_id = (flight as any).search_id || flight.searchId || searchId || "";
-          const click_id = (flight as any).click_id || getFlightClickId(flight) || "";
-          const results_base = (flight as any).results_base || flight.resultsBase || resultsBase || undefined;
+        // Fallback: resolve via backend if we don't already have a final URL
+        if (!isHttpUrl(bookingUrl)) {
+          const anyFlight = flight as any;
+          const search_id = anyFlight.search_id || flight.searchId || searchId || "";
+          const click_id = anyFlight.click_id || anyFlight.clickId || getFlightClickId(flight) || "";
+          const results_base = anyFlight.results_base || flight.resultsBase || resultsBase || undefined;
 
           if (!search_id || !click_id) {
-            throw new Error("Missing identifiers");
+            console.log("[ViewDeal] Missing deal IDs", {
+              flightId: flight.id,
+              search_id,
+              click_id,
+            });
+            toast.error("Missing deal IDs");
+            return;
           }
 
-          const resp = await resolveDeal({ search_id, click_id, results_base });
-          if (!resp.ok) throw new Error(resp.error || "resolve_deal failed");
+          const payload = {
+            action: "resolve_deal",
+            search_id,
+            click_id,
+            // aliases
+            str_click_id: click_id,
+            searchId: search_id,
+            clickId: click_id,
+            results_base,
+          };
+
+          console.log("[ViewDeal] resolve_deal payload", payload);
+          const resp = await resolveDeal(payload);
+          console.log("[ViewDeal] resolve_deal response", resp);
+
+          if (!resp.ok) {
+            toast.error(resp.error || "Could not open deal. Please try again.");
+            return;
+          }
+
           bookingUrl = resp.booking_url || "";
         }
 
         if (!isHttpUrl(bookingUrl)) {
-          throw new Error("Invalid booking URL");
+          console.log("[ViewDeal] Invalid booking URL", { flightId: flight.id, bookingUrl });
+          toast.error("Invalid booking URL");
+          return;
         }
 
         openInNewTab(bookingUrl);
-      } catch {
+      } catch (e) {
+        console.log("[ViewDeal] resolve_deal exception", e);
         toast.error("Could not open deal. Please try again.");
       } finally {
         setOpeningFlightId(null);

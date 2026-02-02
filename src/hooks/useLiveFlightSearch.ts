@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Flight } from "@/lib/flightNormalizer";
 import { searchFlights as apiSearchFlights, SearchParams, SearchResponse } from "@/lib/flightSearchApi";
+import { attachDealContextToFlights } from "@/lib/flightDealIds";
 
 export type SearchStatus = "idle" | "searching" | "complete" | "error" | "no_results";
 
@@ -63,7 +64,11 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       if (data.results_base) setResultsBase(data.results_base);
 
       // Return flights directly from backend
-      const flightResults: Flight[] = data.flights || [];
+      const flightResults: Flight[] = attachDealContextToFlights({
+        flights: (data.flights || []) as Flight[],
+        search_id: data.search_id || "",
+        results_base: data.results_base || null,
+      });
 
       if (flightResults.length === 0) {
         setStatus("no_results");

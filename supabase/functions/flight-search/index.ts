@@ -43,13 +43,17 @@ function buildResultsBase(resultsUrl: unknown): string {
   }
 }
 
+type ResolveDealResult =
+  | { ok: true; booking_url: string }
+  | { ok: false; error: string; upstream?: string };
+
 async function resolveDealUrl(args: {
   token: string;
   marker: string;
   search_id: string;
   click_id: string;
   results_base?: string | null;
-}): Promise<string> {
+}): Promise<ResolveDealResult> {
   const base = isHttpUrl(args.results_base) ? args.results_base : "https://tickets-api.travelpayouts.com";
   const clickUrl = `${base.replace(/\/$/, "")}/searches/${encodeURIComponent(args.search_id)}/clicks/${encodeURIComponent(args.click_id)}?marker=${encodeURIComponent(args.marker)}`;
 
@@ -64,7 +68,11 @@ async function resolveDealUrl(args: {
   const text = await resp.text();
   if (!resp.ok) {
     console.error("[flight-search] resolve_deal failed", resp.status, text.slice(0, 250));
-    throw new Error(`resolve_deal failed (${resp.status})`);
+    return {
+      ok: false,
+      error: `upstream failed (${resp.status})`,
+      upstream: text.slice(0, 200),
+    };
   }
 
   let data: any;
@@ -72,21 +80,33 @@ async function resolveDealUrl(args: {
     data = JSON.parse(text);
   } catch {
     console.error("[flight-search] resolve_deal invalid JSON", text.slice(0, 250));
-    throw new Error("resolve_deal invalid JSON");
+    return {
+      ok: false,
+      error: "invalid JSON from upstream",
+      upstream: text.slice(0, 200),
+    };
   }
 
   const bookingUrl = data?.url ?? data?.booking_url ?? data?.redirect_url ?? null;
   if (!isHttpUrl(bookingUrl)) {
-    throw new Error("resolve_deal returned no valid booking url");
+    return {
+      ok: false,
+      error: "no booking url from upstream",
+      upstream: text.slice(0, 200),
+    };
   }
 
   // Never return the click endpoint itself.
   const lower = bookingUrl.toLowerCase();
   if (lower.includes("travelpayouts.com/searches/") && lower.includes("/clicks/")) {
-    throw new Error("resolve_deal returned a click endpoint (blocked)");
+    return {
+      ok: false,
+      error: "resolve_deal returned a click endpoint (blocked)",
+      upstream: bookingUrl.slice(0, 200),
+    };
   }
 
-  return bookingUrl;
+  return { ok: true, booking_url: bookingUrl };
 }
 
 function toYyyyMmDdHhMm(isoOrTs: unknown): string {
@@ -135,24 +155,43 @@ serve(async (req) => {
 
   // ============ ACTION: resolve_deal ============
   if (action === "resolve_deal") {
-    const search_id = safeStr(body?.search_id, 200);
-    const click_id = safeStr(body?.click_id, 200);
+    const search_id = safeStr(body?.search_id ?? body?.searchId ?? body?.searchid, 200);
+    const click_id = safeStr(body?.click_id ?? body?.clickId ?? body?.str_click_id, 200);
     const results_base = safeStr(body?.results_base, 500) || null;
 
     if (!search_id || !click_id) {
-      return json({ ok: false, error: "search_id and click_id are required" }, 400);
+      return json(
+        {
+          ok: false,
+          error: "missing search_id or click_id",
+          received: body,
+        },
+        400
+      );
     }
 
     try {
-      const booking_url = await withTimeout(
+      const result = await withTimeout(
         resolveDealUrl({ token, marker, search_id, click_id, results_base }),
         8000,
         "resolve_deal"
       );
-      return json({ ok: true, booking_url });
+
+      if (!result.ok) {
+        return json(
+          {
+            ok: false,
+            error: result.error,
+            upstream: result.upstream,
+          },
+          502
+        );
+      }
+
+      return json({ ok: true, booking_url: result.booking_url });
     } catch (e) {
       console.error("[flight-search] resolve_deal error", e);
-      return json({ ok: false, error: "Could not resolve deal" }, 502);
+      return json({ ok: false, error: "resolve_deal exception" }, 502);
     }
   }
 
@@ -385,7 +424,7 @@ serve(async (req) => {
         const i = cursor++;
         const f = flights[i];
         try {
-          const booking_url = await withTimeout(
+          const result = await withTimeout(
             resolveDealUrl({
               token,
               marker,
@@ -396,7 +435,13 @@ serve(async (req) => {
             8000,
             `resolve_${i}`
           );
-          f.booking_url = booking_url;
+
+          if (result.ok) {
+            f.booking_url = result.booking_url;
+          } else {
+            console.warn("[flight-search] booking_url resolve failed", i, result.error);
+            f.booking_url = "";
+          }
         } catch (e: unknown) {
           // Leave empty; frontend will show "No deal available" or resolve on-demand.
           const msg = e instanceof Error ? e.message : String(e);
