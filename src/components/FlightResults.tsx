@@ -51,7 +51,7 @@ const FlightResults = () => {
   const [visibleCount, setVisibleCount] = useState(RESULTS_PER_PAGE);
   const [selectedFlight, setSelectedFlight] = useState<LiveFlight | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const [loadingFlightId, setLoadingFlightId] = useState<string | null>(null);
+  
 
   // Extract search params
   const from = searchParams.get("from") || "";
@@ -232,17 +232,6 @@ const FlightResults = () => {
     setVisibleCount(prev => Math.min(prev + RESULTS_PER_PAGE, MAX_VISIBLE_RESULTS));
   };
 
-  const handleViewDeal = async (flight: Flight) => {
-    if (!flight.clickUrl) return;
-    
-    setLoadingFlightId(flight.id);
-    
-    // Open in new tab
-    window.open(flight.clickUrl, "_blank", "noopener,noreferrer");
-    
-    // Reset loading state after a short delay
-    setTimeout(() => setLoadingFlightId(null), 1500);
-  };
 
   const formatDate = (dateStr: string) => {
     try {
@@ -524,8 +513,6 @@ const FlightResults = () => {
                     key={flight.id}
                     flight={flight}
                     isBestValue={showBestValue}
-                    isLoading={loadingFlightId === flight.id}
-                    onViewDeal={() => handleViewDeal(flight)}
                   />
                 );
               })}

@@ -7,23 +7,18 @@ import FlightSortTabs from "./FlightSortTabs";
 import CompactSearchBar from "./CompactSearchBar";
 import FlightCard from "./SkyscannerFlightCard";
 import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
-import { useLiveFlightSearch, Flight } from "@/hooks/useLiveFlightSearch";
-import { resolveClick } from "@/lib/flightSearchApi";
+import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useToast } from "@/hooks/use-toast";
 
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const {
     flights: rawFlights,
     status,
     error,
     isSearching,
-    searchId,
-    resultsBase,
     searchFlights,
   } = useLiveFlightSearch();
 
@@ -37,7 +32,6 @@ const LiveFlightResults = () => {
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [loadingFlightId, setLoadingFlightId] = useState<string | null>(null);
 
   // Extract search params
   const from = searchParams.get("from") || searchParams.get("origin") || "";
@@ -146,86 +140,9 @@ const LiveFlightResults = () => {
     }
   };
 
-  // Handle "View Deal" - open blank tab immediately, then resolve URL
-  const handleViewDeal = useCallback(
-    async (flight: Flight) => {
-      if (loadingFlightId) return;
-
-      // Open blank tab IMMEDIATELY (synchronous) to avoid popup blocker
-      const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
-      
-      if (!popup) {
-        toast({
-          title: "Popup blocked",
-          description: "Please allow popups for this site to open deals.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setLoadingFlightId(flight.id);
-
-      try {
-        // Check if we have search context for click resolution
-        if (!searchId || !resultsBase || !flight.proposalId) {
-          // Fallback: use clickUrl directly if available
-          if (flight.clickUrl && flight.clickUrl.startsWith("http")) {
-            popup.location.href = flight.clickUrl;
-          } else {
-            popup.close();
-            toast({
-              title: "Deal unavailable",
-              description: "Booking link is not available for this offer.",
-              variant: "destructive",
-            });
-          }
-          return;
-        }
-
-        // Resolve the actual booking URL via API
-        const clickResult = await resolveClick({
-          search_id: searchId,
-          proposal_id: flight.proposalId,
-          results_base: resultsBase,
-        });
-
-        if (clickResult.ok && clickResult.url) {
-          popup.location.href = clickResult.url;
-        } else {
-          // Fallback to clickUrl if resolution fails
-          if (flight.clickUrl && flight.clickUrl.startsWith("http")) {
-            popup.location.href = flight.clickUrl;
-          } else {
-            popup.close();
-            toast({
-              title: "Unable to open deal",
-              description: clickResult.error || "Please try again.",
-              variant: "destructive",
-            });
-          }
-        }
-      } catch (err) {
-        // Fallback on error
-        if (flight.clickUrl && flight.clickUrl.startsWith("http")) {
-          popup.location.href = flight.clickUrl;
-        } else {
-          popup.close();
-          toast({
-            title: "Connection error",
-            description: "Could not load the booking page. Please try again.",
-            variant: "destructive",
-          });
-        }
-      } finally {
-        setLoadingFlightId(null);
-      }
-    },
-    [toast, loadingFlightId, searchId, resultsBase]
-  );
 
   const handleRetry = useCallback(() => {
     setHasSearched(false);
-    setLoadingFlightId(null);
     // Reset filters to default
     setFilters({
       stops: [],
@@ -360,8 +277,6 @@ const LiveFlightResults = () => {
                         key={flight.id}
                         flight={flight}
                         isBestValue={index === 0 && sortBy === "best"}
-                        isLoading={loadingFlightId === flight.id}
-                        onViewDeal={() => handleViewDeal(flight)}
                       />
                     ))
                   )}
