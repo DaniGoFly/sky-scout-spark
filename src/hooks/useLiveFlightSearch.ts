@@ -1,5 +1,9 @@
 import { useState, useCallback, useRef } from "react";
 import { Flight } from "@/lib/flightNormalizer";
+import { 
+  FLIGHT_SEARCH_ENDPOINT, 
+  getFlightSearchHeaders 
+} from "@/lib/flightSearchConfig";
 
 /**
  * Flight Search Hook
@@ -8,14 +12,15 @@ import { Flight } from "@/lib/flightNormalizer";
  * Backend returns normalized data - no transformation needed.
  */
 
-// EXTERNAL Supabase project for flight search (NOT this project's Lovable Cloud)
-const FLIGHT_SEARCH_SUPABASE_URL = "https://ycpqgsjhxzhkljlszbwc.supabase.co";
-const FLIGHT_SEARCH_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcHFnc2poeHpoa2xqbHN6YndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NDMxNzAsImV4cCI6MjA1OTAxOTE3MH0.2e99RmdP8sNmB7QGelMgSxsFxBb12pmyhJcgZD5274E";
-
-// Correct endpoint (singular "flight-search")
-const FLIGHT_SEARCH_ENDPOINT = `${FLIGHT_SEARCH_SUPABASE_URL}/functions/v1/flight-search`;
-
 export type SearchStatus = "idle" | "searching" | "complete" | "error" | "no_results";
+
+interface ErrorDetails {
+  message: string;
+  url?: string;
+  status?: number;
+  step?: string;
+  responseText?: string;
+}
 
 interface SearchParams {
   origin: string;
@@ -49,6 +54,7 @@ interface UseLiveFlightSearchResult {
   flights: Flight[];
   status: SearchStatus;
   error: string | null;
+  errorDetails: ErrorDetails | null;
   isSearching: boolean;
   searchId: string | null;
   resultsBase: string | null;
@@ -64,6 +70,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [status, setStatus] = useState<SearchStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null);
   const [searchId, setSearchId] = useState<string | null>(null);
   const [resultsBase, setResultsBase] = useState<string | null>(null);
   const cancelRef = useRef(false);
@@ -78,6 +85,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     cancelRef.current = false;
     setFlights([]);
     setError(null);
+    setErrorDetails(null);
     setSearchId(null);
     setResultsBase(null);
     setStatus("searching");
@@ -88,7 +96,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         origin: params.origin.toUpperCase(),
         destination: params.destination.toUpperCase(),
         depart_date: params.departDate,
-        return_date: params.returnDate || undefined,
+        return_date: params.returnDate || "",
         adults: params.adults || 1,
         children: params.children || 0,
         infants: params.infants || 0,
@@ -104,21 +112,38 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
       const response = await fetch(FLIGHT_SEARCH_ENDPOINT, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": FLIGHT_SEARCH_ANON_KEY,
-          "Authorization": `Bearer ${FLIGHT_SEARCH_ANON_KEY}`,
-        },
+        headers: getFlightSearchHeaders(),
         body: JSON.stringify(requestBody),
       });
 
       if (cancelRef.current) return;
 
-      const data: SearchResponse = await response.json();
+      // Get raw response text for debugging
+      const responseText = await response.text();
+      let data: SearchResponse;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        // JSON parse failed
+        const details: ErrorDetails = {
+          message: "Invalid JSON response",
+          url: FLIGHT_SEARCH_ENDPOINT,
+          status: response.status,
+          responseText: responseText.substring(0, 500),
+        };
+        console.error("[FlightSearch] Parse error:", details);
+        setError(details.message);
+        setErrorDetails(details);
+        setStatus("error");
+        return;
+      }
       
       // Dev-only debug log
       if (import.meta.env.DEV) {
         console.log("[FlightSearch] Response:", {
+          url: FLIGHT_SEARCH_ENDPOINT,
+          status: response.status,
           ok: data.ok,
           step: data.step,
           search_id: data.search_id,
@@ -128,9 +153,17 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       }
 
       if (!response.ok || !data.ok) {
-        const errorMsg = data.error || data.upstream || "Search failed";
-        console.error("[FlightSearch] Error:", errorMsg);
+        const errorMsg = data.error || data.upstream || `HTTP ${response.status}`;
+        const details: ErrorDetails = {
+          message: errorMsg,
+          url: FLIGHT_SEARCH_ENDPOINT,
+          status: response.status,
+          step: data.step,
+          responseText: responseText.substring(0, 500),
+        };
+        console.error("[FlightSearch] Error:", details);
         setError(errorMsg);
+        setErrorDetails(details);
         setStatus("error");
         return;
       }
@@ -152,8 +185,14 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       
       console.log("[FlightSearch] Complete:", flightResults.length, "flights");
     } catch (err) {
-      console.error("[FlightSearch] Error:", err);
-      setError(err instanceof Error ? err.message : "Search failed");
+      const errorMsg = err instanceof Error ? err.message : "Network error";
+      const details: ErrorDetails = {
+        message: errorMsg,
+        url: FLIGHT_SEARCH_ENDPOINT,
+      };
+      console.error("[FlightSearch] Error:", details);
+      setError(errorMsg);
+      setErrorDetails(details);
       setStatus("error");
     }
   }, []);
@@ -162,6 +201,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     flights,
     status,
     error,
+    errorDetails,
     isSearching: status === "searching",
     searchId,
     resultsBase,
@@ -172,3 +212,4 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
 // Re-export Flight type for convenience
 export type { Flight } from "@/lib/flightNormalizer";
+export type { ErrorDetails };
