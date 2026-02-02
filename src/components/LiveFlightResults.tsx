@@ -10,6 +10,9 @@ import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { toast } from "sonner";
+import { resolveDeal } from "@/lib/flightSearchApi";
+import { getFlightBookingUrl, getFlightClickId, isHttpUrl, isTravelpayoutsClickUrl, type Flight } from "@/lib/flightNormalizer";
 
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
@@ -20,6 +23,8 @@ const LiveFlightResults = () => {
     error,
     isSearching,
     searchFlights,
+    searchId,
+    resultsBase,
   } = useLiveFlightSearch();
 
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
@@ -32,6 +37,62 @@ const LiveFlightResults = () => {
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [openingFlightId, setOpeningFlightId] = useState<string | null>(null);
+
+  const openInNewTab = useCallback((url: string) => {
+    if (!isHttpUrl(url)) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    // Attach to DOM for Safari reliability
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }, []);
+
+  const handleViewDeal = useCallback(
+    async (flight: Flight) => {
+      if (openingFlightId === flight.id) return; // prevent double-clicks on same CTA
+
+      setOpeningFlightId(flight.id);
+
+      try {
+        // Prefer already-resolved final partner URL
+        let bookingUrl = getFlightBookingUrl(flight);
+
+        // Never open Travelpayouts click endpoint
+        if (isTravelpayoutsClickUrl(bookingUrl)) {
+          bookingUrl = "";
+        }
+
+        if (!bookingUrl) {
+          const search_id = (flight as any).search_id || flight.searchId || searchId || "";
+          const click_id = (flight as any).click_id || getFlightClickId(flight) || "";
+          const results_base = (flight as any).results_base || flight.resultsBase || resultsBase || undefined;
+
+          if (!search_id || !click_id) {
+            throw new Error("Missing identifiers");
+          }
+
+          const resp = await resolveDeal({ search_id, click_id, results_base });
+          if (!resp.ok) throw new Error(resp.error || "resolve_deal failed");
+          bookingUrl = resp.booking_url || "";
+        }
+
+        if (!isHttpUrl(bookingUrl)) {
+          throw new Error("Invalid booking URL");
+        }
+
+        openInNewTab(bookingUrl);
+      } catch {
+        toast.error("Could not open deal. Please try again.");
+      } finally {
+        setOpeningFlightId(null);
+      }
+    },
+    [openingFlightId, openInNewTab, resultsBase, searchId]
+  );
 
   // Extract search params
   const from = searchParams.get("from") || searchParams.get("origin") || "";
@@ -272,13 +333,23 @@ const LiveFlightResults = () => {
                       <p>No flights match your filters. Try adjusting them.</p>
                     </div>
                   ) : (
-                    sortedFlights.map((flight, index) => (
-                      <FlightCard
-                        key={flight.id}
-                        flight={flight}
-                        isBestValue={index === 0 && sortBy === "best"}
-                      />
-                    ))
+                    sortedFlights.map((flight, index) => {
+                      // We can open if we already have a FINAL bookingUrl OR we can resolve via (searchId + clickId)
+                      const canResolve = Boolean(
+                        getFlightBookingUrl(flight) ||
+                          (searchId && (getFlightClickId(flight) || (flight as any).click_id))
+                      );
+
+                      return (
+                        <FlightCard
+                          key={flight.id}
+                          flight={flight}
+                          isBestValue={index === 0 && sortBy === "best"}
+                          onViewDeal={canResolve ? handleViewDeal : undefined}
+                          isOpeningDeal={openingFlightId === flight.id}
+                        />
+                      );
+                    })
                   )}
                 </div>
               </FlightResultsErrorBoundary>

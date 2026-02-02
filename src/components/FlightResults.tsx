@@ -266,13 +266,11 @@ const FlightResults = () => {
       </p>
       
       {aviasalesDirectUrl && (
-        <Button 
-          size="lg"
-          onClick={() => window.open(aviasalesDirectUrl, '_blank')}
-          className="gap-2 mb-6"
-        >
-          <ExternalLink className="w-5 h-5" />
-          Search Live Prices
+        <Button asChild size="lg" className="gap-2 mb-6">
+          <a href={aviasalesDirectUrl} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="w-5 h-5" />
+            Search Live Prices
+          </a>
         </Button>
       )}
       
@@ -319,9 +317,11 @@ const FlightResults = () => {
       
       <div className="flex flex-wrap gap-3 justify-center">
         {aviasalesDirectUrl && (
-          <Button onClick={() => window.open(aviasalesDirectUrl, '_blank')} className="gap-2">
-            <ExternalLink className="w-4 h-4" />
-            Search Directly
+          <Button asChild className="gap-2">
+            <a href={aviasalesDirectUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="w-4 h-4" />
+              Search Directly
+            </a>
           </Button>
         )}
         <Button
@@ -551,13 +551,11 @@ const FlightResults = () => {
                   <p className="text-sm text-muted-foreground mb-2">
                     For live availability and booking:
                   </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(aviasalesDirectUrl, '_blank')}
-                    className="gap-2"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Search Live Prices
+                  <Button asChild variant="outline" className="gap-2">
+                    <a href={aviasalesDirectUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4" />
+                      Search Live Prices
+                    </a>
                   </Button>
                 </div>
               )}
