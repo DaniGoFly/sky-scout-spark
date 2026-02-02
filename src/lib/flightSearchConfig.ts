@@ -3,12 +3,10 @@
  * Single source of truth for backend API access
  */
 
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://ycpqgsjhxzhkljlszbwc.supabase.co";
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!SUPABASE_ANON_KEY) {
-  console.error("Missing SUPABASE_ANON_KEY - flight search will fail");
-}
+// IMPORTANT:
+// These must be the ONLY source of truth. Do not hardcode values or add fallbacks.
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 export const FLIGHT_SEARCH_URL = `${SUPABASE_URL}/functions/v1/flight-search`;
 

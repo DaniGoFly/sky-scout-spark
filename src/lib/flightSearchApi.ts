@@ -419,7 +419,8 @@ export async function searchFlights(params: SearchParams): Promise<SearchRespons
     origin: params.origin.toUpperCase(),
     destination: params.destination.toUpperCase(),
     depart_date: params.departDate,
-    return_date: params.returnDate || "",
+    // Optional: omit when not provided
+    return_date: params.returnDate || undefined,
     adults: params.adults || 1,
     currency: params.currency || "EUR",
     locale: "en",
