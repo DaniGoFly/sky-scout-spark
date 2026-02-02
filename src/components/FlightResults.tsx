@@ -13,7 +13,7 @@ import FlightSortTabs from "./FlightSortTabs";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import SkyscannerFlightCard from "./SkyscannerFlightCard";
 import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
-import { NormalizedFlight, sortFlights, isEligibleForBestValue } from "@/lib/flightNormalizer";
+import { Flight, sortFlights, isEligibleForBestValue, getAirlineName } from "@/lib/flightNormalizer";
 import { format, addDays } from "date-fns";
 import { getDefaultDates, parseDateSafe } from "@/lib/dateUtils";
 
@@ -83,38 +83,27 @@ const FlightResults = () => {
     }
   }, [from, to, tripType, navigate]);
 
-  // Normalize flights for UI
-  const normalizedFlights = useMemo((): NormalizedFlight[] => {
+  // Convert LiveFlight to Flight format for UI
+  const normalizedFlights = useMemo((): Flight[] => {
     if (!flights.length) return [];
     
-    // Since we're using LiveFlight from the hook, convert to NormalizedFlight format
-    return flights.map((f): NormalizedFlight => {
+    return flights.map((f): Flight => {
       const priceValue = Math.round(f.price);
-      const isPriceValid = typeof f.price === 'number' && Number.isFinite(f.price) && f.price > 0;
+      const airlineCode = f.airline?.substring(0, 2).toUpperCase() || "XX";
       
       return {
         id: f.id,
-        airlineCode: f.airline?.substring(0, 2).toUpperCase() || "XX",
-        airlineName: f.airline || "Unknown Airline",
-        airlineLogo: f.airlineLogo || "",
-        flightNumber: f.flightNumber || "",
-        originIata: f.departureCode || from.split(",")[0],
-        destinationIata: f.arrivalCode || to.split(",")[0],
+        origin: f.departureCode || from.split(",")[0],
+        destination: f.arrivalCode || to.split(",")[0],
         departureTime: f.departureTime || "",
         arrivalTime: f.arrivalTime || "",
-        duration: f.duration || "",
         durationMinutes: f.durationMinutes || 0,
-        stops: f.stops || 0,
-        stopAirports: [], // Not available in LiveFlight
-        price: priceValue,
-        currency: "USD",
-        dealsCount: 1, // Default to 1 deal
-        isPriceValid,
-        searchId: "",
-        resultsUrl: "",
-        proposalId: f.id,
-        signature: f.id,
-        hasValidBookingUrl: !!f.deepLink && f.deepLink.startsWith('http'),
+        stopsCount: f.stops || 0,
+        stopsAirports: [],
+        airlines: [airlineCode],
+        flightNumbers: f.flightNumber ? [f.flightNumber] : [],
+        price: { amount: priceValue, currency: "USD" },
+        clickUrl: f.deepLink || "",
       };
     });
   }, [flights, from, to]);
@@ -174,7 +163,7 @@ const FlightResults = () => {
   // Get base price for calendar
   const basePrice = useMemo(() => {
     if (normalizedFlights.length === 0) return 350;
-    return Math.min(...normalizedFlights.map(f => f.price));
+    return Math.min(...normalizedFlights.map(f => f.price.amount));
   }, [normalizedFlights]);
 
   // Filter and sort flights
@@ -183,30 +172,31 @@ const FlightResults = () => {
 
     // Apply direct-only filter from URL params or filter state
     if (directOnly || filters.directOnly) {
-      result = result.filter(f => f.stops === 0);
+      result = result.filter(f => f.stopsCount === 0);
     }
 
     if (filters.stops.length > 0 && !directOnly && !filters.directOnly) {
       result = result.filter((flight) => {
         return filters.stops.some((stop) => {
-          if (stop === "direct") return flight.stops === 0;
-          if (stop === "1stop") return flight.stops === 1;
-          if (stop === "2stops") return flight.stops >= 2;
+          if (stop === "direct") return flight.stopsCount === 0;
+          if (stop === "1stop") return flight.stopsCount === 1;
+          if (stop === "2stops") return flight.stopsCount >= 2;
           return true;
         });
       });
     }
 
     if (filters.airlines.length > 0) {
-      result = result.filter((flight) =>
-        filters.airlines.includes(flight.airlineName)
-      );
+      result = result.filter((flight) => {
+        const flightAirline = getAirlineName(flight.airlines?.[0] || "");
+        return filters.airlines.includes(flightAirline);
+      });
     }
 
     result = result.filter(
       (flight) =>
-        flight.price >= filters.priceRange[0] &&
-        flight.price <= filters.priceRange[1]
+        flight.price.amount >= filters.priceRange[0] &&
+        flight.price.amount <= filters.priceRange[1]
     );
 
     if (filters.departureTime.length > 0) {
@@ -224,8 +214,8 @@ const FlightResults = () => {
       });
     }
 
-    // Sort using the normalizer's sort function with fetchedAt for price confidence
-    return sortFlights(result, sortBy, fetchedAtRef.current);
+    // Sort flights
+    return sortFlights(result, sortBy);
   }, [normalizedFlights, filters, sortBy, directOnly]);
 
   // Slice to visible count (capped at MAX_VISIBLE_RESULTS)
@@ -242,15 +232,13 @@ const FlightResults = () => {
     setVisibleCount(prev => Math.min(prev + RESULTS_PER_PAGE, MAX_VISIBLE_RESULTS));
   };
 
-  const handleViewDeal = async (flight: NormalizedFlight) => {
-    // Find the original flight with deepLink
-    const originalFlight = flights.find(f => f.id === flight.id);
-    if (!originalFlight?.deepLink) return;
+  const handleViewDeal = async (flight: Flight) => {
+    if (!flight.clickUrl) return;
     
     setLoadingFlightId(flight.id);
     
     // Open in new tab
-    window.open(originalFlight.deepLink, "_blank", "noopener,noreferrer");
+    window.open(flight.clickUrl, "_blank", "noopener,noreferrer");
     
     // Reset loading state after a short delay
     setTimeout(() => setLoadingFlightId(null), 1500);
@@ -529,8 +517,7 @@ const FlightResults = () => {
 
               {/* Flight Cards */}
               {displayedFlights.map((flight, index) => {
-                // Only show Best Value for first flight if it's eligible
-                const showBestValue = index === 0 && sortBy === "best" && isEligibleForBestValue(flight, fetchedAtRef.current);
+                const showBestValue = index === 0 && sortBy === "best" && isEligibleForBestValue(flight);
                 
                 return (
                   <SkyscannerFlightCard
@@ -539,7 +526,6 @@ const FlightResults = () => {
                     isBestValue={showBestValue}
                     isLoading={loadingFlightId === flight.id}
                     onViewDeal={() => handleViewDeal(flight)}
-                    fetchedAt={fetchedAtRef.current}
                   />
                 );
               })}

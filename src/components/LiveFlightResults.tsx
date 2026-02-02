@@ -1,22 +1,16 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal, Info, Loader2, ChevronDown } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSortTabs from "./FlightSortTabs";
-import FlightSearchProgress from "./FlightSearchProgress";
 import CompactSearchBar from "./CompactSearchBar";
-import SkyscannerFlightCard from "./SkyscannerFlightCard";
+import FlightCard from "./SkyscannerFlightCard";
 import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
-import { useLiveFlightSearch, handleFlightClick } from "@/hooks/useLiveFlightSearch";
-import { NormalizedFlight, sortFlights } from "@/lib/flightNormalizer";
+import { useLiveFlightSearch, Flight } from "@/hooks/useLiveFlightSearch";
+import { sortFlights, getAirlineName, hasValidClickUrl } from "@/lib/flightNormalizer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-
-// Pagination configuration (Skyscanner-style)
-const RESULTS_PER_PAGE = 25;
-const MAX_VISIBLE_RESULTS = 100; // Hard cap - never show more than this
 
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
@@ -26,10 +20,7 @@ const LiveFlightResults = () => {
     flights: rawFlights,
     status,
     error,
-    progress,
     isSearching,
-    isDemo,
-    liveUnavailable,
     searchFlights,
   } = useLiveFlightSearch();
 
@@ -43,8 +34,6 @@ const LiveFlightResults = () => {
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(RESULTS_PER_PAGE);
-  const fetchedAtRef = useRef<number>(Date.now());
   const [loadingFlightId, setLoadingFlightId] = useState<string | null>(null);
 
   // Extract search params
@@ -83,62 +72,59 @@ const LiveFlightResults = () => {
     }
   }, [from, to, depart, returnDate, adults, children, infants, tripType, cabin, searchFlights, hasSearched]);
 
-  // The hook now returns NormalizedFlight[] directly with full itinerary details
-  // No conversion needed - use rawFlights directly as normalizedFlights
-  const normalizedFlights = useMemo((): NormalizedFlight[] => {
-    if (!rawFlights || !Array.isArray(rawFlights)) return [];
-    
-    // Filter out invalid flights
-    return rawFlights.filter((f) => {
-      if (!f || typeof f.price !== "number" || f.price <= 0) return false;
-      if (!f.proposalId || !f.signature || !f.searchId || !f.resultsUrl) return false;
-      if (!f.originIata || !f.destinationIata) return false;
-      return true;
-    });
-  }, [rawFlights]);
-
   // Get available airlines for filter
   const availableAirlines = useMemo(() => {
-    return [...new Set(normalizedFlights.map((f) => f.airlineName).filter(Boolean))].sort();
-  }, [normalizedFlights]);
+    const names = rawFlights
+      .map(f => f.airlines?.[0])
+      .filter(Boolean)
+      .map(code => getAirlineName(code));
+    return [...new Set(names)].sort();
+  }, [rawFlights]);
 
   // Apply filters
   const filteredFlights = useMemo(() => {
-    let result = [...normalizedFlights];
+    let result = [...rawFlights];
 
-    // Apply direct-only filter if enabled
+    // Direct-only filter
     if (filters.directOnly) {
-      result = result.filter(f => f.stops === 0);
+      result = result.filter(f => f.stopsCount === 0);
     }
 
-    // Filter by stops (only if direct-only is not enabled)
+    // Stops filter
     if (filters.stops.length > 0 && !filters.directOnly) {
       result = result.filter((flight) => {
         return filters.stops.some((stop) => {
-          if (stop === "direct") return flight.stops === 0;
-          if (stop === "1stop") return flight.stops === 1;
-          if (stop === "2stops") return flight.stops >= 2;
+          if (stop === "direct") return flight.stopsCount === 0;
+          if (stop === "1stop") return flight.stopsCount === 1;
+          if (stop === "2stops") return flight.stopsCount >= 2;
           return true;
         });
       });
     }
 
-    // Filter by airlines
+    // Airlines filter
     if (filters.airlines.length > 0) {
-      result = result.filter((flight) => filters.airlines.includes(flight.airlineName));
+      result = result.filter((flight) => {
+        const flightAirline = getAirlineName(flight.airlines?.[0] || "");
+        return filters.airlines.includes(flightAirline);
+      });
     }
 
-    // Filter by price range
+    // Price range filter
     result = result.filter(
-      (flight) => flight.price >= filters.priceRange[0] && flight.price <= filters.priceRange[1]
+      (flight) => flight.price.amount >= filters.priceRange[0] && flight.price.amount <= filters.priceRange[1]
     );
 
-    // Filter by departure time
+    // Departure time filter
     if (filters.departureTime.length > 0) {
       result = result.filter((flight) => {
         if (!flight.departureTime) return true;
-        const hour = parseInt(flight.departureTime.split(":")[0] || "0", 10);
-        if (isNaN(hour)) return true;
+        const timeParts = flight.departureTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+        if (!timeParts) return true;
+        let hour = parseInt(timeParts[1], 10);
+        const ampm = timeParts[3]?.toUpperCase();
+        if (ampm === "PM" && hour !== 12) hour += 12;
+        if (ampm === "AM" && hour === 12) hour = 0;
 
         return filters.departureTime.some((time) => {
           if (time === "morning") return hour >= 6 && hour < 12;
@@ -151,39 +137,12 @@ const LiveFlightResults = () => {
     }
 
     return result;
-  }, [normalizedFlights, filters]);
+  }, [rawFlights, filters]);
 
-  // Update fetchedAt when raw flights change
-  useEffect(() => {
-    if (rawFlights.length > 0) {
-      fetchedAtRef.current = Date.now();
-    }
-  }, [rawFlights]);
-
-  // Reset visible count when sort or filters change
-  useEffect(() => {
-    setVisibleCount(RESULTS_PER_PAGE);
-  }, [sortBy, filters]);
-
-  // Sort all filtered flights (sorting happens BEFORE limiting)
+  // Sort flights
   const sortedFlights = useMemo(() => {
-    return sortFlights(filteredFlights, sortBy, fetchedAtRef.current);
+    return sortFlights(filteredFlights, sortBy);
   }, [filteredFlights, sortBy]);
-
-  // Slice to visible count (capped at MAX_VISIBLE_RESULTS)
-  const displayFlights = useMemo(() => {
-    const cappedVisible = Math.min(visibleCount, MAX_VISIBLE_RESULTS);
-    return sortedFlights.slice(0, cappedVisible);
-  }, [sortedFlights, visibleCount]);
-
-  // Pagination helpers
-  const totalResults = filteredFlights.length;
-  const canShowMore = visibleCount < Math.min(totalResults, MAX_VISIBLE_RESULTS);
-  const remainingToShow = Math.min(RESULTS_PER_PAGE, Math.min(totalResults, MAX_VISIBLE_RESULTS) - visibleCount);
-
-  const handleShowMore = useCallback(() => {
-    setVisibleCount((prev) => Math.min(prev + RESULTS_PER_PAGE, MAX_VISIBLE_RESULTS));
-  }, []);
 
   // Format date
   const formatDate = (dateStr: string) => {
@@ -198,19 +157,15 @@ const LiveFlightResults = () => {
     }
   };
 
-  // Handle "View Deal" click - opens in NEW TAB
+  // Handle "View Deal" click - opens clickUrl in NEW TAB
   const handleViewDeal = useCallback(
-    async (flight: NormalizedFlight) => {
-      // Prevent double-clicks
-      if (loadingFlightId) {
-        console.log("[ViewDeal] Already processing a click, ignoring");
-        return;
-      }
-
-      if (!flight.hasValidBookingUrl) {
+    (flight: Flight) => {
+      if (loadingFlightId) return;
+      
+      if (!hasValidClickUrl(flight)) {
         toast({
           title: "Deal unavailable",
-          description: "Booking information is incomplete for this offer.",
+          description: "Booking link is not available for this offer.",
           variant: "destructive",
         });
         return;
@@ -218,52 +173,20 @@ const LiveFlightResults = () => {
 
       setLoadingFlightId(flight.id);
 
-      try {
-        const payload = {
-          searchId: flight.searchId,
-          proposalId: flight.proposalId,
-          signature: flight.signature,
-          resultsUrl: flight.resultsUrl,
-        };
-
-        console.log("[ViewDeal] Calling click action:", payload);
-
-        const url = await handleFlightClick(payload);
-
-        if (!url || typeof url !== "string" || !url.startsWith("http")) {
-          console.error("[ViewDeal] Invalid URL received:", url);
-          toast({
-            title: "Deal unavailable",
-            description: "Could not get provider link. Please try another offer.",
-            variant: "destructive",
-          });
-          setLoadingFlightId(null);
-          return;
-        }
-
-        console.log("[ViewDeal] Opening in new tab:", url);
-        
-        // Open in new tab (Skyscanner-style) - use noopener,noreferrer for security
-        const newWindow = window.open(url, "_blank", "noopener,noreferrer");
-        
-        // If popup was blocked, show a toast with fallback
-        if (!newWindow) {
-          console.warn("[ViewDeal] Popup blocked, trying direct navigation");
-          // Fallback: open in current tab if popup blocked
-          window.location.href = url;
-        }
-        
-        // Clear loading state after a short delay to prevent rapid re-clicks
-        setTimeout(() => setLoadingFlightId(null), 500);
-      } catch (err) {
-        console.error("[ViewDeal] Error:", err);
+      // Open in new tab using clickUrl directly from backend
+      console.log("[ViewDeal] Opening:", flight.clickUrl);
+      const newWindow = window.open(flight.clickUrl, "_blank", "noopener,noreferrer");
+      
+      if (!newWindow) {
+        console.warn("[ViewDeal] Popup blocked");
         toast({
-          title: "Error",
-          description: "Something went wrong. Please try again.",
+          title: "Popup blocked",
+          description: "Please allow popups to view this deal.",
           variant: "destructive",
         });
-        setLoadingFlightId(null);
       }
+      
+      setTimeout(() => setLoadingFlightId(null), 500);
     },
     [toast, loadingFlightId]
   );
@@ -272,14 +195,13 @@ const LiveFlightResults = () => {
   const handleRetry = () => {
     setHasSearched(false);
     setLoadingFlightId(null);
-    setVisibleCount(RESULTS_PER_PAGE);
   };
 
-  // Filters sidebar - pass normalized flights for dynamic airline list and price range
+  // Filters sidebar
   const FiltersContent = () => (
     <FlightFilters 
       onFiltersChange={setFilters} 
-      flights={normalizedFlights}
+      flights={rawFlights}
       showDirectOnly={true}
       onDirectOnlyChange={(checked) => {
         setFilters(prev => ({ ...prev, directOnly: checked }));
@@ -334,11 +256,11 @@ const LiveFlightResults = () => {
       <div className="container mx-auto px-4 py-6">
         {/* Loading state */}
         {isSearching && (
-          <FlightSearchProgress
-            progress={progress}
-            status={status === "searching" ? "creating" : (status as any)}
-            flightsFound={rawFlights.length}
-          />
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+            <p className="text-lg font-semibold text-foreground">Searching flights...</p>
+            <p className="text-muted-foreground">Finding the best deals for you</p>
+          </div>
         )}
 
         {/* Error state */}
@@ -360,22 +282,8 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {/* Live unavailable */}
-        {status === "no_results" && liveUnavailable && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mb-6">
-              <Info className="w-10 h-10 text-warning" />
-            </div>
-            <p className="text-xl font-semibold text-foreground mb-2">Live results not active yet</p>
-            <p className="text-muted-foreground mb-6 max-w-md">
-              Our live flight search is pending activation. Real-time pricing will be available soon.
-            </p>
-            <Button onClick={() => navigate("/flights")}>New Search</Button>
-          </div>
-        )}
-
         {/* No results */}
-        {status === "no_results" && !liveUnavailable && !isSearching && (
+        {status === "no_results" && !isSearching && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
               <Plane className="w-10 h-10 text-muted-foreground" />
@@ -389,96 +297,44 @@ const LiveFlightResults = () => {
         )}
 
         {/* Results */}
-        {(status === "complete" || (isSearching && rawFlights.length > 0)) && (
+        {status === "complete" && sortedFlights.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
-            {/* Desktop Filters - Sticky sidebar with independent scroll */}
+            {/* Desktop Filters */}
             <aside className="hidden lg:block h-fit">
               <FiltersContent />
             </aside>
 
             {/* Flight list */}
             <div className="space-y-4 min-w-0">
-              {/* Sample prices banner */}
-              {isDemo && (
-                <Alert className="border-primary/30 bg-primary/5">
-                  <Info className="h-4 w-4 text-primary" />
-                  <AlertTitle className="text-primary">Sample Prices</AlertTitle>
-                  <AlertDescription className="text-primary/80">
-                    Prices shown are estimates. Actual prices may vary.
-                  </AlertDescription>
-                </Alert>
-              )}
-
               {/* Sort tabs */}
               <FlightSortTabs flights={sortedFlights} sortBy={sortBy} onSortChange={setSortBy} />
 
-              {/* Results count - Skyscanner style */}
-              <div className="flex items-center justify-between text-sm text-muted-foreground bg-card p-3 rounded-xl border border-border">
-                <span>
-                  <span className="font-semibold text-foreground">{totalResults.toLocaleString()}</span> results found
-                  {displayFlights.length < totalResults && (
-                    <span> · Showing top {displayFlights.length}</span>
-                  )}
-                </span>
-                {isSearching && (
-                  <span className="text-primary flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Still searching...
-                  </span>
-                )}
+              {/* Results count */}
+              <div className="text-sm text-muted-foreground bg-card p-3 rounded-xl border border-border">
+                <span className="font-semibold text-foreground">{sortedFlights.length}</span> results found
               </div>
 
               {/* Flight cards */}
               <FlightResultsErrorBoundary>
                 <div className="space-y-4">
-                  {displayFlights.length === 0 && !isSearching ? (
+                  {sortedFlights.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <Plane className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No flights match your filters. Try adjusting them.</p>
                     </div>
                   ) : (
-                    displayFlights.map((flight, index) => (
-                      <SkyscannerFlightCard
+                    sortedFlights.map((flight, index) => (
+                      <FlightCard
                         key={flight.id}
                         flight={flight}
                         isBestValue={index === 0 && sortBy === "best"}
                         isLoading={loadingFlightId === flight.id}
                         onViewDeal={() => handleViewDeal(flight)}
-                        fetchedAt={fetchedAtRef.current}
                       />
                     ))
                   )}
                 </div>
               </FlightResultsErrorBoundary>
-
-              {/* Show More Button - Progressive Loading */}
-              {canShowMore && (
-                <div className="text-center pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={handleShowMore}
-                    className="gap-2"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                    Show {remainingToShow} more
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Showing {displayFlights.length} of {Math.min(totalResults, MAX_VISIBLE_RESULTS).toLocaleString()} results
-                    {totalResults > MAX_VISIBLE_RESULTS && (
-                      <span className="text-muted-foreground/70"> (capped at {MAX_VISIBLE_RESULTS})</span>
-                    )}
-                  </p>
-                </div>
-              )}
-
-              {/* Max results reached message */}
-              {visibleCount >= MAX_VISIBLE_RESULTS && totalResults > MAX_VISIBLE_RESULTS && (
-                <div className="text-center pt-4 text-sm text-muted-foreground border-t border-border">
-                  <p>
-                    Showing top {MAX_VISIBLE_RESULTS} results. Use filters to narrow your search.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         )}

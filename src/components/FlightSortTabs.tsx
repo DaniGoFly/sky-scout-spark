@@ -1,49 +1,38 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, Zap, Star } from "lucide-react";
-import { NormalizedFlight, getFlightStats } from "@/lib/flightNormalizer";
+import { Flight, getFlightStats, formatDuration, formatPrice } from "@/lib/flightNormalizer";
 
 interface FlightSortTabsProps {
-  flights: NormalizedFlight[];
+  flights: Flight[];
   sortBy: "best" | "cheapest" | "fastest";
   onSortChange: (sort: "best" | "cheapest" | "fastest") => void;
-  fetchedAt?: number;
 }
 
-const FlightSortTabs = ({ flights, sortBy, onSortChange, fetchedAt }: FlightSortTabsProps) => {
-  const stats = getFlightStats(flights, fetchedAt);
+const FlightSortTabs = ({ flights, sortBy, onSortChange }: FlightSortTabsProps) => {
+  const stats = getFlightStats(flights);
 
   if (!stats) return null;
-
-  const formatPrice = (price: number, currency: string): string => {
-    const symbols: Record<string, string> = {
-      EUR: "€",
-      USD: "$",
-      GBP: "£",
-      CHF: "CHF ",
-    };
-    return `${symbols[currency] || currency + " "}${Math.round(price).toLocaleString()}`;
-  };
 
   const tabs = [
     {
       key: "best" as const,
       label: "Best",
       icon: Star,
-      sublabel: formatPrice(stats.best.price, stats.best.currency),
+      sublabel: formatPrice(stats.best.price.amount, stats.best.price.currency),
       description: "Best value for money",
     },
     {
       key: "cheapest" as const,
       label: "Cheapest",
       icon: Wallet,
-      sublabel: formatPrice(stats.cheapest.price, stats.cheapest.currency),
+      sublabel: formatPrice(stats.cheapest.price.amount, stats.cheapest.price.currency),
       description: "Lowest price",
     },
     {
       key: "fastest" as const,
       label: "Fastest",
       icon: Zap,
-      sublabel: stats.fastest.duration || "—",
+      sublabel: formatDuration(stats.fastest.durationMinutes) || "—",
       description: "Shortest flight time",
     },
   ];

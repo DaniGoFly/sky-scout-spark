@@ -6,13 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from "@/components/ui/sheet";
 import { FilterState } from "./FlightFilters";
-import { NormalizedFlight } from "@/lib/flightNormalizer";
+import { Flight, getAirlineName } from "@/lib/flightNormalizer";
 
 interface MobileFiltersDrawerProps {
   onFiltersChange: (filters: FilterState) => void;
   activeFiltersCount: number;
   flightCount: number;
-  flights?: NormalizedFlight[];
+  flights?: Flight[];
 }
 
 const STOPS = [
@@ -46,17 +46,21 @@ const MobileFiltersDrawer = ({
   
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get unique airlines from normalized flight data
+  // Get unique airlines from flight data
   const availableAirlines = useMemo(() => {
     if (!flights.length) return [];
-    const uniqueAirlines = [...new Set(flights.map(f => f.airlineName))].filter(Boolean);
+    const airlineNames = flights
+      .map(f => f.airlines?.[0])
+      .filter(Boolean)
+      .map(code => getAirlineName(code));
+    const uniqueAirlines = [...new Set(airlineNames)];
     return uniqueAirlines.sort();
   }, [flights]);
 
-  // Get price range from normalized flight data
+  // Get price range from flight data
   const actualPriceRange = useMemo((): [number, number] => {
     if (!flights.length) return DEFAULT_PRICE_RANGE;
-    const prices = flights.map(f => f.price).filter(p => p > 0 && Number.isFinite(p));
+    const prices = flights.map(f => f.price?.amount).filter(p => p > 0 && Number.isFinite(p));
     if (!prices.length) return DEFAULT_PRICE_RANGE;
     const min = Math.floor(Math.min(...prices) / 25) * 25;
     const max = Math.ceil(Math.max(...prices) / 25) * 25;
