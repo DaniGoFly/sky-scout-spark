@@ -8,7 +8,8 @@ import CompactSearchBar from "./CompactSearchBar";
 import FlightCard from "./SkyscannerFlightCard";
 import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
 import { useLiveFlightSearch, Flight } from "@/hooks/useLiveFlightSearch";
-import { getAirlineName, hasValidClickUrl } from "@/lib/flightNormalizer";
+import { resolveClick } from "@/lib/flightSearchApi";
+import { getAirlineName } from "@/lib/flightNormalizer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,8 +21,9 @@ const LiveFlightResults = () => {
     flights: rawFlights,
     status,
     error,
-    errorDetails,
     isSearching,
+    searchId,
+    resultsBase,
     searchFlights,
   } = useLiveFlightSearch();
 
@@ -55,7 +57,7 @@ const LiveFlightResults = () => {
     first: "F",
   };
 
-  // Trigger search when params change or sort changes
+  // Trigger search when params change
   const doSearch = useCallback((sort: "best" | "cheapest" | "fastest") => {
     if (!from || !to || !depart) return;
     
@@ -82,31 +84,20 @@ const LiveFlightResults = () => {
     }
   }, [from, to, depart, hasSearched, doSearch, sortBy]);
 
-  // Re-fetch when sort changes (after initial search)
+  // Re-fetch when sort changes
   const handleSortChange = useCallback((newSort: "best" | "cheapest" | "fastest") => {
     setSortBy(newSort);
     doSearch(newSort);
   }, [doSearch]);
 
-  // Get available airlines for filter
-  const availableAirlines = useMemo(() => {
-    const names = rawFlights
-      .map(f => f.airlines?.[0])
-      .filter(Boolean)
-      .map(code => getAirlineName(code));
-    return [...new Set(names)].sort();
-  }, [rawFlights]);
-
   // Apply filters
   const filteredFlights = useMemo(() => {
     let result = [...rawFlights];
 
-    // Direct-only filter
     if (filters.directOnly) {
       result = result.filter(f => f.stopsCount === 0);
     }
 
-    // Stops filter
     if (filters.stops.length > 0 && !filters.directOnly) {
       result = result.filter((flight) => {
         return filters.stops.some((stop) => {
@@ -118,7 +109,6 @@ const LiveFlightResults = () => {
       });
     }
 
-    // Airlines filter
     if (filters.airlines.length > 0) {
       result = result.filter((flight) => {
         const flightAirline = getAirlineName(flight.airlines?.[0] || "");
@@ -126,12 +116,10 @@ const LiveFlightResults = () => {
       });
     }
 
-    // Price range filter
     result = result.filter(
       (flight) => flight.price.amount >= filters.priceRange[0] && flight.price.amount <= filters.priceRange[1]
     );
 
-    // Departure time filter
     if (filters.departureTime.length > 0) {
       result = result.filter((flight) => {
         if (!flight.departureTime) return true;
@@ -155,10 +143,8 @@ const LiveFlightResults = () => {
     return result;
   }, [rawFlights, filters]);
 
-  // Backend already sorted, just filter
   const sortedFlights = filteredFlights;
 
-  // Format date
   const formatDate = (dateStr: string) => {
     try {
       return new Date(dateStr).toLocaleDateString("en-US", {
@@ -171,15 +157,18 @@ const LiveFlightResults = () => {
     }
   };
 
-  // Handle "View Deal" click - opens clickUrl in NEW TAB
+  // Handle "View Deal" - open blank tab immediately, then resolve URL
   const handleViewDeal = useCallback(
-    (flight: Flight) => {
+    async (flight: Flight) => {
       if (loadingFlightId) return;
+
+      // Open blank tab IMMEDIATELY (synchronous) to avoid popup blocker
+      const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
       
-      if (!hasValidClickUrl(flight)) {
+      if (!popup) {
         toast({
-          title: "Deal unavailable",
-          description: "Booking link is not available for this offer.",
+          title: "Popup blocked",
+          description: "Please allow popups for this site to open deals.",
           variant: "destructive",
         });
         return;
@@ -187,31 +176,69 @@ const LiveFlightResults = () => {
 
       setLoadingFlightId(flight.id);
 
-      // Open in new tab using clickUrl directly from backend
-      console.log("[ViewDeal] Opening:", flight.clickUrl);
-      const newWindow = window.open(flight.clickUrl, "_blank", "noopener,noreferrer");
-      
-      if (!newWindow) {
-        console.warn("[ViewDeal] Popup blocked");
-        toast({
-          title: "Popup blocked",
-          description: "Please allow popups to view this deal.",
-          variant: "destructive",
+      try {
+        // Check if we have search context for click resolution
+        if (!searchId || !resultsBase || !flight.proposalId) {
+          // Fallback: use clickUrl directly if available
+          if (flight.clickUrl && flight.clickUrl.startsWith("http")) {
+            popup.location.href = flight.clickUrl;
+          } else {
+            popup.close();
+            toast({
+              title: "Deal unavailable",
+              description: "Booking link is not available for this offer.",
+              variant: "destructive",
+            });
+          }
+          return;
+        }
+
+        // Resolve the actual booking URL via API
+        const clickResult = await resolveClick({
+          search_id: searchId,
+          proposal_id: flight.proposalId,
+          results_base: resultsBase,
         });
+
+        if (clickResult.ok && clickResult.url) {
+          popup.location.href = clickResult.url;
+        } else {
+          // Fallback to clickUrl if resolution fails
+          if (flight.clickUrl && flight.clickUrl.startsWith("http")) {
+            popup.location.href = flight.clickUrl;
+          } else {
+            popup.close();
+            toast({
+              title: "Unable to open deal",
+              description: clickResult.error || "Please try again.",
+              variant: "destructive",
+            });
+          }
+        }
+      } catch (err) {
+        // Fallback on error
+        if (flight.clickUrl && flight.clickUrl.startsWith("http")) {
+          popup.location.href = flight.clickUrl;
+        } else {
+          popup.close();
+          toast({
+            title: "Connection error",
+            description: "Could not load the booking page. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        setLoadingFlightId(null);
       }
-      
-      setTimeout(() => setLoadingFlightId(null), 500);
     },
-    [toast, loadingFlightId]
+    [toast, loadingFlightId, searchId, resultsBase]
   );
 
-  // Retry search
   const handleRetry = () => {
     setHasSearched(false);
     setLoadingFlightId(null);
   };
 
-  // Filters sidebar
   const FiltersContent = () => (
     <FlightFilters 
       onFiltersChange={setFilters} 
@@ -244,7 +271,6 @@ const LiveFlightResults = () => {
               </p>
             </div>
 
-            {/* Mobile filter button */}
             <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm" className="lg:hidden gap-2">
@@ -277,49 +303,16 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {/* Error state */}
+        {/* Error state - clean user-friendly message */}
         {status === "error" && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
               <AlertCircle className="w-10 h-10 text-destructive" />
             </div>
             <p className="text-xl font-semibold text-foreground mb-2">Something went wrong</p>
-            <p className="text-muted-foreground mb-4 max-w-md">
-              {error || "Failed to search flights. Please try again."}
+            <p className="text-muted-foreground mb-6 max-w-md">
+              {error || "We couldn't find flights for this search. Please try again."}
             </p>
-            
-            {/* Debug info panel */}
-            {errorDetails && (
-              <div className="mb-6 p-4 bg-muted/50 rounded-lg text-left text-xs font-mono max-w-lg w-full overflow-x-auto">
-                <p className="text-muted-foreground mb-1">
-                  <span className="font-semibold">URL:</span> {errorDetails.url || "N/A"}
-                </p>
-                {errorDetails.status !== undefined && (
-                  <p className="text-muted-foreground mb-1">
-                    <span className="font-semibold">Status:</span> {errorDetails.status}
-                  </p>
-                )}
-                 {errorDetails.authHeaderExists !== undefined && (
-                   <p className="text-muted-foreground mb-1">
-                     <span className="font-semibold">Auth header present:</span> {String(errorDetails.authHeaderExists)}
-                   </p>
-                 )}
-                {errorDetails.step && (
-                  <p className="text-muted-foreground mb-1">
-                    <span className="font-semibold">Step:</span> {errorDetails.step}
-                  </p>
-                )}
-                {errorDetails.responseText && (
-                   <p className="text-muted-foreground whitespace-pre-wrap break-words">
-                     <span className="font-semibold">Response JSON:</span>{" "}
-                     {errorDetails.responseJson !== undefined
-                       ? JSON.stringify(errorDetails.responseJson, null, 2)
-                       : errorDetails.responseText}
-                   </p>
-                )}
-              </div>
-            )}
-            
             <div className="flex gap-3">
               <Button onClick={handleRetry}>Try Again</Button>
               <Button variant="outline" onClick={() => navigate("/flights")}>
@@ -346,22 +339,17 @@ const LiveFlightResults = () => {
         {/* Results */}
         {status === "complete" && sortedFlights.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
-            {/* Desktop Filters */}
             <aside className="hidden lg:block h-fit">
               <FiltersContent />
             </aside>
 
-            {/* Flight list */}
             <div className="space-y-4 min-w-0">
-              {/* Sort tabs */}
               <FlightSortTabs flights={sortedFlights} sortBy={sortBy} onSortChange={handleSortChange} />
 
-              {/* Results count */}
               <div className="text-sm text-muted-foreground bg-card p-3 rounded-xl border border-border">
                 <span className="font-semibold text-foreground">{sortedFlights.length}</span> results found
               </div>
 
-              {/* Flight cards */}
               <FlightResultsErrorBoundary>
                 <div className="space-y-4">
                   {sortedFlights.length === 0 ? (
