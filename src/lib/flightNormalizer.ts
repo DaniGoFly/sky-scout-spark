@@ -50,6 +50,7 @@ export interface Flight {
     currency: string;
   };
   clickUrl: string;
+  proposalId?: string;
   return?: ReturnLegInfo;
 }
 

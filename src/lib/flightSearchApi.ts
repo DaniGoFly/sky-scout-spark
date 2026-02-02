@@ -7,6 +7,7 @@ import {
   FLIGHT_SEARCH_URL,
   FLIGHT_SEARCH_HEADERS
 } from "./flightSearchConfig";
+import { Flight } from "./flightNormalizer";
 
 // Default user IP (required by Travelpayouts)
 const DEFAULT_USER_IP = "1.1.1.1";
@@ -16,6 +17,49 @@ export const STORAGE_KEYS = {
   SEARCH_ID: "tp_search_id",
   RESULTS_URL: "tp_results_url",
 } as const;
+
+/**
+ * Search parameters for flight search
+ */
+export interface SearchParams {
+  origin: string;
+  destination: string;
+  departDate: string;
+  returnDate?: string;
+  adults?: number;
+  children?: number;
+  infants?: number;
+  tripClass?: string;
+  currency?: string;
+  sort?: "best" | "cheapest" | "fastest";
+  limit?: number;
+}
+
+/**
+ * Search response from the unified search endpoint
+ */
+export interface SearchResponse {
+  ok: boolean;
+  step?: string;
+  search_id?: string;
+  results_base?: string;
+  flights?: Flight[];
+  error?: string;
+  upstream?: string;
+  meta?: {
+    returned?: number;
+    sort?: string;
+  };
+}
+
+/**
+ * Click resolution response
+ */
+export interface ClickResolveResponse {
+  ok: boolean;
+  url?: string;
+  error?: string;
+}
 
 /**
  * Response wrapper for API calls
@@ -364,4 +408,86 @@ export function formatDuration(minutes: number | undefined): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+/**
+ * Unified search flights (single request, returns pre-normalized data)
+ */
+export async function searchFlights(params: SearchParams): Promise<SearchResponse> {
+  const body = {
+    action: "search",
+    origin: params.origin.toUpperCase(),
+    destination: params.destination.toUpperCase(),
+    depart_date: params.departDate,
+    return_date: params.returnDate || "",
+    adults: params.adults || 1,
+    currency: params.currency || "EUR",
+    locale: "en",
+    limit: params.limit || 25,
+    sort: params.sort || "best",
+  };
+
+  try {
+    const response = await fetch(FLIGHT_SEARCH_URL, {
+      method: "POST",
+      headers: FLIGHT_SEARCH_HEADERS,
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok || !data.ok) {
+      return {
+        ok: false,
+        error: data.error || `HTTP ${response.status}`,
+      };
+    }
+
+    return data as SearchResponse;
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Network error",
+    };
+  }
+}
+
+/**
+ * Resolve a click to get the actual booking URL
+ */
+export async function resolveClick(params: {
+  search_id: string;
+  proposal_id: string;
+  results_base: string;
+}): Promise<ClickResolveResponse> {
+  const body = {
+    action: "click",
+    search_id: params.search_id,
+    proposal_id: params.proposal_id,
+    results_base: params.results_base,
+  };
+
+  try {
+    const response = await fetch(FLIGHT_SEARCH_URL, {
+      method: "POST",
+      headers: FLIGHT_SEARCH_HEADERS,
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok || !data.ok) {
+      return {
+        ok: false,
+        error: data.error || "Failed to resolve booking link",
+      };
+    }
+
+    return data as ClickResolveResponse;
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Network error",
+    };
+  }
 }
