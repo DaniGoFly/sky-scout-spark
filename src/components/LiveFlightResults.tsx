@@ -311,7 +311,10 @@ const LiveFlightResults = () => {
                 )}
                 {errorDetails.responseText && (
                    <p className="text-muted-foreground whitespace-pre-wrap break-words">
-                     <span className="font-semibold">Response:</span> {errorDetails.responseText}
+                     <span className="font-semibold">Response JSON:</span>{" "}
+                     {errorDetails.responseJson !== undefined
+                       ? JSON.stringify(errorDetails.responseJson, null, 2)
+                       : errorDetails.responseText}
                    </p>
                 )}
               </div>
