@@ -1,67 +1,39 @@
 /**
  * Skyscanner-style Flight Card
- * 2-column layout: LEFT = itinerary, RIGHT = pricing/CTA
- * Matches Skyscanner structure exactly with proper overflow handling
+ * Display-only component - renders backend data directly
  */
 
 import { useState } from "react";
-import { Loader2, Heart, MapPin, ChevronRight } from "lucide-react";
+import { Loader2, Heart, MapPin, ChevronRight, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import AirlineMark from "@/components/AirlineMark";
-import ItineraryRow from "@/components/ItineraryRow";
-import { NormalizedFlight, isEligibleForBestValue } from "@/lib/flightNormalizer";
+import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel, hasValidClickUrl } from "@/lib/flightNormalizer";
 
-interface SkyscannerFlightCardProps {
-  flight: NormalizedFlight;
+interface FlightCardProps {
+  flight: Flight;
   isBestValue?: boolean;
   isLoading?: boolean;
   onViewDeal: () => void;
-  fetchedAt?: number;
-  isNearbyAirport?: boolean;
-  originalAirport?: string;
 }
-
-const STALE_THRESHOLD_MS = 120000;
-
-const getTimeAgo = (timestamp: number): string => {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000);
-  if (seconds < 5) return "just now";
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  return "price may have changed";
-};
-
-const isPriceStale = (timestamp?: number): boolean => {
-  if (!timestamp) return false;
-  return Date.now() - timestamp > STALE_THRESHOLD_MS;
-};
 
 const safeText = (value: string | undefined | null, fallback = "—"): string => {
   if (!value || value === "undefined" || value === "null") return fallback;
   return value;
 };
 
-const formatPrice = (price: number, currency: string): string => {
-  const symbols: Record<string, string> = { EUR: "€", USD: "$", GBP: "£", CHF: "CHF " };
-  const symbol = symbols[currency] || (currency ? currency + " " : "$");
-  return `${symbol}${Math.round(price).toLocaleString()}`;
-};
-
-const SkyscannerFlightCard = ({
+const FlightCard = ({
   flight,
   isBestValue = false,
   isLoading = false,
   onViewDeal,
-  fetchedAt,
-  isNearbyAirport = false,
-  originalAirport,
-}: SkyscannerFlightCardProps) => {
+}: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   
-  // Use return leg from the normalized flight data
-  const returnLeg = flight.returnLeg;
-  const dealsCount = flight.dealsCount || 1;
+  const canBook = hasValidClickUrl(flight);
+  const airlineCode = flight.airlines?.[0] || "";
+  const airlineName = getAirlineName(airlineCode);
+  const airlineLogo = getAirlineLogo(airlineCode);
+  const flightNumber = flight.flightNumbers?.join(", ") || "";
 
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -76,24 +48,74 @@ const SkyscannerFlightCard = ({
     localStorage.setItem("savedFlights", JSON.stringify(saved));
   };
 
-  const canBook = flight.hasValidBookingUrl;
-  const priceInvalid = !flight.isPriceValid || !flight.price || flight.price <= 0 || isNaN(flight.price);
-  const stale = isPriceStale(fetchedAt);
-  const showCheckPrice = priceInvalid || stale;
-  const isDisabled = !canBook;
-  const showBestValue = isBestValue && isEligibleForBestValue(flight, fetchedAt, STALE_THRESHOLD_MS);
+  // Render a single leg (outbound or return)
+  const renderLeg = (
+    label: string | null,
+    origin: string,
+    destination: string,
+    departureTime: string,
+    arrivalTime: string,
+    durationMinutes: number,
+    stopsCount: number,
+    stopsAirports: string[]
+  ) => (
+    <div className="flex flex-col gap-1">
+      {label && (
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
+          {label}
+        </span>
+      )}
+      <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
+        {/* Departure */}
+        <div className="flex-shrink-0 text-left" style={{ minWidth: "60px" }}>
+          <p className="text-xl font-bold text-foreground leading-tight">
+            {safeText(departureTime)}
+          </p>
+          <p className="text-xs font-medium text-muted-foreground uppercase">
+            {safeText(origin, "---")}
+          </p>
+        </div>
 
-  const airlineName = safeText(flight.airlineName, "Airline");
+        {/* Flight path */}
+        <div className="flex-1 flex flex-col items-center px-2" style={{ minWidth: "100px" }}>
+          <span className="text-xs text-muted-foreground font-medium mb-1 whitespace-nowrap">
+            {formatDuration(durationMinutes)}
+          </span>
+          <div className="w-full h-[2px] bg-border relative">
+            <div className="absolute left-0 w-2 h-2 bg-muted-foreground rounded-full -translate-y-[3px]" />
+            <Plane className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-primary rotate-90" />
+            <div className="absolute right-0 w-2 h-2 bg-primary rounded-full -translate-y-[3px]" />
+          </div>
+          <span
+            className={`text-xs mt-1 font-medium whitespace-nowrap ${
+              stopsCount === 0 ? "text-green-600" : "text-amber-600"
+            }`}
+          >
+            {getStopsLabel(stopsCount, stopsAirports)}
+          </span>
+        </div>
+
+        {/* Arrival */}
+        <div className="flex-shrink-0 text-right" style={{ minWidth: "60px" }}>
+          <p className="text-xl font-bold text-foreground leading-tight">
+            {safeText(arrivalTime)}
+          </p>
+          <p className="text-xs font-medium text-muted-foreground uppercase">
+            {safeText(destination, "---")}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div
       className={`relative bg-card rounded-xl border transition-all duration-200 hover:shadow-lg ${
-        showBestValue ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/40"
+        isBestValue ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/40"
       }`}
-      style={{ overflow: "visible" }}
     >
       {/* Best Value Badge */}
-      {showBestValue && (
+      {isBestValue && (
         <div className="absolute -top-3 left-6 z-10">
           <Badge className="bg-primary text-primary-foreground shadow-md px-3 py-0.5 text-xs">
             Best
@@ -101,142 +123,80 @@ const SkyscannerFlightCard = ({
         </div>
       )}
 
-      {/* Nearby Airport Indicator */}
-      {isNearbyAirport && originalAirport && (
-        <div className="bg-accent/10 border-b border-accent/20 px-4 py-2 flex items-center gap-2 rounded-t-xl">
-          <MapPin className="w-4 h-4 text-accent flex-shrink-0" />
-          <span className="text-xs text-accent font-medium truncate">
-            Nearby airport (instead of {originalAirport})
-          </span>
-        </div>
-      )}
-
-      {/* Main Card Content */}
       <div className="p-4 md:p-5">
-        {/* 
-          SKYSCANNER LAYOUT:
-          Desktop: 2-column CSS grid [LEFT itinerary: 1fr] [RIGHT pricing: 260px]
-          Mobile (<900px): stacked 1 column
-        */}
         <div
-          className="
-            flex flex-col gap-4
-            lg:grid lg:gap-4 lg:items-stretch
-          "
-          style={{
-            gridTemplateColumns: "1fr 260px",
-          }}
+          className="flex flex-col gap-4 lg:grid lg:gap-4 lg:items-stretch"
+          style={{ gridTemplateColumns: "1fr 260px" }}
         >
-          {/* LEFT COLUMN: Itinerary Details */}
+          {/* LEFT: Itinerary */}
           <div className="flex flex-col gap-4" style={{ minWidth: 0 }}>
-            {/* Airline header row */}
+            {/* Airline header */}
             <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-              <AirlineMark
-                airlineCode={flight.airlineCode || "XX"}
-                airlineName={airlineName}
-                logoUrl={flight.airlineLogo}
-                size="md"
-              />
+              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                {airlineLogo ? (
+                  <img
+                    src={airlineLogo}
+                    alt={airlineName}
+                    className="w-8 h-8 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <Plane className="w-5 h-5 text-muted-foreground" />
+                )}
+              </div>
               <div className="min-w-0 flex-1">
-                <p
-                  className="font-medium text-foreground text-sm truncate"
-                  title={airlineName}
-                  style={{ overflowWrap: "anywhere" }}
-                >
-                  {airlineName}
+                <p className="font-medium text-foreground text-sm truncate">
+                  {airlineName || "Airline"}
                 </p>
-                {flight.flightNumber && (
-                  <p className="text-xs text-muted-foreground truncate">
-                    {flight.flightNumber}
-                  </p>
+                {flightNumber && (
+                  <p className="text-xs text-muted-foreground truncate">{flightNumber}</p>
                 )}
               </div>
             </div>
 
-            {/* Outbound Itinerary Row */}
-            <ItineraryRow
-              label={returnLeg ? "Outbound" : undefined}
-              departureTime={flight.departureTime}
-              arrivalTime={flight.arrivalTime}
-              originIata={flight.originIata}
-              destinationIata={flight.destinationIata}
-              duration={flight.duration}
-              stops={flight.stops}
-              stopAirports={flight.stopAirports}
-            />
+            {/* Outbound leg */}
+            {renderLeg(
+              flight.return ? "Outbound" : null,
+              flight.origin,
+              flight.destination,
+              flight.departureTime,
+              flight.arrivalTime,
+              flight.durationMinutes,
+              flight.stopsCount,
+              flight.stopsAirports
+            )}
 
-            {/* Return Itinerary Row (if roundtrip) */}
-            {returnLeg && (
+            {/* Return leg */}
+            {flight.return && (
               <div className="pt-3 border-t border-border/50">
-                <ItineraryRow
-                  label="Return"
-                  departureTime={returnLeg.departureTime}
-                  arrivalTime={returnLeg.arrivalTime}
-                  originIata={returnLeg.originIata}
-                  destinationIata={returnLeg.destinationIata}
-                  duration={returnLeg.duration}
-                  stops={returnLeg.stops}
-                  stopAirports={returnLeg.stopAirports}
-                />
+                {renderLeg(
+                  "Return",
+                  flight.return.origin,
+                  flight.return.destination,
+                  flight.return.departureTime,
+                  flight.return.arrivalTime,
+                  flight.return.durationMinutes,
+                  flight.return.stopsCount,
+                  flight.return.stopsAirports
+                )}
               </div>
             )}
           </div>
 
-          {/* RIGHT COLUMN: Pricing + CTA */}
+          {/* RIGHT: Price & CTA */}
           <div
-            className="
-              flex flex-col justify-between
-              pt-4 border-t border-border/50
-              lg:pt-0 lg:border-t-0 lg:border-l lg:border-border/50 lg:pl-4
-            "
+            className="flex flex-col justify-between pt-4 border-t border-border/50 lg:pt-0 lg:border-t-0 lg:border-l lg:border-border/50 lg:pl-4"
             style={{ minWidth: 0, flexShrink: 0 }}
           >
-            {/* Top: Deals + Price */}
             <div className="flex flex-col items-start lg:items-end text-left lg:text-right">
-              {showCheckPrice ? (
-                <>
-                  <p className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
-                    Check price
-                  </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    {stale ? "Price may have changed" : "Price unavailable"}
-                  </p>
-                </>
-              ) : (
-                <>
-                  {/* Deals count */}
-                  <p className="text-xs text-muted-foreground">
-                    {dealsCount > 1 ? `${dealsCount} deals from` : "1 deal"}
-                  </p>
-                  
-                  {/* Large price */}
-                  <p className="text-2xl font-bold text-foreground whitespace-nowrap mt-0.5">
-                    {formatPrice(flight.price, flight.currency)}
-                  </p>
-                  
-                  {/* Per person label */}
-                  <p className="text-xs text-muted-foreground mt-0.5">per person</p>
-                  
-                  {/* Price disclaimer */}
-                  <p className="text-[10px] text-muted-foreground/50 mt-1">
-                    Price may change when you book
-                  </p>
-                </>
-              )}
-
-              {/* Freshness indicator */}
-              {fetchedAt && !showCheckPrice && (
-                <p
-                  className={`text-[10px] whitespace-nowrap mt-1 ${
-                    stale ? "text-amber-500" : "text-muted-foreground/60"
-                  }`}
-                >
-                  Updated {getTimeAgo(fetchedAt)}
-                </p>
-              )}
+              <p className="text-2xl font-bold text-foreground whitespace-nowrap mt-0.5">
+                {formatPrice(flight.price.amount, flight.price.currency)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">per person</p>
             </div>
 
-            {/* Bottom: Action Buttons */}
             <div className="flex items-center gap-2 mt-4 lg:justify-end">
               <Button
                 variant="ghost"
@@ -245,7 +205,6 @@ const SkyscannerFlightCard = ({
                 className={`h-9 w-9 rounded-full flex-shrink-0 ${
                   isSaved ? "text-red-500" : "text-muted-foreground hover:text-foreground"
                 }`}
-                title={isSaved ? "Remove from saved" : "Save flight"}
               >
                 <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
               </Button>
@@ -254,9 +213,9 @@ const SkyscannerFlightCard = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (!isLoading && !isDisabled) onViewDeal();
+                  if (!isLoading && canBook) onViewDeal();
                 }}
-                disabled={isDisabled || isLoading}
+                disabled={!canBook || isLoading}
                 size="default"
                 className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap"
                 style={{ minWidth: "120px" }}
@@ -266,11 +225,11 @@ const SkyscannerFlightCard = ({
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Opening</span>
                   </>
-                ) : isDisabled ? (
+                ) : !canBook ? (
                   <span>Unavailable</span>
                 ) : (
                   <>
-                    <span>Select</span>
+                    <span>View Deal</span>
                     <ChevronRight className="w-4 h-4" />
                   </>
                 )}
@@ -283,4 +242,4 @@ const SkyscannerFlightCard = ({
   );
 };
 
-export default SkyscannerFlightCard;
+export default FlightCard;

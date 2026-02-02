@@ -12,7 +12,7 @@ import SkyscannerFlightCard from "@/components/SkyscannerFlightCard";
 import FlightResultsSkeleton from "@/components/FlightResultsSkeleton";
 import FlightErrorBoundary from "@/components/FlightErrorBoundary";
 import { useFlightSearch } from "@/hooks/useFlightSearch";
-import { NormalizedFlight, sortFlights, isEligibleForBestValue } from "@/lib/flightNormalizer";
+import { Flight, sortFlights, isEligibleForBestValue, getAirlineName } from "@/lib/flightNormalizer";
 
 interface Segment {
   from: string;
@@ -22,7 +22,7 @@ interface Segment {
 
 interface SegmentResults {
   segment: Segment;
-  flights: NormalizedFlight[];
+  flights: Flight[];
   isLoading: boolean;
   error: string | null;
 }
@@ -124,30 +124,20 @@ const MultiCityResultsContent = () => {
     setSegmentResults((prev) => {
       const updated = [...prev];
       if (updated[currentSearchIndex]) {
-        // Convert hook flights to normalized format
-        const normalizedFlights: NormalizedFlight[] = hookFlights.map((f) => ({
+        // Convert hook flights to Flight format
+        const normalizedFlights: Flight[] = hookFlights.map((f) => ({
           id: f.id,
-          airlineCode: f.airline?.substring(0, 2).toUpperCase() || "XX",
-          airlineName: f.airline || "Unknown Airline",
-          airlineLogo: f.airlineLogo || "",
-          flightNumber: f.flightNumber || "",
-          originIata: f.departureCode || segments[currentSearchIndex].from,
-          destinationIata: f.arrivalCode || segments[currentSearchIndex].to,
+          origin: f.departureCode || segments[currentSearchIndex].from,
+          destination: f.arrivalCode || segments[currentSearchIndex].to,
           departureTime: f.departureTime || "",
           arrivalTime: f.arrivalTime || "",
-          duration: f.duration || "",
           durationMinutes: f.durationMinutes || 0,
-          stops: f.stops || 0,
-          stopAirports: [],
-          price: Math.round(f.price || 0),
-          currency: "USD",
-          dealsCount: 1, // Default to 1 deal
-          isPriceValid: typeof f.price === 'number' && f.price > 0,
-          searchId: "",
-          resultsUrl: "",
-          proposalId: f.id,
-          signature: f.id,
-          hasValidBookingUrl: !!f.deepLink && f.deepLink.startsWith('http'),
+          stopsCount: f.stops || 0,
+          stopsAirports: [],
+          airlines: [f.airline?.substring(0, 2).toUpperCase() || "XX"],
+          flightNumbers: f.flightNumber ? [f.flightNumber] : [],
+          price: { amount: Math.round(f.price || 0), currency: "USD" },
+          clickUrl: f.deepLink || "",
         }));
 
         updated[currentSearchIndex] = {
@@ -189,12 +179,14 @@ const MultiCityResultsContent = () => {
     }
   };
 
-  const handleViewDeal = useCallback((flight: NormalizedFlight, segmentIndex: number) => {
-    // For multi-city, we'd need to handle this per segment
-    // Open search on external site
-    const seg = segments[segmentIndex];
-    const url = `https://www.aviasales.com/search/${seg.from}${seg.date.replace(/-/g, "").slice(2)}${seg.to}1?marker=694224`;
-    window.open(url, "_blank", "noopener,noreferrer");
+  const handleViewDeal = useCallback((flight: Flight, segmentIndex: number) => {
+    if (flight.clickUrl) {
+      window.open(flight.clickUrl, "_blank", "noopener,noreferrer");
+    } else {
+      const seg = segments[segmentIndex];
+      const url = `https://www.aviasales.com/search/${seg.from}${seg.date.replace(/-/g, "").slice(2)}${seg.to}1?marker=694224`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   }, [segments]);
 
   const handleSortChange = (index: number, sort: "best" | "cheapest" | "fastest") => {
@@ -272,7 +264,7 @@ const MultiCityResultsContent = () => {
             {!allLoading && (
               <div className="space-y-8">
                 {segmentResults.map((result, index) => {
-                  const sortedFlights = sortFlights(result.flights, sortBySegment[index] || "best", fetchedAtRef.current);
+                  const sortedFlights = sortFlights(result.flights, sortBySegment[index] || "best");
                   const displayFlights = sortedFlights.slice(0, RESULTS_PER_SEGMENT);
                   
                   return (
@@ -335,7 +327,7 @@ const MultiCityResultsContent = () => {
                             {displayFlights.map((flight, flightIndex) => {
                               const showBestValue = flightIndex === 0 && 
                                 sortBySegment[index] === "best" && 
-                                isEligibleForBestValue(flight, fetchedAtRef.current);
+                                isEligibleForBestValue(flight);
                               
                               return (
                                 <SkyscannerFlightCard
@@ -343,7 +335,6 @@ const MultiCityResultsContent = () => {
                                   flight={flight}
                                   isBestValue={showBestValue}
                                   onViewDeal={() => handleViewDeal(flight, index)}
-                                  fetchedAt={fetchedAtRef.current}
                                 />
                               );
                             })}
