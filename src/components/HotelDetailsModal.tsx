@@ -36,19 +36,19 @@ const HotelDetailsModal = ({ hotel, open, onClose, searchParams }: HotelDetailsM
 
   if (!hotel) return null;
 
-  const handleBookNow = () => {
-    const params = new URLSearchParams();
-    params.set('destination', searchParams?.location || hotel.name);
-    params.set('checkIn', searchParams?.checkIn || new Date().toISOString().split("T")[0]);
-    params.set('checkOut', searchParams?.checkOut || new Date(Date.now() + 86400000).toISOString().split("T")[0]);
-    params.set('adults', String(searchParams?.adults || 2));
-    params.set('children', String(searchParams?.children || 0));
-    params.set('rooms', String(searchParams?.rooms || 1));
-    params.set('marker', AFFILIATE_MARKER);
-    
-    const bookingUrl = `https://search.hotellook.com/?${params.toString()}`;
-    window.open(bookingUrl, "_blank", "noopener,noreferrer");
-  };
+  const params = new URLSearchParams();
+  params.set("destination", searchParams?.location || hotel.name);
+  params.set("checkIn", searchParams?.checkIn || new Date().toISOString().split("T")[0]);
+  params.set(
+    "checkOut",
+    searchParams?.checkOut || new Date(Date.now() + 86400000).toISOString().split("T")[0]
+  );
+  params.set("adults", String(searchParams?.adults || 2));
+  params.set("children", String(searchParams?.children || 0));
+  params.set("rooms", String(searchParams?.rooms || 1));
+  params.set("marker", AFFILIATE_MARKER);
+
+  const bookingUrl = `https://search.hotellook.com/?${params.toString()}`;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -186,8 +186,9 @@ const HotelDetailsModal = ({ hotel, open, onClose, searchParams }: HotelDetailsM
                 <p className="text-xs text-muted-foreground mt-1">Includes taxes & fees</p>
               </div>
               <a
-                href="#"
-                onClick={(e) => { e.preventDefault(); handleBookNow(); }}
+                href={bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 shrink-0 rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-lg hover:bg-primary/90 transition-all duration-200"
               >
                 View Deal

@@ -220,25 +220,14 @@ const FlightCard = ({
                 <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
               </Button>
               
-              {/* Render as anchor link if valid URL, otherwise disabled button */}
-              {canBook ? (
-                <a
-                  href={bookingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-1 font-semibold text-sm px-6 h-10 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-1 lg:flex-none whitespace-nowrap"
-                  style={{ minWidth: "120px" }}
-                  onClick={(e) => {
-                    // If there's an onViewDeal callback (for tracking/analytics), call it
-                    if (onViewDeal) {
-                      onViewDeal(flight);
-                    }
-                  }}
-                >
-                  <span>View Deal</span>
-                  <ChevronRight className="w-4 h-4" />
-                </a>
-              ) : onViewDeal ? (
+              {/*
+                "View Deal" must not be a direct click-endpoint href.
+                If an onViewDeal handler is provided, we always use a button so we can:
+                - disable immediately
+                - show "Opening…"
+                - resolve & open a final partner URL safely
+              */}
+              {onViewDeal ? (
                 <Button
                   type="button"
                   onClick={() => onViewDeal(flight)}
@@ -250,6 +239,17 @@ const FlightCard = ({
                   <span>{isOpeningDeal ? "Opening…" : "View Deal"}</span>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
+              ) : canBook ? (
+                <a
+                  href={bookingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-1 font-semibold text-sm px-6 h-10 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-1 lg:flex-none whitespace-nowrap"
+                  style={{ minWidth: "120px" }}
+                >
+                  <span>View Deal</span>
+                  <ChevronRight className="w-4 h-4" />
+                </a>
               ) : (
                 <Button
                   disabled
@@ -257,7 +257,7 @@ const FlightCard = ({
                   className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap opacity-50"
                   style={{ minWidth: "120px" }}
                 >
-                  <span>{isOpeningDeal ? "Opening…" : "No deal available"}</span>
+                  <span>No deal available</span>
                 </Button>
               )}
             </div>

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { SUPABASE_URL } from "@/lib/supabaseClient";
 
 /**
  * /out?u=<encodedFinalUrl>
@@ -13,7 +14,7 @@ export default function Out() {
 
   useEffect(() => {
     if (!u) return;
-    window.location.href = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/booking-redirect?u=${u}`;
+    window.location.href = `${SUPABASE_URL}/functions/v1/booking-redirect?u=${u}`;
   }, [u]);
 
   return (

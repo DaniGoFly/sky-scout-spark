@@ -12,7 +12,7 @@ import SkyscannerFlightCard from "@/components/SkyscannerFlightCard";
 import FlightResultsSkeleton from "@/components/FlightResultsSkeleton";
 import FlightErrorBoundary from "@/components/FlightErrorBoundary";
 import { useFlightSearch } from "@/hooks/useFlightSearch";
-import { Flight, sortFlights, isEligibleForBestValue, getAirlineName } from "@/lib/flightNormalizer";
+import { Flight, sortFlights, isEligibleForBestValue, getAirlineName, getFlightBookingUrl, isHttpUrl } from "@/lib/flightNormalizer";
 
 interface Segment {
   from: string;
@@ -179,15 +179,21 @@ const MultiCityResultsContent = () => {
     }
   };
 
-  const handleViewDeal = useCallback((flight: Flight, segmentIndex: number) => {
-    if (flight.clickUrl) {
-      window.open(flight.clickUrl, "_blank", "noopener,noreferrer");
-    } else {
-      const seg = segments[segmentIndex];
-      const url = `https://www.aviasales.com/search/${seg.from}${seg.date.replace(/-/g, "").slice(2)}${seg.to}1?marker=694224`;
-      window.open(url, "_blank", "noopener,noreferrer");
+  const handleViewDeal = useCallback((flight: Flight) => {
+    const url = getFlightBookingUrl(flight);
+    if (!isHttpUrl(url)) {
+      toast.error("Could not open deal. Please try again.");
+      return;
     }
-  }, [segments]);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }, []);
 
   const handleSortChange = (index: number, sort: "best" | "cheapest" | "fastest") => {
     setSortBySegment((prev) => ({ ...prev, [index]: sort }));
@@ -297,16 +303,15 @@ const MultiCityResultsContent = () => {
                         ) : result.flights.length === 0 ? (
                           <div className="text-center py-8">
                             <p className="text-muted-foreground">No flights found for this segment</p>
-                            <Button
-                              variant="outline"
-                              className="mt-3 gap-2"
-                              onClick={() => {
-                                const url = `https://www.aviasales.com/search/${result.segment.from}${result.segment.date.replace(/-/g, "").slice(2)}${result.segment.to}1?marker=694224`;
-                                window.open(url, "_blank", "noopener,noreferrer");
-                              }}
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                              Search on Aviasales
+                            <Button asChild variant="outline" className="mt-3 gap-2">
+                              <a
+                                href={`https://www.aviasales.com/search/${result.segment.from}${result.segment.date.replace(/-/g, "").slice(2)}${result.segment.to}1?marker=694224`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                                Search on Aviasales
+                              </a>
                             </Button>
                           </div>
                         ) : (
@@ -334,7 +339,7 @@ const MultiCityResultsContent = () => {
                                   key={flight.id}
                                   flight={flight}
                                   isBestValue={showBestValue}
-                                  onViewDeal={() => handleViewDeal(flight, index)}
+                                   onViewDeal={handleViewDeal}
                                 />
                               );
                             })}
@@ -359,20 +364,17 @@ const MultiCityResultsContent = () => {
                 <p className="text-muted-foreground mb-3">
                   For combined multi-city booking, search directly:
                 </p>
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => {
-                    // Build Aviasales multi-city URL
-                    const parts = segments.map((s, i) => 
-                      `${s.from}${s.date.replace(/-/g, "").slice(2)}${s.to}`
-                    ).join("");
-                    const url = `https://www.aviasales.com/search/${parts}${adults}?marker=694224`;
-                    window.open(url, "_blank", "noopener,noreferrer");
-                  }}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Search Combined Itinerary
+                <Button asChild variant="outline" className="gap-2">
+                  <a
+                    href={`https://www.aviasales.com/search/${segments
+                      .map((s) => `${s.from}${s.date.replace(/-/g, "").slice(2)}${s.to}`)
+                      .join("")}${adults}?marker=694224`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Search Combined Itinerary
+                  </a>
                 </Button>
               </div>
             )}
