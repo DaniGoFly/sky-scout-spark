@@ -60,8 +60,14 @@ export interface Flight {
   /** Search context required for resolving clickId */
   searchId?: string;
   resultsBase?: string;
+  /** snake_case aliases for compatibility with backend responses */
+  click_id?: string;
+  search_id?: string;
+  results_base?: string;
   /** Final external partner URL (must start with http(s)) */
   bookingUrl?: string;
+  /** snake_case alias for compatibility with backend responses */
+  booking_url?: string;
   return?: ReturnLegInfo;
 }
 
@@ -77,7 +83,15 @@ export function isTravelpayoutsClickUrl(url: string | undefined | null): boolean
 }
 
 export function getFlightClickId(flight: Flight): string {
-  return flight.clickId || flight.proposalId || "";
+  const anyFlight = flight as any;
+  return (
+    anyFlight.click_id ||
+    anyFlight.str_click_id ||
+    anyFlight.clickId ||
+    flight.clickId ||
+    flight.proposalId ||
+    ""
+  );
 }
 
 /**

@@ -135,14 +135,25 @@ export async function resolveClick(params: {
  * Resolve a deal to a FINAL partner booking URL (never the click endpoint).
  */
 export async function resolveDeal(params: {
+  // Optional: callers may include this for debugging parity with backend payloads.
+  // It is always forced to "resolve_deal" server-side.
+  action?: string;
   search_id: string;
   click_id: string;
   results_base?: string;
+  // Alias fields for maximum backend compatibility
+  str_click_id?: string;
+  searchId?: string;
+  clickId?: string;
 }): Promise<ResolveDealResponse> {
   const body = {
     action: "resolve_deal",
     search_id: params.search_id,
     click_id: params.click_id,
+    // include aliases (backend may expect different field names)
+    str_click_id: params.str_click_id ?? params.click_id,
+    searchId: params.searchId ?? params.search_id,
+    clickId: params.clickId ?? params.click_id,
     results_base: params.results_base || undefined,
   };
 
