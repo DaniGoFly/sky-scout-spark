@@ -234,10 +234,18 @@ const LiveFlightResults = () => {
     [toast, loadingFlightId, searchId, resultsBase]
   );
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     setHasSearched(false);
     setLoadingFlightId(null);
-  };
+    // Reset filters to default
+    setFilters({
+      stops: [],
+      airlines: [],
+      priceRange: [0, 10000],
+      departureTime: [],
+      directOnly: false,
+    });
+  }, []);
 
   const FiltersContent = () => (
     <FlightFilters 
