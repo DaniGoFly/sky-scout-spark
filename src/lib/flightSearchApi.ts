@@ -197,27 +197,11 @@ export interface FlightTerm {
 }
 
 /**
- * Helper to safely log payloads without exposing sensitive data
- */
-function sanitizeForLog(payload: Record<string, unknown>): Record<string, unknown> {
-  const sanitized = { ...payload };
-  // Don't log API keys
-  delete sanitized.apikey;
-  delete sanitized.authorization;
-  return sanitized;
-}
-
-/**
  * Centralized API caller with proper headers and error handling
  */
 export async function callEdgeFunction<T = unknown>(
   payload: Record<string, unknown>
 ): Promise<ApiResponse<T>> {
-  const action = payload.action || "unknown";
-  
-  // Log request (sanitized)
-  console.log(`[FlightAPI] Request (${action}):`, sanitizeForLog(payload));
-  
   try {
     const response = await fetch(FLIGHT_SEARCH_URL, {
       method: "POST",
@@ -236,25 +220,9 @@ export async function callEdgeFunction<T = unknown>(
       if (text) {
         data = JSON.parse(text) as T;
       }
-    } catch (parseError) {
+    } catch {
       errorText = "Failed to parse response";
-      console.error(`[FlightAPI] Parse error (${action}):`, parseError);
     }
-
-    // Log response
-    console.log(`[FlightAPI] Response (${action}):`, {
-      status,
-      ok: response.ok,
-      data: data ? {
-        ok: (data as Record<string, unknown>).ok,
-        step: (data as Record<string, unknown>).step,
-        search_id: (data as Record<string, unknown>).search_id,
-        results_url: (data as Record<string, unknown>).results_url,
-        is_over: (data as Record<string, unknown>).is_over,
-        ticketsCount: ((data as Record<string, unknown>).tickets as unknown[])?.length,
-        url: (data as Record<string, unknown>).url,
-      } : null,
-    });
 
     if (!response.ok) {
       const errorMsg = (data as Record<string, unknown>)?.error as string || errorText || `HTTP ${status}`;
@@ -264,7 +232,6 @@ export async function callEdgeFunction<T = unknown>(
     return { ok: true, data, error: null, status };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Network request failed";
-    console.error(`[FlightAPI] Network error (${action}):`, errorMessage);
     return { ok: false, data: null, error: errorMessage, status: 0 };
   }
 }
@@ -307,9 +274,8 @@ export async function startSearch(params: {
       try {
         sessionStorage.setItem(STORAGE_KEYS.SEARCH_ID, search_id);
         sessionStorage.setItem(STORAGE_KEYS.RESULTS_URL, results_url);
-        console.log("[FlightAPI] Persisted search context to sessionStorage");
-      } catch (storageError) {
-        console.warn("[FlightAPI] Failed to persist to sessionStorage:", storageError);
+      } catch {
+        // Ignore storage errors silently
       }
     }
   }
