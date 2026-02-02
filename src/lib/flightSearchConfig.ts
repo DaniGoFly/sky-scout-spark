@@ -1,22 +1,22 @@
 /**
  * Flight Search Configuration
- * Single source of truth for flight search API access
+ * SINGLE source of truth for Supabase flight-search endpoint.
+ * NO hardcoded URLs allowed – everything derived from VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.
  */
 
-// Environment variables - ONLY source of truth
-// Priority: VITE_SUPABASE_URL > fallback to publishable key URL if needed
+// Strict env-var read – no fallbacks
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-export const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) as string;
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-// Runtime validation - fail fast if missing
+// Fail fast if missing
 if (!SUPABASE_URL) {
-  throw new Error("Missing VITE_SUPABASE_URL environment variable");
+  throw new Error("[flightSearchConfig] Missing VITE_SUPABASE_URL environment variable");
 }
 if (!SUPABASE_ANON_KEY) {
-  throw new Error("Missing VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY environment variable");
+  throw new Error("[flightSearchConfig] Missing VITE_SUPABASE_ANON_KEY environment variable");
 }
 
-// Single flight search endpoint
+// Single endpoint – all flight-search calls go here
 export const FLIGHT_SEARCH_URL = `${SUPABASE_URL}/functions/v1/flight-search`;
 
 // Required headers (lowercase keys only)
