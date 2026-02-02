@@ -3,12 +3,10 @@
  * Centralized API layer for calling the Supabase Edge Function
  */
 
-// EXTERNAL Supabase project for flight search (NOT this project's Lovable Cloud)
-const FLIGHT_SEARCH_SUPABASE_URL = "https://ycpqgsjhxzhkljlszbwc.supabase.co";
-const FLIGHT_SEARCH_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcHFnc2poeHpoa2xqbHN6YndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0NDMxNzAsImV4cCI6MjA1OTAxOTE3MH0.2e99RmdP8sNmB7QGelMgSxsFxBb12pmyhJcgZD5274E";
-
-// Correct endpoint (singular "flight-search")
-const FLIGHT_SEARCH_ENDPOINT = `${FLIGHT_SEARCH_SUPABASE_URL}/functions/v1/flight-search`;
+import { 
+  FLIGHT_SEARCH_ENDPOINT, 
+  getFlightSearchHeaders 
+} from "./flightSearchConfig";
 
 // Default user IP (required by Travelpayouts)
 const DEFAULT_USER_IP = "1.1.1.1";
@@ -179,11 +177,7 @@ export async function callEdgeFunction<T = unknown>(
   try {
     const response = await fetch(FLIGHT_SEARCH_ENDPOINT, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": FLIGHT_SEARCH_ANON_KEY,
-        "Authorization": `Bearer ${FLIGHT_SEARCH_ANON_KEY}`,
-      },
+      headers: getFlightSearchHeaders(),
       body: JSON.stringify(payload),
     });
 

@@ -20,6 +20,7 @@ const LiveFlightResults = () => {
     flights: rawFlights,
     status,
     error,
+    errorDetails,
     isSearching,
     searchFlights,
   } = useLiveFlightSearch();
@@ -283,9 +284,35 @@ const LiveFlightResults = () => {
               <AlertCircle className="w-10 h-10 text-destructive" />
             </div>
             <p className="text-xl font-semibold text-foreground mb-2">Something went wrong</p>
-            <p className="text-muted-foreground mb-6 max-w-md">
+            <p className="text-muted-foreground mb-4 max-w-md">
               {error || "Failed to search flights. Please try again."}
             </p>
+            
+            {/* Debug info panel */}
+            {errorDetails && (
+              <div className="mb-6 p-4 bg-muted/50 rounded-lg text-left text-xs font-mono max-w-lg w-full overflow-x-auto">
+                <p className="text-muted-foreground mb-1">
+                  <span className="font-semibold">URL:</span> {errorDetails.url || "N/A"}
+                </p>
+                {errorDetails.status !== undefined && (
+                  <p className="text-muted-foreground mb-1">
+                    <span className="font-semibold">Status:</span> {errorDetails.status}
+                  </p>
+                )}
+                {errorDetails.step && (
+                  <p className="text-muted-foreground mb-1">
+                    <span className="font-semibold">Step:</span> {errorDetails.step}
+                  </p>
+                )}
+                {errorDetails.responseText && (
+                  <p className="text-muted-foreground break-all">
+                    <span className="font-semibold">Response:</span> {errorDetails.responseText.substring(0, 200)}
+                    {errorDetails.responseText.length > 200 && "..."}
+                  </p>
+                )}
+              </div>
+            )}
+            
             <div className="flex gap-3">
               <Button onClick={handleRetry}>Try Again</Button>
               <Button variant="outline" onClick={() => navigate("/flights")}>
