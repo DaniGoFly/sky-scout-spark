@@ -4,11 +4,13 @@
  */
 
 import { useState } from "react";
-import { Heart, Plane, ChevronRight } from "lucide-react";
+import { Heart, Plane, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel } from "@/lib/flightNormalizer";
+import { resolveClickUrl } from "@/lib/flightSearchApi";
+import { toast } from "sonner";
 
 interface FlightCardProps {
   flight: Flight;
@@ -33,10 +35,11 @@ const FlightCard = ({
   isBestValue = false,
 }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
   
-  // Use clickUrl directly from flight object (primary field from API)
-  const url = flight.clickUrl;
-  const canBook = isValidUrl(url);
+  // Check if we have a clickUrl to resolve
+  const clickUrl = flight.clickUrl;
+  const hasClickUrl = isValidUrl(clickUrl);
   
   const airlineCode = flight.airlines?.[0] || "";
   const airlineName = getAirlineName(airlineCode);
@@ -56,10 +59,30 @@ const FlightCard = ({
     localStorage.setItem("savedFlights", JSON.stringify(saved));
   };
 
-  const handleViewDeal = () => {
-    if (!canBook || !url) return;
-    // Open in new tab using window.open with security flags
-    window.open(url, "_blank", "noopener,noreferrer");
+  const handleViewDeal = async () => {
+    if (!hasClickUrl || !clickUrl || isResolving) return;
+    
+    setIsResolving(true);
+    
+    try {
+      // Call the edge function to resolve the clickUrl to final booking URL
+      const result = await resolveClickUrl(clickUrl);
+      
+      if (result.ok && result.redirectUrl) {
+        // Open the resolved booking URL in a new tab
+        window.open(result.redirectUrl, "_blank", "noopener,noreferrer");
+      } else {
+        console.error("Failed to resolve deal:", result.error);
+        toast.error("Deal temporarily unavailable", {
+          description: "Please try again in a moment",
+        });
+      }
+    } catch (err) {
+      console.error("Error resolving deal:", err);
+      toast.error("Deal temporarily unavailable");
+    } finally {
+      setIsResolving(false);
+    }
   };
 
   // Render a single leg (outbound or return)
@@ -223,17 +246,27 @@ const FlightCard = ({
                 <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
               </Button>
               
-              {/* View Deal button - opens booking URL directly */}
-              {canBook ? (
+              {/* View Deal button - resolves clickUrl and opens booking page */}
+              {hasClickUrl ? (
                 <Button
                   type="button"
                   onClick={handleViewDeal}
+                  disabled={isResolving}
                   size="default"
                   className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap"
                   style={{ minWidth: "120px" }}
                 >
-                  <span>View Deal</span>
-                  <ChevronRight className="w-4 h-4" />
+                  {isResolving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Opening...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>View Deal</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  )}
                 </Button>
               ) : (
                 <TooltipProvider>
