@@ -7,13 +7,12 @@ import { useState } from "react";
 import { Heart, Plane, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel, getFlightBookingUrl } from "@/lib/flightNormalizer";
 
 interface FlightCardProps {
   flight: Flight;
   isBestValue?: boolean;
-  onViewDeal?: (flight: Flight) => void;
-  isOpeningDeal?: boolean;
 }
 
 const safeText = (value: string | undefined | null, fallback = "—"): string => {
@@ -32,8 +31,6 @@ const isValidUrl = (url: string | undefined | null): boolean => {
 const FlightCard = ({
   flight,
   isBestValue = false,
-  onViewDeal,
-  isOpeningDeal = false,
 }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   
@@ -57,6 +54,12 @@ const FlightCard = ({
       if (idx > -1) saved.splice(idx, 1);
     }
     localStorage.setItem("savedFlights", JSON.stringify(saved));
+  };
+
+  const handleViewDeal = () => {
+    if (!canBook) return;
+    // Open in new tab using window.open with security flags
+    window.open(bookingUrl, "_blank", "noopener,noreferrer");
   };
 
   // Render a single leg (outbound or return)
@@ -220,45 +223,36 @@ const FlightCard = ({
                 <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
               </Button>
               
-              {/*
-                "View Deal" must not be a direct click-endpoint href.
-                If an onViewDeal handler is provided, we always use a button so we can:
-                - disable immediately
-                - show "Opening…"
-                - resolve & open a final partner URL safely
-              */}
-              {onViewDeal ? (
+              {/* View Deal button - opens booking URL directly */}
+              {canBook ? (
                 <Button
                   type="button"
-                  onClick={() => onViewDeal(flight)}
-                  disabled={isOpeningDeal}
+                  onClick={handleViewDeal}
                   size="default"
                   className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap"
                   style={{ minWidth: "120px" }}
                 >
-                  <span>{isOpeningDeal ? "Opening…" : "View Deal"}</span>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              ) : canBook ? (
-                <a
-                  href={bookingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-1 font-semibold text-sm px-6 h-10 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-1 lg:flex-none whitespace-nowrap"
-                  style={{ minWidth: "120px" }}
-                >
                   <span>View Deal</span>
                   <ChevronRight className="w-4 h-4" />
-                </a>
-              ) : (
-                <Button
-                  disabled
-                  size="default"
-                  className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap opacity-50"
-                  style={{ minWidth: "120px" }}
-                >
-                  <span>No deal available</span>
                 </Button>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        disabled
+                        size="default"
+                        className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap opacity-50"
+                        style={{ minWidth: "120px" }}
+                      >
+                        <span>Deal unavailable</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>This deal is currently unavailable</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
           </div>

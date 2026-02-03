@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Plane, ArrowLeft, Search, AlertCircle, Loader2, ExternalLink } from "lucide-react";
 import { format, parse } from "date-fns";
 import { toast } from "sonner";
+
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import SkyscannerFlightCard from "@/components/SkyscannerFlightCard";
 import FlightResultsSkeleton from "@/components/FlightResultsSkeleton";
 import FlightErrorBoundary from "@/components/FlightErrorBoundary";
 import { useFlightSearch } from "@/hooks/useFlightSearch";
-import { Flight, sortFlights, isEligibleForBestValue, getAirlineName, getFlightBookingUrl, isHttpUrl } from "@/lib/flightNormalizer";
+import { Flight, sortFlights, isEligibleForBestValue, getAirlineName } from "@/lib/flightNormalizer";
 
 interface Segment {
   from: string;
@@ -179,21 +180,6 @@ const MultiCityResultsContent = () => {
     }
   };
 
-  const handleViewDeal = useCallback((flight: Flight) => {
-    const url = getFlightBookingUrl(flight);
-    if (!isHttpUrl(url)) {
-      toast.error("Could not open deal. Please try again.");
-      return;
-    }
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }, []);
 
   const handleSortChange = (index: number, sort: "best" | "cheapest" | "fastest") => {
     setSortBySegment((prev) => ({ ...prev, [index]: sort }));
@@ -339,7 +325,6 @@ const MultiCityResultsContent = () => {
                                   key={flight.id}
                                   flight={flight}
                                   isBestValue={showBestValue}
-                                   onViewDeal={handleViewDeal}
                                 />
                               );
                             })}
