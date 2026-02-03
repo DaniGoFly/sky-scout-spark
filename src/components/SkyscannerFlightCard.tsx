@@ -38,9 +38,6 @@ const FlightCard = ({
   const url = flight.clickUrl;
   const canBook = isValidUrl(url);
   
-  // Debug log to confirm the UI is receiving clickUrl
-  console.log("deal url", flight.clickUrl);
-  
   const airlineCode = flight.airlines?.[0] || "";
   const airlineName = getAirlineName(airlineCode);
   const airlineLogo = getAirlineLogo(airlineCode);
