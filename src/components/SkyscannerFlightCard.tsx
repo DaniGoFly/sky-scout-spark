@@ -8,7 +8,7 @@ import { Heart, Plane, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel, getFlightBookingUrl } from "@/lib/flightNormalizer";
+import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel } from "@/lib/flightNormalizer";
 
 interface FlightCardProps {
   flight: Flight;
@@ -34,9 +34,12 @@ const FlightCard = ({
 }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   
-  // Final booking URL (must be a REAL partner URL, never the click endpoint)
-  const bookingUrl = getFlightBookingUrl(flight);
-  const canBook = isValidUrl(bookingUrl);
+  // Use clickUrl directly from flight object (primary field from API)
+  const url = flight.clickUrl;
+  const canBook = isValidUrl(url);
+  
+  // Debug log to confirm the UI is receiving clickUrl
+  console.log("deal url", flight.clickUrl);
   
   const airlineCode = flight.airlines?.[0] || "";
   const airlineName = getAirlineName(airlineCode);
@@ -57,9 +60,9 @@ const FlightCard = ({
   };
 
   const handleViewDeal = () => {
-    if (!canBook) return;
+    if (!canBook || !url) return;
     // Open in new tab using window.open with security flags
-    window.open(bookingUrl, "_blank", "noopener,noreferrer");
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   // Render a single leg (outbound or return)
