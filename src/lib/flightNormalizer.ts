@@ -95,25 +95,32 @@ export function getFlightClickId(flight: Flight): string {
 }
 
 /**
- * Get the safest booking URL to render as a normal <a href>.
- * Never returns the Travelpayouts click endpoint.
+ * Get the booking URL from a flight object.
+ * Priority: clickUrl (primary from API) -> booking_url -> deeplink -> url -> link
+ * Only returns URLs that start with http:// or https://
  */
 export function getFlightBookingUrl(flight: Flight): string {
   const anyFlight = flight as any;
-  const raw =
-    flight.bookingUrl ||
-    anyFlight.booking_url ||
-    anyFlight.deep_link ||
-    anyFlight.deepLink ||
-    anyFlight.link ||
-    "";
-
-  if (isHttpUrl(raw)) return raw;
-
-  // Back-compat fallback: allow clickUrl only if it isn't a Travelpayouts click endpoint.
-  const clickUrl = flight.clickUrl || "";
-  if (isHttpUrl(clickUrl) && !isTravelpayoutsClickUrl(clickUrl)) return clickUrl;
-
+  
+  // Check candidates in priority order
+  const candidates = [
+    flight.clickUrl,           // Primary from API (camelCase)
+    anyFlight.click_url,       // snake_case variant
+    flight.bookingUrl,         // camelCase
+    anyFlight.booking_url,     // snake_case
+    anyFlight.deeplink,        // deeplink
+    anyFlight.deep_link,       // snake_case deeplink
+    anyFlight.deepLink,        // camelCase deeplink
+    anyFlight.url,             // generic url
+    anyFlight.link,            // generic link
+  ];
+  
+  for (const url of candidates) {
+    if (isHttpUrl(url)) {
+      return url;
+    }
+  }
+  
   return "";
 }
 
