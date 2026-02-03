@@ -63,7 +63,10 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       if (data.search_id) setSearchId(data.search_id);
       if (data.results_base) setResultsBase(data.results_base);
 
-      // Return flights directly from backend
+      // Debug: log raw flights from API to confirm clickUrl is present
+      console.log("[useLiveFlightSearch] raw flights from API:", data.flights?.slice(0, 2));
+      
+      // Return flights directly from backend - preserve all fields including clickUrl
       const flightResults: Flight[] = attachDealContextToFlights({
         flights: (data.flights || []) as Flight[],
         search_id: data.search_id || "",
