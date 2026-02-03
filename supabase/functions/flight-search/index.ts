@@ -153,6 +153,82 @@ serve(async (req) => {
 
   const action = safeStr(body?.action, 50);
 
+  // ============ ACTION: click ============
+  // Resolves a clickUrl to get the final booking redirect URL
+  if (action === "click") {
+    const clickUrl = safeStr(body?.clickUrl ?? body?.click_url, 2000);
+
+    if (!clickUrl || !isHttpUrl(clickUrl)) {
+      return json({ ok: false, error: "missing or invalid clickUrl" }, 400);
+    }
+
+    console.log("[flight-search] click action - resolving:", clickUrl.slice(0, 100));
+
+    try {
+      // Click URLs don't need authorization - they're public affiliate links
+      const resp = await withTimeout(
+        fetch(clickUrl, {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+          redirect: "manual", // Don't follow redirects, we want to capture the Location header if present
+        }),
+        8000,
+        "click_resolve"
+      );
+
+      // Check for redirect response (3xx) - extract Location header
+      if (resp.status >= 300 && resp.status < 400) {
+        const location = resp.headers.get("location");
+        if (isHttpUrl(location)) {
+          console.log("[flight-search] click redirect to:", location.slice(0, 100));
+          return json({ ok: true, redirectUrl: location });
+        }
+      }
+
+      const text = await resp.text();
+      console.log("[flight-search] click response status:", resp.status, "body:", text.slice(0, 200));
+
+      // For non-redirect responses, try to parse JSON
+      if (resp.status >= 400) {
+        return json({ ok: false, error: `upstream failed (${resp.status})` }, 502);
+      }
+
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // If the response is not JSON, it might be a direct redirect HTML page
+        // Try to extract a URL from the response
+        console.error("[flight-search] click non-JSON response, checking for redirect");
+        return json({ ok: false, error: "non-JSON response from click endpoint" }, 502);
+      }
+
+      // Extract the redirect URL from various possible fields
+      const redirectUrl = data?.url ?? data?.redirect_url ?? data?.booking_url ?? data?.deep_link ?? null;
+
+      if (!isHttpUrl(redirectUrl)) {
+        console.error("[flight-search] click no redirect URL found in:", JSON.stringify(data).slice(0, 300));
+        return json({ ok: false, error: "no_redirect_url" }, 502);
+      }
+
+      // Don't return another click endpoint
+      const lower = redirectUrl.toLowerCase();
+      if (lower.includes("travelpayouts.com/searches/") && lower.includes("/clicks/")) {
+        console.error("[flight-search] click returned another click endpoint");
+        return json({ ok: false, error: "recursive click endpoint" }, 502);
+      }
+
+      console.log("[flight-search] click resolved to:", redirectUrl.slice(0, 100));
+      return json({ ok: true, redirectUrl });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[flight-search] click error:", msg);
+      return json({ ok: false, error: msg }, 502);
+    }
+  }
+
   // ============ ACTION: resolve_deal ============
   if (action === "resolve_deal") {
     const search_id = safeStr(body?.search_id ?? body?.searchId ?? body?.searchid, 200);
