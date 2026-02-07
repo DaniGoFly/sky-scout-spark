@@ -1,9 +1,10 @@
+import React from "react";
 import { Plane } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const Footer = () => {
+const Footer = React.forwardRef<HTMLElement>((_, ref) => {
   return (
-    <footer className="bg-card border-t border-border py-16 px-4 relative overflow-hidden">
+    <footer ref={ref} className="bg-card border-t border-border py-16 px-4 relative overflow-hidden">
       {/* Background accent */}
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-[120px]" />
       
@@ -68,6 +69,8 @@ const Footer = () => {
       </div>
     </footer>
   );
-};
+});
+
+Footer.displayName = "Footer";
 
 export default Footer;

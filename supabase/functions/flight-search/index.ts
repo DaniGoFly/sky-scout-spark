@@ -506,5 +506,5 @@ serve(async (req) => {
     });
   }
 
-  return json({ ok: false, error: 'Invalid action. Use "search" or "resolve_deal".' }, 400);
+  return json({ ok: false, error: 'Invalid action. Use "search", "click", or "resolve_deal".' }, 400);
 });
