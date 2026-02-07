@@ -39,22 +39,27 @@ export interface SearchResponse {
  */
 export interface ClickResolveResponse {
   ok: boolean;
-  redirectUrl?: string;
-  url?: string;
+  deal_url?: string;
   error?: string;
 }
 
 /**
- * Resolve a clickUrl to get the final booking redirect URL
+ * Resolve a deal using search_id + proposal_id + results_base
  */
-export async function resolveClickUrl(clickUrl: string): Promise<ClickResolveResponse> {
+export async function resolveDeal(params: {
+  search_id: string;
+  proposal_id: string;
+  results_base?: string;
+}): Promise<ClickResolveResponse> {
   try {
     const response = await fetch(FLIGHT_SEARCH_URL, {
       method: "POST",
       headers: FLIGHT_SEARCH_HEADERS,
       body: JSON.stringify({
         action: "click",
-        clickUrl,
+        search_id: params.search_id,
+        proposal_id: params.proposal_id,
+        results_base: params.results_base,
       }),
     });
 
@@ -69,7 +74,7 @@ export async function resolveClickUrl(clickUrl: string): Promise<ClickResolveRes
 
     return {
       ok: true,
-      redirectUrl: data.redirectUrl,
+      deal_url: data.deal_url,
     };
   } catch (err) {
     return {
@@ -113,46 +118,6 @@ export async function searchFlights(params: SearchParams): Promise<SearchRespons
     }
 
     return data as SearchResponse;
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Network error",
-    };
-  }
-}
-
-/**
- * Resolve click to get booking URL
- */
-export async function resolveClick(params: {
-  search_id: string;
-  proposal_id: string;
-  results_base: string;
-}): Promise<ClickResolveResponse> {
-  const body = {
-    action: "click",
-    search_id: params.search_id,
-    proposal_id: params.proposal_id,
-    results_base: params.results_base,
-  };
-
-  try {
-    const response = await fetch(FLIGHT_SEARCH_URL, {
-      method: "POST",
-      headers: FLIGHT_SEARCH_HEADERS,
-      body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok || !data.ok) {
-      return {
-        ok: false,
-        error: data.error || "Failed to resolve booking link",
-      };
-    }
-
-    return data as ClickResolveResponse;
   } catch (err) {
     return {
       ok: false,

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel } from "@/lib/flightNormalizer";
-import { resolveClickUrl } from "@/lib/flightSearchApi";
+import { resolveDeal } from "@/lib/flightSearchApi";
 import { toast } from "sonner";
 
 interface FlightCardProps {
@@ -37,9 +37,11 @@ const FlightCard = ({
   const [isSaved, setIsSaved] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   
-  // Check if we have a clickUrl to resolve
-  const clickUrl = flight.clickUrl;
-  const hasClickUrl = isValidUrl(clickUrl);
+  // Check if we have the required deal resolution params
+  const proposalId = flight.proposalId || flight.click_id || "";
+  const searchId = flight.searchId || flight.search_id || "";
+  const resultsBase = flight.resultsBase || flight.results_base || "";
+  const canResolve = Boolean(proposalId && searchId);
   
   const airlineCode = flight.airlines?.[0] || "";
   const airlineName = getAirlineName(airlineCode);
@@ -60,26 +62,28 @@ const FlightCard = ({
   };
 
   const handleViewDeal = async () => {
-    if (!hasClickUrl || !clickUrl || isResolving) return;
+    if (!canResolve || isResolving) return;
     
     setIsResolving(true);
     
     try {
-      // Call the edge function to resolve the clickUrl to final booking URL
-      const result = await resolveClickUrl(clickUrl);
+      const result = await resolveDeal({
+        search_id: searchId,
+        proposal_id: proposalId,
+        results_base: resultsBase,
+      });
       
-      if (result.ok && result.redirectUrl) {
-        // Open the resolved booking URL in a new tab
-        window.open(result.redirectUrl, "_blank", "noopener,noreferrer");
+      if (result.ok && result.deal_url) {
+        window.open(result.deal_url, "_blank", "noopener,noreferrer");
       } else {
         console.error("Failed to resolve deal:", result.error);
         toast.error("Deal temporarily unavailable", {
-          description: "Please try again in a moment",
+          description: "Please try another option.",
         });
       }
     } catch (err) {
       console.error("Error resolving deal:", err);
-      toast.error("Deal temporarily unavailable");
+      toast.error("Deal temporarily unavailable. Please try another option.");
     } finally {
       setIsResolving(false);
     }
@@ -246,8 +250,8 @@ const FlightCard = ({
                 <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
               </Button>
               
-              {/* View Deal button - resolves clickUrl and opens booking page */}
-              {hasClickUrl ? (
+              {/* View Deal button - resolves deal via edge function */}
+              {canResolve ? (
                 <Button
                   type="button"
                   onClick={handleViewDeal}
