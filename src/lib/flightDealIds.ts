@@ -49,11 +49,14 @@ export function attachDealContextToFlights(args: {
 
     return {
       ...f,
-      // Ensure snake_case IDs exist on each flight for deal resolution.
+      // snake_case IDs for deal resolution
       search_id: resolvedSearchId,
       click_id,
-      // Keep context if present (some backends require this).
       results_base,
+      // camelCase aliases used by UI components
+      searchId: resolvedSearchId,
+      proposalId: click_id,
+      resultsBase: results_base ?? undefined,
     } as Flight;
   });
 }

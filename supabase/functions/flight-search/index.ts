@@ -154,74 +154,42 @@ serve(async (req) => {
   const action = safeStr(body?.action, 50);
 
   // ============ ACTION: click ============
-  // Resolves a clickUrl to get the final booking redirect URL
+  // Resolves a deal using search_id + proposal_id + results_base
   if (action === "click") {
-    const clickUrl = safeStr(body?.clickUrl ?? body?.click_url, 2000);
+    const search_id = safeStr(body?.search_id ?? body?.searchId, 200);
+    const proposal_id = safeStr(body?.proposal_id ?? body?.proposalId ?? body?.click_id ?? body?.clickId, 200);
+    const rb = safeStr(body?.results_base ?? body?.resultsBase, 500) || null;
 
-    if (!clickUrl || !isHttpUrl(clickUrl)) {
-      return json({ ok: false, error: "missing or invalid clickUrl" }, 400);
+    if (!search_id || !proposal_id) {
+      return json({ ok: false, error: "missing search_id or proposal_id" }, 400);
     }
 
-    console.log("[flight-search] click action - resolving:", clickUrl.slice(0, 100));
+    console.log("[flight-search] click action - search_id:", search_id, "proposal_id:", proposal_id);
 
     try {
-      // Click URLs don't need authorization - they're public affiliate links
-      const resp = await withTimeout(
-        fetch(clickUrl, {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-          redirect: "manual", // Don't follow redirects, we want to capture the Location header if present
+      const result = await withTimeout(
+        resolveDealUrl({
+          token,
+          marker,
+          search_id,
+          click_id: proposal_id,
+          results_base: rb,
         }),
         8000,
         "click_resolve"
       );
 
-      // Check for redirect response (3xx) - extract Location header
-      if (resp.status >= 300 && resp.status < 400) {
-        const location = resp.headers.get("location");
-        if (isHttpUrl(location)) {
-          console.log("[flight-search] click redirect to:", location.slice(0, 100));
-          return json({ ok: true, redirectUrl: location });
-        }
+      if (!result.ok) {
+        console.error("[flight-search] click resolve failed:", result.error);
+        return json({
+          ok: false,
+          error: result.error,
+          upstream: result.upstream,
+        }, 502);
       }
 
-      const text = await resp.text();
-      console.log("[flight-search] click response status:", resp.status, "body:", text.slice(0, 200));
-
-      // For non-redirect responses, try to parse JSON
-      if (resp.status >= 400) {
-        return json({ ok: false, error: `upstream failed (${resp.status})` }, 502);
-      }
-
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        // If the response is not JSON, it might be a direct redirect HTML page
-        // Try to extract a URL from the response
-        console.error("[flight-search] click non-JSON response, checking for redirect");
-        return json({ ok: false, error: "non-JSON response from click endpoint" }, 502);
-      }
-
-      // Extract the redirect URL from various possible fields
-      const redirectUrl = data?.url ?? data?.redirect_url ?? data?.booking_url ?? data?.deep_link ?? null;
-
-      if (!isHttpUrl(redirectUrl)) {
-        console.error("[flight-search] click no redirect URL found in:", JSON.stringify(data).slice(0, 300));
-        return json({ ok: false, error: "no_redirect_url" }, 502);
-      }
-
-      // Don't return another click endpoint
-      const lower = redirectUrl.toLowerCase();
-      if (lower.includes("travelpayouts.com/searches/") && lower.includes("/clicks/")) {
-        console.error("[flight-search] click returned another click endpoint");
-        return json({ ok: false, error: "recursive click endpoint" }, 502);
-      }
-
-      console.log("[flight-search] click resolved to:", redirectUrl.slice(0, 100));
-      return json({ ok: true, redirectUrl });
+      console.log("[flight-search] click resolved to:", result.booking_url.slice(0, 100));
+      return json({ ok: true, deal_url: result.booking_url });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[flight-search] click error:", msg);
