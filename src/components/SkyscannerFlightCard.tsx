@@ -1,9 +1,10 @@
 /**
  * Skyscanner-style Flight Card
  * Display-only component - renders backend data directly
+ * Mobile-safe: opens booking tab synchronously in click handler
  */
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Heart, Plane, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,27 +23,20 @@ const safeText = (value: string | undefined | null, fallback = "—"): string =>
   return value;
 };
 
-/**
- * Check if a URL is valid (starts with http:// or https://)
- */
-const isValidUrl = (url: string | undefined | null): boolean => {
-  if (!url) return false;
-  return url.startsWith("http://") || url.startsWith("https://");
-};
-
 const FlightCard = ({
   flight,
   isBestValue = false,
 }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
-  
+  const anchorRef = useRef<HTMLAnchorElement>(null);
+
   // Check if we have the required deal resolution params
   const proposalId = flight.proposalId || flight.click_id || "";
   const searchId = flight.searchId || flight.search_id || "";
   const resultsBase = flight.resultsBase || flight.results_base || "";
   const canResolve = Boolean(proposalId && searchId);
-  
+
   const airlineCode = flight.airlines?.[0] || "";
   const airlineName = getAirlineName(airlineCode);
   const airlineLogo = getAirlineLogo(airlineCode);
@@ -61,27 +55,51 @@ const FlightCard = ({
     localStorage.setItem("savedFlights", JSON.stringify(saved));
   };
 
+  /**
+   * Mobile-safe View Deal handler.
+   * Opens a blank tab SYNCHRONOUSLY (satisfies iOS Safari user-gesture requirement),
+   * then resolves the deal URL and navigates the tab. If resolution fails, the tab
+   * is closed and a toast is shown. This prevents blank-white-screen issues.
+   */
   const handleViewDeal = async () => {
     if (!canResolve || isResolving) return;
-    
+
+    // Open blank tab synchronously inside user gesture — required for mobile Safari
+    const newTab = window.open("about:blank", "_blank");
+
     setIsResolving(true);
-    
+
     try {
       const result = await resolveDeal({
         search_id: searchId,
         proposal_id: proposalId,
         results_base: resultsBase,
       });
-      
+
       if (result.ok && result.deal_url) {
-        window.open(result.deal_url, "_blank", "noopener,noreferrer");
+        if (newTab && !newTab.closed) {
+          // Navigate the pre-opened tab to the actual booking URL
+          newTab.location.href = result.deal_url;
+        } else {
+          // Fallback: if popup was blocked, use an anchor tag
+          const a = document.createElement("a");
+          a.href = result.deal_url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
       } else {
+        // Close the blank tab on failure
+        if (newTab && !newTab.closed) newTab.close();
         console.error("Failed to resolve deal:", result.error);
         toast.error("Deal temporarily unavailable", {
           description: "Please try another option.",
         });
       }
     } catch (err) {
+      if (newTab && !newTab.closed) newTab.close();
       console.error("Error resolving deal:", err);
       toast.error("Deal temporarily unavailable. Please try another option.");
     } finally {
@@ -163,6 +181,9 @@ const FlightCard = ({
           </Badge>
         </div>
       )}
+
+      {/* Hidden anchor for popup-blocked fallback */}
+      <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
 
       <div className="p-4 md:p-5">
         <div
@@ -249,8 +270,8 @@ const FlightCard = ({
               >
                 <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
               </Button>
-              
-              {/* View Deal button - resolves deal via edge function */}
+
+              {/* View Deal button */}
               {canResolve ? (
                 <Button
                   type="button"
@@ -263,7 +284,7 @@ const FlightCard = ({
                   {isResolving ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Opening...</span>
+                      <span>Opening…</span>
                     </>
                   ) : (
                     <>
@@ -282,7 +303,7 @@ const FlightCard = ({
                         className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap opacity-50"
                         style={{ minWidth: "120px" }}
                       >
-                        <span>Deal unavailable</span>
+                        <span>No booking link</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>

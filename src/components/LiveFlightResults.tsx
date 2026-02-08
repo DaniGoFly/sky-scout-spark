@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,16 @@ import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+
+const DEFAULT_FILTERS: FilterState = {
+  stops: [],
+  airlines: [],
+  priceRange: [0, 10000],
+  departureTime: [],
+  directOnly: false,
+};
+
+const MAX_DISPLAY = 25;
 
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
@@ -23,17 +33,11 @@ const LiveFlightResults = () => {
   } = useLiveFlightSearch();
 
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
-  const [filters, setFilters] = useState<FilterState>({
-    stops: [],
-    airlines: [],
-    priceRange: [0, 10000],
-    departureTime: [],
-    directOnly: false,
-  });
-  const [hasSearched, setHasSearched] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const prevSearchKeyRef = useRef<string>("");
 
-  // Extract search params
+  // ── Extract search params (single source of truth) ──
   const from = searchParams.get("from") || searchParams.get("origin") || "";
   const to = searchParams.get("to") || searchParams.get("destination") || "";
   const depart = searchParams.get("depart") || "";
@@ -42,11 +46,25 @@ const LiveFlightResults = () => {
   const children = Number(searchParams.get("children")) || 0;
   const infants = Number(searchParams.get("infants")) || 0;
   const tripType = searchParams.get("trip") || "roundtrip";
+  const tripClass = searchParams.get("class") || "economy";
 
-  // Trigger search when params change
-  const doSearch = useCallback((sort: "best" | "cheapest" | "fastest") => {
+  // ── Stable search key derived from all search params ──
+  const searchKey = useMemo(
+    () => [from, to, depart, returnDate, adults, children, infants, tripType, tripClass].join("|"),
+    [from, to, depart, returnDate, adults, children, infants, tripType, tripClass]
+  );
+
+  // ── A) Single effect: search when URL params change ──
+  useEffect(() => {
     if (!from || !to || !depart) return;
-    
+    // Skip if same search key (prevents double-fetch)
+    if (searchKey === prevSearchKeyRef.current) return;
+    prevSearchKeyRef.current = searchKey;
+
+    // Reset UI state for the new search
+    setFilters({ ...DEFAULT_FILTERS });
+    setSortBy("best");
+
     searchFlights({
       origin: from.toUpperCase(),
       destination: to.toUpperCase(),
@@ -54,44 +72,35 @@ const LiveFlightResults = () => {
       returnDate: tripType === "roundtrip" ? returnDate : undefined,
       adults: adults + children + infants,
       currency: "EUR",
-      sort,
-      limit: 25,
+      sort: "best",
+      limit: 50, // Fetch more so client-side sort/filter has data
     });
-  }, [from, to, depart, returnDate, adults, children, infants, tripType, searchFlights]);
+  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, searchFlights]);
 
-  // Initial search on mount
-  useEffect(() => {
-    if (from && to && depart && !hasSearched) {
-      setHasSearched(true);
-      doSearch(sortBy);
-    }
-  }, [from, to, depart, hasSearched, doSearch, sortBy]);
+  // ── B) Data layers: raw → filtered → sorted ──
 
-  // Re-fetch when sort changes
-  const handleSortChange = useCallback((newSort: "best" | "cheapest" | "fastest") => {
-    setSortBy(newSort);
-    doSearch(newSort);
-  }, [doSearch]);
-
-  // Apply filters
+  // Layer 1: filteredFlights (from rawFlights + filters)
   const filteredFlights = useMemo(() => {
     let result = [...rawFlights];
 
+    // Direct only
     if (filters.directOnly) {
-      result = result.filter(f => f.stopsCount === 0);
+      result = result.filter((f) => f.stopsCount === 0);
     }
 
+    // Stops checkboxes (only if directOnly is off)
     if (filters.stops.length > 0 && !filters.directOnly) {
-      result = result.filter((flight) => {
-        return filters.stops.some((stop) => {
+      result = result.filter((flight) =>
+        filters.stops.some((stop) => {
           if (stop === "direct") return flight.stopsCount === 0;
           if (stop === "1stop") return flight.stopsCount === 1;
           if (stop === "2stops") return flight.stopsCount >= 2;
           return true;
-        });
-      });
+        })
+      );
     }
 
+    // Airlines
     if (filters.airlines.length > 0) {
       result = result.filter((flight) => {
         const flightAirline = getAirlineName(flight.airlines?.[0] || "");
@@ -99,10 +108,14 @@ const LiveFlightResults = () => {
       });
     }
 
+    // Price range
     result = result.filter(
-      (flight) => flight.price.amount >= filters.priceRange[0] && flight.price.amount <= filters.priceRange[1]
+      (flight) =>
+        flight.price.amount >= filters.priceRange[0] &&
+        flight.price.amount <= filters.priceRange[1]
     );
 
+    // Departure time buckets
     if (filters.departureTime.length > 0) {
       result = result.filter((flight) => {
         if (!flight.departureTime) return true;
@@ -126,7 +139,35 @@ const LiveFlightResults = () => {
     return result;
   }, [rawFlights, filters]);
 
-  const sortedFlights = filteredFlights;
+  // Layer 2: sortedFlights (from filteredFlights + sortBy), capped at MAX_DISPLAY
+  const sortedFlights = useMemo(() => {
+    const sorted = [...filteredFlights];
+
+    switch (sortBy) {
+      case "cheapest":
+        sorted.sort((a, b) => a.price.amount - b.price.amount);
+        break;
+      case "fastest":
+        sorted.sort((a, b) => a.durationMinutes - b.durationMinutes);
+        break;
+      case "best":
+      default:
+        // Weighted score: price (60%) + duration (30%) + stops penalty
+        sorted.sort((a, b) => {
+          const scoreA = a.price.amount * 0.6 + a.durationMinutes * 0.3 + a.stopsCount * 100;
+          const scoreB = b.price.amount * 0.6 + b.durationMinutes * 0.3 + b.stopsCount * 100;
+          return scoreA - scoreB;
+        });
+        break;
+    }
+
+    return sorted.slice(0, MAX_DISPLAY);
+  }, [filteredFlights, sortBy]);
+
+  // ── C) Sort tab change is client-side only ──
+  const handleSortChange = useCallback((newSort: "best" | "cheapest" | "fastest") => {
+    setSortBy(newSort);
+  }, []);
 
   const formatDate = (dateStr: string) => {
     try {
@@ -140,29 +181,36 @@ const LiveFlightResults = () => {
     }
   };
 
-
   const handleRetry = useCallback(() => {
-    setHasSearched(false);
-    // Reset filters to default
-    setFilters({
-      stops: [],
-      airlines: [],
-      priceRange: [0, 10000],
-      departureTime: [],
-      directOnly: false,
-    });
-  }, []);
+    prevSearchKeyRef.current = ""; // Force re-search
+    setFilters({ ...DEFAULT_FILTERS });
+    setSortBy("best");
+    if (from && to && depart) {
+      searchFlights({
+        origin: from.toUpperCase(),
+        destination: to.toUpperCase(),
+        departDate: depart,
+        returnDate: tripType === "roundtrip" ? returnDate : undefined,
+        adults: adults + children + infants,
+        currency: "EUR",
+        sort: "best",
+        limit: 50,
+      });
+    }
+  }, [from, to, depart, returnDate, adults, children, infants, tripType, searchFlights]);
 
   const FiltersContent = () => (
-    <FlightFilters 
-      onFiltersChange={setFilters} 
+    <FlightFilters
+      onFiltersChange={setFilters}
       flights={rawFlights}
       showDirectOnly={true}
       onDirectOnlyChange={(checked) => {
-        setFilters(prev => ({ ...prev, directOnly: checked }));
+        setFilters((prev) => ({ ...prev, directOnly: checked }));
       }}
     />
   );
+
+  const totalPassengers = adults + children + infants;
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,14 +222,14 @@ const LiveFlightResults = () => {
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back</span>
             </Button>
-            <div className="flex-1">
-              <h1 className="text-lg font-semibold text-foreground">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-semibold text-foreground truncate">
                 {from} → {to}
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground truncate">
                 {formatDate(depart)}
-                {returnDate && ` – ${formatDate(returnDate)}`} · {adults + children + infants} traveler
-                {adults + children + infants > 1 ? "s" : ""}
+                {returnDate && ` – ${formatDate(returnDate)}`} · {totalPassengers} traveler
+                {totalPassengers > 1 ? "s" : ""}
               </p>
             </div>
 
@@ -212,13 +260,13 @@ const LiveFlightResults = () => {
         {isSearching && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-            <p className="text-lg font-semibold text-foreground">Searching flights...</p>
+            <p className="text-lg font-semibold text-foreground">Searching live prices…</p>
             <p className="text-muted-foreground">Finding the best deals for you</p>
           </div>
         )}
 
-        {/* Error state - clean user-friendly message */}
-        {status === "error" && (
+        {/* Error state */}
+        {status === "error" && !isSearching && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
               <AlertCircle className="w-10 h-10 text-destructive" />
@@ -251,17 +299,23 @@ const LiveFlightResults = () => {
         )}
 
         {/* Results */}
-        {status === "complete" && sortedFlights.length > 0 && (
+        {status === "complete" && !isSearching && rawFlights.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
             <aside className="hidden lg:block h-fit">
               <FiltersContent />
             </aside>
 
             <div className="space-y-4 min-w-0">
-              <FlightSortTabs flights={sortedFlights} sortBy={sortBy} onSortChange={handleSortChange} />
+              {/* C) Sort tabs — client-side only */}
+              <FlightSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={handleSortChange} />
 
+              {/* F) Results count based on filtered total */}
               <div className="text-sm text-muted-foreground bg-card p-3 rounded-xl border border-border">
-                <span className="font-semibold text-foreground">{sortedFlights.length}</span> results found
+                <span className="font-semibold text-foreground">{filteredFlights.length}</span> result
+                {filteredFlights.length !== 1 ? "s" : ""} found
+                {filteredFlights.length !== rawFlights.length && (
+                  <span className="ml-1">(filtered from {rawFlights.length})</span>
+                )}
               </div>
 
               <FlightResultsErrorBoundary>
@@ -269,7 +323,14 @@ const LiveFlightResults = () => {
                   {sortedFlights.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <Plane className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>No flights match your filters. Try adjusting them.</p>
+                      <p className="mb-3">No flights match your filters.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFilters({ ...DEFAULT_FILTERS })}
+                      >
+                        Clear all filters
+                      </Button>
                     </div>
                   ) : (
                     sortedFlights.map((flight, index) => (
