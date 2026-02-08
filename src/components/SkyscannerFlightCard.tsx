@@ -1,11 +1,12 @@
 /**
  * Skyscanner-style Flight Card
+ * Wrapped with React.memo to prevent unnecessary re-renders.
  * Responsive: vertical text-only on mobile, rich timeline on tablet+
  * Mobile-safe booking: synchronous tab open + async URL resolution
  */
 
-import { useState, useRef } from "react";
-import { Heart, Plane, ChevronRight, Loader2, ExternalLink } from "lucide-react";
+import { memo, useState, useRef, useCallback, useMemo } from "react";
+import { Heart, Plane, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,9 +25,9 @@ const safeText = (value: string | undefined | null, fallback = "—"): string =>
   return value;
 };
 
-/* ─── Sub-components ─── */
+/* ─── Sub-components (pure, no state) ─── */
 
-const AirlineHeader = ({
+const AirlineHeader = memo(({
   logo,
   name,
   flightNumber,
@@ -46,6 +47,9 @@ const AirlineHeader = ({
           src={logo}
           alt={name}
           className="w-7 h-7 md:w-8 md:h-8 object-contain"
+          loading="lazy"
+          width={32}
+          height={32}
           onError={(e) => {
             (e.target as HTMLImageElement).style.display = "none";
           }}
@@ -66,10 +70,11 @@ const AirlineHeader = ({
       </Badge>
     )}
   </div>
-);
+));
+AirlineHeader.displayName = "AirlineHeader";
 
 /** Mobile: text-only compact leg */
-const MobileLeg = ({
+const MobileLeg = memo(({
   label,
   origin,
   destination,
@@ -101,10 +106,11 @@ const MobileLeg = ({
       {getStopsLabel(stopsCount, stopsAirports)} · {formatDuration(durationMinutes)}
     </p>
   </div>
-);
+));
+MobileLeg.displayName = "MobileLeg";
 
 /** Desktop/tablet: timeline leg */
-const DesktopLeg = ({
+const DesktopLeg = memo(({
   label,
   origin,
   destination,
@@ -165,40 +171,50 @@ const DesktopLeg = ({
       </div>
     </div>
   </div>
-);
+));
+DesktopLeg.displayName = "DesktopLeg";
 
 /* ─── Main card ─── */
 
-const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
+const FlightCard = memo(({ flight, isBestValue = false }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
   const isMobile = useIsMobile();
 
-  const proposalId = flight.proposalId || flight.click_id || "";
-  const searchId = flight.searchId || flight.search_id || "";
-  const resultsBase = flight.resultsBase || flight.results_base || "";
-  const canResolve = Boolean(proposalId && searchId);
+  // Memoize derived values so they don't recompute on every render
+  const { proposalId, searchId, resultsBase, canResolve, airlineName, airlineLogo, flightNumber } = useMemo(() => {
+    const pid = flight.proposalId || flight.click_id || "";
+    const sid = flight.searchId || flight.search_id || "";
+    const rb = flight.resultsBase || flight.results_base || "";
+    const code = flight.airlines?.[0] || "";
+    return {
+      proposalId: pid,
+      searchId: sid,
+      resultsBase: rb,
+      canResolve: Boolean(pid && sid),
+      airlineName: getAirlineName(code),
+      airlineLogo: getAirlineLogo(code),
+      flightNumber: flight.flightNumbers?.join(", ") || "",
+    };
+  }, [flight]);
 
-  const airlineCode = flight.airlines?.[0] || "";
-  const airlineName = getAirlineName(airlineCode);
-  const airlineLogo = getAirlineLogo(airlineCode);
-  const flightNumber = flight.flightNumbers?.join(", ") || "";
-
-  const handleSave = (e: React.MouseEvent) => {
+  const handleSave = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsSaved(!isSaved);
-    const saved = JSON.parse(localStorage.getItem("savedFlights") || "[]");
-    if (!isSaved) saved.push(flight.id);
-    else {
-      const idx = saved.indexOf(flight.id);
-      if (idx > -1) saved.splice(idx, 1);
-    }
-    localStorage.setItem("savedFlights", JSON.stringify(saved));
-  };
+    setIsSaved((prev) => {
+      const saved = JSON.parse(localStorage.getItem("savedFlights") || "[]");
+      if (!prev) saved.push(flight.id);
+      else {
+        const idx = saved.indexOf(flight.id);
+        if (idx > -1) saved.splice(idx, 1);
+      }
+      localStorage.setItem("savedFlights", JSON.stringify(saved));
+      return !prev;
+    });
+  }, [flight.id]);
 
-  const handleViewDeal = async () => {
+  const handleViewDeal = useCallback(async () => {
     if (!canResolve || isResolving) return;
     const newTab = window.open("about:blank", "_blank");
     setIsResolving(true);
@@ -232,7 +248,7 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
     } finally {
       setIsResolving(false);
     }
-  };
+  }, [canResolve, isResolving, searchId, proposalId, resultsBase]);
 
   const LegComponent = isMobile ? MobileLeg : DesktopLeg;
 
@@ -256,7 +272,7 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
       onClick={handleViewDeal}
       disabled={isResolving}
       size="default"
-      className={`gap-1.5 font-semibold whitespace-nowrap transition-all ${
+      className={`gap-1.5 font-semibold whitespace-nowrap ${
         isMobile
           ? "w-full min-h-[48px] text-base"
           : "px-5 min-w-[130px]"
@@ -299,13 +315,13 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
   if (isMobile) {
     return (
       <div
-        className={`relative bg-card rounded-xl border w-full box-border transition-all duration-200 ${
+        className={`relative bg-card rounded-xl border w-full box-border ${
           isBestValue ? "border-primary ring-2 ring-primary/20" : "border-border"
         }`}
+        style={{ contain: "layout style" }}
       >
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
-          {/* 1. Airline + badge */}
           <AirlineHeader
             logo={airlineLogo}
             name={airlineName}
@@ -314,7 +330,6 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
             isMobile
           />
 
-          {/* 2. Outbound */}
           <LegComponent
             label={flight.return ? "Outbound" : null}
             origin={flight.origin}
@@ -326,7 +341,6 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
             stopsAirports={flight.stopsAirports}
           />
 
-          {/* 3. Return */}
           {flight.return && (
             <div className="pt-2 border-t border-border/40">
               <LegComponent
@@ -342,7 +356,6 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
             </div>
           )}
 
-          {/* 4. Price row */}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
             <div>
               <p className="text-2xl font-bold text-foreground leading-tight">
@@ -353,10 +366,8 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
             {saveButton}
           </div>
 
-          {/* 5. CTA */}
           {ctaButton}
 
-          {/* Trust microcopy */}
           <p className="text-[10px] text-muted-foreground text-center leading-tight">
             Opens official partner booking · Price may change
           </p>
@@ -368,9 +379,10 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
   /* ═══════ TABLET / DESKTOP LAYOUT (≥769px) ═══════ */
   return (
     <div
-      className={`relative bg-card rounded-xl border transition-all duration-200 hover:shadow-lg group ${
+      className={`relative bg-card rounded-xl border hover:shadow-md group ${
         isBestValue ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/30"
       }`}
+      style={{ contain: "layout style", transition: "box-shadow 0.15s ease, border-color 0.15s ease" }}
     >
       {isBestValue && (
         <div className="absolute -top-3 left-5 z-10">
@@ -387,7 +399,6 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
           className="grid gap-4 items-stretch"
           style={{ gridTemplateColumns: "1fr 220px" }}
         >
-          {/* LEFT: Itinerary */}
           <div className="flex flex-col gap-3 min-w-0">
             <AirlineHeader
               logo={airlineLogo}
@@ -424,7 +435,6 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
             )}
           </div>
 
-          {/* RIGHT: Price + CTA */}
           <div className="flex flex-col justify-between border-l border-border/40 pl-4 min-w-0">
             <div className="flex flex-col items-end text-right">
               <p className="text-2xl font-bold text-foreground whitespace-nowrap">
@@ -447,6 +457,7 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
       </div>
     </div>
   );
-};
+});
+FlightCard.displayName = "FlightCard";
 
 export default FlightCard;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { memo, useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -37,7 +37,7 @@ const DEPARTURE_TIMES = [
 const DEFAULT_PRICE_RANGE: [number, number] = [0, 2000];
 const DEBOUNCE_MS = 200;
 
-const FlightFilters = ({ 
+const FlightFilters = memo(({ 
   onFiltersChange, 
   flights = [],
   showDirectOnly = false,
@@ -48,23 +48,17 @@ const FlightFilters = ({
   const [priceRange, setPriceRange] = useState<[number, number]>(DEFAULT_PRICE_RANGE);
   const [departureTime, setDepartureTime] = useState<string[]>([]);
   const [directOnly, setDirectOnly] = useState(false);
-  
-  // Debounce timer ref for slider
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Get unique airlines from flight data
   const availableAirlines = useMemo(() => {
     if (!flights.length) return [];
-    // Get first airline from each flight's airlines array
     const airlineNames = flights
       .map(f => f.airlines?.[0])
       .filter(Boolean)
       .map(code => getAirlineName(code));
-    const uniqueAirlines = [...new Set(airlineNames)];
-    return uniqueAirlines.sort();
+    return [...new Set(airlineNames)].sort();
   }, [flights]);
 
-  // Get price range from flight data
   const actualPriceRange = useMemo((): [number, number] => {
     if (!flights.length) return DEFAULT_PRICE_RANGE;
     const prices = flights.map(f => f.price?.amount).filter(p => p > 0 && Number.isFinite(p));
@@ -74,82 +68,94 @@ const FlightFilters = ({
     return [min, Math.max(max, min + 100)];
   }, [flights]);
 
-  // Initialize price range when flights change
   useEffect(() => {
-    if (flights.length > 0) {
-      setPriceRange(actualPriceRange);
-    }
+    if (flights.length > 0) setPriceRange(actualPriceRange);
   }, [actualPriceRange, flights.length]);
 
-  // Emit filter change (immediate for checkboxes)
+  // Use refs for latest state to avoid stale closures in debounced callback
+  const stopsRef = useRef(stops);
+  const airlinesRef = useRef(airlines);
+  const departureTimeRef = useRef(departureTime);
+  const directOnlyRef = useRef(directOnly);
+  stopsRef.current = stops;
+  airlinesRef.current = airlines;
+  departureTimeRef.current = departureTime;
+  directOnlyRef.current = directOnly;
+
   const emitFilters = useCallback((overrides: Partial<FilterState> = {}) => {
     onFiltersChange({
-      stops: overrides.stops ?? stops,
-      airlines: overrides.airlines ?? airlines,
+      stops: overrides.stops ?? stopsRef.current,
+      airlines: overrides.airlines ?? airlinesRef.current,
       priceRange: overrides.priceRange ?? priceRange,
-      departureTime: overrides.departureTime ?? departureTime,
-      directOnly: overrides.directOnly ?? directOnly,
+      departureTime: overrides.departureTime ?? departureTimeRef.current,
+      directOnly: overrides.directOnly ?? directOnlyRef.current,
     });
-  }, [stops, airlines, priceRange, departureTime, directOnly, onFiltersChange]);
+  }, [onFiltersChange, priceRange]);
 
-  // Debounced emit for slider
   const emitFiltersDebounced = useCallback((newPriceRange: [number, number]) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       onFiltersChange({
-        stops,
-        airlines,
+        stops: stopsRef.current,
+        airlines: airlinesRef.current,
         priceRange: newPriceRange,
-        departureTime,
-        directOnly,
+        departureTime: departureTimeRef.current,
+        directOnly: directOnlyRef.current,
       });
     }, DEBOUNCE_MS);
-  }, [stops, airlines, departureTime, directOnly, onFiltersChange]);
+  }, [onFiltersChange]);
 
-  const toggleStop = (value: string) => {
-    const newStops = stops.includes(value)
-      ? stops.filter((s) => s !== value)
-      : [...stops, value];
-    setStops(newStops);
-    emitFilters({ stops: newStops });
-  };
+  const toggleStop = useCallback((value: string) => {
+    setStops((prev) => {
+      const newStops = prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value];
+      // Need to emit after state update, use functional form
+      stopsRef.current = newStops;
+      emitFilters({ stops: newStops });
+      return newStops;
+    });
+  }, [emitFilters]);
 
-  const toggleAirline = (value: string) => {
-    const newAirlines = airlines.includes(value)
-      ? airlines.filter((a) => a !== value)
-      : [...airlines, value];
-    setAirlines(newAirlines);
-    emitFilters({ airlines: newAirlines });
-  };
+  const toggleAirline = useCallback((value: string) => {
+    setAirlines((prev) => {
+      const newAirlines = prev.includes(value) ? prev.filter(a => a !== value) : [...prev, value];
+      airlinesRef.current = newAirlines;
+      emitFilters({ airlines: newAirlines });
+      return newAirlines;
+    });
+  }, [emitFilters]);
 
-  const toggleDepartureTime = (value: string) => {
-    const newTimes = departureTime.includes(value)
-      ? departureTime.filter((t) => t !== value)
-      : [...departureTime, value];
-    setDepartureTime(newTimes);
-    emitFilters({ departureTime: newTimes });
-  };
+  const toggleDepartureTime = useCallback((value: string) => {
+    setDepartureTime((prev) => {
+      const newTimes = prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value];
+      departureTimeRef.current = newTimes;
+      emitFilters({ departureTime: newTimes });
+      return newTimes;
+    });
+  }, [emitFilters]);
 
-  const handlePriceChange = (value: number[]) => {
+  const handlePriceChange = useCallback((value: number[]) => {
     const newRange: [number, number] = [value[0], value[1]];
     setPriceRange(newRange);
     emitFiltersDebounced(newRange);
-  };
+  }, [emitFiltersDebounced]);
 
-  const handleDirectOnlyChange = (checked: boolean) => {
+  const handleDirectOnlyChange = useCallback((checked: boolean) => {
     setDirectOnly(checked);
-    if (onDirectOnlyChange) {
-      onDirectOnlyChange(checked);
-    }
+    directOnlyRef.current = checked;
+    onDirectOnlyChange?.(checked);
     emitFilters({ directOnly: checked });
-  };
+  }, [onDirectOnlyChange, emitFilters]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setStops([]);
     setAirlines([]);
     setPriceRange(actualPriceRange);
     setDepartureTime([]);
     setDirectOnly(false);
+    stopsRef.current = [];
+    airlinesRef.current = [];
+    departureTimeRef.current = [];
+    directOnlyRef.current = false;
     onFiltersChange({
       stops: [],
       airlines: [],
@@ -157,10 +163,8 @@ const FlightFilters = ({
       departureTime: [],
       directOnly: false,
     });
-    if (onDirectOnlyChange) {
-      onDirectOnlyChange(false);
-    }
-  };
+    onDirectOnlyChange?.(false);
+  }, [actualPriceRange, onFiltersChange, onDirectOnlyChange]);
 
   const hasActiveFilters = stops.length > 0 || airlines.length > 0 || departureTime.length > 0 ||
     priceRange[0] !== actualPriceRange[0] || priceRange[1] !== actualPriceRange[1] || directOnly;
@@ -185,7 +189,6 @@ const FlightFilters = ({
         )}
       </div>
 
-      {/* Direct Flights Only - Quick Filter */}
       {showDirectOnly && (
         <div className="p-3 bg-primary/5 rounded-xl border border-primary/20">
           <div className="flex items-center space-x-2">
@@ -205,7 +208,6 @@ const FlightFilters = ({
         </div>
       )}
 
-      {/* Stops */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-foreground">Stops</h3>
         <div className="space-y-2">
@@ -227,7 +229,6 @@ const FlightFilters = ({
         </div>
       </div>
 
-      {/* Price Range - Dual Handle with Debounce */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-foreground">Price Range</h3>
         <div className="pt-2 px-1">
@@ -247,7 +248,6 @@ const FlightFilters = ({
         </div>
       </div>
 
-      {/* Airlines - Dynamic based on results */}
       {availableAirlines.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-foreground">Airlines</h3>
@@ -273,7 +273,6 @@ const FlightFilters = ({
         </div>
       )}
 
-      {/* Departure Time */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-foreground">Departure Time</h3>
         <div className="space-y-2">
@@ -296,6 +295,7 @@ const FlightFilters = ({
       </div>
     </div>
   );
-};
+});
+FlightFilters.displayName = "FlightFilters";
 
 export default FlightFilters;

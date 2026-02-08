@@ -33,15 +33,26 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [error, setError] = useState<string | null>(null);
   const [searchId, setSearchId] = useState<string | null>(null);
   const [resultsBase, setResultsBase] = useState<string | null>(null);
-  const cancelRef = useRef(false);
+
+  // AbortController ref for cancelling in-flight requests
+  const abortRef = useRef<AbortController | null>(null);
 
   const cancelSearch = useCallback(() => {
-    cancelRef.current = true;
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
     setStatus("idle");
   }, []);
 
   const doSearch = useCallback(async (params: SearchParamsHook) => {
-    cancelRef.current = false;
+    // Cancel any in-flight request before starting a new one
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setFlights([]);
     setError(null);
     setSearchId(null);
@@ -49,23 +60,25 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     setStatus("searching");
 
     try {
-      const data: SearchResponse = await apiSearchFlights(params as SearchParams);
+      const data: SearchResponse = await apiSearchFlights(
+        params as SearchParams,
+        controller.signal
+      );
 
-      if (cancelRef.current) return;
+      // If this request was aborted, ignore the response
+      if (controller.signal.aborted) return;
 
       if (!data.ok) {
+        // Don't show "cancelled" as an error
+        if (data.error === "Search cancelled") return;
         setError(data.error || "Search failed");
         setStatus("error");
         return;
       }
 
-      // Store search context for click resolution
       if (data.search_id) setSearchId(data.search_id);
       if (data.results_base) setResultsBase(data.results_base);
 
-      // Flights from API include clickUrl for booking
-      
-      // Return flights directly from backend - preserve all fields including clickUrl
       const flightResults: Flight[] = attachDealContextToFlights({
         flights: (data.flights || []) as Flight[],
         search_id: data.search_id || "",
@@ -80,6 +93,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       setFlights(flightResults);
       setStatus("complete");
     } catch (err) {
+      if (controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : "Network error");
       setStatus("error");
     }

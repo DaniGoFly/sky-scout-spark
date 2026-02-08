@@ -86,8 +86,12 @@ export async function resolveDeal(params: {
 
 /**
  * Search flights via edge function
+ * Supports AbortController signal for cancellation
  */
-export async function searchFlights(params: SearchParams): Promise<SearchResponse> {
+export async function searchFlights(
+  params: SearchParams,
+  signal?: AbortSignal
+): Promise<SearchResponse> {
   const body = {
     action: "search",
     origin: params.origin.toUpperCase(),
@@ -106,6 +110,7 @@ export async function searchFlights(params: SearchParams): Promise<SearchRespons
       method: "POST",
       headers: FLIGHT_SEARCH_HEADERS,
       body: JSON.stringify(body),
+      signal,
     });
 
     const data = await response.json();
@@ -119,6 +124,10 @@ export async function searchFlights(params: SearchParams): Promise<SearchRespons
 
     return data as SearchResponse;
   } catch (err) {
+    // Don't treat abort as an error
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return { ok: false, error: "Search cancelled" };
+    }
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Network error",
