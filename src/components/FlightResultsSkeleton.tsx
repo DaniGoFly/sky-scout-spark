@@ -1,60 +1,80 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-const FlightCardSkeleton = () => (
-  <div className="bg-card rounded-2xl p-6 shadow-card">
-    <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-      {/* Airline */}
-      <div className="flex items-center gap-4 lg:w-48">
-        <Skeleton className="w-12 h-12 rounded-xl" />
-        <Skeleton className="h-5 w-28" />
+const MobileCardSkeleton = () => (
+  <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+    <div className="flex items-center gap-3">
+      <Skeleton className="w-9 h-9 rounded-lg" />
+      <Skeleton className="h-4 w-24" />
+    </div>
+    <Skeleton className="h-5 w-full" />
+    <Skeleton className="h-3 w-28" />
+    <div className="border-t border-border/40 pt-3">
+      <Skeleton className="h-5 w-full" />
+      <Skeleton className="h-3 w-28 mt-1" />
+    </div>
+    <div className="flex items-center justify-between border-t border-border/40 pt-3">
+      <Skeleton className="h-8 w-20" />
+      <Skeleton className="h-9 w-9 rounded-full" />
+    </div>
+    <Skeleton className="h-12 w-full rounded-lg" />
+  </div>
+);
+
+const DesktopCardSkeleton = () => (
+  <div className="bg-card rounded-xl border border-border p-5">
+    <div className="grid gap-4" style={{ gridTemplateColumns: "1fr 220px" }}>
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-10 h-10 rounded-lg" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-6 w-14" />
+          <div className="flex-1">
+            <Skeleton className="h-3 w-16 mx-auto mb-1" />
+            <Skeleton className="h-0.5 w-full" />
+            <Skeleton className="h-3 w-12 mx-auto mt-1" />
+          </div>
+          <Skeleton className="h-6 w-14" />
+        </div>
+        <div className="border-t border-border/40 pt-2">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-6 w-14" />
+            <div className="flex-1">
+              <Skeleton className="h-0.5 w-full" />
+            </div>
+            <Skeleton className="h-6 w-14" />
+          </div>
+        </div>
       </div>
-
-      {/* Flight Times */}
-      <div className="flex-1 flex items-center gap-4">
-        <div className="text-center">
-          <Skeleton className="h-8 w-16 mb-2" />
-          <Skeleton className="h-4 w-10" />
+      <div className="border-l border-border/40 pl-4 flex flex-col justify-between">
+        <div className="flex flex-col items-end">
+          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-3 w-14 mt-1" />
         </div>
-
-        <div className="flex-1 flex flex-col items-center px-4">
-          <Skeleton className="h-4 w-20 mb-2" />
-          <Skeleton className="h-0.5 w-full" />
-          <Skeleton className="h-4 w-16 mt-2" />
+        <div className="flex items-center gap-2 justify-end mt-3">
+          <Skeleton className="h-9 w-9 rounded-full" />
+          <Skeleton className="h-10 w-[130px] rounded-lg" />
         </div>
-
-        <div className="text-center">
-          <Skeleton className="h-8 w-16 mb-2" />
-          <Skeleton className="h-4 w-10" />
-        </div>
-      </div>
-
-      {/* Amenities */}
-      <div className="hidden md:flex items-center gap-4">
-        <Skeleton className="h-4 w-16" />
-      </div>
-
-      {/* Price & CTA */}
-      <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3">
-        <div className="text-right">
-          <Skeleton className="h-4 w-12 mb-2" />
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <Skeleton className="h-11 w-28 rounded-xl" />
       </div>
     </div>
   </div>
 );
 
 const FlightResultsSkeleton = () => {
+  const isMobile = useIsMobile();
+  const Card = isMobile ? MobileCardSkeleton : DesktopCardSkeleton;
+
   return (
-    <div className="space-y-4">
-      {[...Array(5)].map((_, i) => (
+    <div className="space-y-3">
+      {[...Array(4)].map((_, i) => (
         <div
           key={i}
           className="animate-pulse"
-          style={{ animationDelay: `${i * 100}ms` }}
+          style={{ animationDelay: `${i * 80}ms` }}
         >
-          <FlightCardSkeleton />
+          <Card />
         </div>
       ))}
     </div>
