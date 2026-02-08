@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, AlertCircle, Plane, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightFilters, { FilterState } from "./FlightFilters";
@@ -12,6 +13,7 @@ import ActiveFilterChips from "./ActiveFilterChips";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
+import { useLocale } from "@/hooks/useLocale";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DEFAULT_FILTERS: FilterState = {
@@ -24,13 +26,10 @@ const DEFAULT_FILTERS: FilterState = {
 
 const MAX_DISPLAY = 25;
 
-// ── Memoized sub-sections to isolate re-renders ──
-
 const MemoizedSortTabs = memo(FlightSortTabs);
 const MemoizedActiveChips = memo(ActiveFilterChips);
 const MemoizedMobileDrawer = memo(MobileFiltersDrawer);
 
-// ── Helper: parse departure hour from time string ──
 function parseDepartureHour(timeStr: string): number | null {
   const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
   if (!match) return null;
@@ -44,21 +43,17 @@ function parseDepartureHour(timeStr: string): number | null {
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { formatDate, currency } = useLocale();
   const isMobile = useIsMobile();
   const {
-    flights: rawFlights,
-    status,
-    error,
-    isSearching,
-    searchFlights,
-    cancelSearch,
+    flights: rawFlights, status, error, isSearching, searchFlights, cancelSearch,
   } = useLiveFlightSearch();
 
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
   const prevSearchKeyRef = useRef<string>("");
 
-  // ── Extract search params ──
   const from = searchParams.get("from") || searchParams.get("origin") || "";
   const to = searchParams.get("to") || searchParams.get("destination") || "";
   const depart = searchParams.get("depart") || "";
@@ -74,15 +69,11 @@ const LiveFlightResults = () => {
     [from, to, depart, returnDate, adults, children, infants, tripType, tripClass]
   );
 
-  // ── Search on URL change ──
   useEffect(() => {
     if (!from || !to || !depart) return;
     if (searchKey === prevSearchKeyRef.current) return;
     prevSearchKeyRef.current = searchKey;
-
-    // Cancel any in-flight search
     cancelSearch();
-
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
     searchFlights({
@@ -91,13 +82,12 @@ const LiveFlightResults = () => {
       departDate: depart,
       returnDate: tripType === "roundtrip" ? returnDate : undefined,
       adults: adults + children + infants,
-      currency: "EUR",
+      currency: currency,
       sort: "best",
       limit: 50,
     });
-  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, searchFlights, cancelSearch]);
+  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, searchFlights, cancelSearch]);
 
-  // ── Actual price range (stable ref for chips) ──
   const actualPriceRange = useMemo((): [number, number] => {
     if (!rawFlights.length) return [0, 10000];
     const prices = rawFlights.map((f) => f.price?.amount).filter((p) => p > 0 && Number.isFinite(p));
@@ -107,38 +97,26 @@ const LiveFlightResults = () => {
     return [min, Math.max(max, min + 100)];
   }, [rawFlights]);
 
-  // ── Filter layer (memoized) ──
   const filteredFlights = useMemo(() => {
     let result = rawFlights;
-
-    if (filters.directOnly) {
-      result = result.filter((f) => f.stopsCount === 0);
-    } else if (filters.stops.length > 0) {
-      result = result.filter((flight) =>
-        filters.stops.some((stop) => {
-          if (stop === "direct") return flight.stopsCount === 0;
-          if (stop === "1stop") return flight.stopsCount === 1;
-          if (stop === "2stops") return flight.stopsCount >= 2;
-          return true;
-        })
-      );
+    if (filters.directOnly) { result = result.filter((f) => f.stopsCount === 0); }
+    else if (filters.stops.length > 0) {
+      result = result.filter((flight) => filters.stops.some((stop) => {
+        if (stop === "direct") return flight.stopsCount === 0;
+        if (stop === "1stop") return flight.stopsCount === 1;
+        if (stop === "2stops") return flight.stopsCount >= 2;
+        return true;
+      }));
     }
-
     if (filters.airlines.length > 0) {
       result = result.filter((flight) => {
         const flightAirline = getAirlineName(flight.airlines?.[0] || "");
         return filters.airlines.includes(flightAirline);
       });
     }
-
     if (filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) {
-      result = result.filter(
-        (flight) =>
-          flight.price.amount >= filters.priceRange[0] &&
-          flight.price.amount <= filters.priceRange[1]
-      );
+      result = result.filter((flight) => flight.price.amount >= filters.priceRange[0] && flight.price.amount <= filters.priceRange[1]);
     }
-
     if (filters.departureTime.length > 0) {
       result = result.filter((flight) => {
         if (!flight.departureTime) return true;
@@ -153,63 +131,39 @@ const LiveFlightResults = () => {
         });
       });
     }
-
     return result;
   }, [rawFlights, filters]);
 
-  // ── Sort layer (memoized), capped at MAX_DISPLAY ──
   const sortedFlights = useMemo(() => {
     const sorted = [...filteredFlights];
     switch (sortBy) {
-      case "cheapest":
-        sorted.sort((a, b) => a.price.amount - b.price.amount);
-        break;
-      case "fastest":
-        sorted.sort((a, b) => a.durationMinutes - b.durationMinutes);
-        break;
-      case "best":
-      default:
+      case "cheapest": sorted.sort((a, b) => a.price.amount - b.price.amount); break;
+      case "fastest": sorted.sort((a, b) => a.durationMinutes - b.durationMinutes); break;
+      case "best": default:
         sorted.sort((a, b) => {
           const scoreA = a.price.amount * 0.6 + a.durationMinutes * 0.3 + a.stopsCount * 100;
           const scoreB = b.price.amount * 0.6 + b.durationMinutes * 0.3 + b.stopsCount * 100;
           return scoreA - scoreB;
-        });
-        break;
+        }); break;
     }
     return sorted.slice(0, MAX_DISPLAY);
   }, [filteredFlights, sortBy]);
 
-  // ── Stable callbacks ──
-  const handleSortChange = useCallback((newSort: "best" | "cheapest" | "fastest") => {
-    setSortBy(newSort);
-  }, []);
-
-  const handleFiltersChange = useCallback((newFilters: FilterState) => {
-    setFilters(newFilters);
-  }, []);
-
-  const handleRemoveFilter = useCallback(
-    (key: keyof FilterState, value?: string) => {
-      setFilters((prev) => {
-        const next = { ...prev };
-        if (key === "directOnly") next.directOnly = false;
-        else if (key === "priceRange") next.priceRange = actualPriceRange;
-        else if (key === "stops" && value) next.stops = prev.stops.filter((s) => s !== value);
-        else if (key === "airlines" && value) next.airlines = prev.airlines.filter((a) => a !== value);
-        else if (key === "departureTime" && value) next.departureTime = prev.departureTime.filter((t) => t !== value);
-        return next;
-      });
-    },
-    [actualPriceRange]
-  );
-
-  const handleClearAllFilters = useCallback(() => {
-    setFilters({ ...DEFAULT_FILTERS, priceRange: actualPriceRange });
+  const handleSortChange = useCallback((s: "best" | "cheapest" | "fastest") => { setSortBy(s); }, []);
+  const handleFiltersChange = useCallback((f: FilterState) => { setFilters(f); }, []);
+  const handleRemoveFilter = useCallback((key: keyof FilterState, value?: string) => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      if (key === "directOnly") next.directOnly = false;
+      else if (key === "priceRange") next.priceRange = actualPriceRange;
+      else if (key === "stops" && value) next.stops = prev.stops.filter((s) => s !== value);
+      else if (key === "airlines" && value) next.airlines = prev.airlines.filter((a) => a !== value);
+      else if (key === "departureTime" && value) next.departureTime = prev.departureTime.filter((dt) => dt !== value);
+      return next;
+    });
   }, [actualPriceRange]);
-
-  const handleDirectOnlyChange = useCallback((checked: boolean) => {
-    setFilters((prev) => ({ ...prev, directOnly: checked }));
-  }, []);
+  const handleClearAllFilters = useCallback(() => { setFilters({ ...DEFAULT_FILTERS, priceRange: actualPriceRange }); }, [actualPriceRange]);
+  const handleDirectOnlyChange = useCallback((checked: boolean) => { setFilters((prev) => ({ ...prev, directOnly: checked })); }, []);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -219,178 +173,106 @@ const LiveFlightResults = () => {
     return count;
   }, [filters, actualPriceRange]);
 
-  const formatDate = useCallback((dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      });
-    } catch {
-      return dateStr;
-    }
-  }, []);
-
   const handleRetry = useCallback(() => {
     prevSearchKeyRef.current = "";
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
     if (from && to && depart) {
-      searchFlights({
-        origin: from.toUpperCase(),
-        destination: to.toUpperCase(),
-        departDate: depart,
-        returnDate: tripType === "roundtrip" ? returnDate : undefined,
-        adults: adults + children + infants,
-        currency: "EUR",
-        sort: "best",
-        limit: 50,
-      });
+      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: tripType === "roundtrip" ? returnDate : undefined, adults: adults + children + infants, currency, sort: "best", limit: 50 });
     }
-  }, [from, to, depart, returnDate, adults, children, infants, tripType, searchFlights]);
+  }, [from, to, depart, returnDate, adults, children, infants, tripType, currency, searchFlights]);
 
   const totalPassengers = adults + children + infants;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* ── Sticky Header ── */}
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center gap-3 mb-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/flights")}
-              className="h-9 w-9 shrink-0"
-              aria-label="Back to search"
-            >
+            <Button variant="ghost" size="icon" onClick={() => navigate("/flights")} className="h-9 w-9 shrink-0" aria-label={t("results.back_to_search")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-base md:text-lg font-semibold text-foreground truncate">
-                {from} → {to}
-              </h1>
+              <h1 className="text-base md:text-lg font-semibold text-foreground truncate">{from} → {to}</h1>
               <p className="text-xs md:text-sm text-muted-foreground truncate">
                 {formatDate(depart)}
-                {returnDate && ` – ${formatDate(returnDate)}`} · {totalPassengers} traveler
-                {totalPassengers > 1 ? "s" : ""}
+                {returnDate && ` – ${formatDate(returnDate)}`} · {totalPassengers} {totalPassengers > 1 ? t("results.travelers") : t("results.traveler")}
               </p>
             </div>
-
             <div className="lg:hidden">
-              <MemoizedMobileDrawer
-                onFiltersChange={handleFiltersChange}
-                activeFiltersCount={activeFiltersCount}
-                flightCount={filteredFlights.length}
-                flights={rawFlights}
-              />
+              <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={filteredFlights.length} flights={rawFlights} />
             </div>
           </div>
-
-          <div className="hidden sm:block">
-            <CompactSearchBar />
-          </div>
+          <div className="hidden sm:block"><CompactSearchBar /></div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-4 md:py-6">
-        {/* Loading */}
         {isSearching && (
           <div className="space-y-6">
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
-              <p className="text-base font-semibold text-foreground">Searching live prices…</p>
-              <p className="text-sm text-muted-foreground">Finding the best deals for you</p>
+              <p className="text-base font-semibold text-foreground">{t("results.searching")}</p>
+              <p className="text-sm text-muted-foreground">{t("results.searching_sub")}</p>
             </div>
             <FlightResultsSkeleton />
           </div>
         )}
 
-        {/* Error */}
         {status === "error" && !isSearching && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-5">
               <AlertCircle className="w-8 h-8 text-destructive" />
             </div>
-            <p className="text-lg font-semibold text-foreground mb-2">Something went wrong</p>
-            <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              {error || "We couldn't find flights for this search. Please try again."}
-            </p>
+            <p className="text-lg font-semibold text-foreground mb-2">{t("results.error_title")}</p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md">{error || t("results.error_default")}</p>
             <div className="flex gap-3">
-              <Button onClick={handleRetry}>Try Again</Button>
-              <Button variant="outline" onClick={() => navigate("/flights")}>
-                New Search
-              </Button>
+              <Button onClick={handleRetry}>{t("results.try_again")}</Button>
+              <Button variant="outline" onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
             </div>
           </div>
         )}
 
-        {/* No results */}
         {status === "no_results" && !isSearching && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-5">
               <Plane className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-lg font-semibold text-foreground mb-2">No flights found</p>
-            <p className="text-sm text-muted-foreground mb-6">
-              We couldn't find any flights for this route and date.
-            </p>
-            <Button onClick={() => navigate("/flights")}>New Search</Button>
+            <p className="text-lg font-semibold text-foreground mb-2">{t("results.no_flights")}</p>
+            <p className="text-sm text-muted-foreground mb-6">{t("results.no_flights_sub")}</p>
+            <Button onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
           </div>
         )}
 
-        {/* ── Results ── */}
         {status === "complete" && !isSearching && rawFlights.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
-            {/* Desktop sidebar */}
             <aside className="hidden lg:block sticky top-[140px] h-fit max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin">
-              <FlightFilters
-                onFiltersChange={handleFiltersChange}
-                flights={rawFlights}
-                showDirectOnly
-                onDirectOnlyChange={handleDirectOnlyChange}
-              />
+              <FlightFilters onFiltersChange={handleFiltersChange} flights={rawFlights} showDirectOnly onDirectOnlyChange={handleDirectOnlyChange} />
             </aside>
-
-            {/* Results column */}
             <div className="min-w-0 space-y-3">
               <MemoizedSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={handleSortChange} />
-
-              <MemoizedActiveChips
-                filters={filters}
-                actualPriceRange={actualPriceRange}
-                onRemoveFilter={handleRemoveFilter}
-                onClearAll={handleClearAllFilters}
-              />
-
+              <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} />
               <div className="text-xs md:text-sm text-muted-foreground px-1">
-                <span className="font-semibold text-foreground">{filteredFlights.length}</span> result
-                {filteredFlights.length !== 1 ? "s" : ""} found
+                <span className="font-semibold text-foreground">{filteredFlights.length}</span>{" "}
+                {filteredFlights.length !== 1 ? t("results.results_found_plural", { count: filteredFlights.length }).replace(`${filteredFlights.length} `, "") : t("results.results_found", { count: 1 }).replace("1 ", "")}
                 {filteredFlights.length !== rawFlights.length && (
-                  <span className="ml-1 opacity-70">(from {rawFlights.length})</span>
+                  <span className="ms-1 opacity-70">({t("results.from_total", { total: rawFlights.length })})</span>
                 )}
                 {sortedFlights.length < filteredFlights.length && (
-                  <span className="ml-1 opacity-70">· Showing top {sortedFlights.length}</span>
+                  <span className="ms-1 opacity-70">· {t("results.showing_top", { count: sortedFlights.length })}</span>
                 )}
               </div>
-
               <FlightResultsErrorBoundary>
                 <div className="space-y-3">
                   {sortedFlights.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <Plane className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                      <p className="mb-3 text-sm">No flights match your filters.</p>
-                      <Button variant="outline" size="sm" onClick={handleClearAllFilters}>
-                        Clear all filters
-                      </Button>
+                      <p className="mb-3 text-sm">{t("results.no_match")}</p>
+                      <Button variant="outline" size="sm" onClick={handleClearAllFilters}>{t("results.clear_filters")}</Button>
                     </div>
                   ) : (
                     sortedFlights.map((flight, index) => (
-                      <FlightCard
-                        key={flight.id}
-                        flight={flight}
-                        isBestValue={index === 0 && sortBy === "best"}
-                      />
+                      <FlightCard key={flight.id} flight={flight} isBestValue={index === 0 && sortBy === "best"} />
                     ))
                   )}
                 </div>

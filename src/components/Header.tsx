@@ -2,12 +2,15 @@ import { Plane, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import LocaleSelector from "./LocaleSelector";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { t } = useTranslation();
   const isHome = location.pathname === "/";
   const isHotels = location.pathname === "/hotels";
 
@@ -26,10 +29,9 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
-          {/* Flights */}
           {isHome ? (
             <span className="px-4 py-2 rounded-lg text-sm font-medium text-primary bg-primary/10 cursor-default">
-              Flights
+              {t("nav.flights")}
             </span>
           ) : (
             <Link
@@ -39,14 +41,13 @@ const Header = () => {
                 "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
-              Flights
+              {t("nav.flights")}
             </Link>
           )}
           
-          {/* Hotels */}
           {isHotels ? (
             <span className="px-4 py-2 rounded-lg text-sm font-medium text-primary bg-primary/10 cursor-default">
-              Hotels
+              {t("nav.hotels")}
             </span>
           ) : (
             <Link
@@ -56,65 +57,68 @@ const Header = () => {
                 "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
-              Hotels
+              {t("nav.hotels")}
             </Link>
           )}
+
+          <LocaleSelector />
         </nav>
 
-        {/* Mobile Menu */}
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="md:hidden rounded-lg"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[280px] bg-card border-border">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center gap-2.5 mb-8 pt-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Plane className="w-5 h-5 text-white" />
+        {/* Mobile: Locale + Menu */}
+        <div className="flex items-center gap-1 md:hidden">
+          <LocaleSelector />
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-lg"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[280px] bg-card border-border">
+              <div className="flex flex-col h-full">
+                <div className="flex items-center gap-2.5 mb-8 pt-2">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                    <Plane className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-lg font-bold text-foreground">GoFlyFinder</span>
                 </div>
-                <span className="text-lg font-bold text-foreground">GoFlyFinder</span>
-              </div>
-              
-              <nav className="flex flex-col gap-1 flex-1">
-                {/* Flights */}
-                {isHome ? (
-                  <span className="px-4 py-3 rounded-xl font-medium text-primary bg-primary/10 cursor-default">
-                    Flights
-                  </span>
-                ) : (
-                  <Link
-                    to="/"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-3 rounded-xl font-medium text-muted-foreground hover:bg-secondary transition-all"
-                  >
-                    Flights
-                  </Link>
-                )}
                 
-                {/* Hotels */}
-                {isHotels ? (
-                  <span className="px-4 py-3 rounded-xl font-medium text-primary bg-primary/10 cursor-default">
-                    Hotels
-                  </span>
-                ) : (
-                  <Link
-                    to="/hotels"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-3 rounded-xl font-medium text-muted-foreground hover:bg-secondary transition-all"
-                  >
-                    Hotels
-                  </Link>
-                )}
-              </nav>
-            </div>
-          </SheetContent>
-        </Sheet>
+                <nav className="flex flex-col gap-1 flex-1">
+                  {isHome ? (
+                    <span className="px-4 py-3 rounded-xl font-medium text-primary bg-primary/10 cursor-default">
+                      {t("nav.flights")}
+                    </span>
+                  ) : (
+                    <Link
+                      to="/"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-xl font-medium text-muted-foreground hover:bg-secondary transition-all"
+                    >
+                      {t("nav.flights")}
+                    </Link>
+                  )}
+                  
+                  {isHotels ? (
+                    <span className="px-4 py-3 rounded-xl font-medium text-primary bg-primary/10 cursor-default">
+                      {t("nav.hotels")}
+                    </span>
+                  ) : (
+                    <Link
+                      to="/hotels"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-3 rounded-xl font-medium text-muted-foreground hover:bg-secondary transition-all"
+                    >
+                      {t("nav.hotels")}
+                    </Link>
+                  )}
+                </nav>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   );
