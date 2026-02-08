@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Search, MapPin, Plane } from "lucide-react";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -27,6 +28,7 @@ type TripType = "roundtrip" | "oneway" | "multicity";
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   // Dynamic default dates using centralized utility (today + 30 / today + 37)
   const defaultDates = useMemo(() => getDefaultDates(), []);
@@ -228,7 +230,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                   : "bg-secondary text-muted-foreground hover:text-foreground"
               }`}
             >
-              {type === "roundtrip" ? "Round trip" : type === "oneway" ? "One way" : "Multi-city"}
+              {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
             </button>
           ))}
         </div>
@@ -251,7 +253,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >
-            {type === "roundtrip" ? "Round trip" : type === "oneway" ? "One way" : "Multi-city"}
+            {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
           </button>
         ))}
       </div>
@@ -260,7 +262,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
         {/* From */}
         <div className="lg:col-span-3 relative min-w-0">
-          <label className="block text-xs font-medium text-muted-foreground mb-2">From</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-2">{t("search.from")}</label>
           <AirportAutocomplete
             value={from}
             onChange={handleFromChange}
@@ -292,7 +294,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* To */}
         <div className={`lg:col-span-3 transition-all duration-300 min-w-0 ${highlightDestination ? "ring-2 ring-primary ring-offset-2 ring-offset-card rounded-lg" : ""}`}>
-          <label className="block text-xs font-medium text-muted-foreground mb-2">To</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-2">{t("search.to")}</label>
           <AirportAutocomplete
             value={to}
             onChange={handleToChange}
@@ -386,7 +388,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1"
           >
             <Plane className="w-3 h-3" />
-            Direct flights only
+            {t("search.direct_flights_only")}
           </Label>
         </div>
 
@@ -402,7 +404,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             htmlFor="flexible-dates" 
             className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
           >
-            My dates are flexible
+            {t("search.flexible_dates")}
           </Label>
         </div>
       </div>
@@ -415,7 +417,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           className="gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
         >
           <Search className="w-4 h-4" />
-          Search Flights
+          {t("search.search_flights")}
         </Button>
       </div>
     </div>
