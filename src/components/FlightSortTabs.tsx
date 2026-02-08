@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, Zap, Star } from "lucide-react";
 import { Flight, getFlightStats, formatDuration, formatPrice } from "@/lib/flightNormalizer";
@@ -29,7 +30,7 @@ const tabs = [
   },
 ];
 
-const FlightSortTabs = ({ flights, sortBy, onSortChange }: FlightSortTabsProps) => {
+const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsProps) => {
   const stats = getFlightStats(flights);
   if (!stats) return null;
 
@@ -47,7 +48,7 @@ const FlightSortTabs = ({ flights, sortBy, onSortChange }: FlightSortTabsProps) 
             <TabsTrigger
               key={key}
               value={key}
-              className="flex flex-col gap-0 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md min-w-0 transition-all"
+              className="flex flex-col gap-0 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md min-w-0 transition-colors"
             >
               <div className="flex items-center gap-1 min-w-0">
                 <Icon
@@ -73,6 +74,7 @@ const FlightSortTabs = ({ flights, sortBy, onSortChange }: FlightSortTabsProps) 
       </Tabs>
     </div>
   );
-};
+});
+FlightSortTabs.displayName = "FlightSortTabs";
 
 export default FlightSortTabs;

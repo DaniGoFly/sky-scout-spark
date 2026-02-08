@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, AlertCircle, Plane, SlidersHorizontal, Loader2 } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plane, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSortTabs from "./FlightSortTabs";
@@ -24,6 +24,23 @@ const DEFAULT_FILTERS: FilterState = {
 
 const MAX_DISPLAY = 25;
 
+// ── Memoized sub-sections to isolate re-renders ──
+
+const MemoizedSortTabs = memo(FlightSortTabs);
+const MemoizedActiveChips = memo(ActiveFilterChips);
+const MemoizedMobileDrawer = memo(MobileFiltersDrawer);
+
+// ── Helper: parse departure hour from time string ──
+function parseDepartureHour(timeStr: string): number | null {
+  const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if (!match) return null;
+  let hour = parseInt(match[1], 10);
+  const ampm = match[3]?.toUpperCase();
+  if (ampm === "PM" && hour !== 12) hour += 12;
+  if (ampm === "AM" && hour === 12) hour = 0;
+  return hour;
+}
+
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -34,6 +51,7 @@ const LiveFlightResults = () => {
     error,
     isSearching,
     searchFlights,
+    cancelSearch,
   } = useLiveFlightSearch();
 
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
@@ -61,6 +79,10 @@ const LiveFlightResults = () => {
     if (!from || !to || !depart) return;
     if (searchKey === prevSearchKeyRef.current) return;
     prevSearchKeyRef.current = searchKey;
+
+    // Cancel any in-flight search
+    cancelSearch();
+
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
     searchFlights({
@@ -73,9 +95,9 @@ const LiveFlightResults = () => {
       sort: "best",
       limit: 50,
     });
-  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, searchFlights]);
+  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, searchFlights, cancelSearch]);
 
-  // ── Actual price range for chips ──
+  // ── Actual price range (stable ref for chips) ──
   const actualPriceRange = useMemo((): [number, number] => {
     if (!rawFlights.length) return [0, 10000];
     const prices = rawFlights.map((f) => f.price?.amount).filter((p) => p > 0 && Number.isFinite(p));
@@ -85,15 +107,13 @@ const LiveFlightResults = () => {
     return [min, Math.max(max, min + 100)];
   }, [rawFlights]);
 
-  // ── Filter layer ──
+  // ── Filter layer (memoized) ──
   const filteredFlights = useMemo(() => {
-    let result = [...rawFlights];
+    let result = rawFlights;
 
     if (filters.directOnly) {
       result = result.filter((f) => f.stopsCount === 0);
-    }
-
-    if (filters.stops.length > 0 && !filters.directOnly) {
+    } else if (filters.stops.length > 0) {
       result = result.filter((flight) =>
         filters.stops.some((stop) => {
           if (stop === "direct") return flight.stopsCount === 0;
@@ -111,21 +131,19 @@ const LiveFlightResults = () => {
       });
     }
 
-    result = result.filter(
-      (flight) =>
-        flight.price.amount >= filters.priceRange[0] &&
-        flight.price.amount <= filters.priceRange[1]
-    );
+    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) {
+      result = result.filter(
+        (flight) =>
+          flight.price.amount >= filters.priceRange[0] &&
+          flight.price.amount <= filters.priceRange[1]
+      );
+    }
 
     if (filters.departureTime.length > 0) {
       result = result.filter((flight) => {
         if (!flight.departureTime) return true;
-        const timeParts = flight.departureTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
-        if (!timeParts) return true;
-        let hour = parseInt(timeParts[1], 10);
-        const ampm = timeParts[3]?.toUpperCase();
-        if (ampm === "PM" && hour !== 12) hour += 12;
-        if (ampm === "AM" && hour === 12) hour = 0;
+        const hour = parseDepartureHour(flight.departureTime);
+        if (hour === null) return true;
         return filters.departureTime.some((time) => {
           if (time === "morning") return hour >= 6 && hour < 12;
           if (time === "afternoon") return hour >= 12 && hour < 18;
@@ -139,7 +157,7 @@ const LiveFlightResults = () => {
     return result;
   }, [rawFlights, filters]);
 
-  // ── Sort layer ──
+  // ── Sort layer (memoized), capped at MAX_DISPLAY ──
   const sortedFlights = useMemo(() => {
     const sorted = [...filteredFlights];
     switch (sortBy) {
@@ -161,25 +179,24 @@ const LiveFlightResults = () => {
     return sorted.slice(0, MAX_DISPLAY);
   }, [filteredFlights, sortBy]);
 
+  // ── Stable callbacks ──
   const handleSortChange = useCallback((newSort: "best" | "cheapest" | "fastest") => {
     setSortBy(newSort);
+  }, []);
+
+  const handleFiltersChange = useCallback((newFilters: FilterState) => {
+    setFilters(newFilters);
   }, []);
 
   const handleRemoveFilter = useCallback(
     (key: keyof FilterState, value?: string) => {
       setFilters((prev) => {
         const next = { ...prev };
-        if (key === "directOnly") {
-          next.directOnly = false;
-        } else if (key === "priceRange") {
-          next.priceRange = actualPriceRange;
-        } else if (key === "stops" && value) {
-          next.stops = prev.stops.filter((s) => s !== value);
-        } else if (key === "airlines" && value) {
-          next.airlines = prev.airlines.filter((a) => a !== value);
-        } else if (key === "departureTime" && value) {
-          next.departureTime = prev.departureTime.filter((t) => t !== value);
-        }
+        if (key === "directOnly") next.directOnly = false;
+        else if (key === "priceRange") next.priceRange = actualPriceRange;
+        else if (key === "stops" && value) next.stops = prev.stops.filter((s) => s !== value);
+        else if (key === "airlines" && value) next.airlines = prev.airlines.filter((a) => a !== value);
+        else if (key === "departureTime" && value) next.departureTime = prev.departureTime.filter((t) => t !== value);
         return next;
       });
     },
@@ -187,23 +204,22 @@ const LiveFlightResults = () => {
   );
 
   const handleClearAllFilters = useCallback(() => {
-    setFilters({
-      ...DEFAULT_FILTERS,
-      priceRange: actualPriceRange,
-    });
+    setFilters({ ...DEFAULT_FILTERS, priceRange: actualPriceRange });
   }, [actualPriceRange]);
+
+  const handleDirectOnlyChange = useCallback((checked: boolean) => {
+    setFilters((prev) => ({ ...prev, directOnly: checked }));
+  }, []);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.directOnly) count++;
-    count += filters.stops.length;
-    count += filters.airlines.length;
-    count += filters.departureTime.length;
+    count += filters.stops.length + filters.airlines.length + filters.departureTime.length;
     if (filters.priceRange[0] !== actualPriceRange[0] || filters.priceRange[1] !== actualPriceRange[1]) count++;
     return count;
   }, [filters, actualPriceRange]);
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = useCallback((dateStr: string) => {
     try {
       return new Date(dateStr).toLocaleDateString("en-US", {
         weekday: "short",
@@ -213,7 +229,7 @@ const LiveFlightResults = () => {
     } catch {
       return dateStr;
     }
-  };
+  }, []);
 
   const handleRetry = useCallback(() => {
     prevSearchKeyRef.current = "";
@@ -261,10 +277,9 @@ const LiveFlightResults = () => {
               </p>
             </div>
 
-            {/* Mobile/tablet filters button */}
             <div className="lg:hidden">
-              <MobileFiltersDrawer
-                onFiltersChange={setFilters}
+              <MemoizedMobileDrawer
+                onFiltersChange={handleFiltersChange}
                 activeFiltersCount={activeFiltersCount}
                 flightCount={filteredFlights.length}
                 flights={rawFlights}
@@ -272,7 +287,6 @@ const LiveFlightResults = () => {
             </div>
           </div>
 
-          {/* Compact search bar - hide on small mobile for space */}
           <div className="hidden sm:block">
             <CompactSearchBar />
           </div>
@@ -331,29 +345,24 @@ const LiveFlightResults = () => {
             {/* Desktop sidebar */}
             <aside className="hidden lg:block sticky top-[140px] h-fit max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin">
               <FlightFilters
-                onFiltersChange={setFilters}
+                onFiltersChange={handleFiltersChange}
                 flights={rawFlights}
                 showDirectOnly
-                onDirectOnlyChange={(checked) => {
-                  setFilters((prev) => ({ ...prev, directOnly: checked }));
-                }}
+                onDirectOnlyChange={handleDirectOnlyChange}
               />
             </aside>
 
             {/* Results column */}
             <div className="min-w-0 space-y-3">
-              {/* Sort tabs */}
-              <FlightSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={handleSortChange} />
+              <MemoizedSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={handleSortChange} />
 
-              {/* Active filter chips */}
-              <ActiveFilterChips
+              <MemoizedActiveChips
                 filters={filters}
                 actualPriceRange={actualPriceRange}
                 onRemoveFilter={handleRemoveFilter}
                 onClearAll={handleClearAllFilters}
               />
 
-              {/* Results count */}
               <div className="text-xs md:text-sm text-muted-foreground px-1">
                 <span className="font-semibold text-foreground">{filteredFlights.length}</span> result
                 {filteredFlights.length !== 1 ? "s" : ""} found
