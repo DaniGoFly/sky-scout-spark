@@ -149,25 +149,25 @@ const MobileFiltersDrawer = ({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 lg:hidden shrink-0">
+        <Button variant="outline" size="sm" className="gap-2 shrink-0">
           <Filter className="w-4 h-4" />
-          <span className="truncate">Filters</span>
+          <span>Filters</span>
           {activeFiltersCount > 0 && (
-            <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center shrink-0">
+            <span className="bg-primary text-primary-foreground text-[10px] rounded-full w-5 h-5 flex items-center justify-center shrink-0">
               {activeFiltersCount}
             </span>
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
-        <SheetHeader className="pb-4 border-b border-border">
+      <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl flex flex-col">
+        <SheetHeader className="pb-3 border-b border-border shrink-0">
           <div className="flex items-center justify-between">
-            <SheetTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <Filter className="w-4 h-4" />
               Filters
             </SheetTitle>
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1 text-muted-foreground">
+              <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1 text-xs text-muted-foreground">
                 <RotateCcw className="w-3 h-3" />
                 Clear all
               </Button>
@@ -175,8 +175,8 @@ const MobileFiltersDrawer = ({
           </div>
         </SheetHeader>
 
-        <div className="overflow-y-auto py-6 space-y-6 max-h-[calc(85vh-160px)]">
-          {/* Direct Flights Only - Quick Filter */}
+        <div className="flex-1 overflow-y-auto py-5 space-y-5">
+          {/* Direct Flights Only */}
           <div className="p-3 bg-primary/5 rounded-xl border border-primary/20">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -195,14 +195,14 @@ const MobileFiltersDrawer = ({
           </div>
 
           {/* Stops */}
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             <h3 className="text-sm font-semibold text-foreground">Stops</h3>
             <div className="flex flex-wrap gap-2">
               {STOPS.map((stop) => (
                 <button
                   key={stop.value}
                   onClick={() => toggleStop(stop.value)}
-                  className={`px-3 py-2 rounded-full text-sm border transition-colors truncate ${
+                  className={`px-3 py-2 rounded-full text-sm border transition-colors ${
                     stops.includes(stop.value)
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background border-border text-foreground hover:border-primary/50"
@@ -214,8 +214,8 @@ const MobileFiltersDrawer = ({
             </div>
           </div>
 
-          {/* Price Range with Debounce */}
-          <div className="space-y-4">
+          {/* Price Range */}
+          <div className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground">Price Range</h3>
             <div className="px-1">
               <Slider
@@ -234,16 +234,16 @@ const MobileFiltersDrawer = ({
             </div>
           </div>
 
-          {/* Airlines - Dynamic */}
+          {/* Airlines */}
           {availableAirlines.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <h3 className="text-sm font-semibold text-foreground">Airlines</h3>
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+              <div className="flex flex-wrap gap-2">
                 {availableAirlines.map((airline) => (
                   <button
                     key={airline}
                     onClick={() => toggleAirline(airline)}
-                    className={`px-3 py-2 rounded-lg text-sm border text-left transition-colors truncate min-w-0 ${
+                    className={`px-3 py-2 rounded-full text-sm border transition-colors truncate max-w-[160px] ${
                       airlines.includes(airline)
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-background border-border text-foreground hover:border-primary/50"
@@ -258,14 +258,14 @@ const MobileFiltersDrawer = ({
           )}
 
           {/* Departure Time */}
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             <h3 className="text-sm font-semibold text-foreground">Departure Time</h3>
             <div className="grid grid-cols-2 gap-2">
               {DEPARTURE_TIMES.map((time) => (
                 <button
                   key={time.value}
                   onClick={() => toggleDepartureTime(time.value)}
-                  className={`px-3 py-2 rounded-lg text-sm border text-left transition-colors truncate ${
+                  className={`px-3 py-2.5 rounded-lg text-sm border text-left transition-colors ${
                     departureTime.includes(time.value)
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background border-border text-foreground hover:border-primary/50"
@@ -278,11 +278,11 @@ const MobileFiltersDrawer = ({
           </div>
         </div>
 
-        <SheetFooter className="pt-4 border-t border-border gap-2">
+        <SheetFooter className="pt-3 border-t border-border gap-2 shrink-0">
           <SheetClose asChild>
-            <Button variant="outline" className="flex-1">Cancel</Button>
+            <Button variant="outline" className="flex-1 min-h-[44px]">Cancel</Button>
           </SheetClose>
-          <Button onClick={() => setOpen(false)} className="flex-1">
+          <Button onClick={() => setOpen(false)} className="flex-1 min-h-[44px]">
             Show {flightCount} flights
           </Button>
         </SheetFooter>

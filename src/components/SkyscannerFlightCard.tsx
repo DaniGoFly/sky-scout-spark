@@ -1,12 +1,11 @@
 /**
  * Skyscanner-style Flight Card
- * Display-only component - renders backend data directly
- * Mobile-safe: opens booking tab synchronously in click handler
- * Responsive: vertical stacking + text-only itinerary on mobile
+ * Responsive: vertical text-only on mobile, rich timeline on tablet+
+ * Mobile-safe booking: synchronous tab open + async URL resolution
  */
 
 import { useState, useRef } from "react";
-import { Heart, Plane, ChevronRight, Loader2 } from "lucide-react";
+import { Heart, Plane, ChevronRight, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,6 +23,151 @@ const safeText = (value: string | undefined | null, fallback = "—"): string =>
   if (!value || value === "undefined" || value === "null") return fallback;
   return value;
 };
+
+/* ─── Sub-components ─── */
+
+const AirlineHeader = ({
+  logo,
+  name,
+  flightNumber,
+  isBestValue,
+  isMobile,
+}: {
+  logo: string;
+  name: string;
+  flightNumber: string;
+  isBestValue: boolean;
+  isMobile: boolean;
+}) => (
+  <div className="flex items-center gap-3 min-w-0">
+    <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+      {logo ? (
+        <img
+          src={logo}
+          alt={name}
+          className="w-7 h-7 md:w-8 md:h-8 object-contain"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+      ) : (
+        <Plane className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+      )}
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="font-medium text-foreground text-sm truncate">{name || "Airline"}</p>
+      {flightNumber && (
+        <p className="text-xs text-muted-foreground truncate">{flightNumber}</p>
+      )}
+    </div>
+    {isBestValue && isMobile && (
+      <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5 flex-shrink-0">
+        Best
+      </Badge>
+    )}
+  </div>
+);
+
+/** Mobile: text-only compact leg */
+const MobileLeg = ({
+  label,
+  origin,
+  destination,
+  departureTime,
+  arrivalTime,
+  durationMinutes,
+  stopsCount,
+  stopsAirports,
+}: {
+  label: string | null;
+  origin: string;
+  destination: string;
+  departureTime: string;
+  arrivalTime: string;
+  durationMinutes: number;
+  stopsCount: number;
+  stopsAirports: string[];
+}) => (
+  <div className="flex flex-col gap-0.5">
+    {label && (
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+        {label}
+      </span>
+    )}
+    <p className="text-[15px] font-bold text-foreground leading-snug">
+      {safeText(origin, "---")} {safeText(departureTime)} → {safeText(destination, "---")} {safeText(arrivalTime)}
+    </p>
+    <p className={`text-xs font-medium ${stopsCount === 0 ? "text-green-600" : "text-amber-600"}`}>
+      {getStopsLabel(stopsCount, stopsAirports)} · {formatDuration(durationMinutes)}
+    </p>
+  </div>
+);
+
+/** Desktop/tablet: timeline leg */
+const DesktopLeg = ({
+  label,
+  origin,
+  destination,
+  departureTime,
+  arrivalTime,
+  durationMinutes,
+  stopsCount,
+  stopsAirports,
+}: {
+  label: string | null;
+  origin: string;
+  destination: string;
+  departureTime: string;
+  arrivalTime: string;
+  durationMinutes: number;
+  stopsCount: number;
+  stopsAirports: string[];
+}) => (
+  <div className="flex flex-col gap-1">
+    {label && (
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
+        {label}
+      </span>
+    )}
+    <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
+      <div className="flex-shrink-0 text-left" style={{ minWidth: "56px" }}>
+        <p className="text-lg xl:text-xl font-bold text-foreground leading-tight">
+          {safeText(departureTime)}
+        </p>
+        <p className="text-xs font-medium text-muted-foreground uppercase">
+          {safeText(origin, "---")}
+        </p>
+      </div>
+      <div className="flex-1 flex flex-col items-center px-2" style={{ minWidth: "80px" }}>
+        <span className="text-[11px] text-muted-foreground font-medium mb-1 whitespace-nowrap">
+          {formatDuration(durationMinutes)}
+        </span>
+        <div className="w-full h-[2px] bg-border relative">
+          <div className="absolute left-0 w-1.5 h-1.5 bg-muted-foreground rounded-full -translate-y-[2px]" />
+          <Plane className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary rotate-90" />
+          <div className="absolute right-0 w-1.5 h-1.5 bg-primary rounded-full -translate-y-[2px]" />
+        </div>
+        <span
+          className={`text-[11px] mt-1 font-medium whitespace-nowrap ${
+            stopsCount === 0 ? "text-green-600" : "text-amber-600"
+          }`}
+        >
+          {getStopsLabel(stopsCount, stopsAirports)}
+        </span>
+      </div>
+      <div className="flex-shrink-0 text-right" style={{ minWidth: "56px" }}>
+        <p className="text-lg xl:text-xl font-bold text-foreground leading-tight">
+          {safeText(arrivalTime)}
+        </p>
+        <p className="text-xs font-medium text-muted-foreground uppercase">
+          {safeText(destination, "---")}
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
+/* ─── Main card ─── */
 
 const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
@@ -90,133 +234,33 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
     }
   };
 
-  /* ─── Mobile: text-only leg ─── */
-  const renderMobileLeg = (
-    label: string | null,
-    origin: string,
-    destination: string,
-    departureTime: string,
-    arrivalTime: string,
-    durationMinutes: number,
-    stopsCount: number,
-    stopsAirports: string[]
-  ) => (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
-          {label}
-        </span>
-      )}
-      <p className="text-base font-bold text-foreground leading-snug">
-        {safeText(origin, "---")} {safeText(departureTime)} → {safeText(destination, "---")} {safeText(arrivalTime)}
-      </p>
-      <p className={`text-xs font-medium ${stopsCount === 0 ? "text-green-600" : "text-amber-600"}`}>
-        {getStopsLabel(stopsCount, stopsAirports)} · {formatDuration(durationMinutes)}
-      </p>
-    </div>
+  const LegComponent = isMobile ? MobileLeg : DesktopLeg;
+
+  const saveButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={handleSave}
+      className={`h-9 w-9 rounded-full flex-shrink-0 ${
+        isSaved ? "text-red-500" : "text-muted-foreground hover:text-foreground"
+      }`}
+      aria-label={isSaved ? "Unsave flight" : "Save flight"}
+    >
+      <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
+    </Button>
   );
 
-  /* ─── Desktop: timeline leg (unchanged) ─── */
-  const renderDesktopLeg = (
-    label: string | null,
-    origin: string,
-    destination: string,
-    departureTime: string,
-    arrivalTime: string,
-    durationMinutes: number,
-    stopsCount: number,
-    stopsAirports: string[]
-  ) => (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
-          {label}
-        </span>
-      )}
-      <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-        <div className="flex-shrink-0 text-left" style={{ minWidth: "60px" }}>
-          <p className="text-xl font-bold text-foreground leading-tight">
-            {safeText(departureTime)}
-          </p>
-          <p className="text-xs font-medium text-muted-foreground uppercase">
-            {safeText(origin, "---")}
-          </p>
-        </div>
-        <div className="flex-1 flex flex-col items-center px-2" style={{ minWidth: "100px" }}>
-          <span className="text-xs text-muted-foreground font-medium mb-1 whitespace-nowrap">
-            {formatDuration(durationMinutes)}
-          </span>
-          <div className="w-full h-[2px] bg-border relative">
-            <div className="absolute left-0 w-2 h-2 bg-muted-foreground rounded-full -translate-y-[3px]" />
-            <Plane className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-primary rotate-90" />
-            <div className="absolute right-0 w-2 h-2 bg-primary rounded-full -translate-y-[3px]" />
-          </div>
-          <span
-            className={`text-xs mt-1 font-medium whitespace-nowrap ${
-              stopsCount === 0 ? "text-green-600" : "text-amber-600"
-            }`}
-          >
-            {getStopsLabel(stopsCount, stopsAirports)}
-          </span>
-        </div>
-        <div className="flex-shrink-0 text-right" style={{ minWidth: "60px" }}>
-          <p className="text-xl font-bold text-foreground leading-tight">
-            {safeText(arrivalTime)}
-          </p>
-          <p className="text-xs font-medium text-muted-foreground uppercase">
-            {safeText(destination, "---")}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderLeg = isMobile ? renderMobileLeg : renderDesktopLeg;
-
-  /* ─── Shared airline header ─── */
-  const airlineHeader = (
-    <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-        {airlineLogo ? (
-          <img
-            src={airlineLogo}
-            alt={airlineName}
-            className="w-8 h-8 object-contain"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-        ) : (
-          <Plane className="w-5 h-5 text-muted-foreground" />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-medium text-foreground text-sm truncate">
-          {airlineName || "Airline"}
-        </p>
-        {flightNumber && (
-          <p className="text-xs text-muted-foreground truncate">{flightNumber}</p>
-        )}
-      </div>
-      {isBestValue && isMobile && (
-        <Badge className="bg-primary text-primary-foreground shadow-md px-3 py-0.5 text-xs flex-shrink-0">
-          Best
-        </Badge>
-      )}
-    </div>
-  );
-
-  /* ─── CTA button (shared) ─── */
   const ctaButton = canResolve ? (
     <Button
       type="button"
       onClick={handleViewDeal}
       disabled={isResolving}
       size="default"
-      className={`gap-1 font-semibold text-sm whitespace-nowrap ${
-        isMobile ? "w-full min-h-[44px] text-base" : "px-6"
+      className={`gap-1.5 font-semibold whitespace-nowrap transition-all ${
+        isMobile
+          ? "w-full min-h-[48px] text-base"
+          : "px-5 min-w-[130px]"
       }`}
-      style={{ minWidth: isMobile ? undefined : "120px" }}
     >
       {isResolving ? (
         <>
@@ -226,7 +270,7 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
       ) : (
         <>
           <span>View Deal</span>
-          <ChevronRight className="w-4 h-4" />
+          <ExternalLink className="w-3.5 h-3.5" />
         </>
       )}
     </Button>
@@ -237,10 +281,9 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
           <Button
             disabled
             size="default"
-            className={`gap-1 font-semibold text-sm whitespace-nowrap opacity-50 ${
-              isMobile ? "w-full min-h-[44px] text-base" : "px-6"
+            className={`gap-1 font-semibold whitespace-nowrap opacity-50 ${
+              isMobile ? "w-full min-h-[48px] text-base" : "px-5 min-w-[130px]"
             }`}
-            style={{ minWidth: isMobile ? undefined : "120px" }}
           >
             <span>No booking link</span>
           </Button>
@@ -252,7 +295,7 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
     </TooltipProvider>
   );
 
-  /* ═══════════ MOBILE LAYOUT ═══════════ */
+  /* ═══════ MOBILE LAYOUT (≤768px) ═══════ */
   if (isMobile) {
     return (
       <div
@@ -261,76 +304,77 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
         }`}
       >
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
-
         <div className="p-4 flex flex-col gap-3">
-          {/* Row 1: Airline + badge */}
-          {airlineHeader}
+          {/* 1. Airline + badge */}
+          <AirlineHeader
+            logo={airlineLogo}
+            name={airlineName}
+            flightNumber={flightNumber}
+            isBestValue={isBestValue}
+            isMobile
+          />
 
-          {/* Row 2: Outbound leg */}
-          {renderLeg(
-            flight.return ? "Outbound" : null,
-            flight.origin,
-            flight.destination,
-            flight.departureTime,
-            flight.arrivalTime,
-            flight.durationMinutes,
-            flight.stopsCount,
-            flight.stopsAirports
-          )}
+          {/* 2. Outbound */}
+          <LegComponent
+            label={flight.return ? "Outbound" : null}
+            origin={flight.origin}
+            destination={flight.destination}
+            departureTime={flight.departureTime}
+            arrivalTime={flight.arrivalTime}
+            durationMinutes={flight.durationMinutes}
+            stopsCount={flight.stopsCount}
+            stopsAirports={flight.stopsAirports}
+          />
 
-          {/* Row 3: Return leg */}
+          {/* 3. Return */}
           {flight.return && (
-            <div className="pt-2 border-t border-border/50">
-              {renderLeg(
-                "Return",
-                flight.return.origin,
-                flight.return.destination,
-                flight.return.departureTime,
-                flight.return.arrivalTime,
-                flight.return.durationMinutes,
-                flight.return.stopsCount,
-                flight.return.stopsAirports
-              )}
+            <div className="pt-2 border-t border-border/40">
+              <LegComponent
+                label="Return"
+                origin={flight.return.origin}
+                destination={flight.return.destination}
+                departureTime={flight.return.departureTime}
+                arrivalTime={flight.return.arrivalTime}
+                durationMinutes={flight.return.durationMinutes}
+                stopsCount={flight.return.stopsCount}
+                stopsAirports={flight.return.stopsAirports}
+              />
             </div>
           )}
 
-          {/* Row 4: Price */}
-          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+          {/* 4. Price row */}
+          <div className="flex items-center justify-between pt-2 border-t border-border/40">
             <div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-bold text-foreground leading-tight">
                 {formatPrice(flight.price.amount, flight.price.currency)}
               </p>
-              <p className="text-xs text-muted-foreground">per person</p>
+              <p className="text-[11px] text-muted-foreground">per person</p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSave}
-              className={`h-9 w-9 rounded-full flex-shrink-0 ${
-                isSaved ? "text-red-500" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
-            </Button>
+            {saveButton}
           </div>
 
-          {/* Row 5: Full-width CTA */}
+          {/* 5. CTA */}
           {ctaButton}
+
+          {/* Trust microcopy */}
+          <p className="text-[10px] text-muted-foreground text-center leading-tight">
+            Opens official partner booking · Price may change
+          </p>
         </div>
       </div>
     );
   }
 
-  /* ═══════════ DESKTOP LAYOUT (unchanged) ═══════════ */
+  /* ═══════ TABLET / DESKTOP LAYOUT (≥769px) ═══════ */
   return (
     <div
-      className={`relative bg-card rounded-xl border transition-all duration-200 hover:shadow-lg ${
-        isBestValue ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/40"
+      className={`relative bg-card rounded-xl border transition-all duration-200 hover:shadow-lg group ${
+        isBestValue ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/30"
       }`}
     >
       {isBestValue && (
-        <div className="absolute -top-3 left-6 z-10">
-          <Badge className="bg-primary text-primary-foreground shadow-md px-3 py-0.5 text-xs">
+        <div className="absolute -top-3 left-5 z-10">
+          <Badge className="bg-primary text-primary-foreground shadow-md px-3 py-0.5 text-[11px]">
             Best
           </Badge>
         </div>
@@ -338,66 +382,65 @@ const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
 
       <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
 
-      <div className="p-4 md:p-5">
+      <div className="p-4 lg:p-5">
         <div
-          className="flex flex-col gap-4 lg:grid lg:gap-4 lg:items-stretch"
-          style={{ gridTemplateColumns: "1fr 260px" }}
+          className="grid gap-4 items-stretch"
+          style={{ gridTemplateColumns: "1fr 220px" }}
         >
           {/* LEFT: Itinerary */}
-          <div className="flex flex-col gap-4" style={{ minWidth: 0 }}>
-            {airlineHeader}
+          <div className="flex flex-col gap-3 min-w-0">
+            <AirlineHeader
+              logo={airlineLogo}
+              name={airlineName}
+              flightNumber={flightNumber}
+              isBestValue={false}
+              isMobile={false}
+            />
 
-            {renderLeg(
-              flight.return ? "Outbound" : null,
-              flight.origin,
-              flight.destination,
-              flight.departureTime,
-              flight.arrivalTime,
-              flight.durationMinutes,
-              flight.stopsCount,
-              flight.stopsAirports
-            )}
+            <LegComponent
+              label={flight.return ? "Outbound" : null}
+              origin={flight.origin}
+              destination={flight.destination}
+              departureTime={flight.departureTime}
+              arrivalTime={flight.arrivalTime}
+              durationMinutes={flight.durationMinutes}
+              stopsCount={flight.stopsCount}
+              stopsAirports={flight.stopsAirports}
+            />
 
             {flight.return && (
-              <div className="pt-3 border-t border-border/50">
-                {renderLeg(
-                  "Return",
-                  flight.return.origin,
-                  flight.return.destination,
-                  flight.return.departureTime,
-                  flight.return.arrivalTime,
-                  flight.return.durationMinutes,
-                  flight.return.stopsCount,
-                  flight.return.stopsAirports
-                )}
+              <div className="pt-2 border-t border-border/40">
+                <LegComponent
+                  label="Return"
+                  origin={flight.return.origin}
+                  destination={flight.return.destination}
+                  departureTime={flight.return.departureTime}
+                  arrivalTime={flight.return.arrivalTime}
+                  durationMinutes={flight.return.durationMinutes}
+                  stopsCount={flight.return.stopsCount}
+                  stopsAirports={flight.return.stopsAirports}
+                />
               </div>
             )}
           </div>
 
-          {/* RIGHT: Price & CTA */}
-          <div
-            className="flex flex-col justify-between pt-4 border-t border-border/50 lg:pt-0 lg:border-t-0 lg:border-l lg:border-border/50 lg:pl-4"
-            style={{ minWidth: 0, flexShrink: 0 }}
-          >
-            <div className="flex flex-col items-start lg:items-end text-left lg:text-right">
-              <p className="text-2xl font-bold text-foreground whitespace-nowrap mt-0.5">
+          {/* RIGHT: Price + CTA */}
+          <div className="flex flex-col justify-between border-l border-border/40 pl-4 min-w-0">
+            <div className="flex flex-col items-end text-right">
+              <p className="text-2xl font-bold text-foreground whitespace-nowrap">
                 {formatPrice(flight.price.amount, flight.price.currency)}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">per person</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">per person</p>
             </div>
 
-            <div className="flex items-center gap-2 mt-4 lg:justify-end">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleSave}
-                className={`h-9 w-9 rounded-full flex-shrink-0 ${
-                  isSaved ? "text-red-500" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
-              </Button>
-              {ctaButton}
+            <div className="flex flex-col items-end gap-2 mt-3">
+              <div className="flex items-center gap-2">
+                {saveButton}
+                {ctaButton}
+              </div>
+              <p className="text-[10px] text-muted-foreground text-right leading-tight">
+                Opens partner booking · Price may change
+              </p>
             </div>
           </div>
         </div>
