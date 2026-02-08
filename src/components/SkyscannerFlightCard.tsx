@@ -2,6 +2,7 @@
  * Skyscanner-style Flight Card
  * Display-only component - renders backend data directly
  * Mobile-safe: opens booking tab synchronously in click handler
+ * Responsive: vertical stacking + text-only itinerary on mobile
  */
 
 import { useState, useRef } from "react";
@@ -12,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Flight, getAirlineName, getAirlineLogo, formatDuration, formatPrice, getStopsLabel } from "@/lib/flightNormalizer";
 import { resolveDeal } from "@/lib/flightSearchApi";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface FlightCardProps {
   flight: Flight;
@@ -23,15 +25,12 @@ const safeText = (value: string | undefined | null, fallback = "—"): string =>
   return value;
 };
 
-const FlightCard = ({
-  flight,
-  isBestValue = false,
-}: FlightCardProps) => {
+const FlightCard = ({ flight, isBestValue = false }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
+  const isMobile = useIsMobile();
 
-  // Check if we have the required deal resolution params
   const proposalId = flight.proposalId || flight.click_id || "";
   const searchId = flight.searchId || flight.search_id || "";
   const resultsBase = flight.resultsBase || flight.results_base || "";
@@ -55,33 +54,20 @@ const FlightCard = ({
     localStorage.setItem("savedFlights", JSON.stringify(saved));
   };
 
-  /**
-   * Mobile-safe View Deal handler.
-   * Opens a blank tab SYNCHRONOUSLY (satisfies iOS Safari user-gesture requirement),
-   * then resolves the deal URL and navigates the tab. If resolution fails, the tab
-   * is closed and a toast is shown. This prevents blank-white-screen issues.
-   */
   const handleViewDeal = async () => {
     if (!canResolve || isResolving) return;
-
-    // Open blank tab synchronously inside user gesture — required for mobile Safari
     const newTab = window.open("about:blank", "_blank");
-
     setIsResolving(true);
-
     try {
       const result = await resolveDeal({
         search_id: searchId,
         proposal_id: proposalId,
         results_base: resultsBase,
       });
-
       if (result.ok && result.deal_url) {
         if (newTab && !newTab.closed) {
-          // Navigate the pre-opened tab to the actual booking URL
           newTab.location.href = result.deal_url;
         } else {
-          // Fallback: if popup was blocked, use an anchor tag
           const a = document.createElement("a");
           a.href = result.deal_url;
           a.target = "_blank";
@@ -91,24 +77,47 @@ const FlightCard = ({
           document.body.removeChild(a);
         }
       } else {
-        // Close the blank tab on failure
         if (newTab && !newTab.closed) newTab.close();
-        console.error("Failed to resolve deal:", result.error);
         toast.error("Deal temporarily unavailable", {
           description: "Please try another option.",
         });
       }
-    } catch (err) {
+    } catch {
       if (newTab && !newTab.closed) newTab.close();
-      console.error("Error resolving deal:", err);
       toast.error("Deal temporarily unavailable. Please try another option.");
     } finally {
       setIsResolving(false);
     }
   };
 
-  // Render a single leg (outbound or return)
-  const renderLeg = (
+  /* ─── Mobile: text-only leg ─── */
+  const renderMobileLeg = (
+    label: string | null,
+    origin: string,
+    destination: string,
+    departureTime: string,
+    arrivalTime: string,
+    durationMinutes: number,
+    stopsCount: number,
+    stopsAirports: string[]
+  ) => (
+    <div className="flex flex-col gap-1">
+      {label && (
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+          {label}
+        </span>
+      )}
+      <p className="text-base font-bold text-foreground leading-snug">
+        {safeText(origin, "---")} {safeText(departureTime)} → {safeText(destination, "---")} {safeText(arrivalTime)}
+      </p>
+      <p className={`text-xs font-medium ${stopsCount === 0 ? "text-green-600" : "text-amber-600"}`}>
+        {getStopsLabel(stopsCount, stopsAirports)} · {formatDuration(durationMinutes)}
+      </p>
+    </div>
+  );
+
+  /* ─── Desktop: timeline leg (unchanged) ─── */
+  const renderDesktopLeg = (
     label: string | null,
     origin: string,
     destination: string,
@@ -125,7 +134,6 @@ const FlightCard = ({
         </span>
       )}
       <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-        {/* Departure */}
         <div className="flex-shrink-0 text-left" style={{ minWidth: "60px" }}>
           <p className="text-xl font-bold text-foreground leading-tight">
             {safeText(departureTime)}
@@ -134,8 +142,6 @@ const FlightCard = ({
             {safeText(origin, "---")}
           </p>
         </div>
-
-        {/* Flight path */}
         <div className="flex-1 flex flex-col items-center px-2" style={{ minWidth: "100px" }}>
           <span className="text-xs text-muted-foreground font-medium mb-1 whitespace-nowrap">
             {formatDuration(durationMinutes)}
@@ -153,8 +159,6 @@ const FlightCard = ({
             {getStopsLabel(stopsCount, stopsAirports)}
           </span>
         </div>
-
-        {/* Arrival */}
         <div className="flex-shrink-0 text-right" style={{ minWidth: "60px" }}>
           <p className="text-xl font-bold text-foreground leading-tight">
             {safeText(arrivalTime)}
@@ -167,13 +171,163 @@ const FlightCard = ({
     </div>
   );
 
+  const renderLeg = isMobile ? renderMobileLeg : renderDesktopLeg;
+
+  /* ─── Shared airline header ─── */
+  const airlineHeader = (
+    <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
+      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+        {airlineLogo ? (
+          <img
+            src={airlineLogo}
+            alt={airlineName}
+            className="w-8 h-8 object-contain"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+        ) : (
+          <Plane className="w-5 h-5 text-muted-foreground" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-foreground text-sm truncate">
+          {airlineName || "Airline"}
+        </p>
+        {flightNumber && (
+          <p className="text-xs text-muted-foreground truncate">{flightNumber}</p>
+        )}
+      </div>
+      {isBestValue && isMobile && (
+        <Badge className="bg-primary text-primary-foreground shadow-md px-3 py-0.5 text-xs flex-shrink-0">
+          Best
+        </Badge>
+      )}
+    </div>
+  );
+
+  /* ─── CTA button (shared) ─── */
+  const ctaButton = canResolve ? (
+    <Button
+      type="button"
+      onClick={handleViewDeal}
+      disabled={isResolving}
+      size="default"
+      className={`gap-1 font-semibold text-sm whitespace-nowrap ${
+        isMobile ? "w-full min-h-[44px] text-base" : "px-6"
+      }`}
+      style={{ minWidth: isMobile ? undefined : "120px" }}
+    >
+      {isResolving ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Opening…</span>
+        </>
+      ) : (
+        <>
+          <span>View Deal</span>
+          <ChevronRight className="w-4 h-4" />
+        </>
+      )}
+    </Button>
+  ) : (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            disabled
+            size="default"
+            className={`gap-1 font-semibold text-sm whitespace-nowrap opacity-50 ${
+              isMobile ? "w-full min-h-[44px] text-base" : "px-6"
+            }`}
+            style={{ minWidth: isMobile ? undefined : "120px" }}
+          >
+            <span>No booking link</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>This deal is currently unavailable</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
+  /* ═══════════ MOBILE LAYOUT ═══════════ */
+  if (isMobile) {
+    return (
+      <div
+        className={`relative bg-card rounded-xl border w-full box-border transition-all duration-200 ${
+          isBestValue ? "border-primary ring-2 ring-primary/20" : "border-border"
+        }`}
+      >
+        <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
+
+        <div className="p-4 flex flex-col gap-3">
+          {/* Row 1: Airline + badge */}
+          {airlineHeader}
+
+          {/* Row 2: Outbound leg */}
+          {renderLeg(
+            flight.return ? "Outbound" : null,
+            flight.origin,
+            flight.destination,
+            flight.departureTime,
+            flight.arrivalTime,
+            flight.durationMinutes,
+            flight.stopsCount,
+            flight.stopsAirports
+          )}
+
+          {/* Row 3: Return leg */}
+          {flight.return && (
+            <div className="pt-2 border-t border-border/50">
+              {renderLeg(
+                "Return",
+                flight.return.origin,
+                flight.return.destination,
+                flight.return.departureTime,
+                flight.return.arrivalTime,
+                flight.return.durationMinutes,
+                flight.return.stopsCount,
+                flight.return.stopsAirports
+              )}
+            </div>
+          )}
+
+          {/* Row 4: Price */}
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+            <div>
+              <p className="text-2xl font-bold text-foreground">
+                {formatPrice(flight.price.amount, flight.price.currency)}
+              </p>
+              <p className="text-xs text-muted-foreground">per person</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSave}
+              className={`h-9 w-9 rounded-full flex-shrink-0 ${
+                isSaved ? "text-red-500" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
+            </Button>
+          </div>
+
+          {/* Row 5: Full-width CTA */}
+          {ctaButton}
+        </div>
+      </div>
+    );
+  }
+
+  /* ═══════════ DESKTOP LAYOUT (unchanged) ═══════════ */
   return (
     <div
       className={`relative bg-card rounded-xl border transition-all duration-200 hover:shadow-lg ${
         isBestValue ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/40"
       }`}
     >
-      {/* Best Value Badge */}
       {isBestValue && (
         <div className="absolute -top-3 left-6 z-10">
           <Badge className="bg-primary text-primary-foreground shadow-md px-3 py-0.5 text-xs">
@@ -182,7 +336,6 @@ const FlightCard = ({
         </div>
       )}
 
-      {/* Hidden anchor for popup-blocked fallback */}
       <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
 
       <div className="p-4 md:p-5">
@@ -192,33 +345,8 @@ const FlightCard = ({
         >
           {/* LEFT: Itinerary */}
           <div className="flex flex-col gap-4" style={{ minWidth: 0 }}>
-            {/* Airline header */}
-            <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-                {airlineLogo ? (
-                  <img
-                    src={airlineLogo}
-                    alt={airlineName}
-                    className="w-8 h-8 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <Plane className="w-5 h-5 text-muted-foreground" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-foreground text-sm truncate">
-                  {airlineName || "Airline"}
-                </p>
-                {flightNumber && (
-                  <p className="text-xs text-muted-foreground truncate">{flightNumber}</p>
-                )}
-              </div>
-            </div>
+            {airlineHeader}
 
-            {/* Outbound leg */}
             {renderLeg(
               flight.return ? "Outbound" : null,
               flight.origin,
@@ -230,7 +358,6 @@ const FlightCard = ({
               flight.stopsAirports
             )}
 
-            {/* Return leg */}
             {flight.return && (
               <div className="pt-3 border-t border-border/50">
                 {renderLeg(
@@ -270,48 +397,7 @@ const FlightCard = ({
               >
                 <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
               </Button>
-
-              {/* View Deal button */}
-              {canResolve ? (
-                <Button
-                  type="button"
-                  onClick={handleViewDeal}
-                  disabled={isResolving}
-                  size="default"
-                  className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap"
-                  style={{ minWidth: "120px" }}
-                >
-                  {isResolving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Opening…</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>View Deal</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        disabled
-                        size="default"
-                        className="flex-1 lg:flex-none gap-1 font-semibold text-sm px-6 whitespace-nowrap opacity-50"
-                        style={{ minWidth: "120px" }}
-                      >
-                        <span>No booking link</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>This deal is currently unavailable</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              {ctaButton}
             </div>
           </div>
         </div>
