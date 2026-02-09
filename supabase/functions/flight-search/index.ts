@@ -255,16 +255,17 @@ serve(async (req) => {
       return json({ ok: false, error: "origin, destination, and depart_date are required" }, 400);
     }
 
-    // Build segments
-    const segments: Array<{ origin: string; destination: string; date: string }> = [
+    // Build directions for Travelpayouts new API (Nov 2025+)
+    const directions: Array<{ origin: string; destination: string; date: string }> = [
       { origin, destination, date: depart_date },
     ];
     if (return_date) {
-      segments.push({ origin: destination, destination: origin, date: return_date });
+      directions.push({ origin: destination, destination: origin, date: return_date });
     }
 
     const startPayload = {
       marker,
+      token,
       locale,
       currency_code,
       market_code: "US",
@@ -276,8 +277,10 @@ serve(async (req) => {
         "127.0.0.1",
       trip_class: "Y",
       passengers: { adults: Math.max(1, adults), children: 0, infants: 0 },
-      segments,
+      directions,
     };
+
+    console.log("[flight-search] startPayload", JSON.stringify(startPayload));
 
     const START_URL = "https://tickets-api.travelpayouts.com/search/affiliate/start";
     const startResp = await fetch(START_URL, {
@@ -285,14 +288,13 @@ serve(async (req) => {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(startPayload),
     });
 
     const startText = await startResp.text();
     if (!startResp.ok) {
-      console.error("[flight-search] start failed", startResp.status, startText.slice(0, 250));
+      console.error("[flight-search] start failed", startResp.status, startText.slice(0, 500));
       return json({ ok: false, error: "Failed to start search" }, 502);
     }
 
@@ -316,7 +318,7 @@ serve(async (req) => {
     for (let i = 0; i < 8; i++) {
       const pollResp = await fetch(RESULTS_URL, {
         method: "GET",
-        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        headers: { Accept: "application/json" },
       });
       const pollText = await pollResp.text();
       if (!pollResp.ok) {
