@@ -97,6 +97,7 @@
     "no_flights": "No flights found",
     "no_flights_sub": "We couldn't find any flights for this route and date.",
     "no_match": "No flights match your filters.",
+    "no_direct_flights": "No direct flights found. Try allowing 1 stop.",
     "clear_filters": "Clear all filters",
     "results_found": "{{count}} result found",
     "results_found_plural": "{{count}} results found",

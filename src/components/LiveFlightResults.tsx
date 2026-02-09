@@ -13,6 +13,7 @@ import ActiveFilterChips from "./ActiveFilterChips";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
+import { enrichFlights, type EnrichedFlight } from "@/lib/flightEnrichment";
 import { useLocale } from "@/hooks/useLocale";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -63,6 +64,7 @@ const LiveFlightResults = () => {
   const infants = Number(searchParams.get("infants")) || 0;
   const tripType = searchParams.get("trip") || "roundtrip";
   const tripClass = searchParams.get("class") || "economy";
+  const isRoundtrip = tripType === "roundtrip";
 
   const searchKey = useMemo(
     () => [from, to, depart, returnDate, adults, children, infants, tripType, tripClass, currency].join("|"),
@@ -80,62 +82,66 @@ const LiveFlightResults = () => {
       origin: from.toUpperCase(),
       destination: to.toUpperCase(),
       departDate: depart,
-      returnDate: tripType === "roundtrip" ? returnDate : undefined,
+      returnDate: isRoundtrip ? returnDate : undefined,
       adults: adults + children + infants,
       currency: currency,
       sort: "best",
       limit: 50,
     });
-  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, searchFlights, cancelSearch]);
+  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, searchFlights, cancelSearch]);
+
+  // ── Step 1: Enrich raw flights with canonical per-direction stop data ──
+  const enrichedFlights = useMemo<EnrichedFlight[]>(() => {
+    if (!rawFlights.length) return [];
+    return enrichFlights(rawFlights, from, to, isRoundtrip);
+  }, [rawFlights, from, to, isRoundtrip]);
 
   const actualPriceRange = useMemo((): [number, number] => {
-    if (!rawFlights.length) return [0, 10000];
-    const prices = rawFlights.map((f) => f.price?.amount).filter((p) => p > 0 && Number.isFinite(p));
+    if (!enrichedFlights.length) return [0, 10000];
+    const prices = enrichedFlights.map((f) => f.price?.amount).filter((p) => p > 0 && Number.isFinite(p));
     if (!prices.length) return [0, 10000];
     const min = Math.floor(Math.min(...prices) / 25) * 25;
     const max = Math.ceil(Math.max(...prices) / 25) * 25;
     return [min, Math.max(max, min + 100)];
-  }, [rawFlights]);
+  }, [enrichedFlights]);
 
-  /** Dominant currency from the API results (used for filter labels & consistency) */
+  /** Dominant currency from the API results */
   const flightsCurrency = useMemo(() => {
-    if (!rawFlights.length) return undefined;
-    return rawFlights[0]?.price?.currency || undefined;
-  }, [rawFlights]);
+    if (!enrichedFlights.length) return undefined;
+    return enrichedFlights[0]?.price?.currency || undefined;
+  }, [enrichedFlights]);
 
+  // ── Step 2: Filter using enriched canonical fields ──
   const filteredFlights = useMemo(() => {
-    let result = rawFlights;
+    let result = enrichedFlights;
 
-    // Helper: compute total stops for a flight (outbound + return)
-    const getOutboundStops = (f: typeof rawFlights[0]) => Math.max(0, f.stopsCount ?? 0);
-    const getReturnStops = (f: typeof rawFlights[0]) => f.return ? Math.max(0, f.return.stopsCount ?? 0) : 0;
-    const isDirectItinerary = (f: typeof rawFlights[0]) => getOutboundStops(f) === 0 && getReturnStops(f) === 0;
-    const getMaxStops = (f: typeof rawFlights[0]) => Math.max(getOutboundStops(f), getReturnStops(f));
-
+    // Direct-only: uses the canonical isDirectItinerary computed from segments
     if (filters.directOnly) {
-      result = result.filter(isDirectItinerary);
+      result = result.filter((f) => f.isDirectItinerary);
     } else if (filters.stops.length > 0) {
       result = result.filter((flight) => {
-        const outStops = getOutboundStops(flight);
-        const retStops = getReturnStops(flight);
-        const maxStops = Math.max(outStops, retStops);
+        // Use the maximum of outbound/return stops for category matching
+        const maxStops = Math.max(flight.outboundStopsTotal, flight.returnStopsTotal);
         return filters.stops.some((stop) => {
-          if (stop === "direct") return outStops === 0 && retStops === 0;
+          if (stop === "direct") return flight.isDirectItinerary;
           if (stop === "1stop") return maxStops === 1;
           if (stop === "2stops") return maxStops >= 2;
           return true;
         });
       });
     }
+
     if (filters.airlines.length > 0) {
       result = result.filter((flight) => {
         const flightAirline = getAirlineName(flight.airlines?.[0] || "");
         return filters.airlines.includes(flightAirline);
       });
     }
+
     if (filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) {
       result = result.filter((flight) => flight.price.amount >= filters.priceRange[0] && flight.price.amount <= filters.priceRange[1]);
     }
+
     if (filters.departureTime.length > 0) {
       result = result.filter((flight) => {
         if (!flight.departureTime) return true;
@@ -150,9 +156,11 @@ const LiveFlightResults = () => {
         });
       });
     }
-    return result;
-  }, [rawFlights, filters]);
 
+    return result;
+  }, [enrichedFlights, filters]);
+
+  // ── Step 3: Sort ──
   const sortedFlights = useMemo(() => {
     const sorted = [...filteredFlights];
     switch (sortBy) {
@@ -160,8 +168,8 @@ const LiveFlightResults = () => {
       case "fastest": sorted.sort((a, b) => a.durationMinutes - b.durationMinutes); break;
       case "best": default:
         sorted.sort((a, b) => {
-          const scoreA = a.price.amount * 0.6 + a.durationMinutes * 0.3 + a.stopsCount * 100;
-          const scoreB = b.price.amount * 0.6 + b.durationMinutes * 0.3 + b.stopsCount * 100;
+          const scoreA = a.price.amount * 0.6 + a.durationMinutes * 0.3 + a.outboundStopsTotal * 100;
+          const scoreB = b.price.amount * 0.6 + b.durationMinutes * 0.3 + b.outboundStopsTotal * 100;
           return scoreA - scoreB;
         }); break;
     }
@@ -197,9 +205,9 @@ const LiveFlightResults = () => {
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
     if (from && to && depart) {
-      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: tripType === "roundtrip" ? returnDate : undefined, adults: adults + children + infants, currency, sort: "best", limit: 50 });
+      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: isRoundtrip ? returnDate : undefined, adults: adults + children + infants, currency, sort: "best", limit: 50 });
     }
-  }, [from, to, depart, returnDate, adults, children, infants, tripType, currency, searchFlights]);
+  }, [from, to, depart, returnDate, adults, children, infants, isRoundtrip, currency, searchFlights]);
 
   const totalPassengers = adults + children + infants;
 
@@ -219,7 +227,7 @@ const LiveFlightResults = () => {
               </p>
             </div>
             <div className="lg:hidden">
-              <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={filteredFlights.length} flights={rawFlights} />
+              <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={filteredFlights.length} flights={enrichedFlights} />
             </div>
           </div>
           <div className="hidden sm:block"><CompactSearchBar /></div>
@@ -263,10 +271,10 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {status === "complete" && !isSearching && rawFlights.length > 0 && (
+        {status === "complete" && !isSearching && enrichedFlights.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
             <aside className="hidden lg:block sticky top-[140px] h-fit max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin">
-              <FlightFilters onFiltersChange={handleFiltersChange} flights={rawFlights} showDirectOnly onDirectOnlyChange={handleDirectOnlyChange} flightsCurrency={flightsCurrency} />
+              <FlightFilters onFiltersChange={handleFiltersChange} flights={enrichedFlights} showDirectOnly onDirectOnlyChange={handleDirectOnlyChange} flightsCurrency={flightsCurrency} />
             </aside>
             <div className="min-w-0 space-y-3">
               <MemoizedSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={handleSortChange} />
@@ -274,8 +282,8 @@ const LiveFlightResults = () => {
               <div className="text-xs md:text-sm text-muted-foreground px-1">
                 <span className="font-semibold text-foreground">{filteredFlights.length}</span>{" "}
                 {filteredFlights.length !== 1 ? t("results.results_found_plural", { count: filteredFlights.length }).replace(`${filteredFlights.length} `, "") : t("results.results_found", { count: 1 }).replace("1 ", "")}
-                {filteredFlights.length !== rawFlights.length && (
-                  <span className="ms-1 opacity-70">({t("results.from_total", { total: rawFlights.length })})</span>
+                {filteredFlights.length !== enrichedFlights.length && (
+                  <span className="ms-1 opacity-70">({t("results.from_total", { total: enrichedFlights.length })})</span>
                 )}
                 {sortedFlights.length < filteredFlights.length && (
                   <span className="ms-1 opacity-70">· {t("results.showing_top", { count: sortedFlights.length })}</span>
@@ -286,7 +294,11 @@ const LiveFlightResults = () => {
                   {sortedFlights.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <Plane className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                      <p className="mb-3 text-sm">{t("results.no_match")}</p>
+                      <p className="mb-3 text-sm">
+                        {filters.directOnly
+                          ? t("results.no_direct_flights", "No direct flights found. Try allowing 1 stop.")
+                          : t("results.no_match")}
+                      </p>
                       <Button variant="outline" size="sm" onClick={handleClearAllFilters}>{t("results.clear_filters")}</Button>
                     </div>
                   ) : (
