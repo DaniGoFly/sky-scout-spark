@@ -50,7 +50,7 @@ const LiveFlightResults = () => {
     flights: rawFlights, status, error, isSearching, searchFlights, cancelSearch,
   } = useLiveFlightSearch();
 
-  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
+  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("cheapest");
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
   const prevSearchKeyRef = useRef<string>("");
 
@@ -76,7 +76,7 @@ const LiveFlightResults = () => {
     prevSearchKeyRef.current = searchKey;
     cancelSearch();
     setFilters({ ...DEFAULT_FILTERS });
-    setSortBy("best");
+    setSortBy("cheapest");
     searchFlights({
       origin: from.toUpperCase(),
       destination: to.toUpperCase(),
@@ -84,7 +84,7 @@ const LiveFlightResults = () => {
       returnDate: isRoundtrip ? returnDate : undefined,
       adults: adults + children + infants,
       currency: currency,
-      sort: "best",
+      sort: "cheapest",
       limit: 50,
     });
   }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, searchFlights, cancelSearch]);
@@ -212,9 +212,9 @@ const LiveFlightResults = () => {
   const handleRetry = useCallback(() => {
     prevSearchKeyRef.current = "";
     setFilters({ ...DEFAULT_FILTERS });
-    setSortBy("best");
+    setSortBy("cheapest");
     if (from && to && depart) {
-      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: isRoundtrip ? returnDate : undefined, adults: adults + children + infants, currency, sort: "best", limit: 50 });
+      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: isRoundtrip ? returnDate : undefined, adults: adults + children + infants, currency, sort: "cheapest", limit: 50 });
     }
   }, [from, to, depart, returnDate, adults, children, infants, isRoundtrip, currency, searchFlights]);
 
@@ -312,7 +312,7 @@ const LiveFlightResults = () => {
                     </div>
                   ) : (
                     sortedFlights.map((flight, index) => (
-                      <FlightCard key={flight.id} flight={flight} isBestValue={index === 0 && sortBy === "best"} />
+                      <FlightCard key={flight.id} flight={flight} isBestValue={index === 0 && (sortBy === "best" || sortBy === "cheapest")} badgeLabel={sortBy === "cheapest" ? t("sort.cheapest") : undefined} />
                     ))
                   )}
                 </div>

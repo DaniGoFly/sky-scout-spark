@@ -109,7 +109,7 @@ const MultiCityResultsContent = () => {
     searchedRef.current = true;
 
     const sortInit: Record<number, "best" | "cheapest" | "fastest"> = {};
-    segments.forEach((_, i) => { sortInit[i] = "best"; });
+    segments.forEach((_, i) => { sortInit[i] = "cheapest"; });
     setSortBySegment(sortInit);
 
     const cacheKey = buildMcCacheKey(segments, totalPassengers, currency);
@@ -362,10 +362,10 @@ const MultiCityResultsContent = () => {
                             <span className="font-semibold text-foreground">{result.flights.length}</span> flights found
                           </p>
                           <div className="space-y-3">
-                            {displayFlights.map((flight, flightIndex) => {
-                              const showBestValue = flightIndex === 0 && currentSort === "best" && isEligibleForBestValue(flight);
+                          {displayFlights.map((flight, flightIndex) => {
+                              const showBestValue = flightIndex === 0 && (currentSort === "best" || currentSort === "cheapest") && isEligibleForBestValue(flight);
                               return (
-                                <SkyscannerFlightCard key={flight.id} flight={flight} isBestValue={showBestValue} />
+                                <SkyscannerFlightCard key={flight.id} flight={flight} isBestValue={showBestValue} badgeLabel={currentSort === "cheapest" ? "Cheapest" : undefined} />
                               );
                             })}
                           </div>

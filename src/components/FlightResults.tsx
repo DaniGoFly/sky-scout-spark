@@ -40,7 +40,7 @@ const FlightResults = () => {
     searchFlights 
   } = useFlightSearch();
   
-  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
+  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("cheapest");
   const [filters, setFilters] = useState<FilterState>({
     stopsMode: "any",
     airlines: [],
@@ -492,13 +492,14 @@ const FlightResults = () => {
 
               {/* Flight Cards */}
               {displayedFlights.map((flight, index) => {
-                const showBestValue = index === 0 && sortBy === "best" && isEligibleForBestValue(flight);
+                const showBestValue = index === 0 && (sortBy === "best" || sortBy === "cheapest") && isEligibleForBestValue(flight);
                 
                 return (
                   <SkyscannerFlightCard
                     key={flight.id}
                     flight={flight}
                     isBestValue={showBestValue}
+                    badgeLabel={sortBy === "cheapest" ? "Cheapest" : undefined}
                   />
                 );
               })}

@@ -22,6 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface FlightCardProps {
   flight: Flight | EnrichedFlight;
   isBestValue?: boolean;
+  badgeLabel?: string;
 }
 
 /** Type guard to check if flight has enriched stop data */
@@ -37,9 +38,9 @@ const safeText = (value: string | undefined | null, fallback = "—"): string =>
 /* ─── Sub-components (pure, no state) ─── */
 
 const AirlineHeader = memo(({
-  logo, name, flightNumber, isBestValue, isMobile, bestLabel,
+  logo, name, flightNumber, isBestValue, isMobile, bestLabel, badgeOverride,
 }: {
-  logo: string; name: string; flightNumber: string; isBestValue: boolean; isMobile: boolean; bestLabel: string;
+  logo: string; name: string; flightNumber: string; isBestValue: boolean; isMobile: boolean; bestLabel: string; badgeOverride?: string;
 }) => (
   <div className="flex items-center gap-3 min-w-0">
     <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -55,7 +56,7 @@ const AirlineHeader = memo(({
       {flightNumber && <p className="text-xs text-muted-foreground truncate">{flightNumber}</p>}
     </div>
     {isBestValue && isMobile && (
-      <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5 flex-shrink-0">{bestLabel}</Badge>
+      <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5 flex-shrink-0">{badgeOverride || bestLabel}</Badge>
     )}
   </div>
 ));
@@ -116,7 +117,7 @@ DesktopLeg.displayName = "DesktopLeg";
 
 /* ─── Main card ─── */
 
-const FlightCard = memo(({ flight, isBestValue = false }: FlightCardProps) => {
+const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
@@ -239,7 +240,7 @@ const FlightCard = memo(({ flight, isBestValue = false }: FlightCardProps) => {
         style={{ contain: "layout style" }}>
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
-          <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={isBestValue} isMobile bestLabel={t("card.best")} />
+          <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={isBestValue} isMobile bestLabel={t("card.best")} badgeOverride={badgeLabel} />
           <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={flight.departureTime} arrivalTime={flight.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} />
           {flight.return && (
             <div className="pt-2 border-t border-border/40">
@@ -266,7 +267,7 @@ const FlightCard = memo(({ flight, isBestValue = false }: FlightCardProps) => {
       style={{ contain: "layout style", transition: "box-shadow 0.15s ease, border-color 0.15s ease" }}>
       {isBestValue && (
         <div className="absolute -top-3 start-5 z-10">
-          <Badge className="bg-primary text-primary-foreground shadow-md px-3 py-0.5 text-[11px]">{t("card.best")}</Badge>
+          <Badge className="bg-primary text-primary-foreground shadow-md px-3 py-0.5 text-[11px]">{badgeLabel || t("card.best")}</Badge>
         </div>
       )}
       <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
