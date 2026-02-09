@@ -18,11 +18,10 @@ import { useLocale } from "@/hooks/useLocale";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DEFAULT_FILTERS: FilterState = {
-  stops: [],
+  stopsMode: "any",
   airlines: [],
   priceRange: [0, 10000],
   departureTime: [],
-  directOnly: false,
 };
 
 const MAX_DISPLAY = 25;
@@ -115,21 +114,15 @@ const LiveFlightResults = () => {
   const filteredFlights = useMemo(() => {
     let result = enrichedFlights;
 
-    // Direct-only: uses the canonical isDirectItinerary computed from segments
-    if (filters.directOnly) {
+    // Stops filter — single-choice using stopsMode
+    if (filters.stopsMode === "direct") {
       result = result.filter((f) => f.isDirectItinerary);
-    } else if (filters.stops.length > 0) {
-      result = result.filter((flight) => {
-        // Use the maximum of outbound/return stops for category matching
-        const maxStops = Math.max(flight.outboundStopsTotal, flight.returnStopsTotal);
-        return filters.stops.some((stop) => {
-          if (stop === "direct") return flight.isDirectItinerary;
-          if (stop === "1stop") return maxStops === 1;
-          if (stop === "2stops") return maxStops >= 2;
-          return true;
-        });
-      });
+    } else if (filters.stopsMode === "1") {
+      result = result.filter((f) => f.stopsTotal === 1);
+    } else if (filters.stopsMode === "2plus") {
+      result = result.filter((f) => f.stopsTotal >= 2);
     }
+    // "any" = no stops filter
 
     if (filters.airlines.length > 0) {
       result = result.filter((flight) => {
@@ -138,7 +131,7 @@ const LiveFlightResults = () => {
       });
     }
 
-    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) {
+    if (filters.priceRange[0] > actualPriceRange[0] || filters.priceRange[1] < actualPriceRange[1]) {
       result = result.filter((flight) => flight.price.amount >= filters.priceRange[0] && flight.price.amount <= filters.priceRange[1]);
     }
 
@@ -158,7 +151,7 @@ const LiveFlightResults = () => {
     }
 
     return result;
-  }, [enrichedFlights, filters]);
+  }, [enrichedFlights, filters, actualPriceRange]);
 
   // ── Step 3: Sort ──
   const sortedFlights = useMemo(() => {
@@ -178,24 +171,24 @@ const LiveFlightResults = () => {
 
   const handleSortChange = useCallback((s: "best" | "cheapest" | "fastest") => { setSortBy(s); }, []);
   const handleFiltersChange = useCallback((f: FilterState) => { setFilters(f); }, []);
+
   const handleRemoveFilter = useCallback((key: keyof FilterState, value?: string) => {
     setFilters((prev) => {
       const next = { ...prev };
-      if (key === "directOnly") next.directOnly = false;
+      if (key === "stopsMode") next.stopsMode = "any";
       else if (key === "priceRange") next.priceRange = actualPriceRange;
-      else if (key === "stops" && value) next.stops = prev.stops.filter((s) => s !== value);
       else if (key === "airlines" && value) next.airlines = prev.airlines.filter((a) => a !== value);
       else if (key === "departureTime" && value) next.departureTime = prev.departureTime.filter((dt) => dt !== value);
       return next;
     });
   }, [actualPriceRange]);
+
   const handleClearAllFilters = useCallback(() => { setFilters({ ...DEFAULT_FILTERS, priceRange: actualPriceRange }); }, [actualPriceRange]);
-  const handleDirectOnlyChange = useCallback((checked: boolean) => { setFilters((prev) => ({ ...prev, directOnly: checked })); }, []);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
-    if (filters.directOnly) count++;
-    count += filters.stops.length + filters.airlines.length + filters.departureTime.length;
+    if (filters.stopsMode !== "any") count++;
+    count += filters.airlines.length + filters.departureTime.length;
     if (filters.priceRange[0] !== actualPriceRange[0] || filters.priceRange[1] !== actualPriceRange[1]) count++;
     return count;
   }, [filters, actualPriceRange]);
@@ -227,7 +220,7 @@ const LiveFlightResults = () => {
               </p>
             </div>
             <div className="lg:hidden">
-              <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={filteredFlights.length} flights={enrichedFlights} />
+              <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={filteredFlights.length} flights={enrichedFlights} flightsCurrency={flightsCurrency} />
             </div>
           </div>
           <div className="hidden sm:block"><CompactSearchBar /></div>
@@ -274,11 +267,11 @@ const LiveFlightResults = () => {
         {status === "complete" && !isSearching && enrichedFlights.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
             <aside className="hidden lg:block sticky top-[140px] h-fit max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin">
-              <FlightFilters onFiltersChange={handleFiltersChange} flights={enrichedFlights} showDirectOnly onDirectOnlyChange={handleDirectOnlyChange} flightsCurrency={flightsCurrency} />
+              <FlightFilters onFiltersChange={handleFiltersChange} flights={enrichedFlights} flightsCurrency={flightsCurrency} />
             </aside>
             <div className="min-w-0 space-y-3">
               <MemoizedSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={handleSortChange} />
-              <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} />
+              <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} flightsCurrency={flightsCurrency} />
               <div className="text-xs md:text-sm text-muted-foreground px-1">
                 <span className="font-semibold text-foreground">{filteredFlights.length}</span>{" "}
                 {filteredFlights.length !== 1 ? t("results.results_found_plural", { count: filteredFlights.length }).replace(`${filteredFlights.length} `, "") : t("results.results_found", { count: 1 }).replace("1 ", "")}
@@ -295,7 +288,7 @@ const LiveFlightResults = () => {
                     <div className="text-center py-12 text-muted-foreground">
                       <Plane className="w-10 h-10 mx-auto mb-3 opacity-50" />
                       <p className="mb-3 text-sm">
-                        {filters.directOnly
+                        {filters.stopsMode === "direct"
                           ? t("results.no_direct_flights", "No direct flights found. Try allowing 1 stop.")
                           : t("results.no_match")}
                       </p>
