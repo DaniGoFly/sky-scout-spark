@@ -13,6 +13,8 @@ interface FlightFiltersProps {
   flights?: Flight[];
   showDirectOnly?: boolean;
   onDirectOnlyChange?: (checked: boolean) => void;
+  /** The currency code returned by the API for the current flight set */
+  flightsCurrency?: string;
 }
 
 export interface FilterState {
@@ -30,7 +32,8 @@ const FlightFilters = memo(({
   onFiltersChange, 
   flights = [],
   showDirectOnly = false,
-  onDirectOnlyChange 
+  onDirectOnlyChange,
+  flightsCurrency,
 }: FlightFiltersProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useLocale();
@@ -201,9 +204,9 @@ const FlightFilters = memo(({
           <Slider value={priceRange} onValueChange={handlePriceChange} min={actualPriceRange[0]} max={actualPriceRange[1]} step={25} className="w-full" />
         </div>
         <div className="flex justify-between items-center text-sm">
-          <span className="font-medium text-foreground">{formatPrice(priceRange[0])}</span>
+          <span className="font-medium text-foreground">{formatPrice(priceRange[0], flightsCurrency)}</span>
           <span className="text-muted-foreground">—</span>
-          <span className="font-medium text-foreground">{formatPrice(priceRange[1])}</span>
+          <span className="font-medium text-foreground">{formatPrice(priceRange[1], flightsCurrency)}</span>
         </div>
       </div>
 

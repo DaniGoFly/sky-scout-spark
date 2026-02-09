@@ -65,8 +65,8 @@ const LiveFlightResults = () => {
   const tripClass = searchParams.get("class") || "economy";
 
   const searchKey = useMemo(
-    () => [from, to, depart, returnDate, adults, children, infants, tripType, tripClass].join("|"),
-    [from, to, depart, returnDate, adults, children, infants, tripType, tripClass]
+    () => [from, to, depart, returnDate, adults, children, infants, tripType, tripClass, currency].join("|"),
+    [from, to, depart, returnDate, adults, children, infants, tripType, tripClass, currency]
   );
 
   useEffect(() => {
@@ -95,6 +95,12 @@ const LiveFlightResults = () => {
     const min = Math.floor(Math.min(...prices) / 25) * 25;
     const max = Math.ceil(Math.max(...prices) / 25) * 25;
     return [min, Math.max(max, min + 100)];
+  }, [rawFlights]);
+
+  /** Dominant currency from the API results (used for filter labels & consistency) */
+  const flightsCurrency = useMemo(() => {
+    if (!rawFlights.length) return undefined;
+    return rawFlights[0]?.price?.currency || undefined;
   }, [rawFlights]);
 
   const filteredFlights = useMemo(() => {
@@ -260,7 +266,7 @@ const LiveFlightResults = () => {
         {status === "complete" && !isSearching && rawFlights.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
             <aside className="hidden lg:block sticky top-[140px] h-fit max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin">
-              <FlightFilters onFiltersChange={handleFiltersChange} flights={rawFlights} showDirectOnly onDirectOnlyChange={handleDirectOnlyChange} />
+              <FlightFilters onFiltersChange={handleFiltersChange} flights={rawFlights} showDirectOnly onDirectOnlyChange={handleDirectOnlyChange} flightsCurrency={flightsCurrency} />
             </aside>
             <div className="min-w-0 space-y-3">
               <MemoizedSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={handleSortChange} />
