@@ -42,11 +42,10 @@ const FlightResults = () => {
   
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({
-    stops: [],
+    stopsMode: "any",
     airlines: [],
     priceRange: [0, 5000],
     departureTime: [],
-    directOnly: false,
   });
   const [visibleCount, setVisibleCount] = useState(RESULTS_PER_PAGE);
   const [selectedFlight, setSelectedFlight] = useState<LiveFlight | null>(null);
@@ -170,20 +169,13 @@ const FlightResults = () => {
   const processedFlights = useMemo(() => {
     let result = [...normalizedFlights];
 
-    // Apply direct-only filter from URL params or filter state
-    if (directOnly || filters.directOnly) {
+    // Apply stops filter using stopsMode (single-choice)
+    if (directOnly || filters.stopsMode === "direct") {
       result = result.filter(f => f.stopsCount === 0);
-    }
-
-    if (filters.stops.length > 0 && !directOnly && !filters.directOnly) {
-      result = result.filter((flight) => {
-        return filters.stops.some((stop) => {
-          if (stop === "direct") return flight.stopsCount === 0;
-          if (stop === "1stop") return flight.stopsCount === 1;
-          if (stop === "2stops") return flight.stopsCount >= 2;
-          return true;
-        });
-      });
+    } else if (filters.stopsMode === "1") {
+      result = result.filter(f => f.stopsCount === 1);
+    } else if (filters.stopsMode === "2plus") {
+      result = result.filter(f => f.stopsCount >= 2);
     }
 
     if (filters.airlines.length > 0) {
@@ -455,10 +447,6 @@ const FlightResults = () => {
               <FlightFilters
                 onFiltersChange={setFilters}
                 flights={normalizedFlights}
-                showDirectOnly={!directOnly}
-                onDirectOnlyChange={(checked) => {
-                  setFilters(prev => ({ ...prev, directOnly: checked }));
-                }}
               />
             </div>
 
@@ -482,10 +470,9 @@ const FlightResults = () => {
                 <MobileFiltersDrawer 
                   onFiltersChange={setFilters}
                   activeFiltersCount={
-                    filters.stops.length + 
+                    (filters.stopsMode !== "any" ? 1 : 0) +
                     filters.airlines.length + 
                     filters.departureTime.length +
-                    (filters.directOnly ? 1 : 0) +
                     (filters.priceRange[0] > 0 || filters.priceRange[1] < 5000 ? 1 : 0)
                   }
                   flightCount={totalFiltered}

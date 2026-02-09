@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
-import { FilterState } from "./FlightFilters";
+import { FilterState, StopsMode } from "./FlightFilters";
 import { useLocale } from "@/hooks/useLocale";
 
 interface ActiveFilterChipsProps {
@@ -8,6 +8,7 @@ interface ActiveFilterChipsProps {
   actualPriceRange: [number, number];
   onRemoveFilter: (key: keyof FilterState, value?: string) => void;
   onClearAll: () => void;
+  flightsCurrency?: string;
 }
 
 const ActiveFilterChips = ({
@@ -15,19 +16,22 @@ const ActiveFilterChips = ({
   actualPriceRange,
   onRemoveFilter,
   onClearAll,
+  flightsCurrency,
 }: ActiveFilterChipsProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useLocale();
   const chips: { label: string; onRemove: () => void }[] = [];
 
-  if (filters.directOnly) {
-    chips.push({ label: t("chips.direct_only"), onRemove: () => onRemoveFilter("directOnly") });
+  // Stops mode chip
+  if (filters.stopsMode !== "any") {
+    const stopsLabels: Record<StopsMode, string> = {
+      any: "",
+      direct: t("filters.stop_direct"),
+      "1": t("filters.stop_1"),
+      "2plus": t("filters.stop_2plus"),
+    };
+    chips.push({ label: stopsLabels[filters.stopsMode], onRemove: () => onRemoveFilter("stopsMode") });
   }
-
-  filters.stops.forEach((s) => {
-    const label = s === "direct" ? t("chips.direct") : s === "1stop" ? t("chips.1stop") : t("chips.2stops");
-    chips.push({ label, onRemove: () => onRemoveFilter("stops", s) });
-  });
 
   filters.airlines.forEach((a) => {
     chips.push({ label: a, onRemove: () => onRemoveFilter("airlines", a) });
@@ -36,7 +40,7 @@ const ActiveFilterChips = ({
   const priceChanged = filters.priceRange[0] !== actualPriceRange[0] || filters.priceRange[1] !== actualPriceRange[1];
   if (priceChanged) {
     chips.push({
-      label: `${formatPrice(filters.priceRange[0])}–${formatPrice(filters.priceRange[1])}`,
+      label: `${formatPrice(filters.priceRange[0], flightsCurrency)}–${formatPrice(filters.priceRange[1], flightsCurrency)}`,
       onRemove: () => onRemoveFilter("priceRange"),
     });
   }

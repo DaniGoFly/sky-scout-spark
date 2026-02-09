@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Filter, RotateCcw, Plane } from "lucide-react";
+import { Filter, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from "@/components/ui/sheet";
-import { FilterState } from "./FlightFilters";
+import { FilterState, StopsMode } from "./FlightFilters";
 import { Flight, getAirlineName } from "@/lib/flightNormalizer";
 import { useLocale } from "@/hooks/useLocale";
 
@@ -15,29 +15,23 @@ interface MobileFiltersDrawerProps {
   activeFiltersCount: number;
   flightCount: number;
   flights?: Flight[];
+  flightsCurrency?: string;
 }
 
 const DEFAULT_PRICE_RANGE: [number, number] = [0, 2000];
 const DEBOUNCE_MS = 200;
 
-const MobileFiltersDrawer = ({ 
-  onFiltersChange, activeFiltersCount, flightCount, flights = []
+const MobileFiltersDrawer = ({
+  onFiltersChange, activeFiltersCount, flightCount, flights = [], flightsCurrency,
 }: MobileFiltersDrawerProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useLocale();
   const [open, setOpen] = useState(false);
-  const [stops, setStops] = useState<string[]>([]);
+  const [stopsMode, setStopsMode] = useState<StopsMode>("any");
   const [airlines, setAirlines] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>(DEFAULT_PRICE_RANGE);
   const [departureTime, setDepartureTime] = useState<string[]>([]);
-  const [directOnly, setDirectOnly] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  const STOPS = useMemo(() => [
-    { value: "direct", label: t("filters.stop_direct") },
-    { value: "1stop", label: t("filters.stop_1") },
-    { value: "2stops", label: t("filters.stop_2plus") },
-  ], [t]);
 
   const DEPARTURE_TIMES = useMemo(() => [
     { value: "morning", label: t("filters.morning") },
@@ -67,33 +61,31 @@ const MobileFiltersDrawer = ({
 
   const emitFilters = useCallback((overrides: Partial<FilterState> = {}) => {
     onFiltersChange({
-      stops: overrides.stops ?? stops,
+      stopsMode: overrides.stopsMode ?? stopsMode,
       airlines: overrides.airlines ?? airlines,
       priceRange: overrides.priceRange ?? priceRange,
       departureTime: overrides.departureTime ?? departureTime,
-      directOnly: overrides.directOnly ?? directOnly,
     });
-  }, [stops, airlines, priceRange, departureTime, directOnly, onFiltersChange]);
+  }, [stopsMode, airlines, priceRange, departureTime, onFiltersChange]);
 
   const emitFiltersDebounced = useCallback((newPriceRange: [number, number]) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      onFiltersChange({ stops, airlines, priceRange: newPriceRange, departureTime, directOnly });
+      onFiltersChange({ stopsMode, airlines, priceRange: newPriceRange, departureTime });
     }, DEBOUNCE_MS);
-  }, [stops, airlines, departureTime, directOnly, onFiltersChange]);
+  }, [stopsMode, airlines, departureTime, onFiltersChange]);
 
   const handleReset = () => {
-    setStops([]); setAirlines([]); setPriceRange(actualPriceRange); setDepartureTime([]); setDirectOnly(false);
-    onFiltersChange({ stops: [], airlines: [], priceRange: actualPriceRange, departureTime: [], directOnly: false });
+    setStopsMode("any"); setAirlines([]); setPriceRange(actualPriceRange); setDepartureTime([]);
+    onFiltersChange({ stopsMode: "any", airlines: [], priceRange: actualPriceRange, departureTime: [] });
   };
 
-  const toggleStop = (value: string) => { const n = stops.includes(value) ? stops.filter(s => s !== value) : [...stops, value]; setStops(n); emitFilters({ stops: n }); };
+  const handleStopsModeChange = (value: string) => { const m = value as StopsMode; setStopsMode(m); emitFilters({ stopsMode: m }); };
   const toggleAirline = (value: string) => { const n = airlines.includes(value) ? airlines.filter(a => a !== value) : [...airlines, value]; setAirlines(n); emitFilters({ airlines: n }); };
   const toggleDepartureTime = (value: string) => { const n = departureTime.includes(value) ? departureTime.filter(t => t !== value) : [...departureTime, value]; setDepartureTime(n); emitFilters({ departureTime: n }); };
   const handlePriceChange = (value: number[]) => { const nr: [number, number] = [value[0], value[1]]; setPriceRange(nr); emitFiltersDebounced(nr); };
-  const handleDirectOnlyChange = (checked: boolean) => { setDirectOnly(checked); emitFilters({ directOnly: checked }); };
 
-  const hasActiveFilters = stops.length > 0 || airlines.length > 0 || departureTime.length > 0 || directOnly ||
+  const hasActiveFilters = stopsMode !== "any" || airlines.length > 0 || departureTime.length > 0 ||
     priceRange[0] !== actualPriceRange[0] || priceRange[1] !== actualPriceRange[1];
 
   return (
@@ -124,37 +116,45 @@ const MobileFiltersDrawer = ({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto py-5 space-y-5">
-          <div className="p-3 bg-primary/5 rounded-xl border border-primary/20">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="mobile-direct-only" checked={directOnly} onCheckedChange={(checked) => handleDirectOnlyChange(checked === true)} />
-              <Label htmlFor="mobile-direct-only" className="text-sm font-medium text-foreground cursor-pointer flex items-center gap-2">
-                <Plane className="w-4 h-4 text-primary" />
-                {t("filters.direct_only")}
-              </Label>
-            </div>
-          </div>
-
+          {/* Stops — single-choice */}
           <div className="space-y-2.5">
             <h3 className="text-sm font-semibold text-foreground">{t("filters.stops")}</h3>
-            <div className="flex flex-wrap gap-2">
-              {STOPS.map((stop) => (
-                <button key={stop.value} onClick={() => toggleStop(stop.value)}
-                  className={`px-3 py-2 rounded-full text-sm border transition-colors ${stops.includes(stop.value) ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border text-foreground hover:border-primary/50"}`}>
-                  {stop.label}
-                </button>
+            <RadioGroup value={stopsMode} onValueChange={handleStopsModeChange} className="flex flex-wrap gap-2">
+              {([
+                { value: "any", label: t("filters.stop_any", "Any") },
+                { value: "direct", label: t("filters.stop_direct") },
+                { value: "1", label: t("filters.stop_1") },
+                { value: "2plus", label: t("filters.stop_2plus") },
+              ] as const).map((opt) => (
+                <label
+                  key={opt.value}
+                  htmlFor={`mobile-stop-${opt.value}`}
+                  className={`px-3 py-2 rounded-full text-sm border transition-colors cursor-pointer ${
+                    stopsMode === opt.value
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <RadioGroupItem value={opt.value} id={`mobile-stop-${opt.value}`} className="sr-only" />
+                  {opt.label}
+                </label>
               ))}
-            </div>
+            </RadioGroup>
           </div>
 
-          <div className="space-y-3">
+          {/* Price range — clean layout */}
+          <div className="space-y-2">
             <h3 className="text-sm font-semibold text-foreground">{t("filters.price_range")}</h3>
+            <div className="flex justify-between text-[11px] text-muted-foreground">
+              <span>{t("filters.min", "Min")}</span>
+              <span>{t("filters.max", "Max")}</span>
+            </div>
             <div className="px-1">
               <Slider value={priceRange} onValueChange={handlePriceChange} min={actualPriceRange[0]} max={actualPriceRange[1]} step={25} className="w-full" />
             </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="font-medium text-foreground">{formatPrice(priceRange[0])}</span>
-              <span className="text-muted-foreground">—</span>
-              <span className="font-medium text-foreground">{formatPrice(priceRange[1])}</span>
+            <div className="flex justify-between text-sm">
+              <span className="font-medium text-foreground">{formatPrice(priceRange[0], flightsCurrency)}</span>
+              <span className="font-medium text-foreground">{formatPrice(priceRange[1], flightsCurrency)}</span>
             </div>
           </div>
 

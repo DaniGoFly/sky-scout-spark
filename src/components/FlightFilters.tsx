@@ -1,48 +1,40 @@
 import { memo, useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Filter, RotateCcw, Plane } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Filter, RotateCcw } from "lucide-react";
 import { Flight, getAirlineName } from "@/lib/flightNormalizer";
 import { useLocale } from "@/hooks/useLocale";
+
+export type StopsMode = "any" | "direct" | "1" | "2plus";
+
+export interface FilterState {
+  stopsMode: StopsMode;
+  airlines: string[];
+  priceRange: [number, number];
+  departureTime: string[];
+}
 
 interface FlightFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
   flights?: Flight[];
-  showDirectOnly?: boolean;
-  onDirectOnlyChange?: (checked: boolean) => void;
   /** The currency code returned by the API for the current flight set */
   flightsCurrency?: string;
 }
 
-export interface FilterState {
-  stops: string[];
-  airlines: string[];
-  priceRange: [number, number];
-  departureTime: string[];
-  directOnly?: boolean;
-}
-
-const DEFAULT_PRICE_RANGE: [number, number] = [0, 2000];
+const DEFAULT_PRICE_RANGE: [number, number] = [0, 10000];
 const DEBOUNCE_MS = 200;
 
-const FlightFilters = memo(({ 
-  onFiltersChange, 
+const FlightFilters = memo(({
+  onFiltersChange,
   flights = [],
-  showDirectOnly = false,
-  onDirectOnlyChange,
   flightsCurrency,
 }: FlightFiltersProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useLocale();
-
-  const STOPS = useMemo(() => [
-    { value: "direct", label: t("filters.stop_direct") },
-    { value: "1stop", label: t("filters.stop_1") },
-    { value: "2stops", label: t("filters.stop_2plus") },
-  ], [t]);
 
   const DEPARTURE_TIMES = useMemo(() => [
     { value: "morning", label: t("filters.morning") },
@@ -51,11 +43,10 @@ const FlightFilters = memo(({
     { value: "night", label: t("filters.night") },
   ], [t]);
 
-  const [stops, setStops] = useState<string[]>([]);
+  const [stopsMode, setStopsMode] = useState<StopsMode>("any");
   const [airlines, setAirlines] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>(DEFAULT_PRICE_RANGE);
   const [departureTime, setDepartureTime] = useState<string[]>([]);
-  const [directOnly, setDirectOnly] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const availableAirlines = useMemo(() => {
@@ -77,22 +68,20 @@ const FlightFilters = memo(({
     if (flights.length > 0) setPriceRange(actualPriceRange);
   }, [actualPriceRange, flights.length]);
 
-  const stopsRef = useRef(stops);
+  // Refs for debounced callbacks
+  const stopsModeRef = useRef(stopsMode);
   const airlinesRef = useRef(airlines);
   const departureTimeRef = useRef(departureTime);
-  const directOnlyRef = useRef(directOnly);
-  stopsRef.current = stops;
+  stopsModeRef.current = stopsMode;
   airlinesRef.current = airlines;
   departureTimeRef.current = departureTime;
-  directOnlyRef.current = directOnly;
 
   const emitFilters = useCallback((overrides: Partial<FilterState> = {}) => {
     onFiltersChange({
-      stops: overrides.stops ?? stopsRef.current,
+      stopsMode: overrides.stopsMode ?? stopsModeRef.current,
       airlines: overrides.airlines ?? airlinesRef.current,
       priceRange: overrides.priceRange ?? priceRange,
       departureTime: overrides.departureTime ?? departureTimeRef.current,
-      directOnly: overrides.directOnly ?? directOnlyRef.current,
     });
   }, [onFiltersChange, priceRange]);
 
@@ -100,22 +89,19 @@ const FlightFilters = memo(({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       onFiltersChange({
-        stops: stopsRef.current,
+        stopsMode: stopsModeRef.current,
         airlines: airlinesRef.current,
         priceRange: newPriceRange,
         departureTime: departureTimeRef.current,
-        directOnly: directOnlyRef.current,
       });
     }, DEBOUNCE_MS);
   }, [onFiltersChange]);
 
-  const toggleStop = useCallback((value: string) => {
-    setStops((prev) => {
-      const newStops = prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value];
-      stopsRef.current = newStops;
-      emitFilters({ stops: newStops });
-      return newStops;
-    });
+  const handleStopsModeChange = useCallback((value: string) => {
+    const mode = value as StopsMode;
+    setStopsMode(mode);
+    stopsModeRef.current = mode;
+    emitFilters({ stopsMode: mode });
   }, [emitFilters]);
 
   const toggleAirline = useCallback((value: string) => {
@@ -142,25 +128,22 @@ const FlightFilters = memo(({
     emitFiltersDebounced(newRange);
   }, [emitFiltersDebounced]);
 
-  const handleDirectOnlyChange = useCallback((checked: boolean) => {
-    setDirectOnly(checked);
-    directOnlyRef.current = checked;
-    onDirectOnlyChange?.(checked);
-    emitFilters({ directOnly: checked });
-  }, [onDirectOnlyChange, emitFilters]);
-
   const handleReset = useCallback(() => {
-    setStops([]); setAirlines([]); setPriceRange(actualPriceRange); setDepartureTime([]); setDirectOnly(false);
-    stopsRef.current = []; airlinesRef.current = []; departureTimeRef.current = []; directOnlyRef.current = false;
-    onFiltersChange({ stops: [], airlines: [], priceRange: actualPriceRange, departureTime: [], directOnly: false });
-    onDirectOnlyChange?.(false);
-  }, [actualPriceRange, onFiltersChange, onDirectOnlyChange]);
+    setStopsMode("any");
+    setAirlines([]);
+    setPriceRange(actualPriceRange);
+    setDepartureTime([]);
+    stopsModeRef.current = "any";
+    airlinesRef.current = [];
+    departureTimeRef.current = [];
+    onFiltersChange({ stopsMode: "any", airlines: [], priceRange: actualPriceRange, departureTime: [] });
+  }, [actualPriceRange, onFiltersChange]);
 
-  const hasActiveFilters = stops.length > 0 || airlines.length > 0 || departureTime.length > 0 ||
-    priceRange[0] !== actualPriceRange[0] || priceRange[1] !== actualPriceRange[1] || directOnly;
+  const hasActiveFilters = stopsMode !== "any" || airlines.length > 0 || departureTime.length > 0 ||
+    priceRange[0] !== actualPriceRange[0] || priceRange[1] !== actualPriceRange[1];
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+    <div className="bg-card border border-border rounded-xl p-4 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-foreground font-semibold">
           <Filter className="w-5 h-5" />
@@ -174,42 +157,41 @@ const FlightFilters = memo(({
         )}
       </div>
 
-      {showDirectOnly && (
-        <div className="p-3 bg-primary/5 rounded-xl border border-primary/20">
-          <div className="flex items-center space-x-2">
-            <Checkbox id="direct-only-filter" checked={directOnly} onCheckedChange={(checked) => handleDirectOnlyChange(checked === true)} />
-            <Label htmlFor="direct-only-filter" className="text-sm font-medium text-foreground cursor-pointer flex items-center gap-2">
-              <Plane className="w-4 h-4 text-primary" />
-              {t("filters.direct_only")}
-            </Label>
-          </div>
-        </div>
-      )}
-
+      {/* Stops — single-choice radio group */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-foreground">{t("filters.stops")}</h3>
-        <div className="space-y-2">
-          {STOPS.map((stop) => (
-            <div key={stop.value} className="flex items-center space-x-2">
-              <Checkbox id={`stop-${stop.value}`} checked={stops.includes(stop.value)} onCheckedChange={() => toggleStop(stop.value)} />
-              <Label htmlFor={`stop-${stop.value}`} className="text-sm text-muted-foreground cursor-pointer truncate">{stop.label}</Label>
+        <RadioGroup value={stopsMode} onValueChange={handleStopsModeChange} className="space-y-2">
+          {([
+            { value: "any", label: t("filters.stop_any", "Any") },
+            { value: "direct", label: t("filters.stop_direct") },
+            { value: "1", label: t("filters.stop_1") },
+            { value: "2plus", label: t("filters.stop_2plus") },
+          ] as const).map((opt) => (
+            <div key={opt.value} className="flex items-center space-x-2">
+              <RadioGroupItem value={opt.value} id={`stop-${opt.value}`} />
+              <Label htmlFor={`stop-${opt.value}`} className="text-sm text-muted-foreground cursor-pointer truncate">{opt.label}</Label>
             </div>
           ))}
-        </div>
+        </RadioGroup>
       </div>
 
-      <div className="space-y-3">
+      {/* Price range — clean layout */}
+      <div className="space-y-2">
         <h3 className="text-sm font-medium text-foreground">{t("filters.price_range")}</h3>
-        <div className="pt-2 px-1">
+        <div className="flex justify-between text-[11px] text-muted-foreground">
+          <span>{t("filters.min", "Min")}</span>
+          <span>{t("filters.max", "Max")}</span>
+        </div>
+        <div className="px-1">
           <Slider value={priceRange} onValueChange={handlePriceChange} min={actualPriceRange[0]} max={actualPriceRange[1]} step={25} className="w-full" />
         </div>
-        <div className="flex justify-between items-center text-sm">
+        <div className="flex justify-between text-sm">
           <span className="font-medium text-foreground">{formatPrice(priceRange[0], flightsCurrency)}</span>
-          <span className="text-muted-foreground">—</span>
           <span className="font-medium text-foreground">{formatPrice(priceRange[1], flightsCurrency)}</span>
         </div>
       </div>
 
+      {/* Airlines */}
       {availableAirlines.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-foreground">{t("filters.airlines")}</h3>
@@ -224,6 +206,7 @@ const FlightFilters = memo(({
         </div>
       )}
 
+      {/* Departure time */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-foreground">{t("filters.departure_time")}</h3>
         <div className="space-y-2">

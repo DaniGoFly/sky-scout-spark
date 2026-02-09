@@ -20,6 +20,8 @@ export interface EnrichedFlight extends Flight {
   outboundStopsTotal: number;
   /** Stops on the return journey (0 = direct, 0 for one-way) */
   returnStopsTotal: number;
+  /** Sum of outbound + return stops */
+  stopsTotal: number;
   /** True when outbound has 0 stops */
   isDirectOutbound: boolean;
   /** True when return has 0 stops (always true for one-way) */
@@ -112,6 +114,7 @@ export function enrichFlightStops(
       ...flight,
       outboundStopsTotal: stops,
       returnStopsTotal: 0,
+      stopsTotal: stops,
       isDirectOutbound: stops === 0,
       isDirectReturn: true,
       isDirectItinerary: stops === 0,
@@ -256,6 +259,7 @@ export function enrichFlightStops(
     // Enriched stop fields
     outboundStopsTotal: outboundStops,
     returnStopsTotal: returnStops,
+    stopsTotal: outboundStops + returnStops,
     isDirectOutbound: outboundStops === 0,
     isDirectReturn: returnStops === 0,
     isDirectItinerary: outboundStops === 0 && returnStops === 0,
