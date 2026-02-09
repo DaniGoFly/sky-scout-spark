@@ -232,6 +232,23 @@ export function hasValidBookingUrl(flight: Flight): boolean {
 }
 
 /**
+ * Sanity-check and fix price that may be in minor units (cents).
+ * If an economy-class price looks > 50000, assume it's in cents and divide by 100.
+ * Returns corrected major-unit price.
+ */
+export function sanitizePrice(amount: number): number {
+  if (!amount || amount <= 0 || !Number.isFinite(amount)) return amount;
+  if (amount > 50000) {
+    // Likely cents/minor units — convert to major
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(`[sanitizePrice] Suspicious price ${amount}, converting from minor units → ${amount / 100}`);
+    }
+    return Math.round(amount / 100);
+  }
+  return amount;
+}
+
+/**
  * Sort flights by different criteria
  */
 export function sortFlights(
