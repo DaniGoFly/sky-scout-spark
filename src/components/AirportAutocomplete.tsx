@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Plane, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -20,6 +21,53 @@ interface AirportAutocompleteProps {
   hasError?: boolean;
 }
 
+/**
+ * Dropdown rendered via React Portal so it's never clipped by
+ * ancestor overflow:hidden / backdrop-filter stacking contexts.
+ */
+const PortalDropdown = ({
+  anchorRef,
+  children,
+}: {
+  anchorRef: React.RefObject<HTMLDivElement>;
+  children: React.ReactNode;
+}) => {
+  const [style, setStyle] = useState<React.CSSProperties>({});
+
+  const updatePosition = useCallback(() => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const dropdownMaxH = 320;
+    const openUpward = spaceBelow < dropdownMaxH && rect.top > spaceBelow;
+
+    setStyle({
+      position: "fixed",
+      left: rect.left,
+      width: rect.width,
+      zIndex: 9999,
+      ...(openUpward
+        ? { bottom: window.innerHeight - rect.top + 4 }
+        : { top: rect.bottom + 4 }),
+    });
+  }, [anchorRef]);
+
+  useEffect(() => {
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [updatePosition]);
+
+  return createPortal(
+    <div style={style}>{children}</div>,
+    document.body
+  );
+};
+
 const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", compact = false, hasError = false }: AirportAutocompleteProps) => {
   const [query, setQuery] = useState(value?.display || "");
   const [suggestions, setSuggestions] = useState<Place[]>([]);
@@ -28,13 +76,16 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside (handles portal-rendered dropdown)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideWrapper = wrapperRef.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+      if (!insideWrapper && !insideDropdown) {
         setIsOpen(false);
-        // Reset to selected value if user didn't pick
         if (value) {
           setQuery(value.display);
         } else {
@@ -45,6 +96,13 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [value]);
+
+  // Sync external value changes
+  useEffect(() => {
+    if (value) {
+      setQuery(value.display);
+    }
+  }, [value?.display]);
 
   // Fetch suggestions from Travelpayouts API
   useEffect(() => {
@@ -114,11 +172,13 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
     const newValue = e.target.value;
     setQuery(newValue);
     setIsOpen(true);
-    // Clear selection when user starts typing again
     if (value && newValue !== value.display) {
       onChange(null);
     }
   };
+
+  const showSuggestions = isOpen && suggestions.length > 0;
+  const showEmpty = isOpen && query.length >= 2 && suggestions.length === 0 && !isLoading;
 
   return (
     <div ref={wrapperRef} className="relative min-w-0">
@@ -148,44 +208,51 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
         )}
       </div>
 
-      {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden max-h-80 overflow-y-auto">
-          {suggestions.map((place, index) => (
-            <button
-              key={`${place.code}-${index}`}
-              type="button"
-              onClick={() => handleSelect(place)}
-              className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
-                index === highlightedIndex 
-                  ? "bg-primary/10" 
-                  : "hover:bg-secondary/50"
-              }`}
-            >
-              <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                <span className="text-xs font-bold text-muted-foreground">
-                  {place.code}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-foreground truncate">
-                  {place.name}
-                  {place.main_airport_name && (
-                    <span className="text-muted-foreground"> – {place.main_airport_name}</span>
-                  )}
+      {showSuggestions && (
+        <PortalDropdown anchorRef={wrapperRef}>
+          <div
+            ref={dropdownRef}
+            className="bg-card border border-border rounded-xl shadow-lg overflow-hidden max-h-80 overflow-y-auto"
+          >
+            {suggestions.map((place, index) => (
+              <button
+                key={`${place.code}-${index}`}
+                type="button"
+                onClick={() => handleSelect(place)}
+                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                  index === highlightedIndex 
+                    ? "bg-primary/10" 
+                    : "hover:bg-secondary/50"
+                }`}
+              >
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                  <span className="text-xs font-bold text-muted-foreground">
+                    {place.code}
+                  </span>
                 </div>
-                <div className="text-sm text-muted-foreground truncate">
-                  {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-foreground truncate">
+                    {place.name}
+                    {place.main_airport_name && (
+                      <span className="text-muted-foreground"> – {place.main_airport_name}</span>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        </PortalDropdown>
       )}
 
-      {isOpen && query.length >= 2 && suggestions.length === 0 && !isLoading && (
-        <div className="absolute z-50 w-full mt-2 bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground">
-          No airports found
-        </div>
+      {showEmpty && (
+        <PortalDropdown anchorRef={wrapperRef}>
+          <div className="bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground">
+            No airports found
+          </div>
+        </PortalDropdown>
       )}
     </div>
   );

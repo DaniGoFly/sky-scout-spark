@@ -77,7 +77,7 @@ const CompactSearchBar = () => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl shadow-card p-4 overflow-hidden">
+    <div className="bg-card border border-border rounded-2xl shadow-card p-4">
       <div className="flex flex-wrap items-center gap-3">
         {/* Trip Type */}
         <div className="flex gap-1 shrink-0">
