@@ -11,6 +11,8 @@ import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
 import FlightResultsSkeleton from "./FlightResultsSkeleton";
 import ActiveFilterChips from "./ActiveFilterChips";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
+import PriceInsight from "./PriceInsight";
+import PriceGraph from "./PriceGraph";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
 import { enrichFlights, type EnrichedFlight } from "@/lib/flightEnrichment";
@@ -286,6 +288,17 @@ const LiveFlightResults = () => {
               <FlightFilters onFiltersChange={handleFiltersChange} flights={enrichedFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </aside>
             <div className="min-w-0 space-y-3">
+              {/* Price Insight */}
+              {sortedFlights.length > 0 && (
+                <PriceInsight
+                  origin={from}
+                  destination={to}
+                  currentPrice={sortedFlights[0].price.amount}
+                  priceCurrency={flightsCurrency}
+                />
+              )}
+              {/* Price Graph — collapsible */}
+              <PriceGraph origin={from} destination={to} />
               <MemoizedSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={handleSortChange} />
               <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} flightsCurrency={flightsCurrency} />
               <div className="text-xs md:text-sm text-muted-foreground px-1">

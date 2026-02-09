@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isBefore, isAfter, startOfDay, getDay } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -318,150 +319,154 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
         </Button>
       </div>
 
-      {/* Backdrop */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {/* Calendar Portal — rendered to document.body for viewport safety */}
+      {isOpen && createPortal(
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9998]"
+            onClick={() => setIsOpen(false)}
+          />
 
-      {/* Calendar Dropdown - Fixed Position */}
-      {isOpen && (
-        <div 
-          className={cn(
-            "fixed z-[101] bg-card border border-border rounded-2xl shadow-xl",
-            "animate-in fade-in-0 zoom-in-95 duration-200",
-            "max-h-[90vh] overflow-y-auto"
-          )}
-          style={{ 
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            width: isMobile ? "calc(100vw - 32px)" : "580px"
-          }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-card z-10">
-            <div className="flex gap-2">
+          {/* Calendar Dropdown - Fixed Position, always within viewport */}
+          <div 
+            data-date-picker
+            className={cn(
+              "fixed z-[9999] bg-card border border-border rounded-2xl shadow-xl",
+              "animate-in fade-in-0 zoom-in-95 duration-200",
+            )}
+            style={{ 
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: isMobile ? "calc(100vw - 32px)" : "580px",
+              maxHeight: "calc(100vh - 32px)",
+              overflowY: "auto",
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-card z-10 rounded-t-2xl">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => onTripTypeChange("roundtrip")}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                    tripType === "roundtrip" 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Round trip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onTripTypeChange("oneway")}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                    tripType === "oneway" 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  One way
+                </button>
+              </div>
+              
               <button
                 type="button"
-                onClick={() => onTripTypeChange("roundtrip")}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  tripType === "roundtrip" 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                )}
+                onClick={() => setIsOpen(false)}
+                className="p-2 rounded-full hover:bg-secondary transition-colors"
+                aria-label="Close calendar"
               >
-                Round trip
-              </button>
-              <button
-                type="button"
-                onClick={() => onTripTypeChange("oneway")}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  tripType === "oneway" 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                )}
-              >
-                One way
+                <X className="h-5 w-5" />
               </button>
             </div>
-            
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="p-2 rounded-full hover:bg-secondary transition-colors"
-              aria-label="Close calendar"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
 
-          {/* Selection Status */}
-          <div className="px-4 py-2 bg-secondary/30 text-sm text-center text-muted-foreground">
-            {tripType === "roundtrip" 
-              ? (selectingReturn 
-                  ? "Select return date" 
-                  : "Select departure date")
-              : "Select departure date"
-            }
-          </div>
+            {/* Selection Status */}
+            <div className="px-4 py-2 bg-secondary/30 text-sm text-center text-muted-foreground">
+              {tripType === "roundtrip" 
+                ? (selectingReturn 
+                    ? "Select return date" 
+                    : "Select departure date")
+                : "Select departure date"
+              }
+            </div>
 
-          {/* Month Navigation */}
-          <div className="flex items-center justify-between px-4 pt-2">
-            <button
-              type="button"
-              onClick={handlePrevMonth}
-              disabled={!canGoPrev}
-              className={cn(
-                "p-2 rounded-full hover:bg-secondary transition-colors",
-                !canGoPrev && "opacity-30 cursor-not-allowed"
-              )}
-              aria-label="Previous month"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            
-            <button
-              type="button"
-              onClick={handleNextMonth}
-              className="p-2 rounded-full hover:bg-secondary transition-colors"
-              aria-label="Next month"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
+            {/* Month Navigation */}
+            <div className="flex items-center justify-between px-4 pt-2">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                disabled={!canGoPrev}
+                className={cn(
+                  "p-2 rounded-full hover:bg-secondary transition-colors",
+                  !canGoPrev && "opacity-30 cursor-not-allowed"
+                )}
+                aria-label="Previous month"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="p-2 rounded-full hover:bg-secondary transition-colors"
+                aria-label="Next month"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
 
-          {/* Calendar Grid */}
-          <div className={cn(
-            "p-2",
-            isMobile ? "grid grid-cols-1" : "grid grid-cols-2 gap-4"
-          )}>
-            <MonthGrid
-              month={currentMonth}
-              departDate={departDate}
-              returnDate={returnDate}
-              tripType={tripType}
-              onDayClick={handleDayClick}
-              today={today}
-            />
-            
-            {!isMobile && (
+            {/* Calendar Grid */}
+            <div className={cn(
+              "p-2",
+              isMobile ? "grid grid-cols-1" : "grid grid-cols-2 gap-4"
+            )}>
               <MonthGrid
-                month={nextMonth}
+                month={currentMonth}
                 departDate={departDate}
                 returnDate={returnDate}
                 tripType={tripType}
                 onDayClick={handleDayClick}
                 today={today}
               />
-            )}
-          </div>
+              
+              {!isMobile && (
+                <MonthGrid
+                  month={nextMonth}
+                  departDate={departDate}
+                  returnDate={returnDate}
+                  tripType={tripType}
+                  onDayClick={handleDayClick}
+                  today={today}
+                />
+              )}
+            </div>
 
-          {/* Footer Actions */}
-          <div className="flex items-center justify-between p-4 border-t border-border sticky bottom-0 bg-card">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleClear}
-              className="text-sm"
-            >
-              Clear
-            </Button>
-            
-            <div className="flex gap-2">
+            {/* Footer Actions */}
+            <div className="flex items-center justify-between p-4 border-t border-border sticky bottom-0 bg-card rounded-b-2xl">
               <Button
                 type="button"
-                onClick={handleDone}
-                className="px-6"
+                variant="ghost"
+                onClick={handleClear}
+                className="text-sm"
               >
-                Done
+                Clear
               </Button>
+              
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  onClick={handleDone}
+                  className="px-6"
+                >
+                  Done
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        </>,
+        document.body
       )}
     </div>
   );

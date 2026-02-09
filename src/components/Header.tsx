@@ -61,6 +61,18 @@ const Header = () => {
             </Link>
           )}
 
+          <Link
+            to="/explore"
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+              location.pathname === "/explore"
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            )}
+          >
+            Explore
+          </Link>
+
           <LocaleSelector />
         </nav>
 

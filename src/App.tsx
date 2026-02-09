@@ -10,6 +10,7 @@ import Flights from "./pages/Flights";
 import LiveFlightsResults from "./pages/LiveFlightsResults";
 import MultiCityResults from "./pages/MultiCityResults";
 import Hotels from "./pages/Hotels";
+import Explore from "./pages/Explore";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/flights/multicity" element={<MultiCityResults />} />
           <Route path="/out" element={<Out />} />
           <Route path="/hotels" element={<Hotels />} />
+          <Route path="/explore" element={<Explore />} />
           
           {/* Removed features - show coming soon */}
           <Route path="/car-rental" element={<FeatureComingSoon />} />

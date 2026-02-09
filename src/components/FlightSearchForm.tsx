@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Search, MapPin, Plane } from "lucide-react";
+import { ArrowRightLeft, Search, MapPin, Plane, Navigation } from "lucide-react";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import FlightDateRangePicker from "./FlightDateRangePicker";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import MultiCitySearchForm from "./MultiCitySearchForm";
 import { getDefaultDates } from "@/lib/dateUtils";
-import { getNearbyAirports } from "@/lib/airports";
+import { getNearbyAirports, AIRPORTS, calculateDistance } from "@/lib/airports";
 import type { AISearchParams } from "./FlightSearchHero";
 
 interface AirportSelection {
@@ -409,8 +409,34 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      {/* Search Button */}
-      <div className="mt-6 flex justify-center md:justify-end">
+      {/* Search Button + Use my location */}
+      <div className="mt-6 flex flex-wrap justify-center md:justify-end gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            if (!navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                let nearest = null as any;
+                let minDist = Infinity;
+                for (const a of AIRPORTS) {
+                  const d = calculateDistance(pos.coords.latitude, pos.coords.longitude, a.lat, a.lon);
+                  if (d < minDist) { minDist = d; nearest = a; }
+                }
+                if (nearest) {
+                  setFrom({ code: nearest.code, display: `${nearest.city} (${nearest.code})` });
+                  setErrors(e => ({ ...e, from: undefined }));
+                }
+              },
+              () => { /* permission denied — silent */ }
+            );
+          }}
+          className="gap-1.5"
+        >
+          <Navigation className="w-3.5 h-3.5" />
+          {t("search.use_location", "Use my location")}
+        </Button>
         <Button 
           size="lg" 
           onClick={handleSearch}
