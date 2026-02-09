@@ -97,6 +97,7 @@
     "no_flights": "Aucun vol trouvé",
     "no_flights_sub": "Nous n'avons pas trouvé de vols pour cet itinéraire et cette date.",
     "no_match": "Aucun vol ne correspond à vos filtres.",
+    "no_direct_flights": "Aucun vol direct trouvé. Essayez avec 1 escale.",
     "clear_filters": "Effacer tous les filtres",
     "results_found": "{{count}} résultat trouvé",
     "results_found_plural": "{{count}} résultats trouvés",

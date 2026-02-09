@@ -97,6 +97,7 @@
     "no_flights": "Keine Flüge gefunden",
     "no_flights_sub": "Wir konnten keine Flüge für diese Strecke und dieses Datum finden.",
     "no_match": "Keine Flüge entsprechen Ihren Filtern.",
+    "no_direct_flights": "Keine Direktflüge gefunden. Versuchen Sie es mit 1 Zwischenstopp.",
     "clear_filters": "Alle Filter löschen",
     "results_found": "{{count}} Ergebnis gefunden",
     "results_found_plural": "{{count}} Ergebnisse gefunden",

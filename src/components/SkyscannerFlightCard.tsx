@@ -13,14 +13,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Flight, getAirlineName, getAirlineLogo, formatDuration } from "@/lib/flightNormalizer";
+import type { EnrichedFlight } from "@/lib/flightEnrichment";
 import { resolveDeal } from "@/lib/flightSearchApi";
 import { useLocale } from "@/hooks/useLocale";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface FlightCardProps {
-  flight: Flight;
+  flight: Flight | EnrichedFlight;
   isBestValue?: boolean;
+}
+
+/** Type guard to check if flight has enriched stop data */
+function isEnriched(f: Flight | EnrichedFlight): f is EnrichedFlight {
+  return "isDirectItinerary" in f && typeof (f as EnrichedFlight).outboundStopsTotal === "number";
 }
 
 const safeText = (value: string | undefined | null, fallback = "—"): string => {
@@ -200,26 +206,26 @@ const FlightCard = memo(({ flight, isBestValue = false }: FlightCardProps) => {
   );
 
   const outboundLabel = flight.return ? t("card.outbound") : null;
-  const outboundStopsCount = Math.max(0, flight.stopsCount ?? 0);
-  const returnStopsCount = flight.return ? Math.max(0, flight.return.stopsCount ?? 0) : 0;
-  const outboundStops = getLocalizedStopsLabel(outboundStopsCount, flight.stopsAirports);
-  const returnStops = flight.return ? getLocalizedStopsLabel(returnStopsCount, flight.return.stopsAirports) : "";
 
-  // DEV: warn if displayed label and raw stopsCount conflict
-  if (process.env.NODE_ENV !== "production") {
-    if (outboundStopsCount === 0 && !outboundStops.toLowerCase().includes("direct") && !outboundStops.toLowerCase().includes(t("card.direct").toLowerCase())) {
-      console.warn(`[FlightCard] stopsCount=0 but label="${outboundStops}" — mismatch!`, flight.id);
+  // Use enriched canonical stop values when available, otherwise fall back
+  const outboundStopsCount = isEnriched(flight) ? flight.outboundStopsTotal : Math.max(0, flight.stopsCount ?? 0);
+  const returnStopsCount = isEnriched(flight)
+    ? flight.returnStopsTotal
+    : flight.return ? Math.max(0, flight.return.stopsCount ?? 0) : 0;
+
+  const outboundStopsAirports = isEnriched(flight) ? flight.outboundStopsAirports : flight.stopsAirports;
+  const returnStopsAirports = isEnriched(flight) ? flight.returnStopsAirports : (flight.return?.stopsAirports || []);
+
+  const outboundStops = getLocalizedStopsLabel(outboundStopsCount, outboundStopsAirports);
+  const returnStops = flight.return ? getLocalizedStopsLabel(returnStopsCount, returnStopsAirports) : "";
+
+  // DEV: warn if computed isDirectItinerary conflicts with displayed label
+  if (process.env.NODE_ENV !== "production" && isEnriched(flight)) {
+    if (flight.isDirectItinerary && (outboundStopsCount > 0 || returnStopsCount > 0)) {
+      console.warn(`[FlightCard] isDirectItinerary=true but stops=[${outboundStopsCount}, ${returnStopsCount}]`, flight.id);
     }
-    if (outboundStopsCount > 0 && (outboundStops.toLowerCase().includes("direct") || outboundStops.toLowerCase() === t("card.direct").toLowerCase())) {
-      console.warn(`[FlightCard] stopsCount=${outboundStopsCount} but label="${outboundStops}" — mismatch!`, flight.id);
-    }
-    if (flight.return) {
-      if (returnStopsCount === 0 && returnStops && !returnStops.toLowerCase().includes("direct") && !returnStops.toLowerCase().includes(t("card.direct").toLowerCase())) {
-        console.warn(`[FlightCard] return stopsCount=0 but label="${returnStops}" — mismatch!`, flight.id);
-      }
-      if (returnStopsCount > 0 && returnStops && (returnStops.toLowerCase().includes("direct") || returnStops.toLowerCase() === t("card.direct").toLowerCase())) {
-        console.warn(`[FlightCard] return stopsCount=${returnStopsCount} but label="${returnStops}" — mismatch!`, flight.id);
-      }
+    if (!flight.isDirectItinerary && outboundStopsCount === 0 && returnStopsCount === 0) {
+      console.warn(`[FlightCard] isDirectItinerary=false but stops=[0, 0]`, flight.id);
     }
   }
 
