@@ -16,6 +16,7 @@ import { useFlightSearch, LiveFlight } from "@/hooks/useFlightSearch";
 import { Flight, sortFlights, isEligibleForBestValue, getAirlineName } from "@/lib/flightNormalizer";
 import { format, addDays } from "date-fns";
 import { getDefaultDates, parseDateSafe } from "@/lib/dateUtils";
+import { useLocale } from "@/hooks/useLocale";
 
 // Pagination configuration (Skyscanner-style)
 const RESULTS_PER_PAGE = 25;
@@ -25,6 +26,7 @@ const FlightResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const fetchedAtRef = useRef<number>(Date.now());
+  const { currency: localeCurrency, formatPrice: localeFormatPrice } = useLocale();
   
   const { 
     flights, 
@@ -87,7 +89,9 @@ const FlightResults = () => {
     if (!flights.length) return [];
     
     return flights.map((f): Flight => {
-      const priceValue = Math.round(f.price);
+      // Sanitize price: detect minor-unit bugs
+      const rawPrice = Math.round(f.price);
+      const priceValue = rawPrice > 50000 ? Math.round(rawPrice / 100) : rawPrice;
       const airlineCode = f.airline?.substring(0, 2).toUpperCase() || "XX";
       
       return {
@@ -101,7 +105,7 @@ const FlightResults = () => {
         stopsAirports: [],
         airlines: [airlineCode],
         flightNumbers: f.flightNumber ? [f.flightNumber] : [],
-        price: { amount: priceValue, currency: "USD" },
+        price: { amount: priceValue, currency: localeCurrency },
         clickUrl: f.deepLink || "",
       };
     });
@@ -136,9 +140,10 @@ const FlightResults = () => {
         infants,
         tripType,
         travelClass,
+        currency: localeCurrency.toLowerCase(),
       });
     }
-  }, [from, to, depart, returnDate, adults, children, infants, tripType, travelClass, searchFlights]);
+  }, [from, to, depart, returnDate, adults, children, infants, tripType, travelClass, localeCurrency, searchFlights]);
 
   // Handle price calendar date selection
   const handleDateSelect = (newDate: Date) => {
@@ -325,6 +330,7 @@ const FlightResults = () => {
             returnDate: displayReturn || undefined,
             adults,
             tripType,
+            currency: localeCurrency.toLowerCase(),
           })}
           className="gap-2"
         >
