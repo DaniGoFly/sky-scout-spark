@@ -200,8 +200,31 @@ const FlightCard = memo(({ flight, isBestValue = false }: FlightCardProps) => {
   );
 
   const outboundLabel = flight.return ? t("card.outbound") : null;
-  const outboundStops = getLocalizedStopsLabel(flight.stopsCount, flight.stopsAirports);
-  const returnStops = flight.return ? getLocalizedStopsLabel(flight.return.stopsCount, flight.return.stopsAirports) : "";
+  const outboundStopsCount = Math.max(0, flight.stopsCount ?? 0);
+  const returnStopsCount = flight.return ? Math.max(0, flight.return.stopsCount ?? 0) : 0;
+  const outboundStops = getLocalizedStopsLabel(outboundStopsCount, flight.stopsAirports);
+  const returnStops = flight.return ? getLocalizedStopsLabel(returnStopsCount, flight.return.stopsAirports) : "";
+
+  // DEV: warn if displayed label and raw stopsCount conflict
+  if (process.env.NODE_ENV !== "production") {
+    if (outboundStopsCount === 0 && !outboundStops.toLowerCase().includes("direct") && !outboundStops.toLowerCase().includes(t("card.direct").toLowerCase())) {
+      console.warn(`[FlightCard] stopsCount=0 but label="${outboundStops}" — mismatch!`, flight.id);
+    }
+    if (outboundStopsCount > 0 && (outboundStops.toLowerCase().includes("direct") || outboundStops.toLowerCase() === t("card.direct").toLowerCase())) {
+      console.warn(`[FlightCard] stopsCount=${outboundStopsCount} but label="${outboundStops}" — mismatch!`, flight.id);
+    }
+    if (flight.return) {
+      if (returnStopsCount === 0 && returnStops && !returnStops.toLowerCase().includes("direct") && !returnStops.toLowerCase().includes(t("card.direct").toLowerCase())) {
+        console.warn(`[FlightCard] return stopsCount=0 but label="${returnStops}" — mismatch!`, flight.id);
+      }
+      if (returnStopsCount > 0 && returnStops && (returnStops.toLowerCase().includes("direct") || returnStops.toLowerCase() === t("card.direct").toLowerCase())) {
+        console.warn(`[FlightCard] return stopsCount=${returnStopsCount} but label="${returnStops}" — mismatch!`, flight.id);
+      }
+    }
+  }
+
+  // Currency: use API's original currency to prevent mismatched symbols
+  const apiCurrency = flight.price?.currency;
 
   /* ═══════ MOBILE LAYOUT ═══════ */
   if (isMobile) {
@@ -219,7 +242,7 @@ const FlightCard = memo(({ flight, isBestValue = false }: FlightCardProps) => {
           )}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
             <div>
-              <p className="text-2xl font-bold text-foreground leading-tight">{formatPrice(flight.price.amount)}</p>
+              <p className="text-2xl font-bold text-foreground leading-tight">{formatPrice(flight.price.amount, apiCurrency)}</p>
               <p className="text-[11px] text-muted-foreground">{t("card.per_person")}</p>
             </div>
             {saveButton}
@@ -254,7 +277,7 @@ const FlightCard = memo(({ flight, isBestValue = false }: FlightCardProps) => {
           </div>
           <div className="flex flex-col justify-between border-s border-border/40 ps-4 min-w-0">
             <div className="flex flex-col items-end text-end">
-              <p className="text-2xl font-bold text-foreground whitespace-nowrap">{formatPrice(flight.price.amount)}</p>
+              <p className="text-2xl font-bold text-foreground whitespace-nowrap">{formatPrice(flight.price.amount, apiCurrency)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{t("card.per_person")}</p>
             </div>
             <div className="flex flex-col items-end gap-2 mt-3">

@@ -75,17 +75,27 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     return localeMap[locale] || locale;
   }, [locale]);
 
+  /**
+   * Format a price for display.
+   * If `apiCurrency` is provided and differs from the user-selected currency,
+   * the price is formatted using the API's original currency to prevent
+   * displaying a number with a mismatched currency symbol.
+   */
   const formatPrice = useCallback(
-    (amount: number, _originalCurrency?: string) => {
+    (amount: number, apiCurrency?: string) => {
+      // Use apiCurrency if it exists and differs from user-selected currency
+      const effectiveCurrency = apiCurrency && apiCurrency !== currency
+        ? apiCurrency
+        : currency;
       try {
         return new Intl.NumberFormat(fullLocale, {
           style: "currency",
-          currency: currency,
+          currency: effectiveCurrency,
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         }).format(Math.round(amount));
       } catch {
-        return `${currency} ${Math.round(amount)}`;
+        return `${effectiveCurrency} ${Math.round(amount)}`;
       }
     },
     [fullLocale, currency]
