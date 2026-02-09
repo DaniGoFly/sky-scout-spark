@@ -1,5 +1,48 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+/* MD5 implementation for signature computation */
+function md5(input: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  function toWord(b: Uint8Array, i: number) { return b[i] | (b[i+1] << 8) | (b[i+2] << 16) | (b[i+3] << 24); }
+  const K = new Uint32Array([
+    0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,
+    0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,
+    0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,
+    0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,
+    0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,
+    0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,
+    0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,
+    0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391,
+  ]);
+  const S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  const bitLen = data.length * 8;
+  const padLen = ((56 - (data.length + 1) % 64) + 64) % 64;
+  const padded = new Uint8Array(data.length + 1 + padLen + 8);
+  padded.set(data); padded[data.length] = 0x80;
+  const dv = new DataView(padded.buffer);
+  dv.setUint32(padded.length - 8, bitLen >>> 0, true);
+  let a0 = 0x67452301>>>0, b0 = 0xefcdab89>>>0, c0 = 0x98badcfe>>>0, d0 = 0x10325476>>>0;
+  for (let offset = 0; offset < padded.length; offset += 64) {
+    const M = new Uint32Array(16);
+    for (let j = 0; j < 16; j++) M[j] = toWord(padded, offset + j * 4);
+    let A = a0, B = b0, C = c0, D = d0;
+    for (let i = 0; i < 64; i++) {
+      let F: number, g: number;
+      if (i < 16) { F = (B & C) | (~B & D); g = i; }
+      else if (i < 32) { F = (D & B) | (~D & C); g = (5*i+1) % 16; }
+      else if (i < 48) { F = B ^ C ^ D; g = (3*i+5) % 16; }
+      else { F = C ^ (B | ~D); g = (7*i) % 16; }
+      F = (F + A + K[i] + M[g]) >>> 0;
+      A = D; D = C; C = B;
+      B = (B + ((F << S[i]) | (F >>> (32 - S[i])))) >>> 0;
+    }
+    a0 = (a0+A)>>>0; b0 = (b0+B)>>>0; c0 = (c0+C)>>>0; d0 = (d0+D)>>>0;
+  }
+  function toLEHex(n: number) { return [(n&0xff),(n>>8&0xff),(n>>16&0xff),(n>>24&0xff)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
+  return toLEHex(a0) + toLEHex(b0) + toLEHex(c0) + toLEHex(d0);
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -13,114 +56,9 @@ function json(data: unknown, status = 200) {
   });
 }
 
-function isHttpUrl(url: unknown): url is string {
-  return typeof url === "string" && (url.startsWith("https://") || url.startsWith("http://"));
-}
-
 function safeStr(x: unknown, max = 500): string {
   const s = typeof x === "string" ? x : "";
   return s.length > max ? s.slice(0, max) : s;
-}
-
-async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-  return await Promise.race([
-    p,
-    new Promise<T>((_, rej) =>
-      setTimeout(() => rej(new Error(`Timeout: ${label}`)), ms)
-    ),
-  ]);
-}
-
-function buildResultsBase(resultsUrl: unknown): string {
-  const raw = safeStr(resultsUrl, 500);
-  if (!raw) return "https://tickets-api.travelpayouts.com";
-  try {
-    // results_url can be either host-only or full URL
-    if (raw.startsWith("http")) return new URL(raw).origin;
-    return `https://${raw.replace(/^https?:\/\//, "")}`;
-  } catch {
-    return "https://tickets-api.travelpayouts.com";
-  }
-}
-
-type ResolveDealResult =
-  | { ok: true; booking_url: string }
-  | { ok: false; error: string; upstream?: string };
-
-async function resolveDealUrl(args: {
-  token: string;
-  marker: string;
-  search_id: string;
-  click_id: string;
-  results_base?: string | null;
-}): Promise<ResolveDealResult> {
-  const base = isHttpUrl(args.results_base) ? args.results_base : "https://tickets-api.travelpayouts.com";
-  const clickUrl = `${base.replace(/\/$/, "")}/searches/${encodeURIComponent(args.search_id)}/clicks/${encodeURIComponent(args.click_id)}?marker=${encodeURIComponent(args.marker)}`;
-
-  const resp = await fetch(clickUrl, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${args.token}`,
-    },
-  });
-
-  const text = await resp.text();
-  if (!resp.ok) {
-    console.error("[flight-search] resolve_deal failed", resp.status, text.slice(0, 250));
-    return {
-      ok: false,
-      error: `upstream failed (${resp.status})`,
-      upstream: text.slice(0, 200),
-    };
-  }
-
-  let data: any;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    console.error("[flight-search] resolve_deal invalid JSON", text.slice(0, 250));
-    return {
-      ok: false,
-      error: "invalid JSON from upstream",
-      upstream: text.slice(0, 200),
-    };
-  }
-
-  const bookingUrl = data?.url ?? data?.booking_url ?? data?.redirect_url ?? null;
-  if (!isHttpUrl(bookingUrl)) {
-    return {
-      ok: false,
-      error: "no booking url from upstream",
-      upstream: text.slice(0, 200),
-    };
-  }
-
-  // Never return the click endpoint itself.
-  const lower = bookingUrl.toLowerCase();
-  if (lower.includes("travelpayouts.com/searches/") && lower.includes("/clicks/")) {
-    return {
-      ok: false,
-      error: "resolve_deal returned a click endpoint (blocked)",
-      upstream: bookingUrl.slice(0, 200),
-    };
-  }
-
-  return { ok: true, booking_url: bookingUrl };
-}
-
-function toYyyyMmDdHhMm(isoOrTs: unknown): string {
-  try {
-    const d = typeof isoOrTs === "string"
-      ? new Date(isoOrTs)
-      : typeof isoOrTs === "number"
-        ? new Date(isoOrTs * 1000)
-        : null;
-    if (!d || Number.isNaN(d.getTime())) return "";
-    return d.toISOString().slice(0, 16).replace("T", " ");
-  } catch {
-    return "";
-  }
 }
 
 function pick(obj: any, keys: string[]): any {
@@ -131,6 +69,81 @@ function pick(obj: any, keys: string[]): any {
   return undefined;
 }
 
+function toYyyyMmDdHhMm(isoOrTs: unknown): string {
+  try {
+    const d =
+      typeof isoOrTs === "string"
+        ? new Date(isoOrTs)
+        : typeof isoOrTs === "number"
+          ? new Date(isoOrTs * 1000)
+          : null;
+    if (!d || Number.isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 16).replace("T", " ");
+  } catch {
+    return "";
+  }
+}
+
+function buildResultsBase(resultsUrl: unknown): string {
+  const raw = safeStr(resultsUrl, 500);
+  if (!raw) return "https://tickets-api.travelpayouts.com";
+  try {
+    if (raw.startsWith("http")) return new URL(raw).origin;
+    return `https://${raw.replace(/^https?:\/\//, "")}`;
+  } catch {
+    return "https://tickets-api.travelpayouts.com";
+  }
+}
+
+/* ── MD5 signature per Travelpayouts docs ── */
+
+function collectValues(obj: any): string[] {
+  const vals: string[] = [];
+  if (obj === null || obj === undefined) return vals;
+  if (typeof obj !== "object") {
+    vals.push(String(obj));
+    return vals;
+  }
+  if (Array.isArray(obj)) {
+    for (const item of obj) vals.push(...collectValues(item));
+    return vals;
+  }
+  for (const key of Object.keys(obj).sort()) {
+    vals.push(...collectValues(obj[key]));
+  }
+  return vals;
+}
+
+function computeSignature(token: string, marker: string, params: any): string {
+  const allVals = [token, marker, ...collectValues(params)];
+  allVals.sort();
+  const str = allVals.join(":");
+  return md5(str);
+}
+
+/* ── Travelpayouts API headers ── */
+
+function tpHeaders(token: string, signature: string, host: string, userIp: string) {
+  return {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "x-real-host": host,
+    "x-user-ip": userIp,
+    "x-affiliate-user-id": token,
+    "x-signature": signature,
+  };
+}
+
+function getUserIp(req: Request, body: any): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-real-ip") ||
+    safeStr(body?.user_ip, 50) ||
+    "127.0.0.1"
+  );
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -138,6 +151,7 @@ serve(async (req) => {
 
   const token = Deno.env.get("TRAVELPAYOUTS_API_TOKEN") || "";
   const marker = Deno.env.get("TRAVELPAYOUTS_MARKER") || "694224";
+  const tpHost = Deno.env.get("TP_HOST") || "goflyfinder.com";
 
   if (!token) {
     console.error("[flight-search] Missing TRAVELPAYOUTS_API_TOKEN");
@@ -152,44 +166,54 @@ serve(async (req) => {
   }
 
   const action = safeStr(body?.action, 50);
+  const userIp = getUserIp(req, body);
 
   // ============ ACTION: click ============
-  // Resolves a deal using search_id + proposal_id + results_base
-  if (action === "click") {
+  if (action === "click" || action === "resolve_deal") {
     const search_id = safeStr(body?.search_id ?? body?.searchId, 200);
-    const proposal_id = safeStr(body?.proposal_id ?? body?.proposalId ?? body?.click_id ?? body?.clickId, 200);
+    const proposal_id = safeStr(
+      body?.proposal_id ?? body?.proposalId ?? body?.click_id ?? body?.clickId,
+      200
+    );
     const rb = safeStr(body?.results_base ?? body?.resultsBase, 500) || null;
 
     if (!search_id || !proposal_id) {
       return json({ ok: false, error: "missing search_id or proposal_id" }, 400);
     }
 
-    console.log("[flight-search] click action - search_id:", search_id, "proposal_id:", proposal_id);
+    const base = rb && rb.startsWith("http") ? rb.replace(/\/$/, "") : "https://tickets-api.travelpayouts.com";
+    const clickUrl = `${base}/searches/${encodeURIComponent(search_id)}/clicks/${encodeURIComponent(proposal_id)}?marker=${encodeURIComponent(marker)}`;
+
+    console.log("[flight-search] click URL:", clickUrl.slice(0, 120));
 
     try {
-      const result = await withTimeout(
-        resolveDealUrl({
-          token,
-          marker,
-          search_id,
-          click_id: proposal_id,
-          results_base: rb,
-        }),
-        8000,
-        "click_resolve"
-      );
-
-      if (!result.ok) {
-        console.error("[flight-search] click resolve failed:", result.error);
-        return json({
-          ok: false,
-          error: result.error,
-          upstream: result.upstream,
-        }, 502);
+      const resp = await fetch(clickUrl, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "x-affiliate-user-id": token,
+        },
+      });
+      const text = await resp.text();
+      if (!resp.ok) {
+        console.error("[flight-search] click failed", resp.status, text.slice(0, 300));
+        return json({ ok: false, error: `click failed (${resp.status})` }, 502);
       }
 
-      console.log("[flight-search] click resolved to:", result.booking_url.slice(0, 100));
-      return json({ ok: true, deal_url: result.booking_url });
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        return json({ ok: false, error: "invalid click response" }, 502);
+      }
+
+      const bookingUrl = data?.url ?? data?.booking_url ?? data?.redirect_url ?? null;
+      if (!bookingUrl || typeof bookingUrl !== "string" || !bookingUrl.startsWith("http")) {
+        return json({ ok: false, error: "no booking url returned" }, 502);
+      }
+
+      console.log("[flight-search] click resolved:", bookingUrl.slice(0, 100));
+      return json({ ok: true, deal_url: bookingUrl, booking_url: bookingUrl });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[flight-search] click error:", msg);
@@ -197,65 +221,29 @@ serve(async (req) => {
     }
   }
 
-  // ============ ACTION: resolve_deal ============
-  if (action === "resolve_deal") {
-    const search_id = safeStr(body?.search_id ?? body?.searchId ?? body?.searchid, 200);
-    const click_id = safeStr(body?.click_id ?? body?.clickId ?? body?.str_click_id, 200);
-    const results_base = safeStr(body?.results_base, 500) || null;
-
-    if (!search_id || !click_id) {
-      return json(
-        {
-          ok: false,
-          error: "missing search_id or click_id",
-          received: body,
-        },
-        400
-      );
-    }
-
-    try {
-      const result = await withTimeout(
-        resolveDealUrl({ token, marker, search_id, click_id, results_base }),
-        8000,
-        "resolve_deal"
-      );
-
-      if (!result.ok) {
-        return json(
-          {
-            ok: false,
-            error: result.error,
-            upstream: result.upstream,
-          },
-          502
-        );
-      }
-
-      return json({ ok: true, booking_url: result.booking_url });
-    } catch (e) {
-      console.error("[flight-search] resolve_deal error", e);
-      return json({ ok: false, error: "resolve_deal exception" }, 502);
-    }
-  }
-
   // ============ ACTION: search ============
   if (action === "search") {
-    const origin = safeStr(body?.origin, 10).toUpperCase();
-    const destination = safeStr(body?.destination, 10).toUpperCase();
+    const originRaw = safeStr(body?.origin, 50).toUpperCase();
+    const destRaw = safeStr(body?.destination, 50).toUpperCase();
+    // If comma-separated (nearby airports), pick first valid IATA
+    const origin = originRaw.split(",")[0]?.trim().slice(0, 3) || "";
+    const destination = destRaw.split(",")[0]?.trim().slice(0, 3) || "";
     const depart_date = safeStr(body?.depart_date, 20);
     const return_date = safeStr(body?.return_date, 20) || undefined;
-    const adults = Number(body?.adults ?? 1);
+    const adults = Math.max(1, Math.min(9, Number(body?.adults ?? 1)));
+    const children = Math.max(0, Math.min(6, Number(body?.children ?? 0)));
+    const infants = Math.max(0, Math.min(6, Number(body?.infants ?? 0)));
     const currency_code = safeStr(body?.currency ?? body?.currency_code ?? "EUR", 10).toUpperCase();
     const locale = safeStr(body?.locale ?? "en", 10).toLowerCase();
     const limit = Math.max(1, Math.min(25, Number(body?.limit ?? 25)));
     const sort = (safeStr(body?.sort, 20) as "best" | "cheapest" | "fastest") || "best";
+    const trip_class = safeStr(body?.trip_class ?? "Y", 5).toUpperCase();
 
     if (!origin || !destination || !depart_date) {
       return json({ ok: false, error: "origin, destination, and depart_date are required" }, 400);
     }
 
-    // Build directions for Travelpayouts new API (Nov 2025+)
+    // Build directions — NEVER empty
     const directions: Array<{ origin: string; destination: string; date: string }> = [
       { origin, destination, date: depart_date },
     ];
@@ -263,39 +251,53 @@ serve(async (req) => {
       directions.push({ origin: destination, destination: origin, date: return_date });
     }
 
+    // Build segments for the API
+    const segments: Array<{ origin: string; destination: string; date: string }> = [
+      { origin, destination, date: depart_date },
+    ];
+    if (return_date) {
+      segments.push({ origin: destination, destination: origin, date: return_date });
+    }
+
+    // Payload per Travelpayouts tickets API (the format that was authenticating successfully)
     const startPayload = {
       marker,
-      token,
+      host: tpHost,
+      user_ip: userIp,
       locale,
-      currency_code,
-      market_code: "US",
-      host: "goflyfinder.com",
-      user_ip:
-        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-        req.headers.get("cf-connecting-ip") ||
-        req.headers.get("x-real-ip") ||
-        "127.0.0.1",
-      trip_class: "Y",
-      passengers: { adults: Math.max(1, adults), children: 0, infants: 0 },
-      directions,
+      trip_class,
+      passengers: { adults, children, infants },
+      segments,
+      currency: currency_code,
     };
 
-    console.log("[flight-search] startPayload", JSON.stringify(startPayload));
+    // Compute signature from all payload values
+    const signature = computeSignature(token, marker, startPayload);
+    (startPayload as any).signature = signature;
+
+    console.log(
+      `[flight-search] START segments=${segments.length} ` +
+        `${origin}→${destination} ${depart_date}${return_date ? " RT " + return_date : ""}`
+    );
+    console.log("[flight-search] startPayload:", JSON.stringify(startPayload));
 
     const START_URL = "https://tickets-api.travelpayouts.com/search/affiliate/start";
+
     const startResp = await fetch(START_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(startPayload),
     });
 
     const startText = await startResp.text();
+    console.log("[flight-search] start response status:", startResp.status, "body:", startText.slice(0, 500));
+
     if (!startResp.ok) {
-      console.error("[flight-search] start failed", startResp.status, startText.slice(0, 500));
-      return json({ ok: false, error: "Failed to start search" }, 502);
+      return json({ ok: false, error: `Start failed (${startResp.status})`, details: startText.slice(0, 300) }, 502);
     }
 
     let startData: any;
@@ -308,17 +310,23 @@ serve(async (req) => {
     const search_id = safeStr(startData?.search_id ?? startData?.searchId ?? startData?.uuid, 200);
     const results_base = buildResultsBase(startData?.results_url ?? startData?.resultsUrl ?? null);
     if (!search_id) {
-      return json({ ok: false, error: "Missing search_id" }, 502);
+      return json({ ok: false, error: "Missing search_id from API" }, 502);
     }
 
-    // Poll up to ~12s total
+    console.log("[flight-search] search_id:", search_id, "results_base:", results_base);
+
+    // ── Poll for results ──
     const RESULTS_URL = `${results_base.replace(/\/$/, "")}/search/affiliate/results?search_id=${encodeURIComponent(search_id)}`;
     let resultsData: any = null;
     let completed = false;
+
     for (let i = 0; i < 8; i++) {
       const pollResp = await fetch(RESULTS_URL, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          "x-affiliate-user-id": token,
+        },
       });
       const pollText = await pollResp.text();
       if (!pollResp.ok) {
@@ -337,12 +345,15 @@ serve(async (req) => {
           resultsData?.isOver === true ||
           resultsData?.is_complete === true
       );
+
+      const ticketCount = (resultsData?.tickets || []).length;
+      console.log(`[flight-search] poll ${i + 1}: completed=${completed} tickets=${ticketCount}`);
+
       if (completed) break;
-      // short sleep (Deno)
       await new Promise((r) => setTimeout(r, 1500));
     }
 
-    // Normalize
+    // ── Normalize tickets ──
     const tickets: any[] = resultsData?.tickets || resultsData?.data?.tickets || [];
     const proposalsArr: any[] = resultsData?.proposals || resultsData?.data?.proposals || [];
     const flightLegs: any[] = resultsData?.flight_legs || resultsData?.data?.flight_legs || [];
@@ -358,8 +369,7 @@ serve(async (req) => {
 
     const rawFlights = tickets
       .map((ticket: any, idx: number) => {
-        const ticketProposalsRaw =
-          ticket?.proposals || ticket?.proposal_ids || ticket?.proposalIds || [];
+        const ticketProposalsRaw = ticket?.proposals || ticket?.proposal_ids || ticket?.proposalIds || [];
 
         let proposals: any[] = [];
         if (Array.isArray(ticketProposalsRaw)) {
@@ -368,9 +378,6 @@ serve(async (req) => {
             .filter(Boolean);
         } else if (typeof ticketProposalsRaw === "object") {
           proposals = [ticketProposalsRaw];
-        } else if (ticketProposalsRaw != null) {
-          const p = proposalsById.get(String(ticketProposalsRaw));
-          if (p) proposals = [p];
         }
 
         const cheapest = proposals.reduce((best: any, p: any) => {
@@ -404,8 +411,9 @@ serve(async (req) => {
         const arrivalTime = toYyyyMmDdHhMm(arrAt ?? arrTs);
 
         const durationMinutes =
-          Number(pick(proposal, ["duration"]) ?? pick(ticket, ["duration"]) ?? pick(firstLeg, ["duration"]) ?? 0) ||
-          0;
+          Number(
+            pick(proposal, ["duration"]) ?? pick(ticket, ["duration"]) ?? pick(firstLeg, ["duration"]) ?? 0
+          ) || 0;
 
         const stopsAirports = legs
           .slice(0, Math.max(0, legs.length - 1))
@@ -432,26 +440,22 @@ serve(async (req) => {
           airlines,
           flightNumbers,
           price: { amount: priceAmount, currency: currency_code },
-          // identifiers
           search_id,
           click_id: proposalId,
           results_base,
-          // include segments for completeness
           segments: legs,
-          // booking_url resolved below
           booking_url: "",
         };
       })
       .filter((f: any) => f && f.click_id);
 
-    // Sort before limit so we resolve only what we return
+    // Sort
     const sorted = [...rawFlights];
     if (sort === "cheapest") {
       sorted.sort((a: any, b: any) => (a.price?.amount ?? 0) - (b.price?.amount ?? 0));
     } else if (sort === "fastest") {
       sorted.sort((a: any, b: any) => (a.durationMinutes ?? 0) - (b.durationMinutes ?? 0));
     } else {
-      // best (lightweight heuristic)
       sorted.sort((a: any, b: any) => {
         const sa = (a.price?.amount ?? 0) + (a.stopsCount ?? 0) * 80 + (a.durationMinutes ?? 0) * 0.5;
         const sb = (b.price?.amount ?? 0) + (b.stopsCount ?? 0) * 80 + (b.durationMinutes ?? 0) * 0.5;
@@ -461,43 +465,38 @@ serve(async (req) => {
 
     const flights = sorted.slice(0, limit);
 
-    // Resolve booking URLs with small concurrency
+    // Resolve booking URLs concurrently
     const concurrency = 5;
     let cursor = 0;
-
     async function worker() {
       while (cursor < flights.length) {
         const i = cursor++;
         const f = flights[i];
         try {
-          const result = await withTimeout(
-            resolveDealUrl({
-              token,
-              marker,
-              search_id: f.search_id,
-              click_id: f.click_id,
-              results_base,
-            }),
-            8000,
-            `resolve_${i}`
-          );
-
-          if (result.ok) {
-            f.booking_url = result.booking_url;
-          } else {
-            console.warn("[flight-search] booking_url resolve failed", i, result.error);
-            f.booking_url = "";
+          const base = f.results_base && f.results_base.startsWith("http")
+            ? f.results_base.replace(/\/$/, "")
+            : "https://tickets-api.travelpayouts.com";
+          const clickUrl = `${base}/searches/${encodeURIComponent(f.search_id)}/clicks/${encodeURIComponent(f.click_id)}?marker=${encodeURIComponent(marker)}`;
+          const resp = await fetch(clickUrl, {
+            method: "GET",
+            headers: { Accept: "application/json", "x-affiliate-user-id": token },
+          });
+          const text = await resp.text();
+          if (resp.ok) {
+            try {
+              const d = JSON.parse(text);
+              const url = d?.url ?? d?.booking_url ?? d?.redirect_url ?? "";
+              if (typeof url === "string" && url.startsWith("http")) {
+                f.booking_url = url;
+              }
+            } catch { /* ignore */ }
           }
-        } catch (e: unknown) {
-          // Leave empty; frontend will show "No deal available" or resolve on-demand.
-          const msg = e instanceof Error ? e.message : String(e);
-          console.warn("[flight-search] booking_url resolve failed", i, msg);
-          f.booking_url = "";
-        }
+        } catch { /* ignore */ }
       }
     }
-
     await Promise.all(Array.from({ length: Math.min(concurrency, flights.length) }, () => worker()));
+
+    console.log(`[flight-search] returning ${flights.length} flights, airlines: ${[...new Set(flights.flatMap((f: any) => f.airlines))].join(",")}`);
 
     return json({
       ok: true,
@@ -512,7 +511,7 @@ serve(async (req) => {
   if (action === "price_calendar") {
     const origin = safeStr(body?.origin, 10).toUpperCase();
     const destination = safeStr(body?.destination, 10).toUpperCase();
-    const month = safeStr(body?.month, 10); // YYYY-MM
+    const month = safeStr(body?.month, 10);
     const currency_code = safeStr(body?.currency ?? "EUR", 10).toUpperCase();
 
     if (!origin || !destination || !month) {
@@ -521,15 +520,10 @@ serve(async (req) => {
 
     try {
       const calUrl = `https://api.travelpayouts.com/v1/prices/calendar?depart_date=${encodeURIComponent(month)}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&currency=${encodeURIComponent(currency_code)}&token=${encodeURIComponent(token)}`;
-      
-      const calResp = await fetch(calUrl, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
+      const calResp = await fetch(calUrl, { method: "GET", headers: { Accept: "application/json" } });
       const calText = await calResp.text();
 
       if (!calResp.ok) {
-        console.error("[flight-search] price_calendar failed", calResp.status, calText.slice(0, 200));
         return json({ ok: false, error: "Failed to fetch price calendar", currency: currency_code, days: [] });
       }
 
@@ -538,21 +532,17 @@ serve(async (req) => {
         return json({ ok: false, error: "Invalid calendar response", currency: currency_code, days: [] });
       }
 
-      // Travelpayouts returns { success, data: { "YYYY-MM-DD": { value, ... }, ... } }
       const rawDays = calData?.data || {};
       const days: Array<{ date: string; price: number | null }> = [];
-
       for (const [dateStr, info] of Object.entries(rawDays)) {
         const priceVal = (info as any)?.value ?? (info as any)?.price ?? null;
         days.push({ date: dateStr, price: typeof priceVal === "number" ? priceVal : null });
       }
-
       days.sort((a, b) => a.date.localeCompare(b.date));
 
       return json({ ok: true, currency: currency_code, days });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.error("[flight-search] price_calendar error:", msg);
       return json({ ok: false, error: msg, currency: currency_code, days: [] });
     }
   }
@@ -568,15 +558,10 @@ serve(async (req) => {
 
     try {
       const cheapUrl = `https://api.travelpayouts.com/v1/prices/cheap?origin=${encodeURIComponent(origin)}&currency=${encodeURIComponent(currency_code)}&token=${encodeURIComponent(token)}`;
-      
-      const cheapResp = await fetch(cheapUrl, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
+      const cheapResp = await fetch(cheapUrl, { method: "GET", headers: { Accept: "application/json" } });
       const cheapText = await cheapResp.text();
 
       if (!cheapResp.ok) {
-        console.error("[flight-search] explore failed", cheapResp.status, cheapText.slice(0, 200));
         return json({ ok: false, error: "Failed to fetch explore data", currency: currency_code, results: [] });
       }
 
@@ -585,17 +570,14 @@ serve(async (req) => {
         return json({ ok: false, error: "Invalid explore response", currency: currency_code, results: [] });
       }
 
-      // Travelpayouts returns { success, data: { "DEST": { 0: { price, airline, ... } }, ... } }
       const rawData = cheapData?.data || {};
       const results: Array<{ destination: string; price: number; depart_date?: string; return_date?: string; airline?: string; stops?: number }> = [];
 
       for (const [dest, routes] of Object.entries(rawData)) {
         const routeObj: any = routes;
-        // Get the cheapest route (key "0" or first key)
         const firstKey = Object.keys(routeObj)[0];
         const route = routeObj[firstKey];
         if (!route?.price) continue;
-
         results.push({
           destination: dest,
           price: route.price,
@@ -605,16 +587,14 @@ serve(async (req) => {
           stops: typeof route.number_of_changes === "number" ? route.number_of_changes : undefined,
         });
       }
-
       results.sort((a, b) => a.price - b.price);
 
       return json({ ok: true, currency: currency_code, results: results.slice(0, 50) });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.error("[flight-search] explore error:", msg);
       return json({ ok: false, error: msg, currency: currency_code, results: [] });
     }
   }
 
-  return json({ ok: false, error: 'Invalid action. Use "search", "click", "resolve_deal", "price_calendar", or "explore".' }, 400);
+  return json({ ok: false, error: 'Invalid action. Use "search", "click", "price_calendar", or "explore".' }, 400);
 });
