@@ -23,6 +23,8 @@ interface FlightFiltersProps {
   flights?: Flight[];
   /** The currency code returned by the API for the current flight set */
   flightsCurrency?: string;
+  /** Current filter state from the parent — used to sync when chips reset externally */
+  currentFilters?: FilterState;
 }
 
 const DEFAULT_PRICE_RANGE: [number, number] = [0, 10000];
@@ -32,6 +34,7 @@ const FlightFilters = memo(({
   onFiltersChange,
   flights = [],
   flightsCurrency,
+  currentFilters,
 }: FlightFiltersProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useLocale();
@@ -67,6 +70,26 @@ const FlightFilters = memo(({
   useEffect(() => {
     if (flights.length > 0) setPriceRange(actualPriceRange);
   }, [actualPriceRange, flights.length]);
+
+  // Sync internal state when parent resets filters externally (e.g. chip × click)
+  useEffect(() => {
+    if (!currentFilters) return;
+    if (currentFilters.stopsMode !== stopsModeRef.current) {
+      setStopsMode(currentFilters.stopsMode);
+      stopsModeRef.current = currentFilters.stopsMode;
+    }
+    if (JSON.stringify(currentFilters.airlines) !== JSON.stringify(airlinesRef.current)) {
+      setAirlines(currentFilters.airlines);
+      airlinesRef.current = currentFilters.airlines;
+    }
+    if (currentFilters.priceRange[0] !== priceRange[0] || currentFilters.priceRange[1] !== priceRange[1]) {
+      setPriceRange(currentFilters.priceRange);
+    }
+    if (JSON.stringify(currentFilters.departureTime) !== JSON.stringify(departureTimeRef.current)) {
+      setDepartureTime(currentFilters.departureTime);
+      departureTimeRef.current = currentFilters.departureTime;
+    }
+  }, [currentFilters]);
 
   // Refs for debounced callbacks
   const stopsModeRef = useRef(stopsMode);

@@ -16,13 +16,14 @@ interface MobileFiltersDrawerProps {
   flightCount: number;
   flights?: Flight[];
   flightsCurrency?: string;
+  currentFilters?: FilterState;
 }
 
 const DEFAULT_PRICE_RANGE: [number, number] = [0, 2000];
 const DEBOUNCE_MS = 200;
 
 const MobileFiltersDrawer = ({
-  onFiltersChange, activeFiltersCount, flightCount, flights = [], flightsCurrency,
+  onFiltersChange, activeFiltersCount, flightCount, flights = [], flightsCurrency, currentFilters,
 }: MobileFiltersDrawerProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useLocale();
@@ -58,6 +59,15 @@ const MobileFiltersDrawer = ({
   useEffect(() => {
     if (flights.length > 0) setPriceRange(actualPriceRange);
   }, [actualPriceRange, flights.length]);
+
+  // Sync internal state when parent resets filters externally (e.g. chip × click)
+  useEffect(() => {
+    if (!currentFilters) return;
+    if (currentFilters.stopsMode !== stopsMode) setStopsMode(currentFilters.stopsMode);
+    if (JSON.stringify(currentFilters.airlines) !== JSON.stringify(airlines)) setAirlines(currentFilters.airlines);
+    if (currentFilters.priceRange[0] !== priceRange[0] || currentFilters.priceRange[1] !== priceRange[1]) setPriceRange(currentFilters.priceRange);
+    if (JSON.stringify(currentFilters.departureTime) !== JSON.stringify(departureTime)) setDepartureTime(currentFilters.departureTime);
+  }, [currentFilters]);
 
   const emitFilters = useCallback((overrides: Partial<FilterState> = {}) => {
     onFiltersChange({

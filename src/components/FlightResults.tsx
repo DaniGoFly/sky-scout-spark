@@ -62,7 +62,7 @@ const FlightResults = () => {
   const infants = Number(searchParams.get("infants")) || 0;
   const tripType = searchParams.get("trip") || "roundtrip";
   const travelClass = searchParams.get("class") || "economy";
-  const directOnly = searchParams.get("direct") === "true";
+  // directOnly from URL params is now handled via stopsMode filter only
 
   // Redirect multi-city searches to the dedicated page
   useEffect(() => {
@@ -169,8 +169,8 @@ const FlightResults = () => {
   const processedFlights = useMemo(() => {
     let result = [...normalizedFlights];
 
-    // Apply stops filter using stopsMode (single-choice)
-    if (directOnly || filters.stopsMode === "direct") {
+    // Apply stops filter using stopsMode (single-choice, no directOnly from URL)
+    if (filters.stopsMode === "direct") {
       result = result.filter(f => f.stopsCount === 0);
     } else if (filters.stopsMode === "1") {
       result = result.filter(f => f.stopsCount === 1);
@@ -208,7 +208,7 @@ const FlightResults = () => {
 
     // Sort flights
     return sortFlights(result, sortBy);
-  }, [normalizedFlights, filters, sortBy, directOnly]);
+  }, [normalizedFlights, filters, sortBy]);
 
   // Slice to visible count (capped at MAX_VISIBLE_RESULTS)
   const displayedFlights = useMemo(() => {
@@ -373,7 +373,6 @@ const FlightResults = () => {
               {tripType === "roundtrip" && displayReturn && ` – ${formatDate(displayReturn)}`}
               {" • "}{adults + children + infants} traveler{(adults + children + infants) > 1 ? "s" : ""}
               {travelClass !== "economy" && ` • ${travelClass.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}`}
-              {directOnly && " • Direct only"}
             </p>
           </div>
           
