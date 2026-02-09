@@ -242,18 +242,30 @@ export function sortFlights(
 
   switch (sortBy) {
     case "cheapest":
-      sorted.sort((a, b) => a.price.amount - b.price.amount);
+      sorted.sort((a, b) => {
+        if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
+        if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
+        return (a.departureTime || "").localeCompare(b.departureTime || "");
+      });
       break;
     case "fastest":
-      sorted.sort((a, b) => a.durationMinutes - b.durationMinutes);
+      sorted.sort((a, b) => {
+        if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
+        if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
+        return (a.departureTime || "").localeCompare(b.departureTime || "");
+      });
       break;
     case "best":
     default:
       // Weighted score: price + stops penalty + duration penalty
+      // Ties broken by price → duration → departureTime for stability
       sorted.sort((a, b) => {
         const scoreA = a.price.amount + a.stopsCount * 80 + a.durationMinutes * 0.5;
         const scoreB = b.price.amount + b.stopsCount * 80 + b.durationMinutes * 0.5;
-        return scoreA - scoreB;
+        if (scoreA !== scoreB) return scoreA - scoreB;
+        if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
+        if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
+        return (a.departureTime || "").localeCompare(b.departureTime || "");
       });
       break;
   }

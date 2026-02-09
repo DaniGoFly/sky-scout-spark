@@ -27,6 +27,53 @@ interface UseLiveFlightSearchResult {
   cancelSearch: () => void;
 }
 
+/* ── localStorage cache helpers ── */
+
+const CACHE_PREFIX = "goflyfinder:searchCache:";
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+interface CachedResult {
+  timestamp: number;
+  searchId: string | null;
+  resultsBase: string | null;
+  flights: Flight[];
+}
+
+function buildCacheKey(params: SearchParamsHook): string {
+  const normalized = {
+    o: params.origin?.toUpperCase(),
+    d: params.destination?.toUpperCase(),
+    dep: params.departDate,
+    ret: params.returnDate || "",
+    a: params.adults || 1,
+    cur: params.currency || "EUR",
+  };
+  return CACHE_PREFIX + JSON.stringify(normalized);
+}
+
+function readCache(key: string): CachedResult | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed: CachedResult = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp > CACHE_TTL_MS) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(key: string, data: CachedResult) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    // localStorage full — silently ignore
+  }
+}
+
 export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [status, setStatus] = useState<SearchStatus>("idle");
@@ -50,6 +97,20 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     if (abortRef.current) {
       abortRef.current.abort();
     }
+
+    const cacheKey = buildCacheKey(params);
+    const cached = readCache(cacheKey);
+
+    // Return cached results if fresh
+    if (cached && cached.flights.length > 0) {
+      setFlights(cached.flights);
+      setSearchId(cached.searchId);
+      setResultsBase(cached.resultsBase);
+      setError(null);
+      setStatus("complete");
+      return;
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -89,6 +150,14 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         setStatus("no_results");
         return;
       }
+
+      // Persist to cache
+      writeCache(cacheKey, {
+        timestamp: Date.now(),
+        searchId: data.search_id || null,
+        resultsBase: data.results_base || null,
+        flights: flightResults,
+      });
 
       setFlights(flightResults);
       setStatus("complete");

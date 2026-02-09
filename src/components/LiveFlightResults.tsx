@@ -157,14 +157,30 @@ const LiveFlightResults = () => {
   const sortedFlights = useMemo(() => {
     const sorted = [...filteredFlights];
     switch (sortBy) {
-      case "cheapest": sorted.sort((a, b) => a.price.amount - b.price.amount); break;
-      case "fastest": sorted.sort((a, b) => a.durationMinutes - b.durationMinutes); break;
+      case "cheapest":
+        sorted.sort((a, b) => {
+          if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
+          if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
+          return (a.departureTime || "").localeCompare(b.departureTime || "");
+        });
+        break;
+      case "fastest":
+        sorted.sort((a, b) => {
+          if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
+          if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
+          return (a.departureTime || "").localeCompare(b.departureTime || "");
+        });
+        break;
       case "best": default:
         sorted.sort((a, b) => {
           const scoreA = a.price.amount * 0.6 + a.durationMinutes * 0.3 + a.outboundStopsTotal * 100;
           const scoreB = b.price.amount * 0.6 + b.durationMinutes * 0.3 + b.outboundStopsTotal * 100;
-          return scoreA - scoreB;
-        }); break;
+          if (scoreA !== scoreB) return scoreA - scoreB;
+          if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
+          if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
+          return (a.departureTime || "").localeCompare(b.departureTime || "");
+        });
+        break;
     }
     return sorted.slice(0, MAX_DISPLAY);
   }, [filteredFlights, sortBy]);
