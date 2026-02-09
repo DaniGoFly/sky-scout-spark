@@ -52,11 +52,23 @@ const FlightFilters = memo(({
   const [departureTime, setDepartureTime] = useState<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const availableAirlines = useMemo(() => {
+  // Build unique airline list with counts from flight data
+  const airlineData = useMemo(() => {
     if (!flights.length) return [];
-    const airlineNames = flights.map(f => f.airlines?.[0]).filter(Boolean).map(code => getAirlineName(code));
-    return [...new Set(airlineNames)].sort();
+    const countMap = new Map<string, number>();
+    flights.forEach(f => {
+      const raw = f.airlines?.[0] || "";
+      if (!raw) return;
+      // Resolve display name: if it's a 2-3 letter code, map it; otherwise use as-is
+      const display = raw.length <= 3 ? getAirlineName(raw) : raw;
+      countMap.set(display, (countMap.get(display) || 0) + 1);
+    });
+    return [...countMap.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [flights]);
+
+  const availableAirlines = useMemo(() => airlineData.map(a => a.name), [airlineData]);
 
   const actualPriceRange = useMemo((): [number, number] => {
     if (!flights.length) return DEFAULT_PRICE_RANGE;
@@ -219,10 +231,11 @@ const FlightFilters = memo(({
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-foreground">{t("filters.airlines")}</h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {availableAirlines.map((airline) => (
-              <div key={airline} className="flex items-center space-x-2 min-w-0">
-                <Checkbox id={`airline-${airline}`} checked={airlines.includes(airline)} onCheckedChange={() => toggleAirline(airline)} className="shrink-0" />
-                <Label htmlFor={`airline-${airline}`} className="text-sm text-muted-foreground cursor-pointer truncate min-w-0" title={airline}>{airline}</Label>
+            {airlineData.map(({ name, count }) => (
+              <div key={name} className="flex items-center space-x-2 min-w-0">
+                <Checkbox id={`airline-${name}`} checked={airlines.includes(name)} onCheckedChange={() => toggleAirline(name)} className="shrink-0" />
+                <Label htmlFor={`airline-${name}`} className="text-sm text-muted-foreground cursor-pointer truncate min-w-0 flex-1" title={name}>{name}</Label>
+                <span className="text-[11px] text-muted-foreground shrink-0">{count}</span>
               </div>
             ))}
           </div>

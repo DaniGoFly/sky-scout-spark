@@ -92,7 +92,12 @@ const FlightResults = () => {
       // Sanitize price: detect minor-unit bugs
       const rawPrice = Math.round(f.price);
       const priceValue = rawPrice > 50000 ? Math.round(rawPrice / 100) : rawPrice;
-      const airlineCode = f.airline?.substring(0, 2).toUpperCase() || "XX";
+
+      // Preserve the full airline string from backend (e.g. "Lufthansa", "LH", "TK")
+      // Do NOT truncate to 2 chars — that destroys distinct airline info
+      const airlineRaw = (f.airline || "").trim();
+      // If it looks like a full name keep it; if it's a 2-letter code keep as-is
+      const airlineValue = airlineRaw || "XX";
       
       return {
         id: f.id,
@@ -103,7 +108,7 @@ const FlightResults = () => {
         durationMinutes: f.durationMinutes || 0,
         stopsCount: f.stops || 0,
         stopsAirports: [],
-        airlines: [airlineCode],
+        airlines: [airlineValue],
         flightNumbers: f.flightNumber ? [f.flightNumber] : [],
         price: { amount: priceValue, currency: localeCurrency },
         clickUrl: f.deepLink || "",
@@ -185,8 +190,10 @@ const FlightResults = () => {
 
     if (filters.airlines.length > 0) {
       result = result.filter((flight) => {
-        const flightAirline = getAirlineName(flight.airlines?.[0] || "");
-        return filters.airlines.includes(flightAirline);
+        const raw = flight.airlines?.[0] || "";
+        // Match the same resolution logic as FlightFilters
+        const display = raw.length <= 3 ? getAirlineName(raw) : raw;
+        return filters.airlines.includes(display);
       });
     }
 
