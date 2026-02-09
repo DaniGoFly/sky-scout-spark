@@ -18,9 +18,12 @@ export interface SearchParams {
   departDate: string;
   returnDate?: string;
   adults?: number;
+  children?: number;
+  infants?: number;
   currency?: string;
   sort?: "best" | "cheapest" | "fastest";
   limit?: number;
+  tripClass?: string;
 }
 
 /**
@@ -99,10 +102,13 @@ export async function searchFlights(
     depart_date: params.departDate,
     return_date: params.returnDate || undefined,
     adults: params.adults || 1,
+    children: params.children || 0,
+    infants: params.infants || 0,
     currency: params.currency || "EUR",
     locale: "en",
     limit: params.limit || 25,
     sort: params.sort || "best",
+    trip_class: params.tripClass || "economy",
   };
 
   try {

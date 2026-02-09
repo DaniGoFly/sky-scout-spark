@@ -1,13 +1,13 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FlightResults from "@/components/FlightResults";
+import LiveFlightResults from "@/components/LiveFlightResults";
 
 const FlightsResults = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="pt-20 flex-1">
-        <FlightResults />
+      <main className="flex-1">
+        <LiveFlightResults />
       </main>
       <Footer />
     </div>
