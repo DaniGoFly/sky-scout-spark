@@ -84,14 +84,17 @@ const LiveFlightResults = () => {
       destination: to.toUpperCase(),
       departDate: depart,
       returnDate: isRoundtrip ? returnDate : undefined,
-      adults: adults + children + infants,
+      adults,
+      children,
+      infants,
       currency: currency,
       sort: "cheapest" as const,
       limit: 50,
+      tripClass: tripClass,
     };
     console.log("[flight-search] request", payload);
     searchFlights(payload);
-  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, searchFlights, cancelSearch]);
+  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, tripClass, searchFlights, cancelSearch]);
 
   // ── Step 1: Enrich raw flights with canonical per-direction stop data ──
   const enrichedFlights = useMemo<EnrichedFlight[]>(() => {
@@ -220,9 +223,9 @@ const LiveFlightResults = () => {
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("cheapest");
     if (from && to && depart) {
-      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: isRoundtrip ? returnDate : undefined, adults: adults + children + infants, currency, sort: "cheapest", limit: 50 });
+      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: isRoundtrip ? returnDate : undefined, adults, children, infants, currency, sort: "cheapest", limit: 50, tripClass: tripClass });
     }
-  }, [from, to, depart, returnDate, adults, children, infants, isRoundtrip, currency, searchFlights]);
+  }, [from, to, depart, returnDate, adults, children, infants, isRoundtrip, currency, tripClass, searchFlights]);
 
   const totalPassengers = adults + children + infants;
 

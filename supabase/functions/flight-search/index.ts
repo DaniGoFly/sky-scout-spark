@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-/* MD5 implementation for signature computation */
+/* ── MD5 implementation for signature computation ── */
 function md5(input: string): string {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
@@ -95,7 +95,8 @@ function buildResultsBase(resultsUrl: unknown): string {
   }
 }
 
-/* ── MD5 signature per Travelpayouts docs ── */
+/* ── Signature per Travelpayouts docs ── */
+/* Collect all primitive values from nested object, sort alphabetically with token+marker, join with ":", MD5 */
 
 function collectValues(obj: any): string[] {
   const vals: string[] = [];
@@ -121,19 +122,6 @@ function computeSignature(token: string, marker: string, params: any): string {
   return md5(str);
 }
 
-/* ── Travelpayouts API headers ── */
-
-function tpHeaders(token: string, signature: string, host: string, userIp: string) {
-  return {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    "x-real-host": host,
-    "x-user-ip": userIp,
-    "x-affiliate-user-id": token,
-    "x-signature": signature,
-  };
-}
-
 function getUserIp(req: Request, body: any): string {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -142,6 +130,15 @@ function getUserIp(req: Request, body: any): string {
     safeStr(body?.user_ip, 50) ||
     "127.0.0.1"
   );
+}
+
+/** Map frontend cabin class names to Travelpayouts trip_class codes */
+function mapTripClass(cls: string): string {
+  const map: Record<string, string> = {
+    economy: "Y", premium_economy: "W", business: "C", first: "F",
+    y: "Y", w: "W", c: "C", f: "F",
+  };
+  return map[cls.toLowerCase()] || "Y";
 }
 
 serve(async (req) => {
@@ -171,10 +168,7 @@ serve(async (req) => {
   // ============ ACTION: click ============
   if (action === "click" || action === "resolve_deal") {
     const search_id = safeStr(body?.search_id ?? body?.searchId, 200);
-    const proposal_id = safeStr(
-      body?.proposal_id ?? body?.proposalId ?? body?.click_id ?? body?.clickId,
-      200
-    );
+    const proposal_id = safeStr(body?.proposal_id ?? body?.proposalId ?? body?.click_id ?? body?.clickId, 200);
     const rb = safeStr(body?.results_base ?? body?.resultsBase, 500) || null;
 
     if (!search_id || !proposal_id) {
@@ -189,10 +183,7 @@ serve(async (req) => {
     try {
       const resp = await fetch(clickUrl, {
         method: "GET",
-        headers: {
-          Accept: "application/json",
-          "x-affiliate-user-id": token,
-        },
+        headers: { Accept: "application/json", "x-affiliate-user-id": token },
       });
       const text = await resp.text();
       if (!resp.ok) {
@@ -201,9 +192,7 @@ serve(async (req) => {
       }
 
       let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch {
+      try { data = JSON.parse(text); } catch {
         return json({ ok: false, error: "invalid click response" }, 502);
       }
 
@@ -235,23 +224,15 @@ serve(async (req) => {
     const infants = Math.max(0, Math.min(6, Number(body?.infants ?? 0)));
     const currency_code = safeStr(body?.currency ?? body?.currency_code ?? "EUR", 10).toUpperCase();
     const locale = safeStr(body?.locale ?? "en", 10).toLowerCase();
-    const limit = Math.max(1, Math.min(25, Number(body?.limit ?? 25)));
+    const limit = Math.max(1, Math.min(50, Number(body?.limit ?? 25)));
     const sort = (safeStr(body?.sort, 20) as "best" | "cheapest" | "fastest") || "best";
-    const trip_class = safeStr(body?.trip_class ?? "Y", 5).toUpperCase();
+    const trip_class = mapTripClass(safeStr(body?.trip_class ?? body?.cabin_class ?? "economy", 20));
 
     if (!origin || !destination || !depart_date) {
       return json({ ok: false, error: "origin, destination, and depart_date are required" }, 400);
     }
 
-    // Build directions — NEVER empty
-    const directions: Array<{ origin: string; destination: string; date: string }> = [
-      { origin, destination, date: depart_date },
-    ];
-    if (return_date) {
-      directions.push({ origin: destination, destination: origin, date: return_date });
-    }
-
-    // Build segments for the API
+    // Build segments — NEVER empty
     const segments: Array<{ origin: string; destination: string; date: string }> = [
       { origin, destination, date: depart_date },
     ];
@@ -259,58 +240,108 @@ serve(async (req) => {
       segments.push({ origin: destination, destination: origin, date: return_date });
     }
 
-    // Payload per Travelpayouts tickets API (the format that was authenticating successfully)
-    const startPayload = {
+    // ── Try NEW API format first, fallback to OLD API ──
+
+    // NEW format payload (Nov 2025+)
+    const search_params = {
+      trip_class,
+      passengers: { adults, children, infants },
+      directions: segments,
+    };
+    const market_code = locale.length >= 2 ? locale.slice(0, 2).toUpperCase() : "US";
+
+    // Hybrid payload: old-style body fields (host, user_ip for auth) + new search_params structure
+    const hybridPayload: any = {
       marker,
       host: tpHost,
       user_ip: userIp,
       locale,
-      trip_class,
-      passengers: { adults, children, infants },
-      segments,
-      currency: currency_code,
+      currency_code,
+      market_code,
+      search_params,
     };
+    const hybridSignature = computeSignature(token, marker, hybridPayload);
+    hybridPayload.signature = hybridSignature;
 
-    // Compute signature from all payload values
-    const signature = computeSignature(token, marker, startPayload);
-    (startPayload as any).signature = signature;
+    // Also prepare new-only payload (no host/user_ip in body)
+    const newPayloadForSig = { marker, locale, currency_code, market_code, search_params };
+    const newSignature = computeSignature(token, marker, newPayloadForSig);
+    const newPayload = { signature: newSignature, ...newPayloadForSig };
 
     console.log(
       `[flight-search] START segments=${segments.length} ` +
-        `${origin}→${destination} ${depart_date}${return_date ? " RT " + return_date : ""}`
+        `${origin}→${destination} ${depart_date}${return_date ? " RT " + return_date : ""} ` +
+        `class=${trip_class} pax=${adults}a/${children}c/${infants}i cur=${currency_code}`
     );
-    console.log("[flight-search] startPayload:", JSON.stringify(startPayload));
+    console.log("[flight-search] hybridPayload:", JSON.stringify(hybridPayload).slice(0, 600));
 
     const START_URL = "https://tickets-api.travelpayouts.com/search/affiliate/start";
 
-    const startResp = await fetch(START_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(startPayload),
-    });
+    const xHeaders = {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "x-real-host": tpHost,
+      "x-user-ip": userIp,
+      "x-affiliate-user-id": token,
+      "x-signature": hybridSignature,
+    };
+
+    let startResp: Response;
+    let usedFormat = "hybrid-bare";
+    try {
+      // Try 1: Hybrid payload (old auth + new search_params) + bare headers
+      startResp = await fetch(START_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(hybridPayload),
+      });
+      console.log("[flight-search] Try 1 (hybrid+bare) status:", startResp.status);
+
+      // Try 2: New payload + x-headers (official new API)
+      if (startResp.status === 403 || startResp.status === 401) {
+        usedFormat = "new-xheaders";
+        startResp = await fetch(START_URL, {
+          method: "POST",
+          headers: xHeaders,
+          body: JSON.stringify(newPayload),
+        });
+        console.log("[flight-search] Try 2 (new+xheaders) status:", startResp.status);
+      }
+
+      // Try 3: Hybrid payload + x-headers 
+      if (startResp.status === 403 || startResp.status === 401) {
+        usedFormat = "hybrid-xheaders";
+        startResp = await fetch(START_URL, {
+          method: "POST",
+          headers: xHeaders,
+          body: JSON.stringify(hybridPayload),
+        });
+        console.log("[flight-search] Try 3 (hybrid+xheaders) status:", startResp.status);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[flight-search] start fetch error:", msg);
+      return json({ ok: false, error: `Network error: ${msg}` }, 502);
+    }
 
     const startText = await startResp.text();
     console.log("[flight-search] start response status:", startResp.status, "body:", startText.slice(0, 500));
 
     if (!startResp.ok) {
-      return json({ ok: false, error: `Start failed (${startResp.status})`, details: startText.slice(0, 300) }, 502);
+      return json({ ok: false, error: `Start failed (${startResp.status}): ${startText.slice(0, 200)}` }, 502);
     }
 
     let startData: any;
     try {
       startData = JSON.parse(startText);
     } catch {
-      return json({ ok: false, error: "Invalid start response" }, 502);
+      return json({ ok: false, error: "Invalid start response JSON" }, 502);
     }
 
     const search_id = safeStr(startData?.search_id ?? startData?.searchId ?? startData?.uuid, 200);
     const results_base = buildResultsBase(startData?.results_url ?? startData?.resultsUrl ?? null);
     if (!search_id) {
-      return json({ ok: false, error: "Missing search_id from API" }, 502);
+      return json({ ok: false, error: "Missing search_id from API", raw: startText.slice(0, 300) }, 502);
     }
 
     console.log("[flight-search] search_id:", search_id, "results_base:", results_base);
@@ -320,75 +351,211 @@ serve(async (req) => {
     let resultsData: any = null;
     let completed = false;
 
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, i === 0 ? 800 : 1500));
+
+      const pollHeaders = {
+        Accept: "application/json",
+        "x-affiliate-user-id": token,
+      };
+
       const pollResp = await fetch(RESULTS_URL, {
         method: "GET",
-        headers: {
-          Accept: "application/json",
-          "x-affiliate-user-id": token,
-        },
+        headers: pollHeaders,
       });
       const pollText = await pollResp.text();
       if (!pollResp.ok) {
         console.error("[flight-search] poll failed", pollResp.status, pollText.slice(0, 200));
-        return json({ ok: false, error: "Failed to fetch results" }, 502);
+        // Don't fail immediately — might be temporary
+        continue;
       }
       try {
         resultsData = JSON.parse(pollText);
       } catch {
-        return json({ ok: false, error: "Invalid poll response" }, 502);
+        console.error("[flight-search] poll parse error:", pollText.slice(0, 200));
+        continue;
       }
 
       completed = Boolean(
-        resultsData?.completed === true ||
-          resultsData?.is_over === true ||
-          resultsData?.isOver === true ||
-          resultsData?.is_complete === true
+        resultsData?.search_completed === true ||
+          resultsData?.completed === true ||
+          resultsData?.is_over === true
       );
 
-      const ticketCount = (resultsData?.tickets || []).length;
-      console.log(`[flight-search] poll ${i + 1}: completed=${completed} tickets=${ticketCount}`);
+      const ticketCount = (resultsData?.proposals || resultsData?.tickets || []).length;
+      console.log(`[flight-search] poll ${i + 1}: completed=${completed} proposals=${ticketCount}`);
 
-      if (completed) break;
-      await new Promise((r) => setTimeout(r, 1500));
+      if (completed && ticketCount > 0) break;
+      if (completed) break; // completed but 0 results
     }
 
-    // ── Normalize tickets ──
-    const tickets: any[] = resultsData?.tickets || resultsData?.data?.tickets || [];
-    const proposalsArr: any[] = resultsData?.proposals || resultsData?.data?.proposals || [];
-    const flightLegs: any[] = resultsData?.flight_legs || resultsData?.data?.flight_legs || [];
-
-    const proposalsById = new Map<string, any>();
-    for (const p of proposalsArr) {
-      if (p?.id != null) proposalsById.set(String(p.id), p);
-    }
-    const legsById = new Map<string, any>();
-    for (const l of flightLegs) {
-      if (l?.id != null) legsById.set(String(l.id), l);
+    if (!resultsData) {
+      return json({ ok: false, error: "Polling timed out with no data" }, 502);
     }
 
-    const rawFlights = tickets
-      .map((ticket: any, idx: number) => {
-        const ticketProposalsRaw = ticket?.proposals || ticket?.proposal_ids || ticket?.proposalIds || [];
+    // ── Normalize results ──
+    // The new API returns proposals (each with terms containing price) and segments/flights
+    const proposals: any[] = resultsData?.proposals || [];
+    const resultSegments: Record<string, any> = resultsData?.segments || {};
+    const airlines: Record<string, any> = resultsData?.airlines || {};
+    const airports: Record<string, any> = resultsData?.airports || {};
+    const flightLegsMap: Record<string, any> = resultsData?.flight_legs || resultsData?.flights || {};
+    // Legacy format
+    const tickets: any[] = resultsData?.tickets || [];
 
-        let proposals: any[] = [];
-        if (Array.isArray(ticketProposalsRaw)) {
-          proposals = ticketProposalsRaw
-            .map((x: any) => (typeof x === "object" ? x : proposalsById.get(String(x))))
-            .filter(Boolean);
-        } else if (typeof ticketProposalsRaw === "object") {
-          proposals = [ticketProposalsRaw];
+    let rawFlights: any[] = [];
+
+    if (proposals.length > 0) {
+      // ── New API format: proposals with terms ──
+      rawFlights = proposals.map((proposal: any, idx: number) => {
+        // Each proposal has terms (agent → price info) and segment_ids
+        const terms = proposal?.terms || {};
+        const termEntries = Object.entries(terms);
+
+        // Find cheapest term
+        let cheapestPrice = Infinity;
+        let cheapestTerm: any = null;
+        for (const [_agentId, termData] of termEntries) {
+          const td = termData as any;
+          const price = Number(td?.unified_price ?? td?.price ?? td?.amount ?? 0);
+          if (price > 0 && price < cheapestPrice) {
+            cheapestPrice = price;
+            cheapestTerm = td;
+          }
         }
 
-        const cheapest = proposals.reduce((best: any, p: any) => {
+        if (!cheapestTerm || cheapestPrice === Infinity) return null;
+
+        // Get segment IDs for this proposal
+        const segmentIds: string[] = proposal?.segment_ids || proposal?.segments || [];
+        const allLegs: any[] = [];
+
+        for (const segId of segmentIds) {
+          const seg = resultSegments[String(segId)];
+          if (seg) {
+            // Each segment has flight_ids or flights
+            const flightIds = seg?.flight_ids || seg?.flights || [];
+            for (const fId of flightIds) {
+              const leg = typeof fId === "object" ? fId : (flightLegsMap[String(fId)] || null);
+              if (leg) allLegs.push(leg);
+            }
+            // If segment itself has origin/destination, treat as a single leg
+            if (flightIds.length === 0 && seg.origin) {
+              allLegs.push(seg);
+            }
+          }
+        }
+
+        const firstLeg = allLegs[0] || {};
+        const lastLeg = allLegs[allLegs.length - 1] || firstLeg;
+
+        const depCode = safeStr(pick(firstLeg, ["origin", "departure", "origin_airport"]) || "", 10).toUpperCase();
+        const arrCode = safeStr(pick(lastLeg, ["destination", "arrival", "destination_airport"]) || "", 10).toUpperCase();
+
+        const depAt = pick(firstLeg, ["departure_at", "departureAt", "departure_time", "local_departure", "departure"]);
+        const arrAt = pick(lastLeg, ["arrival_at", "arrivalAt", "arrival_time", "local_arrival", "arrival"]);
+        const depTs = pick(firstLeg, ["departure_timestamp", "departureTimestamp", "departure_unix"]);
+        const arrTs = pick(lastLeg, ["arrival_timestamp", "arrivalTimestamp", "arrival_unix"]);
+
+        const departureTime = toYyyyMmDdHhMm(depAt ?? depTs);
+        const arrivalTime = toYyyyMmDdHhMm(arrAt ?? arrTs);
+
+        // Duration
+        let durationMinutes = 0;
+        const totalDuration = pick(proposal, ["total_duration", "duration"]) ||
+          pick(cheapestTerm, ["duration"]);
+        if (totalDuration) {
+          durationMinutes = Number(totalDuration) || 0;
+        }
+        if (!durationMinutes && departureTime && arrivalTime) {
+          try {
+            const d1 = new Date(departureTime.replace(" ", "T")).getTime();
+            const d2 = new Date(arrivalTime.replace(" ", "T")).getTime();
+            if (!isNaN(d1) && !isNaN(d2) && d2 > d1) {
+              durationMinutes = Math.round((d2 - d1) / 60000);
+            }
+          } catch { /* ignore */ }
+        }
+
+        const stopsAirports = allLegs
+          .slice(0, Math.max(0, allLegs.length - 1))
+          .map((l: any) => safeStr(pick(l, ["destination", "arrival", "destination_airport"]) || "", 10).toUpperCase())
+          .filter(Boolean);
+
+        const flightAirlines = allLegs
+          .map((l: any) => {
+            const code = safeStr(
+              pick(l, ["marketing_carrier", "carrier", "operating_carrier", "airline"]) || "",
+              10
+            ).toUpperCase();
+            return code;
+          })
+          .filter(Boolean);
+
+        // Dedupe airlines
+        const uniqueAirlines = [...new Set(flightAirlines)];
+
+        const flightNumbers = allLegs
+          .map((l: any) => {
+            const carrier = safeStr(pick(l, ["marketing_carrier", "carrier"]) || "", 5).toUpperCase();
+            const num = safeStr(pick(l, ["flight_number", "number"]) || "", 20);
+            return carrier && num ? `${carrier}${num}` : num;
+          })
+          .filter(Boolean);
+
+        const proposalId = String(proposal?.id ?? proposal?.sign ?? idx);
+
+        return {
+          id: `${search_id}-${proposalId}`,
+          origin: depCode || origin,
+          destination: arrCode || destination,
+          departureTime,
+          arrivalTime,
+          durationMinutes,
+          stopsCount: Math.max(0, allLegs.length - 1),
+          stopsAirports,
+          airlines: uniqueAirlines.length > 0 ? uniqueAirlines : ["XX"],
+          flightNumbers,
+          price: { amount: cheapestPrice, currency: currency_code },
+          search_id,
+          click_id: proposalId,
+          results_base,
+          segments: allLegs,
+          booking_url: "",
+        };
+      }).filter(Boolean);
+    } else if (tickets.length > 0) {
+      // ── Legacy format: tickets with proposals ──
+      const proposalsArr: any[] = resultsData?.data?.proposals || [];
+      const legsList: any[] = resultsData?.flight_legs || resultsData?.data?.flight_legs || [];
+
+      const proposalsById = new Map<string, any>();
+      for (const p of proposalsArr) {
+        if (p?.id != null) proposalsById.set(String(p.id), p);
+      }
+      const legsById = new Map<string, any>();
+      for (const l of legsList) {
+        if (l?.id != null) legsById.set(String(l.id), l);
+      }
+
+      rawFlights = tickets.map((ticket: any, idx: number) => {
+        const ticketProposalsRaw = ticket?.proposals || ticket?.proposal_ids || [];
+        let tProposals: any[] = [];
+        if (Array.isArray(ticketProposalsRaw)) {
+          tProposals = ticketProposalsRaw
+            .map((x: any) => (typeof x === "object" ? x : proposalsById.get(String(x))))
+            .filter(Boolean);
+        }
+
+        const cheapest = tProposals.reduce((best: any, p: any) => {
           const price = Number(p?.price ?? p?.price_per_person ?? p?.amount ?? 0);
           if (!best) return { p, price };
           return price > 0 && price < best.price ? { p, price } : best;
         }, null);
 
-        const proposal = cheapest?.p || null;
+        const tProposal = cheapest?.p || null;
         const priceAmount = Number(cheapest?.price || 0);
-        const proposalId = proposal?.id != null ? String(proposal.id) : "";
+        const proposalId = tProposal?.id != null ? String(tProposal.id) : "";
 
         const segs = ticket?.segments || ticket?.segment || ticket?.flight_legs || ticket?.legs || [];
         let legs: any[] = [];
@@ -401,44 +568,28 @@ serve(async (req) => {
 
         const depCode = safeStr(pick(firstLeg, ["origin", "departure"]) || "", 10).toUpperCase();
         const arrCode = safeStr(pick(lastLeg, ["destination", "arrival"]) || "", 10).toUpperCase();
-
-        const depAt = pick(firstLeg, ["departure_at", "departureAt", "departure_time"]);
-        const arrAt = pick(lastLeg, ["arrival_at", "arrivalAt", "arrival_time"]);
+        const depAt = pick(firstLeg, ["departure_at", "departureAt", "departure_time", "local_departure"]);
+        const arrAt = pick(lastLeg, ["arrival_at", "arrivalAt", "arrival_time", "local_arrival"]);
         const depTs = pick(firstLeg, ["departure_timestamp", "departureTimestamp"]);
         const arrTs = pick(lastLeg, ["arrival_timestamp", "arrivalTimestamp"]);
 
-        const departureTime = toYyyyMmDdHhMm(depAt ?? depTs);
-        const arrivalTime = toYyyyMmDdHhMm(arrAt ?? arrTs);
-
-        const durationMinutes =
-          Number(
-            pick(proposal, ["duration"]) ?? pick(ticket, ["duration"]) ?? pick(firstLeg, ["duration"]) ?? 0
-          ) || 0;
-
-        const stopsAirports = legs
-          .slice(0, Math.max(0, legs.length - 1))
-          .map((l: any) => safeStr(pick(l, ["destination", "arrival"]) || "", 10).toUpperCase())
-          .filter(Boolean);
-
-        const airlines = legs
-          .map((l: any) => safeStr(pick(l, ["carrier", "marketing_carrier"]) || "", 10).toUpperCase())
-          .filter(Boolean);
-
-        const flightNumbers = legs
-          .map((l: any) => safeStr(pick(l, ["flight_number", "number"]) || "", 20).toUpperCase())
-          .filter(Boolean);
-
         return {
           id: `${search_id}-${proposalId || idx}`,
-          origin: depCode,
-          destination: arrCode,
-          departureTime,
-          arrivalTime,
-          durationMinutes,
+          origin: depCode || origin,
+          destination: arrCode || destination,
+          departureTime: toYyyyMmDdHhMm(depAt ?? depTs),
+          arrivalTime: toYyyyMmDdHhMm(arrAt ?? arrTs),
+          durationMinutes: Number(pick(tProposal, ["duration"]) ?? pick(ticket, ["duration"]) ?? 0) || 0,
           stopsCount: Math.max(0, legs.length - 1),
-          stopsAirports,
-          airlines,
-          flightNumbers,
+          stopsAirports: legs.slice(0, Math.max(0, legs.length - 1))
+            .map((l: any) => safeStr(pick(l, ["destination", "arrival"]) || "", 10).toUpperCase())
+            .filter(Boolean),
+          airlines: legs
+            .map((l: any) => safeStr(pick(l, ["carrier", "marketing_carrier"]) || "", 10).toUpperCase())
+            .filter(Boolean),
+          flightNumbers: legs
+            .map((l: any) => safeStr(pick(l, ["flight_number", "number"]) || "", 20).toUpperCase())
+            .filter(Boolean),
           price: { amount: priceAmount, currency: currency_code },
           search_id,
           click_id: proposalId,
@@ -446,32 +597,40 @@ serve(async (req) => {
           segments: legs,
           booking_url: "",
         };
-      })
-      .filter((f: any) => f && f.click_id);
+      }).filter((f: any) => f && f.click_id);
+    }
+
+    // Dedupe by click_id
+    const seen = new Set<string>();
+    const deduped = rawFlights.filter((f: any) => {
+      if (!f.click_id || seen.has(f.click_id)) return false;
+      seen.add(f.click_id);
+      return true;
+    });
 
     // Sort
-    const sorted = [...rawFlights];
+    const sorted = [...deduped];
     if (sort === "cheapest") {
       sorted.sort((a: any, b: any) => (a.price?.amount ?? 0) - (b.price?.amount ?? 0));
     } else if (sort === "fastest") {
       sorted.sort((a: any, b: any) => (a.durationMinutes ?? 0) - (b.durationMinutes ?? 0));
     } else {
       sorted.sort((a: any, b: any) => {
-        const sa = (a.price?.amount ?? 0) + (a.stopsCount ?? 0) * 80 + (a.durationMinutes ?? 0) * 0.5;
-        const sb = (b.price?.amount ?? 0) + (b.stopsCount ?? 0) * 80 + (b.durationMinutes ?? 0) * 0.5;
+        const sa = (a.price?.amount ?? 0) * 0.6 + (a.stopsCount ?? 0) * 100 + (a.durationMinutes ?? 0) * 0.3;
+        const sb = (b.price?.amount ?? 0) * 0.6 + (b.stopsCount ?? 0) * 100 + (b.durationMinutes ?? 0) * 0.3;
         return sa - sb;
       });
     }
 
     const flights = sorted.slice(0, limit);
 
-    // Resolve booking URLs concurrently
+    // Resolve booking URLs concurrently (best effort)
     const concurrency = 5;
     let cursor = 0;
     async function worker() {
       while (cursor < flights.length) {
         const i = cursor++;
-        const f = flights[i];
+        const f = flights[i] as any;
         try {
           const base = f.results_base && f.results_base.startsWith("http")
             ? f.results_base.replace(/\/$/, "")
@@ -496,7 +655,8 @@ serve(async (req) => {
     }
     await Promise.all(Array.from({ length: Math.min(concurrency, flights.length) }, () => worker()));
 
-    console.log(`[flight-search] returning ${flights.length} flights, airlines: ${[...new Set(flights.flatMap((f: any) => f.airlines))].join(",")}`);
+    const uniqueAirlines = [...new Set(flights.flatMap((f: any) => f.airlines || []))];
+    console.log(`[flight-search] returning ${flights.length} flights, airlines: ${uniqueAirlines.join(",")}`);
 
     return json({
       ok: true,

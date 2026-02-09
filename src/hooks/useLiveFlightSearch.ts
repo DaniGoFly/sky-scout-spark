@@ -11,9 +11,12 @@ export interface SearchParamsHook {
   departDate: string;
   returnDate?: string;
   adults?: number;
+  children?: number;
+  infants?: number;
   currency?: string;
   sort?: "best" | "cheapest" | "fastest";
   limit?: number;
+  tripClass?: string;
 }
 
 interface UseLiveFlightSearchResult {

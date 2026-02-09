@@ -144,7 +144,7 @@ export function useFlightSearch(): UseFlightSearchResult {
     try {
       console.log("[FlightSearch] Searching with params:", params);
       
-      const { data, error: fnError } = await supabase.functions.invoke<ApiResponse>("flights-search", {
+      const { data, error: fnError } = await supabase.functions.invoke<ApiResponse>("flight-search", {
         body: { 
           ...params, 
           debug: params.debug || false,
