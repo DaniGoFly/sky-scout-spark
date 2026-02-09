@@ -99,14 +99,27 @@ const LiveFlightResults = () => {
 
   const filteredFlights = useMemo(() => {
     let result = rawFlights;
-    if (filters.directOnly) { result = result.filter((f) => f.stopsCount === 0); }
-    else if (filters.stops.length > 0) {
-      result = result.filter((flight) => filters.stops.some((stop) => {
-        if (stop === "direct") return flight.stopsCount === 0;
-        if (stop === "1stop") return flight.stopsCount === 1;
-        if (stop === "2stops") return flight.stopsCount >= 2;
-        return true;
-      }));
+
+    // Helper: compute total stops for a flight (outbound + return)
+    const getOutboundStops = (f: typeof rawFlights[0]) => Math.max(0, f.stopsCount ?? 0);
+    const getReturnStops = (f: typeof rawFlights[0]) => f.return ? Math.max(0, f.return.stopsCount ?? 0) : 0;
+    const isDirectItinerary = (f: typeof rawFlights[0]) => getOutboundStops(f) === 0 && getReturnStops(f) === 0;
+    const getMaxStops = (f: typeof rawFlights[0]) => Math.max(getOutboundStops(f), getReturnStops(f));
+
+    if (filters.directOnly) {
+      result = result.filter(isDirectItinerary);
+    } else if (filters.stops.length > 0) {
+      result = result.filter((flight) => {
+        const outStops = getOutboundStops(flight);
+        const retStops = getReturnStops(flight);
+        const maxStops = Math.max(outStops, retStops);
+        return filters.stops.some((stop) => {
+          if (stop === "direct") return outStops === 0 && retStops === 0;
+          if (stop === "1stop") return maxStops === 1;
+          if (stop === "2stops") return maxStops >= 2;
+          return true;
+        });
+      });
     }
     if (filters.airlines.length > 0) {
       result = result.filter((flight) => {
