@@ -79,16 +79,18 @@ const LiveFlightResults = () => {
     cancelSearch();
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("cheapest");
-    searchFlights({
+    const payload = {
       origin: from.toUpperCase(),
       destination: to.toUpperCase(),
       departDate: depart,
       returnDate: isRoundtrip ? returnDate : undefined,
       adults: adults + children + infants,
       currency: currency,
-      sort: "cheapest",
+      sort: "cheapest" as const,
       limit: 50,
-    });
+    };
+    console.log("[flight-search] request", payload);
+    searchFlights(payload);
   }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, searchFlights, cancelSearch]);
 
   // ── Step 1: Enrich raw flights with canonical per-direction stop data ──
@@ -128,8 +130,10 @@ const LiveFlightResults = () => {
 
     if (filters.airlines.length > 0) {
       result = result.filter((flight) => {
-        const flightAirline = getAirlineName(flight.airlines?.[0] || "");
-        return filters.airlines.includes(flightAirline);
+        const raw = flight.airlines?.[0] || "";
+        // Match the same resolution logic as FlightFilters
+        const display = raw.length <= 3 ? getAirlineName(raw) : raw;
+        return filters.airlines.includes(display);
       });
     }
 

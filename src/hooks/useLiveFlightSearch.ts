@@ -121,6 +121,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     setStatus("searching");
 
     try {
+      console.log("[flight-search] POST", params.origin, "→", params.destination);
       const data: SearchResponse = await apiSearchFlights(
         params as SearchParams,
         controller.signal
@@ -128,6 +129,8 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
       // If this request was aborted, ignore the response
       if (controller.signal.aborted) return;
+
+      console.log("[flight-search] response", { ok: data.ok, flights: data.flights?.length || 0, error: data.error });
 
       if (!data.ok) {
         // Don't show "cancelled" as an error
