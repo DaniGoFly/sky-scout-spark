@@ -506,5 +506,113 @@ serve(async (req) => {
     });
   }
 
-  return json({ ok: false, error: 'Invalid action. Use "search", "click", or "resolve_deal".' }, 400);
+  // ============ ACTION: price_calendar ============
+  if (action === "price_calendar") {
+    const origin = safeStr(body?.origin, 10).toUpperCase();
+    const destination = safeStr(body?.destination, 10).toUpperCase();
+    const month = safeStr(body?.month, 10); // YYYY-MM
+    const currency_code = safeStr(body?.currency ?? "EUR", 10).toUpperCase();
+
+    if (!origin || !destination || !month) {
+      return json({ ok: false, error: "origin, destination, and month are required" }, 400);
+    }
+
+    try {
+      const calUrl = `https://api.travelpayouts.com/v1/prices/calendar?depart_date=${encodeURIComponent(month)}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&currency=${encodeURIComponent(currency_code)}&token=${encodeURIComponent(token)}`;
+      
+      const calResp = await fetch(calUrl, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const calText = await calResp.text();
+
+      if (!calResp.ok) {
+        console.error("[flight-search] price_calendar failed", calResp.status, calText.slice(0, 200));
+        return json({ ok: false, error: "Failed to fetch price calendar", currency: currency_code, days: [] });
+      }
+
+      let calData: any;
+      try { calData = JSON.parse(calText); } catch {
+        return json({ ok: false, error: "Invalid calendar response", currency: currency_code, days: [] });
+      }
+
+      // Travelpayouts returns { success, data: { "YYYY-MM-DD": { value, ... }, ... } }
+      const rawDays = calData?.data || {};
+      const days: Array<{ date: string; price: number | null }> = [];
+
+      for (const [dateStr, info] of Object.entries(rawDays)) {
+        const priceVal = (info as any)?.value ?? (info as any)?.price ?? null;
+        days.push({ date: dateStr, price: typeof priceVal === "number" ? priceVal : null });
+      }
+
+      days.sort((a, b) => a.date.localeCompare(b.date));
+
+      return json({ ok: true, currency: currency_code, days });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[flight-search] price_calendar error:", msg);
+      return json({ ok: false, error: msg, currency: currency_code, days: [] });
+    }
+  }
+
+  // ============ ACTION: explore ============
+  if (action === "explore") {
+    const origin = safeStr(body?.origin, 10).toUpperCase();
+    const currency_code = safeStr(body?.currency ?? "EUR", 10).toUpperCase();
+
+    if (!origin) {
+      return json({ ok: false, error: "origin is required" }, 400);
+    }
+
+    try {
+      const cheapUrl = `https://api.travelpayouts.com/v1/prices/cheap?origin=${encodeURIComponent(origin)}&currency=${encodeURIComponent(currency_code)}&token=${encodeURIComponent(token)}`;
+      
+      const cheapResp = await fetch(cheapUrl, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const cheapText = await cheapResp.text();
+
+      if (!cheapResp.ok) {
+        console.error("[flight-search] explore failed", cheapResp.status, cheapText.slice(0, 200));
+        return json({ ok: false, error: "Failed to fetch explore data", currency: currency_code, results: [] });
+      }
+
+      let cheapData: any;
+      try { cheapData = JSON.parse(cheapText); } catch {
+        return json({ ok: false, error: "Invalid explore response", currency: currency_code, results: [] });
+      }
+
+      // Travelpayouts returns { success, data: { "DEST": { 0: { price, airline, ... } }, ... } }
+      const rawData = cheapData?.data || {};
+      const results: Array<{ destination: string; price: number; depart_date?: string; return_date?: string; airline?: string; stops?: number }> = [];
+
+      for (const [dest, routes] of Object.entries(rawData)) {
+        const routeObj: any = routes;
+        // Get the cheapest route (key "0" or first key)
+        const firstKey = Object.keys(routeObj)[0];
+        const route = routeObj[firstKey];
+        if (!route?.price) continue;
+
+        results.push({
+          destination: dest,
+          price: route.price,
+          depart_date: route.depart_date || route.departure_at || undefined,
+          return_date: route.return_date || route.return_at || undefined,
+          airline: route.airline || undefined,
+          stops: typeof route.number_of_changes === "number" ? route.number_of_changes : undefined,
+        });
+      }
+
+      results.sort((a, b) => a.price - b.price);
+
+      return json({ ok: true, currency: currency_code, results: results.slice(0, 50) });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[flight-search] explore error:", msg);
+      return json({ ok: false, error: msg, currency: currency_code, results: [] });
+    }
+  }
+
+  return json({ ok: false, error: 'Invalid action. Use "search", "click", "resolve_deal", "price_calendar", or "explore".' }, 400);
 });
