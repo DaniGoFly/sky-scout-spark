@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Plane, ArrowLeft, Search, AlertCircle, Loader2, ExternalLink } from "lucide-react";
+import { Plane, ArrowLeft, AlertCircle, Loader2, ExternalLink, RefreshCw } from "lucide-react";
 import { format, parse } from "date-fns";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -12,8 +13,10 @@ import FlightSortTabs from "@/components/FlightSortTabs";
 import SkyscannerFlightCard from "@/components/SkyscannerFlightCard";
 import FlightResultsSkeleton from "@/components/FlightResultsSkeleton";
 import FlightErrorBoundary from "@/components/FlightErrorBoundary";
-import { useFlightSearch } from "@/hooks/useFlightSearch";
-import { Flight, sortFlights, isEligibleForBestValue, getAirlineName } from "@/lib/flightNormalizer";
+import { searchFlights as apiSearchFlights } from "@/lib/flightSearchApi";
+import { Flight, sortFlights, isEligibleForBestValue } from "@/lib/flightNormalizer";
+import { attachDealContextToFlights } from "@/lib/flightDealIds";
+import { useLocale } from "@/hooks/useLocale";
 
 interface Segment {
   from: string;
@@ -21,7 +24,7 @@ interface Segment {
   date: string;
 }
 
-interface SegmentResults {
+interface SegmentResult {
   segment: Segment;
   flights: Flight[];
   isLoading: boolean;
@@ -33,19 +36,19 @@ const RESULTS_PER_SEGMENT = 10;
 const MultiCityResultsContent = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const fetchedAtRef = useRef<number>(Date.now());
-  
+  const { t } = useTranslation();
+  const { currency } = useLocale();
+
   // Parse segments from URL
   const segments = useMemo((): Segment[] => {
     const segmentCount = parseInt(searchParams.get("segments") || "0", 10);
     if (segmentCount < 2 || segmentCount > 5) return [];
-    
+
     const result: Segment[] = [];
     for (let i = 0; i < segmentCount; i++) {
       const from = searchParams.get(`seg${i}_from`);
       const to = searchParams.get(`seg${i}_to`);
       const date = searchParams.get(`seg${i}_date`);
-      
       if (from && to && date) {
         result.push({ from, to, date });
       }
@@ -53,125 +56,150 @@ const MultiCityResultsContent = () => {
     return result;
   }, [searchParams]);
 
-  // Parse shared params
   const adults = parseInt(searchParams.get("adults") || "1", 10);
   const children = parseInt(searchParams.get("children") || "0", 10);
   const infants = parseInt(searchParams.get("infants") || "0", 10);
-  const travelClass = searchParams.get("class") || "economy";
 
   // Validate segments
   useEffect(() => {
     if (segments.length < 2) {
-      toast.error("Please complete all flight segments", {
-        description: "Multi-city search requires at least 2 segments.",
-      });
+      toast.error("Multi-city search requires at least 2 segments.");
       navigate("/flights");
     }
   }, [segments, navigate]);
 
-  // State for each segment's results
-  const [segmentResults, setSegmentResults] = useState<SegmentResults[]>([]);
+  const [segmentResults, setSegmentResults] = useState<SegmentResult[]>([]);
   const [sortBySegment, setSortBySegment] = useState<Record<number, "best" | "cheapest" | "fastest">>({});
+  const searchedRef = useRef(false);
 
-  // Initialize segment results
+  // Search all segments in parallel
   useEffect(() => {
-    if (segments.length >= 2) {
-      setSegmentResults(
-        segments.map((seg) => ({
-          segment: seg,
-          flights: [],
-          isLoading: true,
-          error: null,
-        }))
-      );
-      // Initialize sort state
-      const sortInit: Record<number, "best" | "cheapest" | "fastest"> = {};
-      segments.forEach((_, i) => { sortInit[i] = "best"; });
-      setSortBySegment(sortInit);
-    }
-  }, [segments]);
+    if (segments.length < 2 || searchedRef.current) return;
+    searchedRef.current = true;
 
-  // Use the flight search hook for each segment
-  const { searchFlights, flights: hookFlights, isLoading: hookLoading, error: hookError } = useFlightSearch();
-  
-  // Track which segment we're currently searching
-  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
-  const [searchStarted, setSearchStarted] = useState(false);
+    // Initialize loading state
+    setSegmentResults(segments.map((seg) => ({
+      segment: seg,
+      flights: [],
+      isLoading: true,
+      error: null,
+    })));
 
-  // Start searches sequentially
-  useEffect(() => {
-    if (segments.length < 2 || searchStarted) return;
-    setSearchStarted(true);
-    
-    // Search first segment
-    const seg = segments[0];
-    searchFlights({
-      origin: seg.from,
-      destination: seg.to,
-      departDate: seg.date,
-      adults,
-      children,
-      infants,
-      tripType: "oneway",
-      travelClass,
+    const sortInit: Record<number, "best" | "cheapest" | "fastest"> = {};
+    segments.forEach((_, i) => { sortInit[i] = "best"; });
+    setSortBySegment(sortInit);
+
+    // Search each segment in parallel
+    segments.forEach(async (seg, index) => {
+      try {
+        const data = await apiSearchFlights({
+          origin: seg.from.toUpperCase(),
+          destination: seg.to.toUpperCase(),
+          departDate: seg.date,
+          adults: adults + children + infants,
+          currency: currency,
+          sort: "best",
+          limit: 15,
+        });
+
+        if (!data.ok) {
+          setSegmentResults((prev) => {
+            const updated = [...prev];
+            updated[index] = {
+              ...updated[index],
+              isLoading: false,
+              error: data.error || "Search failed. Please try again.",
+            };
+            return updated;
+          });
+          return;
+        }
+
+        const flights = attachDealContextToFlights({
+          flights: (data.flights || []) as Flight[],
+          search_id: data.search_id || "",
+          results_base: data.results_base || null,
+        });
+
+        setSegmentResults((prev) => {
+          const updated = [...prev];
+          updated[index] = {
+            ...updated[index],
+            flights,
+            isLoading: false,
+            error: null,
+          };
+          return updated;
+        });
+      } catch (err) {
+        setSegmentResults((prev) => {
+          const updated = [...prev];
+          updated[index] = {
+            ...updated[index],
+            isLoading: false,
+            error: "Network error. Please check your connection and try again.",
+          };
+          return updated;
+        });
+      }
     });
-  }, [segments, searchStarted, adults, children, infants, travelClass, searchFlights]);
+  }, [segments, adults, children, infants, currency]);
 
-  // Handle search results and move to next segment
-  useEffect(() => {
-    if (hookLoading || currentSearchIndex >= segments.length) return;
-    
-    // Update current segment results
+  const handleRetrySegment = useCallback(async (index: number) => {
+    const seg = segments[index];
+    if (!seg) return;
+
     setSegmentResults((prev) => {
       const updated = [...prev];
-      if (updated[currentSearchIndex]) {
-        // Convert hook flights to Flight format
-        const normalizedFlights: Flight[] = hookFlights.map((f) => ({
-          id: f.id,
-          origin: f.departureCode || segments[currentSearchIndex].from,
-          destination: f.arrivalCode || segments[currentSearchIndex].to,
-          departureTime: f.departureTime || "",
-          arrivalTime: f.arrivalTime || "",
-          durationMinutes: f.durationMinutes || 0,
-          stopsCount: f.stops || 0,
-          stopsAirports: [],
-          airlines: [f.airline?.substring(0, 2).toUpperCase() || "XX"],
-          flightNumbers: f.flightNumber ? [f.flightNumber] : [],
-          price: { amount: Math.round(f.price || 0), currency: "USD" },
-          clickUrl: f.deepLink || "",
-        }));
-
-        updated[currentSearchIndex] = {
-          ...updated[currentSearchIndex],
-          flights: normalizedFlights,
-          isLoading: false,
-          error: hookError || null,
-        };
-      }
+      updated[index] = { ...updated[index], isLoading: true, error: null };
       return updated;
     });
 
-    // Search next segment
-    const nextIndex = currentSearchIndex + 1;
-    if (nextIndex < segments.length) {
-      setCurrentSearchIndex(nextIndex);
-      const seg = segments[nextIndex];
-      setTimeout(() => {
-        searchFlights({
-          origin: seg.from,
-          destination: seg.to,
-          departDate: seg.date,
-          adults,
-          children,
-          infants,
-          tripType: "oneway",
-          travelClass,
-        });
-      }, 500); // Small delay between searches
-    }
-  }, [hookFlights, hookLoading, hookError, currentSearchIndex, segments, adults, children, infants, travelClass, searchFlights]);
+    try {
+      const data = await apiSearchFlights({
+        origin: seg.from.toUpperCase(),
+        destination: seg.to.toUpperCase(),
+        departDate: seg.date,
+        adults: adults + children + infants,
+        currency: currency,
+        sort: "best",
+        limit: 15,
+      });
 
-  const formatDate = (dateStr: string) => {
+      if (!data.ok) {
+        setSegmentResults((prev) => {
+          const updated = [...prev];
+          updated[index] = {
+            ...updated[index],
+            isLoading: false,
+            error: data.error || "Search failed.",
+          };
+          return updated;
+        });
+        return;
+      }
+
+      const flights = attachDealContextToFlights({
+        flights: (data.flights || []) as Flight[],
+        search_id: data.search_id || "",
+        results_base: data.results_base || null,
+      });
+
+      setSegmentResults((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], flights, isLoading: false, error: null };
+        return updated;
+      });
+    } catch {
+      setSegmentResults((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], isLoading: false, error: "Network error." };
+        return updated;
+      });
+    }
+  }, [segments, adults, children, infants, currency]);
+
+  const formatDateLabel = (dateStr: string) => {
     try {
       const date = parse(dateStr, "yyyy-MM-dd", new Date());
       return format(date, "EEE, MMM d, yyyy");
@@ -180,18 +208,14 @@ const MultiCityResultsContent = () => {
     }
   };
 
-
   const handleSortChange = (index: number, sort: "best" | "cheapest" | "fastest") => {
     setSortBySegment((prev) => ({ ...prev, [index]: sort }));
   };
 
-  // Check if all segments are loading
-  const allLoading = segmentResults.every((r) => r.isLoading);
-  const anyLoading = segmentResults.some((r) => r.isLoading);
+  const allLoading = segmentResults.length > 0 && segmentResults.every((r) => r.isLoading);
+  const totalPassengers = adults + children + infants;
 
-  if (segments.length < 2) {
-    return null; // Will redirect
-  }
+  if (segments.length < 2) return null;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -207,15 +231,10 @@ const MultiCityResultsContent = () => {
                   <span>Multi-city Trip</span>
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                  {segments.length} flights • {adults + children + infants} traveler{(adults + children + infants) > 1 ? "s" : ""}
+                  {segments.length} flights • {totalPassengers} traveler{totalPassengers > 1 ? "s" : ""}
                 </p>
               </div>
-              
-              <Button
-                variant="outline"
-                onClick={() => navigate("/flights")}
-                className="gap-2 self-start shrink-0"
-              >
+              <Button variant="outline" onClick={() => navigate("/flights")} className="gap-2 self-start shrink-0">
                 <ArrowLeft className="w-4 h-4" />
                 New Search
               </Button>
@@ -229,7 +248,9 @@ const MultiCityResultsContent = () => {
                     <span className="font-semibold">{seg.from}</span>
                     <span className="mx-1.5">→</span>
                     <span className="font-semibold">{seg.to}</span>
-                    <span className="ml-2 text-muted-foreground">{format(parse(seg.date, "yyyy-MM-dd", new Date()), "MMM d")}</span>
+                    <span className="ml-2 text-muted-foreground">
+                      {format(parse(seg.date, "yyyy-MM-dd", new Date()), "MMM d")}
+                    </span>
                   </Badge>
                 ))}
               </div>
@@ -243,7 +264,7 @@ const MultiCityResultsContent = () => {
                     <div className="flex items-center gap-3 mb-4">
                       <Badge className="bg-primary">Flight {i + 1}</Badge>
                       <span className="text-foreground font-semibold">{seg.from} → {seg.to}</span>
-                      <span className="text-muted-foreground">{formatDate(seg.date)}</span>
+                      <span className="text-muted-foreground">{formatDateLabel(seg.date)}</span>
                       <Loader2 className="w-4 h-4 animate-spin text-primary ml-auto" />
                     </div>
                     <FlightResultsSkeleton />
@@ -258,7 +279,7 @@ const MultiCityResultsContent = () => {
                 {segmentResults.map((result, index) => {
                   const sortedFlights = sortFlights(result.flights, sortBySegment[index] || "best");
                   const displayFlights = sortedFlights.slice(0, RESULTS_PER_SEGMENT);
-                  
+
                   return (
                     <div key={index} className="bg-card/50 rounded-xl border border-border overflow-hidden">
                       {/* Segment Header */}
@@ -270,10 +291,8 @@ const MultiCityResultsContent = () => {
                             <Plane className="w-4 h-4 text-primary rotate-90" />
                             <span className="text-lg font-bold text-foreground">{result.segment.to}</span>
                           </div>
-                          <span className="text-muted-foreground">{formatDate(result.segment.date)}</span>
-                          {result.isLoading && (
-                            <Loader2 className="w-4 h-4 animate-spin text-primary ml-auto" />
-                          )}
+                          <span className="text-muted-foreground">{formatDateLabel(result.segment.date)}</span>
+                          {result.isLoading && <Loader2 className="w-4 h-4 animate-spin text-primary ml-auto" />}
                         </div>
                       </div>
 
@@ -282,9 +301,15 @@ const MultiCityResultsContent = () => {
                         {result.isLoading ? (
                           <FlightResultsSkeleton />
                         ) : result.error ? (
-                          <div className="flex items-center gap-3 p-4 bg-destructive/10 rounded-lg text-destructive">
-                            <AlertCircle className="w-5 h-5 shrink-0" />
-                            <span>{result.error}</span>
+                          <div className="flex flex-col items-center gap-3 py-8">
+                            <div className="flex items-center gap-3 p-4 bg-destructive/10 rounded-lg text-destructive w-full">
+                              <AlertCircle className="w-5 h-5 shrink-0" />
+                              <span>{result.error}</span>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => handleRetrySegment(index)} className="gap-2">
+                              <RefreshCw className="w-4 h-4" />
+                              Retry this segment
+                            </Button>
                           </div>
                         ) : result.flights.length === 0 ? (
                           <div className="text-center py-8">
@@ -296,39 +321,28 @@ const MultiCityResultsContent = () => {
                                 rel="noopener noreferrer"
                               >
                                 <ExternalLink className="w-4 h-4" />
-                                Search on Aviasales
+                                Search on partner site
                               </a>
                             </Button>
                           </div>
                         ) : (
                           <>
-                            {/* Sort Tabs */}
                             <FlightSortTabs
                               flights={result.flights}
                               sortBy={sortBySegment[index] || "best"}
                               onSortChange={(sort) => handleSortChange(index, sort)}
                             />
-
-                            {/* Results Count */}
                             <p className="text-sm text-muted-foreground">
                               <span className="font-semibold text-foreground">{result.flights.length}</span> flights found
                             </p>
-
-                            {/* Flight Cards */}
                             {displayFlights.map((flight, flightIndex) => {
-                              const showBestValue = flightIndex === 0 && 
-                                sortBySegment[index] === "best" && 
+                              const showBestValue = flightIndex === 0 &&
+                                sortBySegment[index] === "best" &&
                                 isEligibleForBestValue(flight);
-                              
                               return (
-                                <SkyscannerFlightCard
-                                  key={flight.id}
-                                  flight={flight}
-                                  isBestValue={showBestValue}
-                                />
+                                <SkyscannerFlightCard key={flight.id} flight={flight} isBestValue={showBestValue} />
                               );
                             })}
-
                             {result.flights.length > RESULTS_PER_SEGMENT && (
                               <p className="text-center text-sm text-muted-foreground">
                                 Showing top {RESULTS_PER_SEGMENT} of {result.flights.length} results
@@ -343,7 +357,7 @@ const MultiCityResultsContent = () => {
               </div>
             )}
 
-            {/* Search externally CTA */}
+            {/* Combined booking CTA */}
             {!allLoading && (
               <div className="mt-8 text-center p-6 bg-card rounded-xl border border-border">
                 <p className="text-muted-foreground mb-3">
@@ -371,7 +385,6 @@ const MultiCityResultsContent = () => {
   );
 };
 
-// Wrap with error boundary
 const MultiCityResults = () => (
   <FlightErrorBoundary>
     <MultiCityResultsContent />

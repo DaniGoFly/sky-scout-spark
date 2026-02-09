@@ -240,7 +240,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }
 
   return (
-    <div className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto overflow-hidden">
+    <div className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto">
       {/* Trip Type Toggle */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {(["roundtrip", "oneway", "multicity"] as const).map((type) => (

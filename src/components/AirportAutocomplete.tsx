@@ -38,17 +38,17 @@ const PortalDropdown = ({
     if (!anchorRef.current) return;
     const rect = anchorRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    const dropdownMaxH = 320;
+    const dropdownMaxH = 280;
     const openUpward = spaceBelow < dropdownMaxH && rect.top > spaceBelow;
 
     setStyle({
       position: "fixed",
       left: rect.left,
-      width: rect.width,
+      width: Math.max(rect.width, 280),
       zIndex: 9999,
       ...(openUpward
-        ? { bottom: window.innerHeight - rect.top + 4 }
-        : { top: rect.bottom + 4 }),
+        ? { bottom: window.innerHeight - rect.top + 8 }
+        : { top: rect.bottom + 8 }),
     });
   }, [anchorRef]);
 
@@ -212,7 +212,8 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
         <PortalDropdown anchorRef={wrapperRef}>
           <div
             ref={dropdownRef}
-            className="bg-card border border-border rounded-xl shadow-lg overflow-hidden max-h-80 overflow-y-auto"
+            className="bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto"
+            style={{ maxHeight: "280px" }}
           >
             {suggestions.map((place, index) => (
               <button
