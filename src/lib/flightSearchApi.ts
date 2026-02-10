@@ -95,6 +95,14 @@ export async function searchFlights(
   params: SearchParams,
   signal?: AbortSignal
 ): Promise<SearchResponse> {
+  // Map frontend cabin names to IATA codes
+  const cabinMap: Record<string, string> = {
+    economy: "Y", premium_economy: "W", business: "C", first: "F",
+    y: "Y", w: "W", c: "C", f: "F",
+  };
+  const rawClass = (params.tripClass || "economy").toLowerCase();
+  const tripClassCode = cabinMap[rawClass] || "Y";
+
   const body = {
     action: "search",
     origin: params.origin.toUpperCase(),
@@ -104,11 +112,12 @@ export async function searchFlights(
     adults: params.adults || 1,
     children: params.children || 0,
     infants: params.infants || 0,
-    currency: params.currency || "EUR",
+    currency_code: (params.currency || "EUR").toUpperCase(),
     locale: "en",
+    market_code: "US",
+    trip_class: tripClassCode,
     limit: params.limit || 25,
     sort: params.sort || "best",
-    trip_class: params.tripClass || "economy",
   };
 
   try {
