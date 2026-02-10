@@ -49,18 +49,22 @@ function buildCacheKey(params: SearchParamsHook): string {
     dep: params.departDate,
     ret: params.returnDate || "",
     a: params.adults || 1,
+    c: params.children || 0,
+    i: params.infants || 0,
     cur: params.currency || "EUR",
+    cls: params.tripClass || "economy",
+    sort: params.sort || "best",
   };
   return CACHE_PREFIX + JSON.stringify(normalized);
 }
 
 function readCache(key: string): CachedResult | null {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return null;
     const parsed: CachedResult = JSON.parse(raw);
     if (Date.now() - parsed.timestamp > CACHE_TTL_MS) {
-      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
       return null;
     }
     return parsed;
@@ -71,9 +75,9 @@ function readCache(key: string): CachedResult | null {
 
 function writeCache(key: string, data: CachedResult) {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    sessionStorage.setItem(key, JSON.stringify(data));
   } catch {
-    // localStorage full — silently ignore
+    // sessionStorage full — silently ignore
   }
 }
 

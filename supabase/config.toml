@@ -3,6 +3,9 @@ project_id = "kvhykvuvsbmcselojbcn"
 [api]
 enabled = true
 
+[functions.flight-search]
+verify_jwt = false
+
 [functions.flights-search]
 verify_jwt = false
 
