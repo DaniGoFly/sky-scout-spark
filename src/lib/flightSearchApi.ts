@@ -103,22 +103,23 @@ export async function searchFlights(
   const rawClass = (params.tripClass || "economy").toLowerCase();
   const tripClassCode = cabinMap[rawClass] || "Y";
 
-  const body = {
+  const body: Record<string, unknown> = {
     action: "search",
     origin: params.origin.toUpperCase(),
     destination: params.destination.toUpperCase(),
     depart_date: params.departDate,
-    return_date: params.returnDate || undefined,
     adults: params.adults || 1,
     children: params.children || 0,
     infants: params.infants || 0,
-    currency_code: (params.currency || "EUR").toUpperCase(),
-    locale: "en",
-    market_code: "US",
     trip_class: tripClassCode,
-    limit: params.limit || 25,
-    sort: params.sort || "best",
+    currency_code: (params.currency || "EUR").toUpperCase(),
+    market_code: "US",
   };
+
+  // Only include return_date for roundtrips
+  if (params.returnDate) {
+    body.return_date = params.returnDate;
+  }
 
   try {
     const response = await fetch(FLIGHT_SEARCH_URL, {
