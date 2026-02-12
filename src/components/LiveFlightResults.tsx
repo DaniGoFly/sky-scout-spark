@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, AlertCircle, Plane, Loader2 } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plane, Loader2, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSortTabs from "./FlightSortTabs";
@@ -49,8 +49,9 @@ const LiveFlightResults = () => {
   const { formatDate, currency } = useLocale();
   const isMobile = useIsMobile();
   const {
-    flights: rawFlights, status, error, isSearching, searchFlights, cancelSearch,
+    flights: rawFlights, status, error, isSearching, searchFlights, cancelSearch, debugData,
   } = useLiveFlightSearch();
+  const [showDebug, setShowDebug] = useState(false);
 
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("cheapest");
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
@@ -253,6 +254,38 @@ const LiveFlightResults = () => {
       </div>
 
       <div className="container mx-auto px-4 py-4 md:py-6">
+        {/* Debug Panel */}
+        <div className="mb-4 flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => setShowDebug(p => !p)} className="gap-1.5 text-xs">
+            <Bug className="w-3.5 h-3.5" />
+            {showDebug ? "Hide Debug" : "Debug"}
+          </Button>
+        </div>
+        {showDebug && debugData && (
+          <div className="mb-4 p-4 rounded-lg bg-muted/50 border border-border text-xs font-mono space-y-1 overflow-x-auto">
+            <p><strong>Request URL:</strong> {debugData.requestUrl}</p>
+            <p><strong>Payload:</strong> {JSON.stringify(debugData.requestPayload, null, 2)}</p>
+            <p><strong>Step:</strong> {debugData.responseStep || "—"}</p>
+            <p><strong>Status:</strong> {debugData.responseStatus || "—"}</p>
+            <p><strong>search_id:</strong> {debugData.searchId || "—"}</p>
+            <p><strong>results_base:</strong> {debugData.resultsBase || "—"}</p>
+            {debugData.pollCount !== undefined && debugData.pollCount > 0 && (
+              <p><strong>Poll count:</strong> {debugData.pollCount}</p>
+            )}
+            {debugData.error && <p className="text-destructive"><strong>Error:</strong> {debugData.error}</p>}
+            {debugData.rawResponse && (
+              <details><summary className="cursor-pointer text-muted-foreground">Raw response</summary>
+                <pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(debugData.rawResponse, null, 2)}</pre>
+              </details>
+            )}
+          </div>
+        )}
+        {showDebug && !debugData && (
+          <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground">
+            No debug data yet — run a search first.
+          </div>
+        )}
+
         {isSearching && (
           <div className="space-y-6">
             <div className="flex flex-col items-center justify-center py-8 text-center">
