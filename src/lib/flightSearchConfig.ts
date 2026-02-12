@@ -1,20 +1,21 @@
 /**
  * Flight Search Configuration
- * 
- * Uses environment variables for the Supabase project URL and anon key.
- * The flight-search edge function is deployed on the Lovable Cloud project.
+ *
+ * Points to the external Supabase project (ycpqgsjhxzhkljlszbwc) where the
+ * Travelpayouts flight-search edge function is deployed.
+ *
+ * NOTE: The Lovable Cloud .env is locked to kvhykvuvsbmcselojbcn, so we
+ * hardcode the flight-search endpoint here intentionally.
  */
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
-const SUPABASE_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  "";
+const YCP_SUPABASE_URL = "https://ycpqgsjhxzhkljlszbwc.supabase.co";
+const YCP_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcHFnc2poeHpoa2xqbHN6YndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzNDI2NzAsImV4cCI6MjA4MzkxODY3MH0.Nbm12ODC2-IWgQMR2o6ekcgy3tFL5c3AGJqvdjTO4IU";
 
-export const FLIGHT_SEARCH_URL = `${SUPABASE_URL}/functions/v1/flight-search`;
+export const FLIGHT_SEARCH_URL = `${YCP_SUPABASE_URL}/functions/v1/flight-search`;
 
 export const FLIGHT_SEARCH_HEADERS: Record<string, string> = {
   "Content-Type": "application/json",
-  apikey: SUPABASE_ANON_KEY,
-  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+  apikey: YCP_ANON_KEY,
+  Authorization: `Bearer ${YCP_ANON_KEY}`,
 };
