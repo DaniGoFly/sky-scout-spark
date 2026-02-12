@@ -5,7 +5,7 @@ import {
   Sparkles, Send, Loader2, Plane, MapPin, ArrowRight, CheckCircle, 
   Sun, Snowflake, Cloud, Thermometer, Calendar, Star, Heart
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import type { AISearchParams } from "./FlightSearchHero";
 

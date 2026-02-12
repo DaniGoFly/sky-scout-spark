@@ -1,11 +1,8 @@
 /**
  * Flight Search Configuration
  *
- * Points to the external Supabase project (ycpqgsjhxzhkljlszbwc) where the
+ * Points to the YCP Supabase project where the
  * Travelpayouts flight-search edge function is deployed.
- *
- * NOTE: The Lovable Cloud .env is locked to kvhykvuvsbmcselojbcn, so we
- * hardcode the flight-search endpoint here intentionally.
  */
 
 const YCP_SUPABASE_URL = "https://ycpqgsjhxzhkljlszbwc.supabase.co";
