@@ -1,10 +1,14 @@
 /**
- * Supabase client — uses env variables only, no hardcoded values.
- * For most usage, prefer importing from @/integrations/supabase/client instead.
+ * Single Supabase client for the entire app.
+ * Points to the YCP project (ycpqgsjhxzhkljlszbwc) where all
+ * edge functions and data tables live.
  */
 import { createClient } from "@supabase/supabase-js";
 
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+const SUPABASE_URL = "https://ycpqgsjhxzhkljlszbwc.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljcHFnc2poeHpoa2xqbHN6YndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzNDI2NzAsImV4cCI6MjA4MzkxODY3MH0.Nbm12ODC2-IWgQMR2o6ekcgy3tFL5c3AGJqvdjTO4IU";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+export { SUPABASE_URL, SUPABASE_ANON_KEY };

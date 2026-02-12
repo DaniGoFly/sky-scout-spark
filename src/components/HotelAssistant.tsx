@@ -5,7 +5,7 @@ import {
   Sparkles, Send, Loader2, Building2, MapPin, ArrowRight, CheckCircle, 
   Star, Heart, Bed
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 
 interface Suggestion {
