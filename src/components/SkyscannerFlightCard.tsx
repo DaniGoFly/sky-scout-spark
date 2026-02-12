@@ -7,7 +7,7 @@
  */
 
 import { memo, useState, useRef, useCallback, useMemo } from "react";
-import { Heart, Plane, Loader2, ExternalLink } from "lucide-react";
+import { Heart, Plane, Loader2, ExternalLink, Flame } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Flight, getAirlineName, getAirlineLogo, formatDuration } from "@/lib/flightNormalizer";
 import type { EnrichedFlight } from "@/lib/flightEnrichment";
 import { resolveDeal } from "@/lib/flightSearchApi";
+import { trackFlightClick } from "@/lib/clickTracking";
+import { shouldShowScarcity } from "@/lib/scarcityIndicator";
 import { useLocale } from "@/hooks/useLocale";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -168,6 +170,18 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCard
     if (!canResolve || isResolving) return;
     const newTab = window.open("about:blank", "_blank");
     setIsResolving(true);
+
+    // Track click BEFORE resolving (fire-and-forget)
+    trackFlightClick({
+      search_id: searchId,
+      proposal_id: proposalId,
+      airline: airlineName,
+      price: flight.price?.amount,
+      currency: flight.price?.currency,
+      origin: flight.origin,
+      destination: flight.destination,
+    });
+
     try {
       const result = await resolveDeal({ search_id: searchId, proposal_id: proposalId, results_base: resultsBase });
       if (result.ok && result.deal_url) {
@@ -181,7 +195,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCard
       if (newTab && !newTab.closed) newTab.close();
       toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
     } finally { setIsResolving(false); }
-  }, [canResolve, isResolving, searchId, proposalId, resultsBase, t]);
+  }, [canResolve, isResolving, searchId, proposalId, resultsBase, t, airlineName, flight]);
 
   const LegComponent = isMobile ? MobileLeg : DesktopLeg;
 
@@ -233,10 +247,15 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCard
   // Currency: use API's original currency to prevent mismatched symbols
   const apiCurrency = flight.price?.currency;
 
+  // Scarcity: deterministic per airline+route bucket
+  const showScarcity = useMemo(() => shouldShowScarcity(
+    airlineName, flight.origin || "", flight.destination || ""
+  ), [airlineName, flight.origin, flight.destination]);
+
   /* ═══════ MOBILE LAYOUT ═══════ */
   if (isMobile) {
     return (
-      <div className={`relative bg-card rounded-xl border w-full box-border ${isBestValue ? "border-primary ring-2 ring-primary/20" : "border-border"}`}
+      <div className={`relative bg-card rounded-xl border w-full box-border ${isBestValue ? "border-green-500/60 ring-2 ring-green-500/20" : "border-border"}`}
         style={{ contain: "layout style" }}>
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
@@ -249,11 +268,22 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCard
           )}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
             <div>
-              <p className="text-2xl font-bold text-foreground leading-tight">{formatPrice(flight.price.amount, apiCurrency)}</p>
+              <p className={`text-2xl font-bold text-foreground leading-tight ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
               <p className="text-[11px] text-muted-foreground">{t("card.per_person")}</p>
+              {showScarcity && (
+                <p className="text-[10px] text-amber-500 font-medium mt-0.5">{t("card.scarcity", "Only a few seats left at this price")}</p>
+              )}
             </div>
             {saveButton}
           </div>
+          {isBestValue && (
+            <div className="flex items-center gap-1.5 text-green-500 text-xs font-medium">
+              <Flame className="w-3.5 h-3.5" />
+              <span>{t("card.best_price", "Best Price")}</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground font-normal">{t("card.lowest_fare", "Lowest fare available")}</span>
+            </div>
+          )}
           {ctaButton}
           <p className="text-[10px] text-muted-foreground text-center leading-tight">{t("card.opens_partner")}</p>
         </div>
@@ -263,11 +293,11 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCard
 
   /* ═══════ DESKTOP LAYOUT ═══════ */
   return (
-    <div className={`relative bg-card rounded-xl border hover:shadow-md group ${isBestValue ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/30"}`}
-      style={{ contain: "layout style", transition: "box-shadow 0.15s ease, border-color 0.15s ease" }}>
+    <div className={`relative bg-card rounded-xl border hover:shadow-md hover:-translate-y-0.5 group ${isBestValue ? "border-green-500/60 ring-2 ring-green-500/20" : "border-border hover:border-primary/30"}`}
+      style={{ contain: "layout style", transition: "box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease" }}>
       {isBestValue && (
         <div className="absolute -top-3 start-5 z-10">
-          <Badge className="bg-primary text-primary-foreground shadow-md px-3 py-0.5 text-[11px]">{badgeLabel || t("card.best")}</Badge>
+          <Badge className="bg-green-600 text-white shadow-md px-3 py-0.5 text-[11px] gap-1"><Flame className="w-3 h-3" />{badgeLabel || t("card.best_price", "Best Price")}</Badge>
         </div>
       )}
       <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
@@ -284,8 +314,14 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCard
           </div>
           <div className="flex flex-col justify-between border-s border-border/40 ps-4 min-w-0">
             <div className="flex flex-col items-end text-end">
-              <p className="text-2xl font-bold text-foreground whitespace-nowrap">{formatPrice(flight.price.amount, apiCurrency)}</p>
+              <p className={`text-2xl font-bold text-foreground whitespace-nowrap ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{t("card.per_person")}</p>
+              {showScarcity && (
+                <p className="text-[10px] text-amber-500 font-medium mt-1">{t("card.scarcity", "Only a few seats left at this price")}</p>
+              )}
+              {isBestValue && (
+                <p className="text-[10px] text-green-500 font-medium mt-0.5">{t("card.lowest_fare", "Lowest fare available")}</p>
+              )}
             </div>
             <div className="flex flex-col items-end gap-2 mt-3">
               <div className="flex items-center gap-2">{saveButton}{ctaButton}</div>

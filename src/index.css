@@ -168,3 +168,29 @@
 .pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* Flight card entrance animation */
+@keyframes flight-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.flight-card-enter {
+  animation: flight-enter 0.35s ease-out both;
+}
+
+/* Price pulse for best price */
+@keyframes price-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; transform: scale(1.02); }
+}
+
+.price-pulse {
+  animation: price-pulse 2s ease-in-out 3;
+}
