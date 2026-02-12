@@ -13,9 +13,13 @@ import ActiveFilterChips from "./ActiveFilterChips";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import PriceInsight from "./PriceInsight";
 import PriceGraph from "./PriceGraph";
+import TrustSignals from "./TrustSignals";
+import StickyMobileCTA from "./StickyMobileCTA";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
 import { enrichFlights, type EnrichedFlight } from "@/lib/flightEnrichment";
+import { resolveDeal } from "@/lib/flightSearchApi";
+import { trackFlightClick } from "@/lib/clickTracking";
 import { useLocale } from "@/hooks/useLocale";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -53,7 +57,7 @@ const LiveFlightResults = () => {
   } = useLiveFlightSearch();
   const [showDebug, setShowDebug] = useState(false);
 
-  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("cheapest");
+  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
   const prevSearchKeyRef = useRef<string>("");
 
@@ -79,7 +83,7 @@ const LiveFlightResults = () => {
     prevSearchKeyRef.current = searchKey;
     cancelSearch();
     setFilters({ ...DEFAULT_FILTERS });
-    setSortBy("cheapest");
+    setSortBy("best");
     const payload = {
       origin: from.toUpperCase(),
       destination: to.toUpperCase(),
@@ -89,7 +93,7 @@ const LiveFlightResults = () => {
       children,
       infants,
       currency: currency,
-      sort: "cheapest" as const,
+      sort: "best" as const,
       limit: 50,
       tripClass: tripClass,
     };
@@ -222,13 +226,49 @@ const LiveFlightResults = () => {
   const handleRetry = useCallback(() => {
     prevSearchKeyRef.current = "";
     setFilters({ ...DEFAULT_FILTERS });
-    setSortBy("cheapest");
+    setSortBy("best");
     if (from && to && depart) {
-      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: isRoundtrip ? returnDate : undefined, adults, children, infants, currency, sort: "cheapest", limit: 50, tripClass: tripClass });
+      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: isRoundtrip ? returnDate : undefined, adults, children, infants, currency, sort: "best", limit: 50, tripClass: tripClass });
     }
   }, [from, to, depart, returnDate, adults, children, infants, isRoundtrip, currency, tripClass, searchFlights]);
 
   const totalPassengers = adults + children + infants;
+
+  // Cheapest flight for sticky mobile CTA
+  const cheapestFlight = useMemo(() => {
+    if (!sortedFlights.length) return null;
+    return [...sortedFlights].sort((a, b) => a.price.amount - b.price.amount)[0];
+  }, [sortedFlights]);
+
+  const handleMobileCTADeal = useCallback(async () => {
+    if (!cheapestFlight) return;
+    const pid = cheapestFlight.proposalId || cheapestFlight.click_id || "";
+    const sid = cheapestFlight.searchId || cheapestFlight.search_id || "";
+    const rb = cheapestFlight.resultsBase || cheapestFlight.results_base || "";
+    if (!pid || !sid) return;
+
+    trackFlightClick({
+      search_id: sid,
+      proposal_id: pid,
+      airline: getAirlineName(cheapestFlight.airlines?.[0] || ""),
+      price: cheapestFlight.price?.amount,
+      currency: cheapestFlight.price?.currency,
+      origin: cheapestFlight.origin,
+      destination: cheapestFlight.destination,
+    });
+
+    const newTab = window.open("about:blank", "_blank");
+    try {
+      const result = await resolveDeal({ search_id: sid, proposal_id: pid, results_base: rb });
+      if (result.ok && result.deal_url) {
+        if (newTab && !newTab.closed) newTab.location.href = result.deal_url;
+      } else {
+        if (newTab && !newTab.closed) newTab.close();
+      }
+    } catch {
+      if (newTab && !newTab.closed) newTab.close();
+    }
+  }, [cheapestFlight]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -250,6 +290,7 @@ const LiveFlightResults = () => {
             </div>
           </div>
           <div className="hidden sm:block"><CompactSearchBar /></div>
+          <TrustSignals />
         </div>
       </div>
 
@@ -365,7 +406,9 @@ const LiveFlightResults = () => {
                     </div>
                   ) : (
                     sortedFlights.map((flight, index) => (
-                      <FlightCard key={flight.id} flight={flight} isBestValue={index === 0 && (sortBy === "best" || sortBy === "cheapest")} badgeLabel={sortBy === "cheapest" ? t("sort.cheapest") : undefined} />
+                      <div key={flight.id} className="flight-card-enter" style={{ animationDelay: `${index * 50}ms` }}>
+                        <FlightCard flight={flight} isBestValue={index === 0 && (sortBy === "best" || sortBy === "cheapest")} badgeLabel={index === 0 && sortBy === "cheapest" ? "🔥 " + t("card.best_price", "Best Price") : undefined} />
+                      </div>
                     ))
                   )}
                 </div>
@@ -373,7 +416,14 @@ const LiveFlightResults = () => {
             </div>
           </div>
         )}
+
+        {/* Sticky Mobile CTA */}
+        {status === "complete" && !isSearching && isMobile && cheapestFlight && (
+          <StickyMobileCTA cheapestFlight={cheapestFlight} onViewDeal={handleMobileCTADeal} />
+        )}
       </div>
+      {/* Bottom padding for sticky CTA on mobile */}
+      {status === "complete" && isMobile && <div className="h-20 md:hidden" />}
     </div>
   );
 };

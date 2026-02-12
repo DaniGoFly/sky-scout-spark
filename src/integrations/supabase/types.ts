@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      flight_clicks: {
+        Row: {
+          airline: string | null
+          created_at: string
+          currency: string | null
+          destination: string | null
+          id: string
+          origin: string | null
+          price: number | null
+          proposal_id: string
+          search_id: string
+        }
+        Insert: {
+          airline?: string | null
+          created_at?: string
+          currency?: string | null
+          destination?: string | null
+          id?: string
+          origin?: string | null
+          price?: number | null
+          proposal_id: string
+          search_id: string
+        }
+        Update: {
+          airline?: string | null
+          created_at?: string
+          currency?: string | null
+          destination?: string | null
+          id?: string
+          origin?: string | null
+          price?: number | null
+          proposal_id?: string
+          search_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
