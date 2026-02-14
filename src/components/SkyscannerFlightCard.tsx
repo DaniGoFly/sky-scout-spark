@@ -49,6 +49,20 @@ function extractHHmm(raw: string | undefined | null): string {
   return "";
 }
 
+/** Extract a formatted date label like "Sun, Apr 12" from a datetime string */
+function extractDateLabel(raw: string | undefined | null): string | undefined {
+  if (!raw) return undefined;
+  try {
+    // Handle "YYYY-MM-DD HH:mm" or ISO format
+    const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
+    const dt = new Date(normalized);
+    if (isNaN(dt.getTime())) return undefined;
+    return format(dt, "EEE, MMM d");
+  } catch {
+    return undefined;
+  }
+}
+
 /* ─── Sub-components ─── */
 
 const AirlineHeader = memo(({
@@ -257,40 +271,47 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   const outboundLabel = hasReturn ? t("card.outbound") : null;
 
+  // ── Outbound: format times through extractHHmm so raw strings never leak ──
+  const outData = useMemo(() => {
+    const rawDep = flight.departureTime || "";
+    const rawArr = flight.arrivalTime || "";
+    return {
+      departureTime: extractHHmm(rawDep) || rawDep,
+      arrivalTime: extractHHmm(rawArr) || rawArr,
+      dateLabel: extractDateLabel(rawDep) || (departDate ? (() => { try { return format(parse(departDate, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; } })() : undefined),
+    };
+  }, [flight.departureTime, flight.arrivalTime, departDate]);
+
   // Return segment data — prefer segments[1], fallback to enriched flight.return
   const retData = useMemo(() => {
     if (retSegment) {
-      const depTime = extractHHmm(retSegment.departureTime ?? retSegment.departure_time ?? retSegment.departure_at ?? retSegment.local_departure);
-      const arrTime = extractHHmm(retSegment.arrivalTime ?? retSegment.arrival_time ?? retSegment.arrival_at ?? retSegment.local_arrival);
+      const rawDep = retSegment.departureTime ?? retSegment.departure_time ?? retSegment.departure_at ?? retSegment.local_departure ?? "";
+      const rawArr = retSegment.arrivalTime ?? retSegment.arrival_time ?? retSegment.arrival_at ?? retSegment.local_arrival ?? "";
+      const depTime = extractHHmm(rawDep);
+      const arrTime = extractHHmm(rawArr);
       const origin = (retSegment.origin ?? retSegment.departure ?? "").toString().toUpperCase().slice(0, 3);
       const dest = (retSegment.destination ?? retSegment.arrival ?? "").toString().toUpperCase().slice(0, 3);
       const duration = Number(retSegment.durationMinutes ?? retSegment.duration ?? 0);
       const stops = Number(retSegment.stopsCount ?? 0);
       const stopsAirports: string[] = retSegment.stopsAirports || [];
-      return { origin, destination: dest, departureTime: depTime, arrivalTime: arrTime, durationMinutes: duration, stopsCount: stops, stopsAirports };
+      const dateLabel = extractDateLabel(rawDep);
+      return { origin, destination: dest, departureTime: depTime, arrivalTime: arrTime, durationMinutes: duration, stopsCount: stops, stopsAirports, dateLabel };
     }
     if (flight.return) {
+      const rawDep = flight.return.departureTime || "";
       return {
         origin: flight.return.origin,
         destination: flight.return.destination,
-        departureTime: extractHHmm(flight.return.departureTime) || flight.return.departureTime,
+        departureTime: extractHHmm(rawDep) || flight.return.departureTime,
         arrivalTime: extractHHmm(flight.return.arrivalTime) || flight.return.arrivalTime,
         durationMinutes: flight.return.durationMinutes,
         stopsCount: flight.return.stopsCount,
         stopsAirports: flight.return.stopsAirports || [],
+        dateLabel: extractDateLabel(rawDep),
       };
     }
     return null;
   }, [retSegment, flight.return]);
-
-  const outboundDateLabel = useMemo(() => {
-    if (!departDate) return undefined;
-    try { return format(parse(departDate, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; }
-  }, [departDate]);
-  const returnDateLabel = useMemo(() => {
-    if (!returnDateProp) return undefined;
-    try { return format(parse(returnDateProp, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; }
-  }, [returnDateProp]);
 
   const outboundStopsCount = isEnriched(flight) ? flight.outboundStopsTotal : Math.max(0, flight.stopsCount ?? 0);
   const returnStopsCount = isEnriched(flight)
@@ -317,10 +338,10 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
           <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={isBestValue} isMobile bestLabel={t("card.best")} badgeOverride={badgeLabel} />
-          <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={flight.departureTime} arrivalTime={flight.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outboundDateLabel} />
+          <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outData.dateLabel} />
           {retData && (
             <div className="pt-2 border-t border-border/40">
-              <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={returnDateLabel} />
+              <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={retData.dateLabel} />
             </div>
           )}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
@@ -361,10 +382,10 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: "1fr 220px" }}>
           <div className="flex flex-col gap-3 min-w-0">
             <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={false} isMobile={false} bestLabel={t("card.best")} />
-            <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={flight.departureTime} arrivalTime={flight.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outboundDateLabel} />
+            <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outData.dateLabel} />
             {retData && (
               <div className="pt-2 border-t border-border/40">
-                <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={returnDateLabel} />
+                <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={retData.dateLabel} />
               </div>
             )}
           </div>
