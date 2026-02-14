@@ -79,7 +79,7 @@ const MultiCityResultsContent = () => {
       children,
       infants,
       currency,
-      sort: "best",
+      sort: "cheapest",
       limit: 25,
       tripClass,
     });
@@ -99,7 +99,7 @@ const MultiCityResultsContent = () => {
       children,
       infants,
       currency,
-      sort: "best",
+      sort: "cheapest",
       limit: 25,
       tripClass,
     });

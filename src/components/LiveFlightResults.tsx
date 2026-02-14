@@ -59,6 +59,7 @@ const LiveFlightResults = () => {
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
   const prevSearchKeyRef = useRef<string>("");
+  const prevSortRef = useRef<string>("best");
 
   const from = searchParams.get("from") || searchParams.get("origin") || "";
   const to = searchParams.get("to") || searchParams.get("destination") || "";
@@ -80,6 +81,7 @@ const LiveFlightResults = () => {
     if (!from || !to || !depart) return;
     if (searchKey === prevSearchKeyRef.current) return;
     prevSearchKeyRef.current = searchKey;
+    prevSortRef.current = "best";
     cancelSearch();
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
@@ -92,7 +94,6 @@ const LiveFlightResults = () => {
         { origin: to.toUpperCase(), destination: from.toUpperCase(), date: returnDate }
       );
     } else {
-      // One-way
       directions.push({ origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart });
     }
 
@@ -227,7 +228,33 @@ const LiveFlightResults = () => {
     return { sortedFlights: sorted.slice(0, MAX_DISPLAY), pinnedLabels: labels };
   }, [filteredFlights, sortBy]);
 
-  const handleSortChange = useCallback((s: "best" | "cheapest" | "fastest") => { setSortBy(s); }, []);
+  const buildDirections = useCallback(() => {
+    const directions: { origin: string; destination: string; date: string }[] = [];
+    if (isRoundtrip && returnDate) {
+      directions.push(
+        { origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart },
+        { origin: to.toUpperCase(), destination: from.toUpperCase(), date: returnDate }
+      );
+    } else {
+      directions.push({ origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart });
+    }
+    return directions;
+  }, [from, to, depart, returnDate, isRoundtrip]);
+
+  const handleSortChange = useCallback((s: "best" | "cheapest" | "fastest") => {
+    setSortBy(s);
+    // Re-fetch from backend with new sort to get true cheapest/fastest results
+    if (s !== prevSortRef.current && from && to && depart) {
+      prevSortRef.current = s;
+      prevSearchKeyRef.current = ""; // force re-search
+      cancelSearch();
+      searchFlights({
+        directions: buildDirections(),
+        adults, children, infants, currency,
+        sort: s, limit: 50, tripClass,
+      });
+    }
+  }, [from, to, depart, adults, children, infants, currency, tripClass, buildDirections, searchFlights, cancelSearch]);
   const handleFiltersChange = useCallback((f: FilterState) => { setFilters(f); }, []);
 
   const handleRemoveFilter = useCallback((key: keyof FilterState, value?: string) => {
@@ -253,21 +280,12 @@ const LiveFlightResults = () => {
 
   const handleRetry = useCallback(() => {
     prevSearchKeyRef.current = "";
+    prevSortRef.current = sortBy;
     setFilters({ ...DEFAULT_FILTERS });
-    setSortBy("best");
     if (from && to && depart) {
-      const directions: { origin: string; destination: string; date: string }[] = [];
-      if (isRoundtrip && returnDate) {
-        directions.push(
-          { origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart },
-          { origin: to.toUpperCase(), destination: from.toUpperCase(), date: returnDate }
-        );
-      } else {
-        directions.push({ origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart });
-      }
-      searchFlights({ directions, adults, children, infants, currency, sort: "best", limit: 50, tripClass: tripClass });
+      searchFlights({ directions: buildDirections(), adults, children, infants, currency, sort: sortBy, limit: 50, tripClass });
     }
-  }, [from, to, depart, returnDate, adults, children, infants, isRoundtrip, currency, tripClass, searchFlights]);
+  }, [from, to, depart, adults, children, infants, currency, tripClass, sortBy, buildDirections, searchFlights]);
 
   const totalPassengers = adults + children + infants;
 

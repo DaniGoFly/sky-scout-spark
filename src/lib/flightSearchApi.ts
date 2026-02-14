@@ -124,6 +124,8 @@ export async function searchFlights(
     market_code: (params.market || "US").toUpperCase(),
     limit: params.limit || 25,
     sort: params.sort || "best",
+    max_wait_ms: 45000,
+    poll_every_ms: 1300,
   };
 
   try {
