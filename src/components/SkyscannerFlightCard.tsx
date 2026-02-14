@@ -40,6 +40,15 @@ const safeText = (value: string | undefined | null, fallback = "—"): string =>
   return value;
 };
 
+/** Extract HH:mm from "2026-04-30 17:35", "17:35", or ISO string */
+function extractHHmm(raw: string | undefined | null): string {
+  if (!raw) return "";
+  const match = raw.match(/(\d{2}:\d{2})/);
+  if (match) return match[1];
+  if (import.meta.env.DEV) console.warn("Time parse failed for:", raw);
+  return "";
+}
+
 /* ─── Sub-components ─── */
 
 const AirlineHeader = memo(({
@@ -238,7 +247,41 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     </TooltipTrigger><TooltipContent><p>{t("card.deal_unavailable")}</p></TooltipContent></Tooltip></TooltipProvider>
   );
 
-  const outboundLabel = flight.return ? t("card.outbound") : null;
+  // ── Derive segments: outbound = segments[0], return = segments[1] ──
+  const segments = useMemo(() => {
+    const raw = (flight as any).segments;
+    return Array.isArray(raw) ? raw : [];
+  }, [flight]);
+  const retSegment = segments.length >= 2 ? segments[segments.length - 1] : null;
+  const hasReturn = retSegment !== null || flight.return !== undefined;
+
+  const outboundLabel = hasReturn ? t("card.outbound") : null;
+
+  // Return segment data — prefer segments[1], fallback to enriched flight.return
+  const retData = useMemo(() => {
+    if (retSegment) {
+      const depTime = extractHHmm(retSegment.departureTime ?? retSegment.departure_time ?? retSegment.departure_at ?? retSegment.local_departure);
+      const arrTime = extractHHmm(retSegment.arrivalTime ?? retSegment.arrival_time ?? retSegment.arrival_at ?? retSegment.local_arrival);
+      const origin = (retSegment.origin ?? retSegment.departure ?? "").toString().toUpperCase().slice(0, 3);
+      const dest = (retSegment.destination ?? retSegment.arrival ?? "").toString().toUpperCase().slice(0, 3);
+      const duration = Number(retSegment.durationMinutes ?? retSegment.duration ?? 0);
+      const stops = Number(retSegment.stopsCount ?? 0);
+      const stopsAirports: string[] = retSegment.stopsAirports || [];
+      return { origin, destination: dest, departureTime: depTime, arrivalTime: arrTime, durationMinutes: duration, stopsCount: stops, stopsAirports };
+    }
+    if (flight.return) {
+      return {
+        origin: flight.return.origin,
+        destination: flight.return.destination,
+        departureTime: extractHHmm(flight.return.departureTime) || flight.return.departureTime,
+        arrivalTime: extractHHmm(flight.return.arrivalTime) || flight.return.arrivalTime,
+        durationMinutes: flight.return.durationMinutes,
+        stopsCount: flight.return.stopsCount,
+        stopsAirports: flight.return.stopsAirports || [],
+      };
+    }
+    return null;
+  }, [retSegment, flight.return]);
 
   const outboundDateLabel = useMemo(() => {
     if (!departDate) return undefined;
@@ -252,13 +295,13 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   const outboundStopsCount = isEnriched(flight) ? flight.outboundStopsTotal : Math.max(0, flight.stopsCount ?? 0);
   const returnStopsCount = isEnriched(flight)
     ? flight.returnStopsTotal
-    : flight.return ? Math.max(0, flight.return.stopsCount ?? 0) : 0;
+    : retData ? Math.max(0, retData.stopsCount ?? 0) : 0;
 
   const outboundStopsAirports = isEnriched(flight) ? flight.outboundStopsAirports : flight.stopsAirports;
-  const returnStopsAirports = isEnriched(flight) ? flight.returnStopsAirports : (flight.return?.stopsAirports || []);
+  const returnStopsAirports = isEnriched(flight) ? flight.returnStopsAirports : (retData?.stopsAirports || []);
 
   const outboundStops = getLocalizedStopsLabel(outboundStopsCount, outboundStopsAirports);
-  const returnStops = flight.return ? getLocalizedStopsLabel(returnStopsCount, returnStopsAirports) : "";
+  const returnStops = retData ? getLocalizedStopsLabel(returnStopsCount, returnStopsAirports) : "";
 
   const apiCurrency = flight.price?.currency;
 
@@ -275,9 +318,9 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         <div className="p-4 flex flex-col gap-3">
           <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={isBestValue} isMobile bestLabel={t("card.best")} badgeOverride={badgeLabel} />
           <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={flight.departureTime} arrivalTime={flight.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outboundDateLabel} />
-          {flight.return && (
+          {retData && (
             <div className="pt-2 border-t border-border/40">
-              <LegComponent label={t("card.return")} origin={flight.return.origin} destination={flight.return.destination} departureTime={flight.return.departureTime} arrivalTime={flight.return.arrivalTime} durationMinutes={flight.return.durationMinutes} stopsCount={flight.return.stopsCount} stopsAirports={flight.return.stopsAirports} stopsLabel={returnStops} dateLabel={returnDateLabel} />
+              <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={returnDateLabel} />
             </div>
           )}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
@@ -319,9 +362,9 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
           <div className="flex flex-col gap-3 min-w-0">
             <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={false} isMobile={false} bestLabel={t("card.best")} />
             <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={flight.departureTime} arrivalTime={flight.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outboundDateLabel} />
-            {flight.return && (
+            {retData && (
               <div className="pt-2 border-t border-border/40">
-                <LegComponent label={t("card.return")} origin={flight.return.origin} destination={flight.return.destination} departureTime={flight.return.departureTime} arrivalTime={flight.return.arrivalTime} durationMinutes={flight.return.durationMinutes} stopsCount={flight.return.stopsCount} stopsAirports={flight.return.stopsAirports} stopsLabel={returnStops} dateLabel={returnDateLabel} />
+                <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={returnDateLabel} />
               </div>
             )}
           </div>
