@@ -80,7 +80,7 @@ const MultiCityResultsContent = () => {
       infants,
       currency,
       sort: "cheapest",
-      limit: 25,
+      limit: 100,
       tripClass,
     });
   }, [segments, adults, children, infants, currency, tripClass, searchFlights]);
@@ -100,7 +100,7 @@ const MultiCityResultsContent = () => {
       infants,
       currency,
       sort: "cheapest",
-      limit: 25,
+      limit: 100,
       tripClass,
     });
   }, [segments, adults, children, infants, currency, tripClass, searchFlights, cancelSearch]);
@@ -212,6 +212,9 @@ const MultiCityResultsContent = () => {
               />
               <p className="text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">{flights.length}</span> combined itineraries found
+              </p>
+              <p className="text-[11px] text-muted-foreground/70 italic">
+                Prices may differ from other platforms depending on agency availability, baggage, and fare rules.
               </p>
               <div className="space-y-3">
                 {sortedFlights.map((flight, index) => {
