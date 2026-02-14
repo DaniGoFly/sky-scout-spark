@@ -184,18 +184,22 @@ export function enrichFlightStops(
     const retDest = pickStr(lastReturn, ["destination", "arrival"]) || origin;
 
     const retDepTime = extractTime(firstReturn, [
-      "departure_at", "departureAt", "departure_time",
+      "departure_at", "departureAt", "departure_time", "departure_date",
       "departure_timestamp", "departureTimestamp",
+      "local_departure", "local_departure_datetime",
+      "dep", "depart",
     ]);
     const retArrTime = extractTime(lastReturn, [
-      "arrival_at", "arrivalAt", "arrival_time",
+      "arrival_at", "arrivalAt", "arrival_time", "arrival_date",
       "arrival_timestamp", "arrivalTimestamp",
+      "local_arrival", "local_arrival_datetime",
+      "arr", "arrive",
     ]);
 
     // Duration: try to compute from timestamps, else use 0
     let retDuration = 0;
-    const retDepRaw = firstReturn?.departure_at || firstReturn?.departureAt || firstReturn?.departure_timestamp;
-    const retArrRaw = lastReturn?.arrival_at || lastReturn?.arrivalAt || lastReturn?.arrival_timestamp;
+    const retDepRaw = firstReturn?.departure_at || firstReturn?.departureAt || firstReturn?.departure_time || firstReturn?.departure_date || firstReturn?.departure_timestamp || firstReturn?.local_departure;
+    const retArrRaw = lastReturn?.arrival_at || lastReturn?.arrivalAt || lastReturn?.arrival_time || lastReturn?.arrival_date || lastReturn?.arrival_timestamp || lastReturn?.local_arrival;
     if (retDepRaw && retArrRaw) {
       try {
         const d1 = typeof retDepRaw === "number" ? retDepRaw * 1000 : new Date(retDepRaw).getTime();
@@ -221,19 +225,23 @@ export function enrichFlightStops(
 
   // Compute outbound departure/arrival from the outbound legs
   const outboundDepTime = extractTime(outboundLegs[0], [
-    "departure_at", "departureAt", "departure_time",
+    "departure_at", "departureAt", "departure_time", "departure_date",
     "departure_timestamp", "departureTimestamp",
+    "local_departure", "local_departure_datetime",
+    "dep", "depart",
   ]) || flight.departureTime;
 
   const outboundArrTime = extractTime(outboundLegs[outboundLegs.length - 1], [
-    "arrival_at", "arrivalAt", "arrival_time",
+    "arrival_at", "arrivalAt", "arrival_time", "arrival_date",
     "arrival_timestamp", "arrivalTimestamp",
+    "local_arrival", "local_arrival_datetime",
+    "arr", "arrive",
   ]) || flight.arrivalTime;
 
   // Compute outbound duration
   let outboundDuration = flight.durationMinutes;
-  const obDepRaw = outboundLegs[0]?.departure_at || outboundLegs[0]?.departureAt || outboundLegs[0]?.departure_timestamp;
-  const obArrRaw = outboundLegs[outboundLegs.length - 1]?.arrival_at || outboundLegs[outboundLegs.length - 1]?.arrivalAt || outboundLegs[outboundLegs.length - 1]?.arrival_timestamp;
+  const obDepRaw = outboundLegs[0]?.departure_at || outboundLegs[0]?.departureAt || outboundLegs[0]?.departure_time || outboundLegs[0]?.departure_date || outboundLegs[0]?.departure_timestamp || outboundLegs[0]?.local_departure;
+  const obArrRaw = outboundLegs[outboundLegs.length - 1]?.arrival_at || outboundLegs[outboundLegs.length - 1]?.arrivalAt || outboundLegs[outboundLegs.length - 1]?.arrival_time || outboundLegs[outboundLegs.length - 1]?.arrival_date || outboundLegs[outboundLegs.length - 1]?.arrival_timestamp || outboundLegs[outboundLegs.length - 1]?.local_arrival;
   if (obDepRaw && obArrRaw) {
     try {
       const d1 = typeof obDepRaw === "number" ? obDepRaw * 1000 : new Date(obDepRaw).getTime();
