@@ -1,6 +1,7 @@
 /**
  * Flight Search API
- * Minimal API layer for flight search edge function on ycp project
+ * Minimal API layer for flight search edge function on ycp project.
+ * Uses `directions` array format for all search types.
  */
 
 import {
@@ -9,11 +10,14 @@ import {
 } from "./flightSearchConfig";
 import { Flight } from "./flightNormalizer";
 
-export interface SearchParams {
+export interface Direction {
   origin: string;
   destination: string;
-  departDate: string;
-  returnDate?: string;
+  date: string;
+}
+
+export interface SearchParams {
+  directions: Direction[];
   adults?: number;
   children?: number;
   infants?: number;
@@ -21,6 +25,7 @@ export interface SearchParams {
   sort?: "best" | "cheapest" | "fastest";
   limit?: number;
   tripClass?: string;
+  market?: string;
 }
 
 export interface SearchResponse {
@@ -70,7 +75,6 @@ export async function resolveDeal(params: {
       };
     }
 
-    // Log conversion event
     console.log("[monetization] deal click resolved", {
       search_id: params.search_id,
       proposal_id: params.proposal_id,
@@ -91,8 +95,8 @@ export async function resolveDeal(params: {
 }
 
 /**
- * Search flights via edge function
- * Supports AbortController signal for cancellation
+ * Search flights via edge function using directions array.
+ * Supports AbortController signal for cancellation.
  */
 export async function searchFlights(
   params: SearchParams,
@@ -107,20 +111,20 @@ export async function searchFlights(
 
   const body: Record<string, unknown> = {
     action: "search",
-    origin: params.origin.toUpperCase(),
-    destination: params.destination.toUpperCase(),
-    depart_date: params.departDate,
+    directions: params.directions.map(d => ({
+      origin: d.origin.toUpperCase(),
+      destination: d.destination.toUpperCase(),
+      date: d.date,
+    })),
     adults: params.adults || 1,
     children: params.children || 0,
     infants: params.infants || 0,
     trip_class: tripClassCode,
     currency_code: (params.currency || "USD").toUpperCase(),
-    market_code: "US",
+    market_code: (params.market || "US").toUpperCase(),
+    limit: params.limit || 25,
+    sort: params.sort || "best",
   };
-
-  if (params.returnDate) {
-    body.return_date = params.returnDate;
-  }
 
   try {
     const response = await fetch(FLIGHT_SEARCH_URL, {

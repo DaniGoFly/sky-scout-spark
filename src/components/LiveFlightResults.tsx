@@ -83,11 +83,21 @@ const LiveFlightResults = () => {
     cancelSearch();
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
+
+    // Build directions array based on trip type
+    const directions: { origin: string; destination: string; date: string }[] = [];
+    if (isRoundtrip && returnDate) {
+      directions.push(
+        { origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart },
+        { origin: to.toUpperCase(), destination: from.toUpperCase(), date: returnDate }
+      );
+    } else {
+      // One-way
+      directions.push({ origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart });
+    }
+
     const payload = {
-      origin: from.toUpperCase(),
-      destination: to.toUpperCase(),
-      departDate: depart,
-      returnDate: isRoundtrip ? returnDate : undefined,
+      directions,
       adults,
       children,
       infants,
@@ -246,7 +256,16 @@ const LiveFlightResults = () => {
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
     if (from && to && depart) {
-      searchFlights({ origin: from.toUpperCase(), destination: to.toUpperCase(), departDate: depart, returnDate: isRoundtrip ? returnDate : undefined, adults, children, infants, currency, sort: "best", limit: 50, tripClass: tripClass });
+      const directions: { origin: string; destination: string; date: string }[] = [];
+      if (isRoundtrip && returnDate) {
+        directions.push(
+          { origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart },
+          { origin: to.toUpperCase(), destination: from.toUpperCase(), date: returnDate }
+        );
+      } else {
+        directions.push({ origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart });
+      }
+      searchFlights({ directions, adults, children, infants, currency, sort: "best", limit: 50, tripClass: tripClass });
     }
   }, [from, to, depart, returnDate, adults, children, infants, isRoundtrip, currency, tripClass, searchFlights]);
 
