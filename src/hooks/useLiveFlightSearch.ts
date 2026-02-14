@@ -43,7 +43,9 @@ interface UseLiveFlightSearchResult {
   searchId: string | null;
   resultsBase: string | null;
   debugData: DebugData | null;
+  cachedAt: number | null;
   searchFlights: (params: SearchParamsHook) => Promise<void>;
+  forceSearchFlights: (params: SearchParamsHook) => Promise<void>;
   cancelSearch: () => void;
 }
 
@@ -69,8 +71,9 @@ function buildCacheKey(params: SearchParamsHook): string {
     a: params.adults || 1,
     c: params.children || 0,
     i: params.infants || 0,
-    cur: params.currency || "USD",
+    cur: (params.currency || "USD").toUpperCase(),
     cls: params.tripClass || "economy",
+    mkt: (params.market || "US").toUpperCase(),
   };
   return CACHE_PREFIX + JSON.stringify(normalized);
 }
@@ -98,6 +101,23 @@ function writeCache(key: string, data: CachedResult) {
   }
 }
 
+/* ── Detect market from browser locale ── */
+function detectMarket(override?: string): string {
+  if (override) return override.toUpperCase();
+  try {
+    const lang = navigator.language || "en-US";
+    const parts = lang.split("-");
+    if (parts.length > 1) return parts[1].toUpperCase();
+    const langToCountry: Record<string, string> = {
+      de: "DE", fr: "FR", es: "ES", it: "IT", pt: "PT",
+      tr: "TR", ar: "SA", nl: "NL", pl: "PL", ru: "RU",
+      ja: "JP", ko: "KR", zh: "CN", sv: "SE", da: "DK",
+      no: "NO", fi: "FI", el: "GR", cs: "CZ", ro: "RO",
+    };
+    return langToCountry[parts[0].toLowerCase()] || "US";
+  } catch { return "US"; }
+}
+
 /* ── Polling config ── */
 const POLL_INTERVAL_MS = 1300;
 const POLL_TIMEOUT_MS = 45000;
@@ -109,6 +129,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [searchId, setSearchId] = useState<string | null>(null);
   const [resultsBase, setResultsBase] = useState<string | null>(null);
   const [debugData, setDebugData] = useState<DebugData | null>(null);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -120,49 +141,19 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     setStatus("idle");
   }, []);
 
-  const doSearch = useCallback(async (params: SearchParamsHook) => {
+  /** Internal fetch — always hits backend */
+  const fetchFromBackend = useCallback(async (params: SearchParamsHook) => {
     if (abortRef.current) abortRef.current.abort();
 
-    const cacheKey = buildCacheKey(params);
-    const cached = readCache(cacheKey);
-
-    // Stale-while-revalidate: show cached data immediately but ALWAYS fetch fresh
-    if (cached && cached.flights.length > 0) {
-      setFlights(cached.flights);
-      setSearchId(cached.searchId);
-      setResultsBase(cached.resultsBase);
-      setError(null);
-      setDebugData(null);
-      setStatus("searching"); // keep "searching" so UI shows updating indicator
-    } else {
-      setFlights([]);
-      setError(null);
-      setSearchId(null);
-      setResultsBase(null);
-      setDebugData(null);
-      setStatus("searching");
-    }
+    setError(null);
+    setDebugData(null);
+    setStatus("searching");
 
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // Detect market from browser locale — prefer region subtag (e.g. "de-DE" → "DE")
-    const detectedMarket = (() => {
-      if (params.market) return params.market;
-      try {
-        const lang = navigator.language || "en-US";
-        const parts = lang.split("-");
-        if (parts.length > 1) return parts[1].toUpperCase();
-        // Map bare language codes to likely country
-        const langToCountry: Record<string, string> = {
-          de: "DE", fr: "FR", es: "ES", it: "IT", pt: "PT",
-          tr: "TR", ar: "SA", nl: "NL", pl: "PL", ru: "RU",
-          ja: "JP", ko: "KR", zh: "CN", sv: "SE", da: "DK",
-          no: "NO", fi: "FI", el: "GR", cs: "CZ", ro: "RO",
-        };
-        return langToCountry[parts[0].toLowerCase()] || "US";
-      } catch { return "US"; }
-    })();
+    const detectedMarket = detectMarket(params.market);
+    const cacheKey = buildCacheKey({ ...params, market: detectedMarket });
 
     const apiParams: SearchParams = {
       directions: params.directions,
@@ -183,25 +174,22 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     };
 
     try {
-      const dirs = params.directions;
       if (import.meta.env.DEV) {
-        console.debug("[flight-search] Fetching flight-search", { directions: dirs, sort: apiParams.sort, limit: apiParams.limit, currency: apiParams.currency, market: apiParams.market });
+        console.debug("[flight-search] Fetching flight-search", {
+          directions: params.directions,
+          sort: apiParams.sort, limit: apiParams.limit,
+          currency: apiParams.currency, market: apiParams.market,
+        });
       }
-      console.log("[flight-search] POST directions", dirs.map(d => `${d.origin}→${d.destination} ${d.date}`).join(", "));
+      console.log("[flight-search] POST directions", params.directions.map(d => `${d.origin}→${d.destination} ${d.date}`).join(", "));
 
       const data: SearchResponse = await apiSearchFlights(apiParams, controller.signal);
-
       if (controller.signal.aborted) return;
 
       debug.responseStep = data.step;
       debug.responseStatus = data.status;
       debug.searchId = data.search_id;
       debug.resultsBase = data.results_base;
-
-      console.log("[flight-search] response", {
-        ok: data.ok, step: data.step, status: data.status,
-        flights: data.flights?.length || 0, error: data.error,
-      });
 
       if (!data.ok) {
         if (data.error === "Search cancelled") return;
@@ -216,9 +204,8 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       if (data.search_id) setSearchId(data.search_id);
       if (data.results_base) setResultsBase(data.results_base);
 
-      // If pending, poll for results
+      // Polling
       if (data.status === "pending" && data.search_id && data.results_base) {
-        console.log("[flight-search] status=pending, starting poll...");
         const pollStart = Date.now();
         let lastTimestamp = data.last_update_timestamp || 0;
         let pollCount = 0;
@@ -231,26 +218,13 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
           debug.pollCount = pollCount;
 
           const pollData = await apiPollResults(
-            {
-              search_id: data.search_id!,
-              results_base: data.results_base!,
-              last_update_timestamp: lastTimestamp,
-            },
+            { search_id: data.search_id!, results_base: data.results_base!, last_update_timestamp: lastTimestamp },
             controller.signal
           );
-
           if (controller.signal.aborted) return;
 
-          console.log(`[flight-search] poll #${pollCount}`, {
-            ok: pollData.ok, status: pollData.status,
-            flights: pollData.flights?.length || 0,
-          });
-
           if (!pollData.ok) continue;
-
-          if (pollData.last_update_timestamp) {
-            lastTimestamp = pollData.last_update_timestamp;
-          }
+          if (pollData.last_update_timestamp) lastTimestamp = pollData.last_update_timestamp;
 
           if (pollData.flights && pollData.flights.length > 0) {
             const flightResults = attachDealContextToFlights({
@@ -259,13 +233,9 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
               results_base: data.results_base || null,
             });
 
-            writeCache(cacheKey, {
-              timestamp: Date.now(),
-              searchId: data.search_id!,
-              resultsBase: data.results_base || null,
-              flights: flightResults,
-            });
-
+            const now = Date.now();
+            writeCache(cacheKey, { timestamp: now, searchId: data.search_id!, resultsBase: data.results_base || null, flights: flightResults });
+            setCachedAt(now);
             setDebugData(debug);
             setFlights(flightResults);
             setStatus("complete");
@@ -281,7 +251,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         return;
       }
 
-      // Direct results (no polling needed)
+      // Direct results
       const flightResults: Flight[] = attachDealContextToFlights({
         flights: (data.flights || []) as Flight[],
         search_id: data.search_id || "",
@@ -295,13 +265,9 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         return;
       }
 
-      writeCache(cacheKey, {
-        timestamp: Date.now(),
-        searchId: data.search_id || null,
-        resultsBase: data.results_base || null,
-        flights: flightResults,
-      });
-
+      const now = Date.now();
+      writeCache(cacheKey, { timestamp: now, searchId: data.search_id || null, resultsBase: data.results_base || null, flights: flightResults });
+      setCachedAt(now);
       setDebugData(debug);
       setFlights(flightResults);
       setStatus("complete");
@@ -315,6 +281,45 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     }
   }, []);
 
+  /**
+   * searchFlights — cache-first.
+   * If a fresh cache exists (<10 min), serve it immediately without backend call.
+   * Otherwise fetch from backend.
+   */
+  const doSearch = useCallback(async (params: SearchParamsHook) => {
+    const detectedMarket = detectMarket(params.market);
+    const cacheKey = buildCacheKey({ ...params, market: detectedMarket });
+    const cached = readCache(cacheKey);
+
+    if (cached && cached.flights.length > 0) {
+      // Serve from cache — no backend call
+      setFlights(cached.flights);
+      setSearchId(cached.searchId);
+      setResultsBase(cached.resultsBase);
+      setCachedAt(cached.timestamp);
+      setError(null);
+      setDebugData(null);
+      setStatus("complete");
+      console.log("[flight-search] Serving from cache, age:", Math.round((Date.now() - cached.timestamp) / 1000), "s");
+      return;
+    }
+
+    // No cache — fetch fresh
+    setFlights([]);
+    setCachedAt(null);
+    await fetchFromBackend(params);
+  }, [fetchFromBackend]);
+
+  /**
+   * forceSearchFlights — always hits backend, ignores cache.
+   * Used by "Refresh prices" button.
+   */
+  const forceSearch = useCallback(async (params: SearchParamsHook) => {
+    setFlights([]);
+    setCachedAt(null);
+    await fetchFromBackend(params);
+  }, [fetchFromBackend]);
+
   return {
     flights,
     status,
@@ -323,7 +328,9 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     searchId,
     resultsBase,
     debugData,
+    cachedAt,
     searchFlights: doSearch,
+    forceSearchFlights: forceSearch,
     cancelSearch,
   };
 }

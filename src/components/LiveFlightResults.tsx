@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, AlertCircle, Plane, Loader2 } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plane, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSortTabs from "./FlightSortTabs";
@@ -54,7 +54,7 @@ const LiveFlightResults = () => {
   const { formatDate, currency } = useLocale();
   const isMobile = useIsMobile();
   const {
-    flights: rawFlights, status, error, isSearching, searchFlights, cancelSearch,
+    flights: rawFlights, status, error, isSearching, searchFlights, forceSearchFlights, cancelSearch, cachedAt,
   } = useLiveFlightSearch();
 
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
@@ -250,19 +250,11 @@ const LiveFlightResults = () => {
     return directions;
   }, [from, to, depart, returnDate, isRoundtrip]);
 
+  // Sort tab change — client-side only, no backend re-fetch
   const handleSortChange = useCallback((s: "best" | "cheapest" | "fastest") => {
     setSortBy(s);
-    if (s !== prevSortRef.current && from && to && depart) {
-      prevSortRef.current = s;
-      prevSearchKeyRef.current = "";
-      cancelSearch();
-      searchFlights({
-        directions: buildDirections(),
-        adults, children, infants, currency,
-        sort: s, limit: 100, tripClass,
-      });
-    }
-  }, [from, to, depart, adults, children, infants, currency, tripClass, buildDirections, searchFlights, cancelSearch]);
+    prevSortRef.current = s;
+  }, []);
   const handleFiltersChange = useCallback((f: FilterState) => { setFilters(f); }, []);
 
   const handleRemoveFilter = useCallback((key: keyof FilterState, value?: string) => {
@@ -291,9 +283,23 @@ const LiveFlightResults = () => {
     prevSortRef.current = sortBy;
     setFilters({ ...DEFAULT_FILTERS });
     if (from && to && depart) {
-      searchFlights({ directions: buildDirections(), adults, children, infants, currency, sort: sortBy, limit: 100, tripClass });
+      forceSearchFlights({ directions: buildDirections(), adults, children, infants, currency, sort: sortBy, limit: 100, tripClass });
     }
-  }, [from, to, depart, adults, children, infants, currency, tripClass, sortBy, buildDirections, searchFlights]);
+  }, [from, to, depart, adults, children, infants, currency, tripClass, sortBy, buildDirections, forceSearchFlights]);
+
+  const handleRefreshPrices = useCallback(() => {
+    if (from && to && depart) {
+      prevSearchKeyRef.current = "";
+      forceSearchFlights({ directions: buildDirections(), adults, children, infants, currency, sort: sortBy, limit: 100, tripClass });
+    }
+  }, [from, to, depart, adults, children, infants, currency, tripClass, sortBy, buildDirections, forceSearchFlights]);
+
+  const cacheAgeLabel = useMemo(() => {
+    if (!cachedAt) return null;
+    const mins = Math.round((Date.now() - cachedAt) / 60000);
+    if (mins < 1) return t("results.updated_just_now", "Updated just now");
+    return t("results.updated_ago", { count: mins, defaultValue: `Updated ${mins} min ago` });
+  }, [cachedAt, t, status]); // status dep forces re-calc on search complete
 
   const totalPassengers = adults + children + infants;
 
@@ -410,6 +416,15 @@ const LiveFlightResults = () => {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
                   <span>Updating results…</span>
+                </div>
+              )}
+              {!isSearching && cacheAgeLabel && (
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-[11px] text-muted-foreground">{cacheAgeLabel}</span>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-primary hover:text-primary/80 gap-1" onClick={handleRefreshPrices}>
+                    <RefreshCw className="w-3 h-3" />
+                    Refresh prices
+                  </Button>
                 </div>
               )}
               <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} flightsCurrency={flightsCurrency} />
