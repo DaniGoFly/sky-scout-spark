@@ -1,13 +1,11 @@
 /**
- * Skyscanner-style Flight Card
- * Wrapped with React.memo to prevent unnecessary re-renders.
+ * Skyscanner-style Flight Card — Production Polish
  * Responsive: vertical text-only on mobile, rich timeline on tablet+
- * Mobile-safe booking: synchronous tab open + async URL resolution
- * i18n: All labels translated, prices/dates formatted via locale context
+ * Price intelligence badges, smooth animations, partner disclaimers
  */
 
 import { memo, useState, useRef, useCallback, useMemo } from "react";
-import { Heart, Plane, Loader2, ExternalLink, Flame } from "lucide-react";
+import { Heart, Plane, Loader2, ExternalLink, Flame, TrendingDown, Minus, TrendingUp } from "lucide-react";
 import { format, parse } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -15,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Flight, getAirlineName, getAirlineLogo, formatDuration } from "@/lib/flightNormalizer";
 import type { EnrichedFlight } from "@/lib/flightEnrichment";
+import type { PriceIntelligence } from "@/lib/priceIntelligence";
 import { resolveDeal } from "@/lib/flightSearchApi";
 import { trackFlightClick } from "@/lib/clickTracking";
 import { shouldShowScarcity } from "@/lib/scarcityIndicator";
@@ -28,6 +27,7 @@ interface FlightCardProps {
   badgeLabel?: string;
   departDate?: string;
   returnDate?: string;
+  priceIntel?: PriceIntelligence | null;
 }
 
 /** Type guard to check if flight has enriched stop data */
@@ -40,7 +40,7 @@ const safeText = (value: string | undefined | null, fallback = "—"): string =>
   return value;
 };
 
-/* ─── Sub-components (pure, no state) ─── */
+/* ─── Sub-components ─── */
 
 const AirlineHeader = memo(({
   logo, name, flightNumber, isBestValue, isMobile, bestLabel, badgeOverride,
@@ -57,11 +57,11 @@ const AirlineHeader = memo(({
       )}
     </div>
     <div className="min-w-0 flex-1">
-      <p className="font-medium text-foreground text-sm truncate">{name || "Airline"}</p>
-      {flightNumber && <p className="text-xs text-muted-foreground truncate">{flightNumber}</p>}
+      <p className="font-bold text-foreground text-sm truncate">{name || "Airline"}</p>
+      {flightNumber && <p className="text-[11px] text-muted-foreground truncate">{flightNumber}</p>}
     </div>
     {isBestValue && isMobile && (
-      <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5 flex-shrink-0">{badgeOverride || bestLabel}</Badge>
+      <Badge className="bg-green-600 text-white text-[10px] px-2 py-0.5 flex-shrink-0">{badgeOverride || bestLabel}</Badge>
     )}
   </div>
 ));
@@ -75,14 +75,14 @@ const MobileLeg = memo(({
   durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string;
 }) => (
   <div className="flex flex-col gap-0.5">
-    {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>}
+    {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>}
     <div className="flex items-baseline gap-1.5">
       <p className="text-[15px] font-bold text-foreground leading-snug">
         {safeText(origin, "---")} {safeText(departureTime)} → {safeText(destination, "---")} {safeText(arrivalTime)}
       </p>
     </div>
     {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
-    <p className={`text-xs font-medium ${stopsCount === 0 ? "text-green-600" : "text-amber-600"}`}>
+    <p className={`text-xs font-medium ${stopsCount === 0 ? "text-green-500" : "text-accent"}`}>
       {stopsLabel} · {formatDuration(durationMinutes)}
     </p>
   </div>
@@ -97,12 +97,12 @@ const DesktopLeg = memo(({
   durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string;
 }) => (
   <div className="flex flex-col gap-1">
-    {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">{label}</span>}
+    {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{label}</span>}
     <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-      <div className="flex-shrink-0 text-start" style={{ minWidth: "56px" }}>
-        <p className="text-lg xl:text-xl font-bold text-foreground leading-tight">{safeText(departureTime)}</p>
+      <div className="flex-shrink-0 text-start" style={{ minWidth: "60px" }}>
+        <p className="text-xl font-bold text-foreground leading-tight tracking-tight">{safeText(departureTime)}</p>
         {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
-        <p className="text-xs font-medium text-muted-foreground uppercase">{safeText(origin, "---")}</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase">{safeText(origin, "---")}</p>
       </div>
       <div className="flex-1 flex flex-col items-center px-2" style={{ minWidth: "80px" }}>
         <span className="text-[11px] text-muted-foreground font-medium mb-1 whitespace-nowrap">{formatDuration(durationMinutes)}</span>
@@ -111,22 +111,34 @@ const DesktopLeg = memo(({
           <Plane className="absolute start-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary rotate-90 rtl:-rotate-90" />
           <div className="absolute end-0 w-1.5 h-1.5 bg-primary rounded-full -translate-y-[2px]" />
         </div>
-        <span className={`text-[11px] mt-1 font-medium whitespace-nowrap ${stopsCount === 0 ? "text-green-600" : "text-amber-600"}`}>
+        <span className={`text-[11px] mt-1 font-semibold whitespace-nowrap ${stopsCount === 0 ? "text-green-500" : "text-accent"}`}>
           {stopsLabel}
         </span>
       </div>
-      <div className="flex-shrink-0 text-end" style={{ minWidth: "56px" }}>
-        <p className="text-lg xl:text-xl font-bold text-foreground leading-tight">{safeText(arrivalTime)}</p>
-        <p className="text-xs font-medium text-muted-foreground uppercase">{safeText(destination, "---")}</p>
+      <div className="flex-shrink-0 text-end" style={{ minWidth: "60px" }}>
+        <p className="text-xl font-bold text-foreground leading-tight tracking-tight">{safeText(arrivalTime)}</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase">{safeText(destination, "---")}</p>
       </div>
     </div>
   </div>
 ));
 DesktopLeg.displayName = "DesktopLeg";
 
+/** Price Intelligence Badge */
+const PriceIntelBadge = memo(({ intel }: { intel: PriceIntelligence }) => {
+  const Icon = intel.quality === "great" ? TrendingDown : intel.quality === "high" ? TrendingUp : Minus;
+  return (
+    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${intel.bgColor} ${intel.color}`}>
+      <Icon className="w-3 h-3" />
+      <span>{intel.label}</span>
+    </div>
+  );
+});
+PriceIntelBadge.displayName = "PriceIntelBadge";
+
 /* ─── Main card ─── */
 
-const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp }: FlightCardProps) => {
+const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
@@ -178,7 +190,6 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     const newTab = window.open("about:blank", "_blank");
     setIsResolving(true);
 
-    // Track click BEFORE resolving (fire-and-forget)
     trackFlightClick({
       search_id: searchId,
       proposal_id: proposalId,
@@ -229,7 +240,6 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   const outboundLabel = flight.return ? t("card.outbound") : null;
 
-  // Format dates for display
   const outboundDateLabel = useMemo(() => {
     if (!departDate) return undefined;
     try { return format(parse(departDate, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; }
@@ -239,7 +249,6 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     try { return format(parse(returnDateProp, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; }
   }, [returnDateProp]);
 
-  // Use enriched canonical stop values when available, otherwise fall back
   const outboundStopsCount = isEnriched(flight) ? flight.outboundStopsTotal : Math.max(0, flight.stopsCount ?? 0);
   const returnStopsCount = isEnriched(flight)
     ? flight.returnStopsTotal
@@ -251,20 +260,8 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   const outboundStops = getLocalizedStopsLabel(outboundStopsCount, outboundStopsAirports);
   const returnStops = flight.return ? getLocalizedStopsLabel(returnStopsCount, returnStopsAirports) : "";
 
-  // DEV: warn if computed isDirectItinerary conflicts with displayed label
-  if (process.env.NODE_ENV !== "production" && isEnriched(flight)) {
-    if (flight.isDirectItinerary && (outboundStopsCount > 0 || returnStopsCount > 0)) {
-      console.warn(`[FlightCard] isDirectItinerary=true but stops=[${outboundStopsCount}, ${returnStopsCount}]`, flight.id);
-    }
-    if (!flight.isDirectItinerary && outboundStopsCount === 0 && returnStopsCount === 0) {
-      console.warn(`[FlightCard] isDirectItinerary=false but stops=[0, 0]`, flight.id);
-    }
-  }
-
-  // Currency: use API's original currency to prevent mismatched symbols
   const apiCurrency = flight.price?.currency;
 
-  // Scarcity: deterministic per airline+route bucket
   const showScarcity = useMemo(() => shouldShowScarcity(
     airlineName, flight.origin || "", flight.destination || ""
   ), [airlineName, flight.origin, flight.destination]);
@@ -287,6 +284,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             <div>
               <p className={`text-2xl font-bold text-foreground leading-tight ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
               <p className="text-[11px] text-muted-foreground">{t("card.per_person")}</p>
+              {priceIntel && <div className="mt-1"><PriceIntelBadge intel={priceIntel} /></div>}
               {showScarcity && (
                 <p className="text-[10px] text-amber-500 font-medium mt-0.5">{t("card.scarcity", "Only a few seats left at this price")}</p>
               )}
@@ -297,12 +295,10 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             <div className="flex items-center gap-1.5 text-green-500 text-xs font-medium">
               <Flame className="w-3.5 h-3.5" />
               <span>{t("card.best_price", "Best Price")}</span>
-              <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground font-normal">{t("card.lowest_fare", "Lowest fare available")}</span>
             </div>
           )}
           {ctaButton}
-          <p className="text-[10px] text-muted-foreground text-center leading-tight">{t("card.opens_partner")}</p>
+          <p className="text-[10px] text-muted-foreground/60 text-center leading-tight">{t("card.opens_partner", "Opens partner booking – price may change")}</p>
         </div>
       </div>
     );
@@ -310,8 +306,8 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   /* ═══════ DESKTOP LAYOUT ═══════ */
   return (
-    <div className={`relative bg-card rounded-xl border hover:shadow-md hover:-translate-y-0.5 group ${isBestValue ? "border-green-500/60 ring-2 ring-green-500/20" : "border-border hover:border-primary/30"}`}
-      style={{ contain: "layout style", transition: "box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease" }}>
+    <div className={`relative bg-card rounded-xl border group flight-card-hover ${isBestValue ? "border-green-500/60 ring-2 ring-green-500/20" : "border-border"}`}
+      style={{ contain: "layout style" }}>
       {isBestValue && (
         <div className="absolute -top-3 start-5 z-10">
           <Badge className="bg-green-600 text-white shadow-md px-3 py-0.5 text-[11px] gap-1"><Flame className="w-3 h-3" />{badgeLabel || t("card.best_price", "Best Price")}</Badge>
@@ -333,6 +329,8 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             <div className="flex flex-col items-end text-end">
               <p className={`text-2xl font-bold text-foreground whitespace-nowrap ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{t("card.per_person")}</p>
+              {priceIntel && <div className="mt-1"><PriceIntelBadge intel={priceIntel} /></div>}
+              <p className="text-[10px] text-muted-foreground/50 mt-0.5">Compared to similar routes</p>
               {showScarcity && (
                 <p className="text-[10px] text-amber-500 font-medium mt-1">{t("card.scarcity", "Only a few seats left at this price")}</p>
               )}
@@ -342,7 +340,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             </div>
             <div className="flex flex-col items-end gap-2 mt-3">
               <div className="flex items-center gap-2">{saveButton}{ctaButton}</div>
-              <p className="text-[10px] text-muted-foreground text-end leading-tight">{t("card.opens_partner_short")}</p>
+              <p className="text-[10px] text-muted-foreground/50 text-end leading-tight">Opens partner booking – price may change</p>
             </div>
           </div>
         </div>

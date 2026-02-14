@@ -185,6 +185,16 @@
   animation: flight-enter 0.35s ease-out both;
 }
 
+/* Hover elevation for flight cards */
+.flight-card-hover {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.flight-card-hover:hover {
+  box-shadow: 0 8px 24px -8px hsl(0 0% 0% / 0.3);
+  transform: translateY(-2px);
+  border-color: hsl(var(--primary) / 0.3);
+}
+
 /* Price pulse for best price */
 @keyframes price-pulse {
   0%, 100% { opacity: 1; }
@@ -193,4 +203,9 @@
 
 .price-pulse {
   animation: price-pulse 2s ease-in-out 3;
+}
+
+/* Sort tab transition */
+.sort-tab-transition {
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }

@@ -18,6 +18,7 @@ import StickyMobileCTA from "./StickyMobileCTA";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
 import { enrichFlights, type EnrichedFlight } from "@/lib/flightEnrichment";
+import { getPriceIntelligence } from "@/lib/priceIntelligence";
 import { resolveDeal } from "@/lib/flightSearchApi";
 import { trackFlightClick } from "@/lib/clickTracking";
 import { useLocale } from "@/hooks/useLocale";
@@ -60,6 +61,8 @@ const LiveFlightResults = () => {
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
   const prevSearchKeyRef = useRef<string>("");
   const prevSortRef = useRef<string>("best");
+  // Keep previous results visible during re-sort
+  const prevResultsRef = useRef<EnrichedFlight[]>([]);
 
   const from = searchParams.get("from") || searchParams.get("origin") || "";
   const to = searchParams.get("to") || searchParams.get("destination") || "";
@@ -86,7 +89,6 @@ const LiveFlightResults = () => {
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
 
-    // Build directions array based on trip type
     const directions: { origin: string; destination: string; date: string }[] = [];
     if (isRoundtrip && returnDate) {
       directions.push(
@@ -97,18 +99,10 @@ const LiveFlightResults = () => {
       directions.push({ origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart });
     }
 
-    const payload = {
-      directions,
-      adults,
-      children,
-      infants,
-      currency: currency,
-      sort: "best" as const,
-      limit: 100,
-      tripClass: tripClass,
-    };
-    console.log("[flight-search] request", payload);
-    searchFlights(payload);
+    searchFlights({
+      directions, adults, children, infants, currency,
+      sort: "best" as const, limit: 100, tripClass,
+    });
   }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, tripClass, searchFlights, cancelSearch]);
 
   // ── Step 1: Enrich raw flights with canonical per-direction stop data ──
@@ -117,26 +111,34 @@ const LiveFlightResults = () => {
     return enrichFlights(rawFlights, from, to, isRoundtrip);
   }, [rawFlights, from, to, isRoundtrip]);
 
+  // Store previous results so we can show them during re-sort
+  useEffect(() => {
+    if (enrichedFlights.length > 0) {
+      prevResultsRef.current = enrichedFlights;
+    }
+  }, [enrichedFlights]);
+
+  // Use enriched or fallback to previous during loading
+  const displayFlights = enrichedFlights.length > 0 ? enrichedFlights : prevResultsRef.current;
+
   const actualPriceRange = useMemo((): [number, number] => {
-    if (!enrichedFlights.length) return [0, 10000];
-    const prices = enrichedFlights.map((f) => f.price?.amount).filter((p) => p > 0 && Number.isFinite(p));
+    if (!displayFlights.length) return [0, 10000];
+    const prices = displayFlights.map((f) => f.price?.amount).filter((p) => p > 0 && Number.isFinite(p));
     if (!prices.length) return [0, 10000];
     const min = Math.floor(Math.min(...prices) / 25) * 25;
     const max = Math.ceil(Math.max(...prices) / 25) * 25;
     return [min, Math.max(max, min + 100)];
-  }, [enrichedFlights]);
+  }, [displayFlights]);
 
-  /** Dominant currency from the API results */
   const flightsCurrency = useMemo(() => {
-    if (!enrichedFlights.length) return undefined;
-    return enrichedFlights[0]?.price?.currency || undefined;
-  }, [enrichedFlights]);
+    if (!displayFlights.length) return undefined;
+    return displayFlights[0]?.price?.currency || undefined;
+  }, [displayFlights]);
 
-  // ── Step 2: Filter using enriched canonical fields ──
+  // ── Step 2: Filter ──
   const filteredFlights = useMemo(() => {
-    let result = enrichedFlights;
+    let result = displayFlights;
 
-    // Stops filter — single-choice using stopsMode
     if (filters.stopsMode === "direct") {
       result = result.filter((f) => f.isDirectItinerary);
     } else if (filters.stopsMode === "1") {
@@ -144,12 +146,10 @@ const LiveFlightResults = () => {
     } else if (filters.stopsMode === "2plus") {
       result = result.filter((f) => f.stopsTotal >= 2);
     }
-    // "any" = no stops filter
 
     if (filters.airlines.length > 0) {
       result = result.filter((flight) => {
         const raw = flight.airlines?.[0] || "";
-        // Match the same resolution logic as FlightFilters
         const display = raw.length <= 3 ? getAirlineName(raw) : raw;
         return filters.airlines.includes(display);
       });
@@ -175,11 +175,21 @@ const LiveFlightResults = () => {
     }
 
     return result;
-  }, [enrichedFlights, filters, actualPriceRange]);
+  }, [displayFlights, filters, actualPriceRange]);
+
+  // ── Dedup by id ──
+  const dedupedFlights = useMemo(() => {
+    const seen = new Set<string>();
+    return filteredFlights.filter((f) => {
+      if (seen.has(f.id)) return false;
+      seen.add(f.id);
+      return true;
+    });
+  }, [filteredFlights]);
 
   // ── Step 3: Sort ──
   const { sortedFlights, pinnedLabels } = useMemo(() => {
-    const sorted = [...filteredFlights];
+    const sorted = [...dedupedFlights];
     const labels = new Map<string, string>();
 
     const bestSort = (a: EnrichedFlight, b: EnrichedFlight) => {
@@ -207,7 +217,6 @@ const LiveFlightResults = () => {
         });
         break;
       case "best": default: {
-        // Find 3 candidates
         const byPrice = [...sorted].sort((a, b) => a.price.amount - b.price.amount);
         const byDuration = [...sorted].sort((a, b) => a.durationMinutes - b.durationMinutes);
         const byBest = [...sorted].sort(bestSort);
@@ -226,7 +235,7 @@ const LiveFlightResults = () => {
       }
     }
     return { sortedFlights: sorted.slice(0, MAX_DISPLAY), pinnedLabels: labels };
-  }, [filteredFlights, sortBy]);
+  }, [dedupedFlights, sortBy]);
 
   const buildDirections = useCallback(() => {
     const directions: { origin: string; destination: string; date: string }[] = [];
@@ -243,10 +252,9 @@ const LiveFlightResults = () => {
 
   const handleSortChange = useCallback((s: "best" | "cheapest" | "fastest") => {
     setSortBy(s);
-    // Re-fetch from backend with new sort to get true cheapest/fastest results
     if (s !== prevSortRef.current && from && to && depart) {
       prevSortRef.current = s;
-      prevSearchKeyRef.current = ""; // force re-search
+      prevSearchKeyRef.current = "";
       cancelSearch();
       searchFlights({
         directions: buildDirections(),
@@ -289,7 +297,6 @@ const LiveFlightResults = () => {
 
   const totalPassengers = adults + children + infants;
 
-  // Cheapest flight for sticky mobile CTA
   const cheapestFlight = useMemo(() => {
     if (!sortedFlights.length) return null;
     return [...sortedFlights].sort((a, b) => a.price.amount - b.price.amount)[0];
@@ -303,13 +310,10 @@ const LiveFlightResults = () => {
     if (!pid || !sid) return;
 
     trackFlightClick({
-      search_id: sid,
-      proposal_id: pid,
+      search_id: sid, proposal_id: pid,
       airline: getAirlineName(cheapestFlight.airlines?.[0] || ""),
-      price: cheapestFlight.price?.amount,
-      currency: cheapestFlight.price?.currency,
-      origin: cheapestFlight.origin,
-      destination: cheapestFlight.destination,
+      price: cheapestFlight.price?.amount, currency: cheapestFlight.price?.currency,
+      origin: cheapestFlight.origin, destination: cheapestFlight.destination,
     });
 
     const newTab = window.open("about:blank", "_blank");
@@ -324,6 +328,10 @@ const LiveFlightResults = () => {
       if (newTab && !newTab.closed) newTab.close();
     }
   }, [cheapestFlight]);
+
+  // Show results (complete or has previous results while re-sorting)
+  const hasResults = (status === "complete" || isSearching) && displayFlights.length > 0;
+  const showSkeleton = isSearching && prevResultsRef.current.length === 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -341,7 +349,7 @@ const LiveFlightResults = () => {
               </p>
             </div>
             <div className="lg:hidden">
-              <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={filteredFlights.length} flights={enrichedFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
+              <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={dedupedFlights.length} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </div>
           </div>
           <div className="hidden sm:block"><CompactSearchBar /></div>
@@ -351,7 +359,7 @@ const LiveFlightResults = () => {
 
       <div className="container mx-auto px-4 py-4 md:py-6">
 
-        {isSearching && (
+        {showSkeleton && (
           <div className="space-y-6">
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
@@ -362,7 +370,7 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {status === "error" && !isSearching && (
+        {status === "error" && !isSearching && displayFlights.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-5">
               <AlertCircle className="w-8 h-8 text-destructive" />
@@ -376,7 +384,7 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {status === "no_results" && !isSearching && (
+        {status === "no_results" && !isSearching && displayFlights.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-5">
               <Plane className="w-8 h-8 text-muted-foreground" />
@@ -387,37 +395,36 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {status === "complete" && !isSearching && enrichedFlights.length > 0 && (
+        {hasResults && !showSkeleton && (
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
             <aside className="hidden lg:block sticky top-[140px] h-fit max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin">
-              <FlightFilters onFiltersChange={handleFiltersChange} flights={enrichedFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
+              <FlightFilters onFiltersChange={handleFiltersChange} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </aside>
             <div className="min-w-0 space-y-3">
-              {/* Price Insight */}
               {sortedFlights.length > 0 && (
-                <PriceInsight
-                  origin={from}
-                  destination={to}
-                  currentPrice={sortedFlights[0].price.amount}
-                  priceCurrency={flightsCurrency}
-                />
+                <PriceInsight origin={from} destination={to} currentPrice={sortedFlights[0].price.amount} priceCurrency={flightsCurrency} />
               )}
-              {/* Price Graph — collapsible */}
               <PriceGraph origin={from} destination={to} />
-              <MemoizedSortTabs flights={filteredFlights} sortBy={sortBy} onSortChange={handleSortChange} />
+              <MemoizedSortTabs flights={dedupedFlights} sortBy={sortBy} onSortChange={handleSortChange} />
+              {isSearching && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                  <span>Updating results…</span>
+                </div>
+              )}
               <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} flightsCurrency={flightsCurrency} />
               <div className="text-xs md:text-sm text-muted-foreground px-1">
-                <span className="font-semibold text-foreground">{filteredFlights.length}</span>{" "}
-                {filteredFlights.length !== 1 ? t("results.results_found_plural", { count: filteredFlights.length }).replace(`${filteredFlights.length} `, "") : t("results.results_found", { count: 1 }).replace("1 ", "")}
-                {filteredFlights.length !== enrichedFlights.length && (
-                  <span className="ms-1 opacity-70">({t("results.from_total", { total: enrichedFlights.length })})</span>
+                <span className="font-semibold text-foreground">{dedupedFlights.length}</span>{" "}
+                {dedupedFlights.length !== 1 ? t("results.results_found_plural", { count: dedupedFlights.length }).replace(`${dedupedFlights.length} `, "") : t("results.results_found", { count: 1 }).replace("1 ", "")}
+                {dedupedFlights.length !== displayFlights.length && (
+                  <span className="ms-1 opacity-70">({t("results.from_total", { total: displayFlights.length })})</span>
                 )}
-                {sortedFlights.length < filteredFlights.length && (
+                {sortedFlights.length < dedupedFlights.length && (
                   <span className="ms-1 opacity-70">· {t("results.showing_top", { count: sortedFlights.length })}</span>
                 )}
               </div>
-              <p className="text-[11px] text-muted-foreground/70 px-1 italic">
-                Prices may differ from other platforms depending on agency availability, baggage, and fare rules.
+              <p className="text-[11px] text-muted-foreground/60 px-1 italic">
+                Prices may differ from other platforms depending on agency availability and fare rules.
               </p>
               <FlightResultsErrorBoundary>
                 <div className="space-y-3">
@@ -434,14 +441,16 @@ const LiveFlightResults = () => {
                   ) : (
                     sortedFlights.map((flight, index) => {
                       const pinLabel = pinnedLabels.get(flight.id);
+                      const intel = getPriceIntelligence(flight, dedupedFlights);
                       return (
-                        <div key={flight.id} className="flight-card-enter" style={{ animationDelay: `${index * 50}ms` }}>
+                        <div key={flight.id} className="flight-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
                           <FlightCard
                             flight={flight}
                             isBestValue={!!pinLabel || (index === 0 && sortBy === "cheapest")}
                             badgeLabel={pinLabel || (index === 0 && sortBy === "cheapest" ? "🔥 Cheapest" : undefined)}
                             departDate={depart}
                             returnDate={returnDate}
+                            priceIntel={intel}
                           />
                         </div>
                       );
@@ -453,12 +462,10 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {/* Sticky Mobile CTA */}
         {status === "complete" && !isSearching && isMobile && cheapestFlight && (
           <StickyMobileCTA cheapestFlight={cheapestFlight} onViewDeal={handleMobileCTADeal} />
         )}
       </div>
-      {/* Bottom padding for sticky CTA on mobile */}
       {status === "complete" && isMobile && <div className="h-20 md:hidden" />}
     </div>
   );
