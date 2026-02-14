@@ -126,25 +126,25 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     const cacheKey = buildCacheKey(params);
     const cached = readCache(cacheKey);
 
+    // Stale-while-revalidate: show cached data immediately but ALWAYS fetch fresh
     if (cached && cached.flights.length > 0) {
       setFlights(cached.flights);
       setSearchId(cached.searchId);
       setResultsBase(cached.resultsBase);
       setError(null);
       setDebugData(null);
-      setStatus("complete");
-      return;
+      setStatus("searching"); // keep "searching" so UI shows updating indicator
+    } else {
+      setFlights([]);
+      setError(null);
+      setSearchId(null);
+      setResultsBase(null);
+      setDebugData(null);
+      setStatus("searching");
     }
 
     const controller = new AbortController();
     abortRef.current = controller;
-
-    setFlights([]);
-    setError(null);
-    setSearchId(null);
-    setResultsBase(null);
-    setDebugData(null);
-    setStatus("searching");
 
     // Detect market from browser locale — prefer region subtag (e.g. "de-DE" → "DE")
     const detectedMarket = (() => {
@@ -184,6 +184,9 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
 
     try {
       const dirs = params.directions;
+      if (import.meta.env.DEV) {
+        console.debug("[flight-search] Fetching flight-search", { directions: dirs, sort: apiParams.sort, limit: apiParams.limit, currency: apiParams.currency, market: apiParams.market });
+      }
       console.log("[flight-search] POST directions", dirs.map(d => `${d.origin}→${d.destination} ${d.date}`).join(", "));
 
       const data: SearchResponse = await apiSearchFlights(apiParams, controller.signal);
