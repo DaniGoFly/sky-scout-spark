@@ -104,7 +104,7 @@ const LiveFlightResults = () => {
       infants,
       currency: currency,
       sort: "best" as const,
-      limit: 50,
+      limit: 100,
       tripClass: tripClass,
     };
     console.log("[flight-search] request", payload);
@@ -251,7 +251,7 @@ const LiveFlightResults = () => {
       searchFlights({
         directions: buildDirections(),
         adults, children, infants, currency,
-        sort: s, limit: 50, tripClass,
+        sort: s, limit: 100, tripClass,
       });
     }
   }, [from, to, depart, adults, children, infants, currency, tripClass, buildDirections, searchFlights, cancelSearch]);
@@ -283,7 +283,7 @@ const LiveFlightResults = () => {
     prevSortRef.current = sortBy;
     setFilters({ ...DEFAULT_FILTERS });
     if (from && to && depart) {
-      searchFlights({ directions: buildDirections(), adults, children, infants, currency, sort: sortBy, limit: 50, tripClass });
+      searchFlights({ directions: buildDirections(), adults, children, infants, currency, sort: sortBy, limit: 100, tripClass });
     }
   }, [from, to, depart, adults, children, infants, currency, tripClass, sortBy, buildDirections, searchFlights]);
 
@@ -416,6 +416,9 @@ const LiveFlightResults = () => {
                   <span className="ms-1 opacity-70">· {t("results.showing_top", { count: sortedFlights.length })}</span>
                 )}
               </div>
+              <p className="text-[11px] text-muted-foreground/70 px-1 italic">
+                Prices may differ from other platforms depending on agency availability, baggage, and fare rules.
+              </p>
               <FlightResultsErrorBoundary>
                 <div className="space-y-3">
                   {sortedFlights.length === 0 ? (

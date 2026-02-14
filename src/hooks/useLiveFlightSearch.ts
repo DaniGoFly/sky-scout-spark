@@ -171,7 +171,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       infants: params.infants || 0,
       currency: params.currency || "USD",
       sort: params.sort || "best",
-      limit: params.limit || 25,
+      limit: params.limit || 100,
       tripClass: params.tripClass || "economy",
       market: detectedMarket,
     };

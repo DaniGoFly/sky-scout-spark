@@ -122,7 +122,7 @@ export async function searchFlights(
     trip_class: tripClassCode,
     currency_code: (params.currency || "USD").toUpperCase(),
     market_code: (params.market || "US").toUpperCase(),
-    limit: params.limit || 25,
+    limit: params.limit || 100,
     sort: params.sort || "best",
     max_wait_ms: 45000,
     poll_every_ms: 1300,
