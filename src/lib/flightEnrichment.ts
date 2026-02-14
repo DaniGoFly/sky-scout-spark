@@ -70,8 +70,8 @@ function extractTime(leg: any, keys: string[]): string {
   for (const k of keys) {
     const v = leg?.[k];
     if (!v) continue;
-    if (typeof v === "string" && v.length >= 10) {
-      // "2025-06-15 14:30" or ISO
+    if (typeof v === "string") {
+      // Match HH:mm pattern in any string (short "07:00" or long ISO "2025-06-15T14:30:00")
       const match = v.match(/(\d{2}:\d{2})/);
       if (match) return match[1];
     }
