@@ -162,7 +162,13 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       infants: params.infants || 0,
       trip_class: tripClassCode,
       currency_code: (params.currency || "USD").toUpperCase(),
-      market_code: "US",
+      market_code: (() => {
+        try {
+          const lang = navigator.language || "en-US";
+          const parts = lang.split("-");
+          return parts.length > 1 ? parts[1].toUpperCase() : parts[0].toUpperCase();
+        } catch { return "US"; }
+      })(),
     };
     if (params.returnDate) requestPayload.return_date = params.returnDate;
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, AlertCircle, Plane, Loader2, Bug } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plane, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSortTabs from "./FlightSortTabs";
@@ -53,9 +53,8 @@ const LiveFlightResults = () => {
   const { formatDate, currency } = useLocale();
   const isMobile = useIsMobile();
   const {
-    flights: rawFlights, status, error, isSearching, searchFlights, cancelSearch, debugData,
+    flights: rawFlights, status, error, isSearching, searchFlights, cancelSearch,
   } = useLiveFlightSearch();
-  const [showDebug, setShowDebug] = useState(false);
 
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
@@ -168,8 +167,19 @@ const LiveFlightResults = () => {
   }, [enrichedFlights, filters, actualPriceRange]);
 
   // ── Step 3: Sort ──
-  const sortedFlights = useMemo(() => {
+  const { sortedFlights, pinnedLabels } = useMemo(() => {
     const sorted = [...filteredFlights];
+    const labels = new Map<string, string>();
+
+    const bestSort = (a: EnrichedFlight, b: EnrichedFlight) => {
+      const sa = a.price.amount * 0.6 + a.durationMinutes * 0.3 + a.outboundStopsTotal * 100;
+      const sb = b.price.amount * 0.6 + b.durationMinutes * 0.3 + b.outboundStopsTotal * 100;
+      if (sa !== sb) return sa - sb;
+      if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
+      if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
+      return (a.departureTime || "").localeCompare(b.departureTime || "");
+    };
+
     switch (sortBy) {
       case "cheapest":
         sorted.sort((a, b) => {
@@ -185,18 +195,26 @@ const LiveFlightResults = () => {
           return (a.departureTime || "").localeCompare(b.departureTime || "");
         });
         break;
-      case "best": default:
-        sorted.sort((a, b) => {
-          const scoreA = a.price.amount * 0.6 + a.durationMinutes * 0.3 + a.outboundStopsTotal * 100;
-          const scoreB = b.price.amount * 0.6 + b.durationMinutes * 0.3 + b.outboundStopsTotal * 100;
-          if (scoreA !== scoreB) return scoreA - scoreB;
-          if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
-          if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
-          return (a.departureTime || "").localeCompare(b.departureTime || "");
-        });
-        break;
+      case "best": default: {
+        // Find 3 candidates
+        const byPrice = [...sorted].sort((a, b) => a.price.amount - b.price.amount);
+        const byDuration = [...sorted].sort((a, b) => a.durationMinutes - b.durationMinutes);
+        const byBest = [...sorted].sort(bestSort);
+
+        const pinnedIds = new Set<string>();
+        const pinned: EnrichedFlight[] = [];
+
+        if (byPrice[0]) { pinnedIds.add(byPrice[0].id); pinned.push(byPrice[0]); labels.set(byPrice[0].id, "Cheapest"); }
+        if (byBest[0] && !pinnedIds.has(byBest[0].id)) { pinnedIds.add(byBest[0].id); pinned.push(byBest[0]); labels.set(byBest[0].id, "Best"); }
+        if (byDuration[0] && !pinnedIds.has(byDuration[0].id)) { pinnedIds.add(byDuration[0].id); pinned.push(byDuration[0]); labels.set(byDuration[0].id, "Fastest"); }
+
+        const rest = sorted.filter(f => !pinnedIds.has(f.id));
+        rest.sort(bestSort);
+
+        return { sortedFlights: [...pinned, ...rest].slice(0, MAX_DISPLAY), pinnedLabels: labels };
+      }
     }
-    return sorted.slice(0, MAX_DISPLAY);
+    return { sortedFlights: sorted.slice(0, MAX_DISPLAY), pinnedLabels: labels };
   }, [filteredFlights, sortBy]);
 
   const handleSortChange = useCallback((s: "best" | "cheapest" | "fastest") => { setSortBy(s); }, []);
@@ -295,37 +313,6 @@ const LiveFlightResults = () => {
       </div>
 
       <div className="container mx-auto px-4 py-4 md:py-6">
-        {/* Debug Panel */}
-        <div className="mb-4 flex justify-end">
-          <Button variant="outline" size="sm" onClick={() => setShowDebug(p => !p)} className="gap-1.5 text-xs">
-            <Bug className="w-3.5 h-3.5" />
-            {showDebug ? "Hide Debug" : "Debug"}
-          </Button>
-        </div>
-        {showDebug && debugData && (
-          <div className="mb-4 p-4 rounded-lg bg-muted/50 border border-border text-xs font-mono space-y-1 overflow-x-auto">
-            <p><strong>Request URL:</strong> {debugData.requestUrl}</p>
-            <p><strong>Payload:</strong> {JSON.stringify(debugData.requestPayload, null, 2)}</p>
-            <p><strong>Step:</strong> {debugData.responseStep || "—"}</p>
-            <p><strong>Status:</strong> {debugData.responseStatus || "—"}</p>
-            <p><strong>search_id:</strong> {debugData.searchId || "—"}</p>
-            <p><strong>results_base:</strong> {debugData.resultsBase || "—"}</p>
-            {debugData.pollCount !== undefined && debugData.pollCount > 0 && (
-              <p><strong>Poll count:</strong> {debugData.pollCount}</p>
-            )}
-            {debugData.error && <p className="text-destructive"><strong>Error:</strong> {debugData.error}</p>}
-            {debugData.rawResponse && (
-              <details><summary className="cursor-pointer text-muted-foreground">Raw response</summary>
-                <pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(debugData.rawResponse, null, 2)}</pre>
-              </details>
-            )}
-          </div>
-        )}
-        {showDebug && !debugData && (
-          <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground">
-            No debug data yet — run a search first.
-          </div>
-        )}
 
         {isSearching && (
           <div className="space-y-6">
@@ -405,11 +392,20 @@ const LiveFlightResults = () => {
                       <Button variant="outline" size="sm" onClick={handleClearAllFilters}>{t("results.clear_filters")}</Button>
                     </div>
                   ) : (
-                    sortedFlights.map((flight, index) => (
-                      <div key={flight.id} className="flight-card-enter" style={{ animationDelay: `${index * 50}ms` }}>
-                        <FlightCard flight={flight} isBestValue={index === 0 && (sortBy === "best" || sortBy === "cheapest")} badgeLabel={index === 0 && sortBy === "cheapest" ? "🔥 " + t("card.best_price", "Best Price") : undefined} />
-                      </div>
-                    ))
+                    sortedFlights.map((flight, index) => {
+                      const pinLabel = pinnedLabels.get(flight.id);
+                      return (
+                        <div key={flight.id} className="flight-card-enter" style={{ animationDelay: `${index * 50}ms` }}>
+                          <FlightCard
+                            flight={flight}
+                            isBestValue={!!pinLabel || (index === 0 && sortBy === "cheapest")}
+                            badgeLabel={pinLabel || (index === 0 && sortBy === "cheapest" ? "🔥 Cheapest" : undefined)}
+                            departDate={depart}
+                            returnDate={returnDate}
+                          />
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </FlightResultsErrorBoundary>

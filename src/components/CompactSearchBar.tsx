@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,7 @@ const CompactSearchBar = () => {
     return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : defaultDates.return;
   });
   const [passengers, setPassengers] = useState(Number(searchParams.get("adults")) || 1);
+  const isInitialMount = useRef(true);
 
   const swapLocations = () => {
     const temp = from;
@@ -54,10 +55,8 @@ const CompactSearchBar = () => {
 
   const isValid = from !== null && to !== null;
 
-  const handleSearch = () => {
-    if (!isValid) return;
-    
-    // Normalized parameters
+  const handleSearchNav = useCallback(() => {
+    if (!from || !to) return;
     const params = new URLSearchParams({
       from: from.code,
       to: to.code,
@@ -68,13 +67,26 @@ const CompactSearchBar = () => {
       class: "economy",
       trip: tripType,
     });
-    
     if (tripType === "roundtrip") {
       params.set("return", format(returnDate, "yyyy-MM-dd"));
     }
-    
     navigate(`/flights/results?${params.toString()}`);
-  };
+  }, [from, to, departDate, returnDate, passengers, tripType, navigate]);
+
+  // Auto-search with debounce when params change (skip initial mount)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (!from || !to) return;
+    const timer = setTimeout(() => {
+      handleSearchNav();
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [from?.code, to?.code, departDate.getTime(), returnDate.getTime(), passengers, tripType, handleSearchNav]);
+
+  const handleSearch = () => handleSearchNav();
 
   return (
     <div className="bg-card border border-border rounded-2xl shadow-card p-4">

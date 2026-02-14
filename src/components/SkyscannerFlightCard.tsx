@@ -8,6 +8,7 @@
 
 import { memo, useState, useRef, useCallback, useMemo } from "react";
 import { Heart, Plane, Loader2, ExternalLink, Flame } from "lucide-react";
+import { format, parse } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,8 @@ interface FlightCardProps {
   flight: Flight | EnrichedFlight;
   isBestValue?: boolean;
   badgeLabel?: string;
+  departDate?: string;
+  returnDate?: string;
 }
 
 /** Type guard to check if flight has enriched stop data */
@@ -66,16 +69,19 @@ AirlineHeader.displayName = "AirlineHeader";
 
 /** Mobile: text-only compact leg */
 const MobileLeg = memo(({
-  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel,
+  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel,
 }: {
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
-  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string;
+  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string;
 }) => (
   <div className="flex flex-col gap-0.5">
     {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>}
-    <p className="text-[15px] font-bold text-foreground leading-snug">
-      {safeText(origin, "---")} {safeText(departureTime)} → {safeText(destination, "---")} {safeText(arrivalTime)}
-    </p>
+    <div className="flex items-baseline gap-1.5">
+      <p className="text-[15px] font-bold text-foreground leading-snug">
+        {safeText(origin, "---")} {safeText(departureTime)} → {safeText(destination, "---")} {safeText(arrivalTime)}
+      </p>
+    </div>
+    {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
     <p className={`text-xs font-medium ${stopsCount === 0 ? "text-green-600" : "text-amber-600"}`}>
       {stopsLabel} · {formatDuration(durationMinutes)}
     </p>
@@ -85,16 +91,17 @@ MobileLeg.displayName = "MobileLeg";
 
 /** Desktop/tablet: timeline leg */
 const DesktopLeg = memo(({
-  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel,
+  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel,
 }: {
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
-  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string;
+  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string;
 }) => (
   <div className="flex flex-col gap-1">
     {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">{label}</span>}
     <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
       <div className="flex-shrink-0 text-start" style={{ minWidth: "56px" }}>
         <p className="text-lg xl:text-xl font-bold text-foreground leading-tight">{safeText(departureTime)}</p>
+        {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
         <p className="text-xs font-medium text-muted-foreground uppercase">{safeText(origin, "---")}</p>
       </div>
       <div className="flex-1 flex flex-col items-center px-2" style={{ minWidth: "80px" }}>
@@ -119,7 +126,7 @@ DesktopLeg.displayName = "DesktopLeg";
 
 /* ─── Main card ─── */
 
-const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCardProps) => {
+const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
@@ -222,6 +229,16 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCard
 
   const outboundLabel = flight.return ? t("card.outbound") : null;
 
+  // Format dates for display
+  const outboundDateLabel = useMemo(() => {
+    if (!departDate) return undefined;
+    try { return format(parse(departDate, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; }
+  }, [departDate]);
+  const returnDateLabel = useMemo(() => {
+    if (!returnDateProp) return undefined;
+    try { return format(parse(returnDateProp, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; }
+  }, [returnDateProp]);
+
   // Use enriched canonical stop values when available, otherwise fall back
   const outboundStopsCount = isEnriched(flight) ? flight.outboundStopsTotal : Math.max(0, flight.stopsCount ?? 0);
   const returnStopsCount = isEnriched(flight)
@@ -260,10 +277,10 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCard
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
           <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={isBestValue} isMobile bestLabel={t("card.best")} badgeOverride={badgeLabel} />
-          <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={flight.departureTime} arrivalTime={flight.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} />
+          <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={flight.departureTime} arrivalTime={flight.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outboundDateLabel} />
           {flight.return && (
             <div className="pt-2 border-t border-border/40">
-              <LegComponent label={t("card.return")} origin={flight.return.origin} destination={flight.return.destination} departureTime={flight.return.departureTime} arrivalTime={flight.return.arrivalTime} durationMinutes={flight.return.durationMinutes} stopsCount={flight.return.stopsCount} stopsAirports={flight.return.stopsAirports} stopsLabel={returnStops} />
+              <LegComponent label={t("card.return")} origin={flight.return.origin} destination={flight.return.destination} departureTime={flight.return.departureTime} arrivalTime={flight.return.arrivalTime} durationMinutes={flight.return.durationMinutes} stopsCount={flight.return.stopsCount} stopsAirports={flight.return.stopsAirports} stopsLabel={returnStops} dateLabel={returnDateLabel} />
             </div>
           )}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
@@ -305,10 +322,10 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel }: FlightCard
         <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: "1fr 220px" }}>
           <div className="flex flex-col gap-3 min-w-0">
             <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={false} isMobile={false} bestLabel={t("card.best")} />
-            <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={flight.departureTime} arrivalTime={flight.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} />
+            <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={flight.departureTime} arrivalTime={flight.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outboundDateLabel} />
             {flight.return && (
               <div className="pt-2 border-t border-border/40">
-                <LegComponent label={t("card.return")} origin={flight.return.origin} destination={flight.return.destination} departureTime={flight.return.departureTime} arrivalTime={flight.return.arrivalTime} durationMinutes={flight.return.durationMinutes} stopsCount={flight.return.stopsCount} stopsAirports={flight.return.stopsAirports} stopsLabel={returnStops} />
+                <LegComponent label={t("card.return")} origin={flight.return.origin} destination={flight.return.destination} departureTime={flight.return.departureTime} arrivalTime={flight.return.arrivalTime} durationMinutes={flight.return.durationMinutes} stopsCount={flight.return.stopsCount} stopsAirports={flight.return.stopsAirports} stopsLabel={returnStops} dateLabel={returnDateLabel} />
               </div>
             )}
           </div>
