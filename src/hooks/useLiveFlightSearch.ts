@@ -5,16 +5,14 @@ import {
   pollResults as apiPollResults,
   SearchParams,
   SearchResponse,
+  Direction,
 } from "@/lib/flightSearchApi";
 import { attachDealContextToFlights } from "@/lib/flightDealIds";
 
 export type SearchStatus = "idle" | "searching" | "complete" | "error" | "no_results";
 
 export interface SearchParamsHook {
-  origin: string;
-  destination: string;
-  departDate: string;
-  returnDate?: string;
+  directions: Direction[];
   adults?: number;
   children?: number;
   infants?: number;
@@ -22,6 +20,7 @@ export interface SearchParamsHook {
   sort?: "best" | "cheapest" | "fastest";
   limit?: number;
   tripClass?: string;
+  market?: string;
 }
 
 export interface DebugData {
@@ -62,10 +61,11 @@ interface CachedResult {
 
 function buildCacheKey(params: SearchParamsHook): string {
   const normalized = {
-    o: params.origin?.toUpperCase(),
-    d: params.destination?.toUpperCase(),
-    dep: params.departDate,
-    ret: params.returnDate || "",
+    dirs: params.directions.map(d => ({
+      o: d.origin.toUpperCase(),
+      d: d.destination.toUpperCase(),
+      dt: d.date,
+    })),
     a: params.adults || 1,
     c: params.children || 0,
     i: params.infants || 0,
@@ -146,44 +146,39 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     setDebugData(null);
     setStatus("searching");
 
-    // Build the exact request body
-    const cabinMap: Record<string, string> = {
-      economy: "Y", premium_economy: "W", business: "C", first: "F",
-    };
-    const tripClassCode = cabinMap[(params.tripClass || "economy").toLowerCase()] || "Y";
+    // Detect market from browser locale
+    const detectedMarket = (() => {
+      if (params.market) return params.market;
+      try {
+        const lang = navigator.language || "en-US";
+        const parts = lang.split("-");
+        return parts.length > 1 ? parts[1].toUpperCase() : parts[0].toUpperCase();
+      } catch { return "US"; }
+    })();
 
-    const requestPayload: Record<string, unknown> = {
-      action: "search",
-      origin: params.origin.toUpperCase(),
-      destination: params.destination.toUpperCase(),
-      depart_date: params.departDate,
+    const apiParams: SearchParams = {
+      directions: params.directions,
       adults: params.adults || 1,
       children: params.children || 0,
       infants: params.infants || 0,
-      trip_class: tripClassCode,
-      currency_code: (params.currency || "USD").toUpperCase(),
-      market_code: (() => {
-        try {
-          const lang = navigator.language || "en-US";
-          const parts = lang.split("-");
-          return parts.length > 1 ? parts[1].toUpperCase() : parts[0].toUpperCase();
-        } catch { return "US"; }
-      })(),
+      currency: params.currency || "USD",
+      sort: params.sort || "best",
+      limit: params.limit || 25,
+      tripClass: params.tripClass || "economy",
+      market: detectedMarket,
     };
-    if (params.returnDate) requestPayload.return_date = params.returnDate;
 
     const debug: DebugData = {
       requestUrl: "https://ycpqgsjhxzhkljlszbwc.supabase.co/functions/v1/flight-search",
-      requestPayload,
+      requestPayload: apiParams as unknown as Record<string, unknown>,
       pollCount: 0,
     };
 
     try {
-      console.log("[flight-search] POST", params.origin, "→", params.destination);
-      const data: SearchResponse = await apiSearchFlights(
-        params as SearchParams,
-        controller.signal
-      );
+      const dirs = params.directions;
+      console.log("[flight-search] POST directions", dirs.map(d => `${d.origin}→${d.destination} ${d.date}`).join(", "));
+
+      const data: SearchResponse = await apiSearchFlights(apiParams, controller.signal);
 
       if (controller.signal.aborted) return;
 
@@ -240,13 +235,12 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
             flights: pollData.flights?.length || 0,
           });
 
-          if (!pollData.ok) continue; // retry
+          if (!pollData.ok) continue;
 
           if (pollData.last_update_timestamp) {
             lastTimestamp = pollData.last_update_timestamp;
           }
 
-          // If we got flights with segments, we're done
           if (pollData.flights && pollData.flights.length > 0) {
             const flightResults = attachDealContextToFlights({
               flights: pollData.flights as Flight[],
@@ -267,11 +261,9 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
             return;
           }
 
-          // If status changed from pending, break
           if (pollData.status && pollData.status !== "pending") break;
         }
 
-        // Polling exhausted
         debug.error = "Polling timed out — no flights returned";
         setDebugData(debug);
         setStatus("no_results");
