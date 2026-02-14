@@ -1,19 +1,22 @@
 /**
- * Explore page — discover cheapest destinations from origin
- * Google Flights Explore-style list view
+ * Explore page — Google Flights-style map with price pins
+ * Uses Leaflet + OpenStreetMap (no paid token)
  */
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addDays } from "date-fns";
-import { Plane, MapPin, Search, Loader2, ArrowRight, Navigation } from "lucide-react";
+import { MapPin, Loader2, Navigation, Filter, Plane } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import AirportAutocomplete from "@/components/AirportAutocomplete";
-import { fetchExploreDestinations, type ExploreDestination, detectGeo } from "@/lib/priceApi";
+import ExploreMap from "@/components/ExploreMap";
+import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
+import { detectGeo } from "@/lib/priceApi";
 import { useLocale } from "@/hooks/useLocale";
 import { AIRPORTS, calculateDistance, type AirportData } from "@/lib/airports";
 import { cn } from "@/lib/utils";
@@ -22,8 +25,6 @@ interface AirportSelection {
   code: string;
   display: string;
 }
-
-const TRIP_LENGTH_MARKS = [1, 3, 5, 7, 10, 14, 21];
 
 function findNearestAirport(lat: number, lon: number): AirportData | null {
   let nearest: AirportData | null = null;
@@ -38,7 +39,6 @@ function findNearestAirport(lat: number, lon: number): AirportData | null {
 function getDefaultAirportByCountry(countryCode: string): AirportData | null {
   const countryAirports = AIRPORTS.filter(a => a.country === countryCode);
   if (countryAirports.length === 0) return AIRPORTS.find(a => a.code === "JFK") || null;
-  // Return the first (most major) airport for the country
   return countryAirports[0];
 }
 
@@ -46,10 +46,12 @@ const Explore = () => {
   const navigate = useNavigate();
   const { currency, formatPrice } = useLocale();
   const [origin, setOrigin] = useState<AirportSelection | null>(null);
-  const [destinations, setDestinations] = useState<ExploreDestination[]>([]);
+  const [destinations, setDestinations] = useState<ExploreResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [tripLength, setTripLength] = useState<[number, number]>([3, 14]);
   const [dateMode, setDateMode] = useState<"flexible" | "exact">("flexible");
+  const [directOnly, setDirectOnly] = useState(false);
+  const [hoveredIata, setHoveredIata] = useState<string | null>(null);
 
   // Auto-detect origin from geo
   useEffect(() => {
@@ -65,13 +67,20 @@ const Explore = () => {
   useEffect(() => {
     if (!origin?.code) return;
     setIsLoading(true);
-    fetchExploreDestinations({ origin: origin.code, currency })
+    fetchExplorePrices({
+      origin: origin.code,
+      currency,
+      direct: directOnly,
+      min_trip_duration: tripLength[0],
+      max_trip_duration: tripLength[1],
+      period: "month",
+    })
       .then(res => {
         if (res.ok) setDestinations(res.results);
         else setDestinations([]);
       })
       .finally(() => setIsLoading(false));
-  }, [origin?.code, currency]);
+  }, [origin?.code, currency, directOnly, tripLength[0], tripLength[1]]);
 
   const handleUseMyLocation = useCallback(() => {
     if (!navigator.geolocation) return;
@@ -80,21 +89,39 @@ const Explore = () => {
         const nearest = findNearestAirport(pos.coords.latitude, pos.coords.longitude);
         if (nearest) setOrigin({ code: nearest.code, display: `${nearest.city} (${nearest.code})` });
       },
-      () => { /* denied — no error shown */ }
+      () => { /* denied */ }
     );
   }, []);
 
+  // Enrich destinations with lat/lon from our airports DB if API didn't provide
+  const enrichedDestinations = useMemo(() => {
+    return destinations.map(d => {
+      if (d.lat && d.lon) return d;
+      const airport = AIRPORTS.find(a => a.code === d.destinationIata);
+      if (airport) {
+        return {
+          ...d,
+          lat: airport.lat,
+          lon: airport.lon,
+          destinationName: d.destinationName || airport.city,
+          country: d.country || airport.country,
+        };
+      }
+      return d;
+    }).filter(d => d.lat && d.lon);
+  }, [destinations]);
+
   const sortedDestinations = useMemo(() =>
-    [...destinations].sort((a, b) => a.price - b.price).slice(0, 50),
-    [destinations]
+    [...enrichedDestinations].sort((a, b) => a.price - b.price).slice(0, 80),
+    [enrichedDestinations]
   );
 
-  const handleSelectDestination = useCallback((dest: ExploreDestination) => {
-    const depart = dest.depart_date || format(addDays(new Date(), 30), "yyyy-MM-dd");
-    const ret = dest.return_date || format(addDays(new Date(), 37), "yyyy-MM-dd");
+  const handleSelectDestination = useCallback((dest: ExploreResult) => {
+    const depart = dest.departDate || format(addDays(new Date(), 30), "yyyy-MM-dd");
+    const ret = dest.returnDate || format(addDays(new Date(), 37), "yyyy-MM-dd");
     const params = new URLSearchParams({
       from: origin?.code || "",
-      to: dest.destination,
+      to: dest.destinationIata,
       depart,
       return: ret,
       adults: "1",
@@ -106,26 +133,22 @@ const Explore = () => {
     navigate(`/flights/results?${params.toString()}`);
   }, [origin, navigate]);
 
-  const getAirportInfo = useCallback((code: string) => AIRPORTS.find(a => a.code === code), []);
+  // Find origin airport for map centering
+  const originAirport = useMemo(() => 
+    origin ? AIRPORTS.find(a => a.code === origin.code) : null, 
+    [origin]
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="flex-1 pt-20 pb-8">
-        <div className="container mx-auto max-w-5xl px-4">
-          {/* Hero */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Explore Destinations
-            </h1>
-            <p className="text-muted-foreground">Find the cheapest flights from your city</p>
-          </div>
-
-          {/* Controls */}
-          <div className="bg-card rounded-2xl border border-border p-4 md:p-6 mb-6 space-y-4">
-            <div className="flex flex-col md:flex-row gap-3 items-end">
-              <div className="flex-1 min-w-0">
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5">From</label>
+      <main className="flex-1 pt-20 pb-0">
+        {/* Controls Panel */}
+        <div className="bg-card border-b border-border px-4 py-4">
+          <div className="container mx-auto max-w-7xl">
+            <div className="flex flex-col lg:flex-row gap-3 items-end">
+              <div className="flex-1 min-w-0 max-w-xs">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">From</label>
                 <AirportAutocomplete
                   value={origin}
                   onChange={setOrigin}
@@ -137,102 +160,125 @@ const Explore = () => {
                 <Navigation className="w-3.5 h-3.5" />
                 Use my location
               </Button>
-            </div>
 
-            {/* Date mode tabs */}
-            <div className="flex gap-2">
-              <button onClick={() => setDateMode("flexible")}
-                className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                  dateMode === "flexible" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
-                )}>
-                Flexible dates
-              </button>
-              <button onClick={() => setDateMode("exact")}
-                className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                  dateMode === "exact" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
-                )}>
-                Exact dates
-              </button>
-            </div>
+              {/* Date mode */}
+              <div className="flex gap-2 items-center">
+                <button onClick={() => setDateMode("flexible")}
+                  className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                    dateMode === "flexible" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+                  )}>
+                  Flexible
+                </button>
+                <button onClick={() => setDateMode("exact")}
+                  className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                    dateMode === "exact" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+                  )}>
+                  Exact dates
+                </button>
+              </div>
 
-            {/* Trip length slider (flexible mode) */}
-            {dateMode === "flexible" && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Trip length: {tripLength[0]}–{tripLength[1]} days</span>
+              {/* Trip length */}
+              {dateMode === "flexible" && (
+                <div className="flex items-center gap-3 min-w-[180px]">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{tripLength[0]}–{tripLength[1]}d</span>
+                  <Slider
+                    value={tripLength}
+                    onValueChange={(v) => setTripLength([v[0], v[1]])}
+                    min={1}
+                    max={21}
+                    step={1}
+                    className="w-full"
+                  />
                 </div>
-                <Slider
-                  value={tripLength}
-                  onValueChange={(v) => setTripLength([v[0], v[1]])}
-                  min={1}
-                  max={21}
-                  step={1}
-                  className="w-full"
-                />
+              )}
+
+              {/* Direct only */}
+              <div className="flex items-center gap-2">
+                <Switch checked={directOnly} onCheckedChange={setDirectOnly} />
+                <span className="text-xs text-muted-foreground">Direct only</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Map + List Layout */}
+        <div className="flex flex-col lg:flex-row" style={{ height: "calc(100vh - 180px)" }}>
+          {/* Map */}
+          <div className="flex-1 min-h-[300px] lg:min-h-0 relative">
+            {isLoading && (
+              <div className="absolute inset-0 z-[1000] bg-background/60 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <span className="text-xs text-muted-foreground">Finding destinations...</span>
+                </div>
+              </div>
+            )}
+            <ExploreMap
+              destinations={sortedDestinations}
+              originAirport={originAirport}
+              onSelect={handleSelectDestination}
+              hoveredIata={hoveredIata}
+              onHover={setHoveredIata}
+              formatPrice={formatPrice}
+            />
+          </div>
+
+          {/* Results List */}
+          <div className="w-full lg:w-80 xl:w-96 bg-card border-l border-border overflow-y-auto">
+            <div className="p-3 border-b border-border">
+              <p className="text-xs font-medium text-muted-foreground">
+                {sortedDestinations.length} destinations {origin ? `from ${origin.code}` : ""}
+              </p>
+            </div>
+
+            {sortedDestinations.length === 0 && !isLoading ? (
+              <div className="p-6 text-center">
+                <Plane className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm font-medium text-foreground mb-1">No destinations found</p>
+                <p className="text-xs text-muted-foreground">
+                  {origin
+                    ? "Try widening the trip window, turning off 'Direct only', or selecting a different origin."
+                    : "Select an origin airport to explore."}
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {sortedDestinations.map((dest, i) => (
+                  <button
+                    key={dest.destinationIata}
+                    onClick={() => handleSelectDestination(dest)}
+                    onMouseEnter={() => setHoveredIata(dest.destinationIata)}
+                    onMouseLeave={() => setHoveredIata(null)}
+                    className={cn(
+                      "w-full p-3 text-left hover:bg-secondary/50 transition-colors",
+                      hoveredIata === dest.destinationIata && "bg-secondary/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm text-foreground truncate">
+                          {dest.destinationName || dest.destinationIata}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {dest.country} · {dest.destinationIata}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-bold text-sm text-primary">{formatPrice(dest.price)}</p>
+                        {i === 0 && (
+                          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[9px] mt-0.5">
+                            Cheapest
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
-
-          {/* Results */}
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
-              <p className="text-sm text-muted-foreground">Finding cheapest destinations...</p>
-            </div>
-          ) : sortedDestinations.length === 0 ? (
-            <div className="text-center py-16">
-              <MapPin className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">
-                {origin ? "No destinations found. Try a different origin." : "Select an origin airport to explore."}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {sortedDestinations.map((dest, i) => {
-                const info = getAirportInfo(dest.destination);
-                return (
-                  <button
-                    key={dest.destination}
-                    onClick={() => handleSelectDestination(dest)}
-                    className="bg-card border border-border rounded-xl p-4 text-left hover:border-primary/50 hover:shadow-md transition-all group"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate">
-                          {info?.city || dest.destination}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {info?.country || ""} · {dest.destination}
-                        </p>
-                      </div>
-                      {i === 0 && (
-                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px] shrink-0">
-                          Cheapest
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-lg font-bold text-primary">{formatPrice(dest.price)}</p>
-                      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
-                    {dest.depart_date && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {dest.depart_date}{dest.return_date ? ` – ${dest.return_date}` : ""}
-                      </p>
-                    )}
-                    {dest.stops !== undefined && (
-                      <p className="text-[10px] text-muted-foreground">
-                        {dest.stops === 0 ? "Direct" : `${dest.stops} stop${dest.stops > 1 ? "s" : ""}`}
-                      </p>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

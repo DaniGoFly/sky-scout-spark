@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.booking-redirect]
 verify_jwt = false
+
+[functions.explore-prices]
+verify_jwt = false
+
+[functions.price-trend]
+verify_jwt = false
