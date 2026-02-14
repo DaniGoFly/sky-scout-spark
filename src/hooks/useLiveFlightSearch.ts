@@ -292,7 +292,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     const cached = readCache(cacheKey);
 
     if (cached && cached.flights.length > 0) {
-      // Serve from cache — no backend call
+      // Stale-while-revalidate: serve cached immediately
       setFlights(cached.flights);
       setSearchId(cached.searchId);
       setResultsBase(cached.resultsBase);
@@ -300,11 +300,14 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       setError(null);
       setDebugData(null);
       setStatus("complete");
-      console.log("[flight-search] Serving from cache, age:", Math.round((Date.now() - cached.timestamp) / 1000), "s");
+      console.log("[flight-search] Serving cached, age:", Math.round((Date.now() - cached.timestamp) / 1000), "s — revalidating in background");
+
+      // Background revalidate (don't clear flights, don't set status to searching)
+      fetchFromBackend(params).catch(() => {});
       return;
     }
 
-    // No cache — fetch fresh
+    // No cache — fetch fresh (show skeleton)
     setFlights([]);
     setCachedAt(null);
     await fetchFromBackend(params);

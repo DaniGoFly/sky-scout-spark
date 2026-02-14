@@ -177,12 +177,22 @@ const LiveFlightResults = () => {
     return result;
   }, [displayFlights, filters, actualPriceRange]);
 
-  // ── Dedup by id ──
+  // ── Dedup by itinerary (same legs + price + airline) ──
   const dedupedFlights = useMemo(() => {
     const seen = new Set<string>();
     return filteredFlights.filter((f) => {
-      if (seen.has(f.id)) return false;
-      seen.add(f.id);
+      // Content-based key: airline + times + price
+      const contentKey = [
+        f.airlines?.[0] || "",
+        f.departureTime || "",
+        f.arrivalTime || "",
+        f.origin || "",
+        f.destination || "",
+        Math.round(f.price?.amount || 0),
+        f.durationMinutes || 0,
+      ].join("|");
+      if (seen.has(contentKey)) return false;
+      seen.add(contentKey);
       return true;
     });
   }, [filteredFlights]);
@@ -335,9 +345,10 @@ const LiveFlightResults = () => {
     }
   }, [cheapestFlight]);
 
-  // Show results (complete or has previous results while re-sorting)
-  const hasResults = (status === "complete" || isSearching) && displayFlights.length > 0;
-  const showSkeleton = isSearching && prevResultsRef.current.length === 0;
+  // Show results: complete, or searching with existing data (stale-while-revalidate)
+  const hasResults = displayFlights.length > 0;
+  const showSkeleton = isSearching && prevResultsRef.current.length === 0 && displayFlights.length === 0;
+  const isRevalidating = isSearching && displayFlights.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -395,8 +406,8 @@ const LiveFlightResults = () => {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-5">
               <Plane className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-lg font-semibold text-foreground mb-2">{t("results.no_flights")}</p>
-            <p className="text-sm text-muted-foreground mb-6">{t("results.no_flights_sub")}</p>
+            <p className="text-lg font-semibold text-foreground mb-2">{t("results.no_flights", "No flights found")}</p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-sm">{t("results.no_flights_sub", "Try nearby dates, different airports, or adjusting your filters.")}</p>
             <Button onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
           </div>
         )}
@@ -412,21 +423,23 @@ const LiveFlightResults = () => {
               )}
               <PriceGraph origin={from} destination={to} />
               <MemoizedSortTabs flights={dedupedFlights} sortBy={sortBy} onSortChange={handleSortChange} />
-              {isSearching && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                  <span>Updating results…</span>
-                </div>
-              )}
-              {!isSearching && cacheAgeLabel && (
-                <div className="flex items-center gap-2 px-1">
-                  <span className="text-[11px] text-muted-foreground">{cacheAgeLabel}</span>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-primary hover:text-primary/80 gap-1" onClick={handleRefreshPrices}>
-                    <RefreshCw className="w-3 h-3" />
-                    Refresh prices
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-center gap-2 px-1 flex-wrap">
+                {isRevalidating && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                    <span>{t("results.updating", "Searching more fares…")}</span>
+                  </div>
+                )}
+                {!isSearching && cacheAgeLabel && (
+                  <>
+                    <span className="text-[11px] text-muted-foreground">{cacheAgeLabel}</span>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-primary hover:text-primary/80 gap-1" onClick={handleRefreshPrices}>
+                      <RefreshCw className="w-3 h-3" />
+                      {t("results.refresh", "Refresh prices")}
+                    </Button>
+                  </>
+                )}
+              </div>
               <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} flightsCurrency={flightsCurrency} />
               <div className="text-xs md:text-sm text-muted-foreground px-1">
                 <span className="font-semibold text-foreground">{dedupedFlights.length}</span>{" "}
