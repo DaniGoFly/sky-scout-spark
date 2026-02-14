@@ -99,8 +99,8 @@ function writeCache(key: string, data: CachedResult) {
 }
 
 /* ── Polling config ── */
-const POLL_INTERVAL_MS = 1200;
-const POLL_TIMEOUT_MS = 25000;
+const POLL_INTERVAL_MS = 1300;
+const POLL_TIMEOUT_MS = 45000;
 
 export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [flights, setFlights] = useState<Flight[]>([]);
@@ -146,13 +146,21 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
     setDebugData(null);
     setStatus("searching");
 
-    // Detect market from browser locale
+    // Detect market from browser locale — prefer region subtag (e.g. "de-DE" → "DE")
     const detectedMarket = (() => {
       if (params.market) return params.market;
       try {
         const lang = navigator.language || "en-US";
         const parts = lang.split("-");
-        return parts.length > 1 ? parts[1].toUpperCase() : parts[0].toUpperCase();
+        if (parts.length > 1) return parts[1].toUpperCase();
+        // Map bare language codes to likely country
+        const langToCountry: Record<string, string> = {
+          de: "DE", fr: "FR", es: "ES", it: "IT", pt: "PT",
+          tr: "TR", ar: "SA", nl: "NL", pl: "PL", ru: "RU",
+          ja: "JP", ko: "KR", zh: "CN", sv: "SE", da: "DK",
+          no: "NO", fi: "FI", el: "GR", cs: "CZ", ro: "RO",
+        };
+        return langToCountry[parts[0].toLowerCase()] || "US";
       } catch { return "US"; }
     })();
 
