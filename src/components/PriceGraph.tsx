@@ -95,7 +95,7 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
           ) : bars.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">No price data available</p>
+            <p className="text-xs text-muted-foreground text-center py-4">Not enough historical data yet for this route</p>
           ) : (
             <>
               <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-28" preserveAspectRatio="none">
