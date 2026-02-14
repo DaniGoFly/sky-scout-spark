@@ -261,15 +261,16 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     </TooltipTrigger><TooltipContent><p>{t("card.deal_unavailable")}</p></TooltipContent></Tooltip></TooltipProvider>
   );
 
-  // ── Derive segments: outbound = segments[0], return = segments[1] ──
+  // ── Derive segments: outbound = segments[0], return = segments[1], multi-city = all ──
   const segments = useMemo(() => {
     const raw = (flight as any).segments;
     return Array.isArray(raw) ? raw : [];
   }, [flight]);
-  const retSegment = segments.length >= 2 ? segments[segments.length - 1] : null;
+  const isMultiCity = segments.length > 2;
+  const retSegment = !isMultiCity && segments.length >= 2 ? segments[segments.length - 1] : null;
   const hasReturn = retSegment !== null || flight.return !== undefined;
 
-  const outboundLabel = hasReturn ? t("card.outbound") : null;
+  const outboundLabel = hasReturn || isMultiCity ? (isMultiCity ? "LEG 1" : t("card.outbound")) : null;
 
   // ── Outbound: format times through extractHHmm so raw strings never leak ──
   const outData = useMemo(() => {
@@ -282,8 +283,29 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     };
   }, [flight.departureTime, flight.arrivalTime, departDate]);
 
-  // Return segment data — prefer segments[1], fallback to enriched flight.return
+  // Multi-city: build data for all extra legs (segments[1..n])
+  const extraLegs = useMemo(() => {
+    if (!isMultiCity) return [];
+    return segments.slice(1).map((seg: any, idx: number) => {
+      const rawDep = seg.departureTime ?? seg.departure_time ?? seg.departure_at ?? seg.local_departure ?? "";
+      const rawArr = seg.arrivalTime ?? seg.arrival_time ?? seg.arrival_at ?? seg.local_arrival ?? "";
+      return {
+        label: `LEG ${idx + 2}`,
+        origin: (seg.origin ?? seg.departure ?? "").toString().toUpperCase().slice(0, 3),
+        destination: (seg.destination ?? seg.arrival ?? "").toString().toUpperCase().slice(0, 3),
+        departureTime: extractHHmm(rawDep),
+        arrivalTime: extractHHmm(rawArr),
+        durationMinutes: Number(seg.durationMinutes ?? seg.duration ?? 0),
+        stopsCount: Number(seg.stopsCount ?? 0),
+        stopsAirports: seg.stopsAirports || [],
+        dateLabel: extractDateLabel(rawDep),
+      };
+    });
+  }, [isMultiCity, segments]);
+
+  // Return segment data — prefer segments[1] for roundtrip, fallback to enriched flight.return
   const retData = useMemo(() => {
+    if (isMultiCity) return null; // handled by extraLegs
     if (retSegment) {
       const rawDep = retSegment.departureTime ?? retSegment.departure_time ?? retSegment.departure_at ?? retSegment.local_departure ?? "";
       const rawArr = retSegment.arrivalTime ?? retSegment.arrival_time ?? retSegment.arrival_at ?? retSegment.local_arrival ?? "";
@@ -311,7 +333,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       };
     }
     return null;
-  }, [retSegment, flight.return]);
+  }, [isMultiCity, retSegment, flight.return]);
 
   const outboundStopsCount = isEnriched(flight) ? flight.outboundStopsTotal : Math.max(0, flight.stopsCount ?? 0);
   const returnStopsCount = isEnriched(flight)
@@ -344,6 +366,11 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
               <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={retData.dateLabel} />
             </div>
           )}
+          {extraLegs.map((leg, i) => (
+            <div key={i} className="pt-2 border-t border-border/40">
+              <LegComponent label={leg.label} origin={leg.origin} destination={leg.destination} departureTime={leg.departureTime} arrivalTime={leg.arrivalTime} durationMinutes={leg.durationMinutes} stopsCount={leg.stopsCount} stopsAirports={leg.stopsAirports} stopsLabel={getLocalizedStopsLabel(leg.stopsCount, leg.stopsAirports)} dateLabel={leg.dateLabel} />
+            </div>
+          ))}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
             <div>
               <p className={`text-2xl font-bold text-foreground leading-tight ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
@@ -388,6 +415,11 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
                 <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={retData.dateLabel} />
               </div>
             )}
+            {extraLegs.map((leg, i) => (
+              <div key={i} className="pt-2 border-t border-border/40">
+                <LegComponent label={leg.label} origin={leg.origin} destination={leg.destination} departureTime={leg.departureTime} arrivalTime={leg.arrivalTime} durationMinutes={leg.durationMinutes} stopsCount={leg.stopsCount} stopsAirports={leg.stopsAirports} stopsLabel={getLocalizedStopsLabel(leg.stopsCount, leg.stopsAirports)} dateLabel={leg.dateLabel} />
+              </div>
+            ))}
           </div>
           <div className="flex flex-col justify-between border-s border-border/40 ps-4 min-w-0">
             <div className="flex flex-col items-end text-end">
