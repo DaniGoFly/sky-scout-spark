@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle, RefObject } from "react";
 import FlightSearchForm from "./FlightSearchForm";
 import FlightPathsBackground from "./FlightPathsBackground";
 import TravelAssistant from "./TravelAssistant";
 import { Plane } from "lucide-react";
 import type { AISearchParams } from "./FlightSearchHero";
 
-const Hero = () => {
+export interface HeroHandle {
+  setDestination: (params: AISearchParams) => void;
+}
+
+interface HeroProps {
+  searchRef?: RefObject<HTMLDivElement | null>;
+}
+
+const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   const [aiSearchParams, setAiSearchParams] = useState<AISearchParams | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    setDestination: (params: AISearchParams) => {
+      setAiSearchParams(params);
+    },
+  }));
 
   const handleDestinationSelect = (params: AISearchParams) => {
     setAiSearchParams(params);
@@ -35,7 +49,6 @@ const Hero = () => {
         <Plane className="absolute bottom-[20%] right-[25%] w-4 h-4 text-cyan-500/10 rotate-90" />
       </div>
       
-      {/* Flight paths background */}
       <FlightPathsBackground />
       
       {/* Subtle noise overlay */}
@@ -61,7 +74,7 @@ const Hero = () => {
           </div>
 
           {/* Flight Search Form */}
-          <div className="animate-fade-in glow-primary rounded-2xl" style={{ animationDelay: '0.1s' }}>
+          <div ref={searchRef} className="animate-fade-in glow-primary rounded-2xl" style={{ animationDelay: '0.1s' }}>
             <FlightSearchForm 
               aiSearchParams={aiSearchParams}
               onParamsConsumed={handleParamsConsumed}
@@ -76,6 +89,8 @@ const Hero = () => {
       </div>
     </section>
   );
-};
+});
+
+Hero.displayName = "Hero";
 
 export default Hero;
