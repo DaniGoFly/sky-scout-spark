@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.price-trend]
 verify_jwt = false
+
+[functions.travel-guide]
+verify_jwt = false
