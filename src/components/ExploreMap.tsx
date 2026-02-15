@@ -1,9 +1,9 @@
 /**
- * ExploreMap — Google Flights-inspired map with GoFlyFinder dark+purple style
- * Rounded pill markers showing "City · Price" like Google Flights
+ * ExploreMap — Google Flights-identical map
+ * Vertical city/price pills, pink origin dot, dashed route on hover
  */
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { ExploreResult } from "@/lib/exploreApi";
@@ -18,136 +18,138 @@ interface ExploreMapProps {
   formatPrice: (price: number) => string;
 }
 
-/** Google Flights-style rounded pill: "City · €Price" */
-function createCityPriceIcon(
+/** Google Flights style: city name on top, price below — vertical pill */
+function createPriceMarker(
   cityName: string,
   price: string,
   isHovered: boolean,
   isCheapest: boolean,
 ): L.DivIcon {
-  const isHighlighted = isHovered || isCheapest;
+  const displayCity = cityName.length > 14 ? cityName.slice(0, 13) + "…" : cityName;
 
-  // Google Flights uses white pill with dark text for selected, dark pill with white text for default
-  const bgColor = isHovered
-    ? "#ffffff"
-    : isCheapest
-    ? "#34d399"
-    : "rgba(30,30,40,0.92)";
+  if (isHovered) {
+    // Selected/hovered: white pill with dark text + pointer triangle
+    return L.divIcon({
+      className: "gf-marker",
+      html: `<div style="
+        position:relative;
+        background:#fff;
+        color:#202124;
+        padding:8px 14px 6px;
+        border-radius:12px;
+        font-family:system-ui,-apple-system,sans-serif;
+        white-space:nowrap;
+        box-shadow:0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.08);
+        transform:translate(-50%,-100%);
+        cursor:pointer;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        line-height:1.2;
+        pointer-events:auto;
+        z-index:100;
+      ">
+        <span style="font-size:13px;font-weight:600;color:#202124;">${displayCity}</span>
+        <span style="font-size:14px;font-weight:700;color:#202124;margin-top:1px;">${price}</span>
+        <div style="
+          position:absolute;
+          bottom:-7px;
+          left:50%;
+          transform:translateX(-50%);
+          width:0;height:0;
+          border-left:8px solid transparent;
+          border-right:8px solid transparent;
+          border-top:8px solid #fff;
+          filter:drop-shadow(0 2px 2px rgba(0,0,0,0.15));
+        "></div>
+      </div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0],
+    });
+  }
 
-  const textColor = isHovered ? "#1a1a2e" : isCheapest ? "#064e3b" : "#e2e8f0";
-  const scale = isHovered ? "scale(1.08)" : "scale(1)";
-  const shadow = isHovered
-    ? "0 4px 16px rgba(0,0,0,0.35), 0 0 0 2px rgba(139,92,246,0.5)"
-    : isCheapest
-    ? "0 2px 10px rgba(52,211,153,0.35)"
-    : "0 2px 8px rgba(0,0,0,0.45)";
-
-  const displayCity = cityName.length > 12 ? cityName.slice(0, 11) + "…" : cityName;
-  const fontSize = isHighlighted ? "12px" : "11px";
-  const fontWeight = isHighlighted ? "800" : "700";
-  const borderColor = isHovered ? "rgba(139,92,246,0.6)" : isCheapest ? "rgba(52,211,153,0.4)" : "rgba(255,255,255,0.08)";
+  // Default: dark semi-transparent pill, no pointer
+  const bg = isCheapest ? "rgba(30,90,70,0.92)" : "rgba(48,48,56,0.88)";
+  const priceColor = isCheapest ? "#6ee7b7" : "#e8eaed";
 
   return L.divIcon({
-    className: "explore-city-pin",
+    className: "gf-marker",
     html: `<div style="
-      background:${bgColor};
-      color:${textColor};
-      padding:6px 12px;
-      border-radius:20px;
-      font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+      background:${bg};
+      color:#e8eaed;
+      padding:5px 10px 4px;
+      border-radius:8px;
+      font-family:system-ui,-apple-system,sans-serif;
       white-space:nowrap;
-      box-shadow:${shadow};
-      transform:translate(-50%,-100%) ${scale};
+      box-shadow:0 2px 6px rgba(0,0,0,0.35);
+      transform:translate(-50%,-100%);
       cursor:pointer;
-      transition:all 0.18s ease;
       display:flex;
+      flex-direction:column;
       align-items:center;
-      gap:4px;
-      line-height:1;
+      line-height:1.2;
       pointer-events:auto;
-      border:1.5px solid ${borderColor};
-      font-size:${fontSize};
-      font-weight:${fontWeight};
-      letter-spacing:0.01em;
+      transition:transform 0.15s ease;
+      border:1px solid rgba(255,255,255,0.06);
     ">
-      <span>${displayCity}</span>
-      <span style="opacity:0.5;font-size:9px;">·</span>
-      <span style="font-weight:800;">${price}</span>
-    </div>
-    <div style="
-      width:0;height:0;
-      border-left:6px solid transparent;
-      border-right:6px solid transparent;
-      border-top:6px solid ${bgColor};
-      margin:0 auto;
-      transform:translateX(-50%);
-      position:absolute;
-      bottom:-6px;
-      left:50%;
-      filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      <span style="font-size:11px;font-weight:500;color:#bdc1c6;">${displayCity}</span>
+      <span style="font-size:12px;font-weight:700;color:${priceColor};margin-top:1px;">${price}</span>
+    </div>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+}
+
+/** Google Flights origin: pink/magenta dot */
+function createOriginDot(): L.DivIcon {
+  return L.divIcon({
+    className: "gf-origin",
+    html: `<div style="
+      width:14px;height:14px;
+      background:#ea4335;
+      border-radius:50%;
+      border:2.5px solid #fff;
+      box-shadow:0 0 0 3px rgba(234,67,53,0.3), 0 2px 8px rgba(0,0,0,0.3);
+      transform:translate(-50%,-50%);
+      pointer-events:none;
     "></div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
 }
 
-function createOriginIcon(code: string): L.DivIcon {
-  return L.divIcon({
-    className: "explore-origin-pin",
-    html: `<div style="
-      background:linear-gradient(135deg, hsl(265 90% 60%), hsl(265 90% 72%));
-      color:#fff;
-      width:36px;height:36px;
-      border-radius:50%;
-      display:flex;align-items:center;justify-content:center;
-      font-family:'Plus Jakarta Sans',system-ui,sans-serif;
-      font-size:10px;font-weight:800;
-      letter-spacing:0.03em;
-      box-shadow:0 0 0 4px rgba(139,92,246,0.25), 0 2px 16px rgba(0,0,0,0.4);
-      border:2.5px solid rgba(255,255,255,0.7);
-      transform:translate(-50%,-50%);
-    ">${code}</div>`,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
-  });
-}
-
-// Dark map tiles — CartoDB Dark Matter (like Google Flights dark mode)
-const DARK_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const DARK_TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
+// Google-style dark map — Stadia Alidade Smooth Dark (closest to Google Flights dark)
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
 
 const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHover, formatPrice }: ExploreMapProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const routeLineRef = useRef<L.Polyline | null>(null);
 
-  // Initialize map once
+  // Init map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-
     const map = L.map(containerRef.current, {
-      center: [45, 10],
-      zoom: 4,
-      minZoom: 2,
+      center: [48, 10],
+      zoom: 5,
+      minZoom: 3,
       maxZoom: 10,
       zoomControl: false,
       attributionControl: true,
     });
 
-    L.tileLayer(DARK_TILE_URL, {
-      attribution: DARK_TILE_ATTR,
+    L.tileLayer(TILE_URL, {
+      attribution: TILE_ATTR,
       maxZoom: 18,
       subdomains: "abcd",
     }).addTo(map);
 
-    L.control.zoom({ position: "topright" }).addTo(map);
-
+    L.control.zoom({ position: "bottomright" }).addTo(map);
     mapRef.current = map;
 
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
+    return () => { map.remove(); mapRef.current = null; };
   }, []);
 
   // Center on origin
@@ -161,20 +163,48 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
     return destinations.reduce((a, b) => (a.price < b.price ? a : b)).destinationIata;
   }, [destinations]);
 
+  // Dashed route line on hover
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Remove old line
+    if (routeLineRef.current) {
+      map.removeLayer(routeLineRef.current);
+      routeLineRef.current = null;
+    }
+
+    if (!hoveredIata || !originAirport) return;
+
+    const dest = destinations.find(d => d.destinationIata === hoveredIata);
+    if (!dest?.lat || !dest?.lon) return;
+
+    const line = L.polyline(
+      [[originAirport.lat, originAirport.lon], [dest.lat, dest.lon]],
+      {
+        color: "#9aa0a6",
+        weight: 1.5,
+        dashArray: "6, 6",
+        opacity: 0.7,
+        interactive: false,
+      }
+    );
+    line.addTo(map);
+    routeLineRef.current = line;
+  }, [hoveredIata, originAirport, destinations]);
+
   // Update markers
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    for (const [, marker] of markersRef.current) {
-      map.removeLayer(marker);
-    }
+    for (const [, marker] of markersRef.current) map.removeLayer(marker);
     markersRef.current.clear();
 
-    // Origin
+    // Origin dot
     if (originAirport) {
       const m = L.marker([originAirport.lat, originAirport.lon], {
-        icon: createOriginIcon(originAirport.code),
+        icon: createOriginDot(),
         zIndexOffset: 2000,
         interactive: false,
       });
@@ -182,14 +212,14 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
       markersRef.current.set("__origin__", m);
     }
 
-    // Destinations
+    // Destination markers
     for (const dest of destinations) {
       if (!dest.lat || !dest.lon) continue;
       const isCheapest = dest.destinationIata === cheapestIata;
       const isHovered = dest.destinationIata === hoveredIata;
       const cityName = dest.destinationName || dest.destinationIata;
 
-      const icon = createCityPriceIcon(cityName, formatPrice(dest.price), isHovered, isCheapest);
+      const icon = createPriceMarker(cityName, formatPrice(dest.price), isHovered, isCheapest);
 
       const marker = L.marker([dest.lat, dest.lon], {
         icon,
@@ -206,7 +236,17 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
   }, [destinations, originAirport, hoveredIata, cheapestIata, formatPrice, onSelect, onHover]);
 
   return (
-    <div ref={containerRef} className="w-full h-full" style={{ minHeight: 300 }} />
+    <>
+      <style>{`
+        .gf-marker, .gf-origin { background: none !important; border: none !important; }
+        .leaflet-control-zoom { border: none !important; border-radius: 8px !important; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important; }
+        .leaflet-control-zoom a { background: rgba(48,48,56,0.92) !important; color: #e8eaed !important; border: none !important; width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 16px !important; }
+        .leaflet-control-zoom a:hover { background: rgba(68,68,76,0.95) !important; }
+        .leaflet-control-attribution { background: rgba(30,30,40,0.7) !important; color: #9aa0a6 !important; font-size: 10px !important; }
+        .leaflet-control-attribution a { color: #9aa0a6 !important; }
+      `}</style>
+      <div ref={containerRef} className="w-full h-full" style={{ minHeight: 300 }} />
+    </>
   );
 };
 
