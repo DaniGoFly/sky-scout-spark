@@ -16,7 +16,7 @@ const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-      <div className="container mx-auto px-4 min-h-[56px] h-16 flex items-center justify-between">
+      <div className="container mx-auto px-4 min-h-[56px] h-16 flex items-center justify-between max-w-full box-border overflow-hidden">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center transition-transform group-hover:scale-105 glow-primary">
@@ -77,7 +77,7 @@ const Header = () => {
         </nav>
 
         {/* Mobile: Locale + Menu */}
-        <div className="flex items-center gap-1 md:hidden">
+        <div className="flex items-center gap-3 md:hidden shrink-0">
           <LocaleSelector />
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
