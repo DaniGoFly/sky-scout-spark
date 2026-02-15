@@ -29,6 +29,7 @@ interface FlightCardProps {
   departDate?: string;
   returnDate?: string;
   priceIntel?: PriceIntelligence | null;
+  originSource?: string;
 }
 
 /** Type guard to check if flight has enriched stop data */
@@ -200,7 +201,7 @@ PriceIntelBadge.displayName = "PriceIntelBadge";
 
 /* ─── Main card ─── */
 
-const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel }: FlightCardProps) => {
+const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel, originSource }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
@@ -406,6 +407,12 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
           <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={isBestValue} isMobile bestLabel={t("card.best")} badgeOverride={badgeLabel} />
+          {originSource && (
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-primary/30 bg-primary/5 w-fit">
+              <Plane className="w-3 h-3 text-primary" />
+              <span className="text-[11px] text-muted-foreground">Departing from: <span className="font-semibold text-foreground">{originSource}</span></span>
+            </div>
+          )}
           <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outData.dateLabel} />
           {retData && (
             <div className="pt-2 border-t border-border/40">
@@ -449,6 +456,12 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: "1fr 220px" }}>
           <div className="flex flex-col gap-3 min-w-0">
             <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={false} isMobile={false} bestLabel={t("card.best")} />
+            {originSource && (
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-primary/30 bg-primary/5 w-fit">
+                <Plane className="w-3 h-3 text-primary" />
+                <span className="text-[11px] text-muted-foreground">Departing from: <span className="font-semibold text-foreground">{originSource}</span></span>
+              </div>
+            )}
             <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outData.dateLabel} arrivalDateLabel={outData.arrivalDateLabel} />
             {retData && (
               <div className="pt-2 border-t border-border/40">

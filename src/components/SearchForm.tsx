@@ -7,17 +7,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AirportAutocomplete from "./AirportAutocomplete";
+import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
 import { getDefaultDates } from "@/lib/dateUtils";
-
-interface AirportSelection {
-  code: string;
-  display: string;
-}
 
 const SearchForm = () => {
   const navigate = useNavigate();
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
-  const [from, setFrom] = useState<AirportSelection | null>(null);
+  const [origins, setOrigins] = useState<AirportSelection[]>([]);
   const [to, setTo] = useState<AirportSelection | null>(null);
   
   const [departDate, setDepartDate] = useState<Date>(() => getDefaultDates().depart);
@@ -28,22 +24,24 @@ const SearchForm = () => {
   const [returnOpen, setReturnOpen] = useState(false);
   const [passengersOpen, setPassengersOpen] = useState(false);
 
-  // Track if we should auto-jump to return after depart selection
   const shouldAutoJump = useRef(false);
 
   const swapLocations = () => {
-    const temp = from;
-    setFrom(to);
-    setTo(temp);
+    if (origins.length === 1 && to) {
+      const temp = origins[0];
+      setOrigins([to]);
+      setTo(temp);
+    }
   };
 
-  const isValid = from !== null && to !== null;
+  const isValid = origins.length > 0 && to !== null;
 
   const handleSearch = () => {
     if (!isValid) return;
 
+    const fromParam = origins.map(o => o.code).join(",");
     const searchParams = new URLSearchParams({
-      from: from.code,
+      from: fromParam,
       to: to.code,
       depart: format(departDate, "yyyy-MM-dd"),
       adults: passengers.toString(),
@@ -57,11 +55,9 @@ const SearchForm = () => {
     navigate(`/search?${searchParams.toString()}`);
   };
 
-  // Auto-jump: when depart dialog closes after selection, open return dialog
   useEffect(() => {
     if (!departOpen && shouldAutoJump.current && tripType === "roundtrip") {
       shouldAutoJump.current = false;
-      // Small delay so the depart dialog finishes closing
       const timer = setTimeout(() => setReturnOpen(true), 150);
       return () => clearTimeout(timer);
     }
@@ -95,14 +91,13 @@ const SearchForm = () => {
 
       {/* Search Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
-        {/* From */}
+        {/* From — Multi-Origin */}
         <div className="lg:col-span-3 relative">
           <label className="block text-xs font-medium text-muted-foreground mb-1.5">From</label>
-          <AirportAutocomplete
-            value={from}
-            onChange={setFrom}
+          <MultiOriginInput
+            values={origins}
+            onChange={setOrigins}
             placeholder="Where from?"
-            icon="from"
           />
         </div>
 
@@ -112,7 +107,8 @@ const SearchForm = () => {
             variant="outline"
             size="icon"
             onClick={swapLocations}
-            className="rounded-full h-12 w-12 border-2 border-dashed hover:border-primary hover:text-primary hover:bg-primary/5 transition-all duration-200"
+            disabled={origins.length !== 1}
+            className="rounded-full h-12 w-12 border-2 border-dashed hover:border-primary hover:text-primary hover:bg-primary/5 transition-all duration-200 disabled:opacity-30"
           >
             <ArrowRightLeft className="w-4 h-4" />
           </Button>
@@ -155,7 +151,6 @@ const SearchForm = () => {
                       if (date > returnDate) {
                         setReturnDate(new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
                       }
-                      // Mark auto-jump for roundtrip
                       if (tripType === "roundtrip") {
                         shouldAutoJump.current = true;
                       }
@@ -231,43 +226,18 @@ const SearchForm = () => {
                 <span>{passengers}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent 
-              className="w-56" 
-              align="end"
-              side="bottom"
-              sideOffset={8}
-            >
+            <PopoverContent className="w-56" align="end" side="bottom" sideOffset={8}>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Adults</span>
                 <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-lg p-0"
-                    onClick={() => setPassengers(Math.max(1, passengers - 1))}
-                    disabled={passengers <= 1}
-                  >
-                    -
-                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 w-8 rounded-lg p-0"
+                    onClick={() => setPassengers(Math.max(1, passengers - 1))} disabled={passengers <= 1}>-</Button>
                   <span className="w-6 text-center font-medium">{passengers}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-lg p-0"
-                    onClick={() => setPassengers(Math.min(9, passengers + 1))}
-                    disabled={passengers >= 9}
-                  >
-                    +
-                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 w-8 rounded-lg p-0"
+                    onClick={() => setPassengers(Math.min(9, passengers + 1))} disabled={passengers >= 9}>+</Button>
                 </div>
               </div>
-              <Button 
-                className="w-full mt-4" 
-                size="sm"
-                onClick={() => setPassengersOpen(false)}
-              >
-                Done
-              </Button>
+              <Button className="w-full mt-4" size="sm" onClick={() => setPassengersOpen(false)}>Done</Button>
             </PopoverContent>
           </Popover>
         </div>
@@ -275,12 +245,7 @@ const SearchForm = () => {
 
       {/* Search Button */}
       <div className="mt-6 flex justify-center">
-        <Button 
-          size="lg" 
-          onClick={handleSearch} 
-          disabled={!isValid}
-          className="h-12 px-8 text-base font-semibold"
-        >
+        <Button size="lg" onClick={handleSearch} disabled={!isValid} className="h-12 px-8 text-base font-semibold">
           <Search className="w-5 h-5 mr-2" />
           Search Flights
         </Button>
