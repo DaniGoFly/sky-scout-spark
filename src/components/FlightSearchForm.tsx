@@ -156,11 +156,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     navigate(`/flights/multicity?${params.toString()}`);
   }, [navigate]);
 
-  // Multi-city mode
+  // Multi-city mode — same outer card as other tabs
   if (tripType === "multicity") {
     return (
-      <div className="w-full max-w-5xl mx-auto">
-        <div className="flex gap-2 mb-6 justify-center">
+      <div className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto">
+        <div className="flex gap-2 mb-5 flex-wrap">
           {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
             <button
               key={type}

@@ -42,23 +42,16 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
   const addSegment = () => {
     if (segments.length >= 5) return;
-    // Pre-fill from with previous segment's to
     const lastSegment = segments[segments.length - 1];
     setSegments([
       ...segments,
-      { 
-        id: generateId(), 
-        from: lastSegment.to, 
-        to: null, 
-        date: null 
-      },
+      { id: generateId(), from: lastSegment.to, to: null, date: null },
     ]);
   };
 
   const removeSegment = (id: string) => {
     if (segments.length <= 2) return;
     setSegments(segments.filter((s) => s.id !== id));
-    // Clear errors for removed segment
     const newErrors = { ...errors };
     delete newErrors[`${id}-from`];
     delete newErrors[`${id}-to`];
@@ -70,7 +63,6 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
     setSegments(
       segments.map((s) => (s.id === id ? { ...s, [field]: value } : s))
     );
-    // Clear error when user updates field
     setErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[`${id}-${field}`];
@@ -80,25 +72,16 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
   const validate = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
-    
     segments.forEach((segment, index) => {
-      if (!segment.from) {
-        newErrors[`${segment.id}-from`] = "Required";
-      }
-      if (!segment.to) {
-        newErrors[`${segment.id}-to`] = "Required";
-      }
-      if (!segment.date) {
-        newErrors[`${segment.id}-date`] = "Required";
-      }
-      // Check date order
+      if (!segment.from) newErrors[`${segment.id}-from`] = "Required";
+      if (!segment.to) newErrors[`${segment.id}-to`] = "Required";
+      if (!segment.date) newErrors[`${segment.id}-date`] = "Required";
       if (index > 0 && segment.date && segments[index - 1].date) {
         if (segment.date < segments[index - 1].date!) {
           newErrors[`${segment.id}-date`] = "Must be after previous flight";
         }
       }
     });
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [segments]);
@@ -109,151 +92,130 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
   };
 
   return (
-    <div className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto">
-      <div className="space-y-4">
-        {segments.map((segment, index) => (
-          <div
-            key={segment.id}
-            className="relative bg-secondary/30 rounded-xl p-4 border border-border"
-          >
-            {/* Flight number label */}
-            <div className="absolute -top-3 left-4">
-              <span className="bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded">
-                Flight {index + 1}
-              </span>
-            </div>
+    <div className="space-y-3">
+      {/* Segments */}
+      {segments.map((segment, index) => (
+        <div key={segment.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+          {/* From */}
+          <div className="min-w-0">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Flight {index + 1} — From
+            </label>
+            <AirportAutocomplete
+              value={segment.from}
+              onChange={(val) => updateSegment(segment.id, "from", val)}
+              placeholder="Origin"
+              icon="from"
+              compact
+              hasError={!!errors[`${segment.id}-from`]}
+            />
+            {errors[`${segment.id}-from`] && (
+              <p className="text-destructive text-xs mt-1">{errors[`${segment.id}-from`]}</p>
+            )}
+          </div>
 
-            {/* Remove button */}
-            {segments.length > 2 && (
+          {/* To */}
+          <div className="min-w-0">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">To</label>
+            <AirportAutocomplete
+              value={segment.to}
+              onChange={(val) => updateSegment(segment.id, "to", val)}
+              placeholder="Destination"
+              icon="to"
+              compact
+              hasError={!!errors[`${segment.id}-to`]}
+            />
+            {errors[`${segment.id}-to`] && (
+              <p className="text-destructive text-xs mt-1">{errors[`${segment.id}-to`]}</p>
+            )}
+          </div>
+
+          {/* Date */}
+          <div className="min-w-0">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Date</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm",
+                    !segment.date && "text-muted-foreground",
+                    errors[`${segment.id}-date`] && "border-destructive"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="truncate">
+                    {segment.date ? format(segment.date, "MMM d, yyyy") : "Select date"}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={segment.date || undefined}
+                  onSelect={(date) => updateSegment(segment.id, "date", date)}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (date < today) return true;
+                    if (index > 0 && segments[index - 1].date) {
+                      return date < segments[index - 1].date!;
+                    }
+                    return false;
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {errors[`${segment.id}-date`] && (
+              <p className="text-destructive text-xs mt-1">{errors[`${segment.id}-date`]}</p>
+            )}
+          </div>
+
+          {/* Remove button */}
+          <div className="flex items-end pb-0.5">
+            {segments.length > 2 ? (
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-destructive"
+                className="h-10 w-10 text-muted-foreground hover:text-destructive shrink-0"
                 onClick={() => removeSegment(segment.id)}
               >
                 <X className="w-4 h-4" />
               </Button>
+            ) : (
+              <div className="h-10 w-10 shrink-0" />
             )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-              {/* From */}
-              <div className="min-w-0">
-                <label className="block text-xs font-medium text-muted-foreground mb-2">
-                  From
-                </label>
-                <AirportAutocomplete
-                  value={segment.from}
-                  onChange={(val) => updateSegment(segment.id, "from", val)}
-                  placeholder="Origin"
-                  icon="from"
-                  compact
-                  hasError={!!errors[`${segment.id}-from`]}
-                />
-                {errors[`${segment.id}-from`] && (
-                  <p className="text-destructive text-xs mt-1 truncate">
-                    {errors[`${segment.id}-from`]}
-                  </p>
-                )}
-              </div>
-
-              {/* To */}
-              <div className="min-w-0">
-                <label className="block text-xs font-medium text-muted-foreground mb-2">
-                  To
-                </label>
-                <AirportAutocomplete
-                  value={segment.to}
-                  onChange={(val) => updateSegment(segment.id, "to", val)}
-                  placeholder="Destination"
-                  icon="to"
-                  compact
-                  hasError={!!errors[`${segment.id}-to`]}
-                />
-                {errors[`${segment.id}-to`] && (
-                  <p className="text-destructive text-xs mt-1 truncate">
-                    {errors[`${segment.id}-to`]}
-                  </p>
-                )}
-              </div>
-
-              {/* Date */}
-              <div className="min-w-0">
-                <label className="block text-xs font-medium text-muted-foreground mb-2">
-                  Date
-                </label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm",
-                        !segment.date && "text-muted-foreground",
-                        errors[`${segment.id}-date`] && "border-destructive"
-                      )}
-                    >
-                      <Calendar className="mr-2 h-4 w-4 shrink-0" />
-                      <span className="truncate">
-                        {segment.date ? format(segment.date, "MMM d, yyyy") : "Select date"}
-                      </span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={segment.date || undefined}
-                      onSelect={(date) => updateSegment(segment.id, "date", date)}
-                      disabled={(date) => {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        if (date < today) return true;
-                        // Must be after previous segment
-                        if (index > 0 && segments[index - 1].date) {
-                          return date < segments[index - 1].date!;
-                        }
-                        return false;
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                {errors[`${segment.id}-date`] && (
-                  <p className="text-destructive text-xs mt-1 truncate">
-                    {errors[`${segment.id}-date`]}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Add Segment Button */}
-        {segments.length < 5 && (
-          <Button
-            variant="outline"
-            onClick={addSegment}
-            className="w-full gap-2 border-dashed border-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add another flight
-          </Button>
-        )}
-
-        {/* Travelers & Search */}
-        <div className="flex flex-col md:flex-row gap-4 pt-4 border-t border-border">
-          <div className="flex-1 md:max-w-xs">
-            <TravelersPicker value={travelers} onChange={setTravelers} />
-          </div>
-          <div className="flex-1 flex items-end">
-            <Button
-              size="lg"
-              onClick={handleSearch}
-              className="w-full md:w-auto gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
-            >
-              <Search className="w-4 h-4" />
-              Search Multi-city
-            </Button>
           </div>
         </div>
+      ))}
+
+      {/* Add flight button — compact */}
+      {segments.length < 5 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={addSegment}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add flight
+        </Button>
+      )}
+
+      {/* Travelers & Search — matches roundtrip/oneway footer */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
+        <div className="w-full md:w-auto md:min-w-[200px]">
+          <TravelersPicker value={travelers} onChange={setTravelers} />
+        </div>
+        <Button
+          size="lg"
+          onClick={handleSearch}
+          className="w-full md:w-auto gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+        >
+          <Search className="w-4 h-4" />
+          Search Multi-city
+        </Button>
       </div>
     </div>
   );
