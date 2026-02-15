@@ -1,6 +1,6 @@
 /*
- * explore-map.css — standalone styles for the Explore map.
- * Imported only by ExploreMap; keeps global CSS minimal.
+ * explore-map.css — styles for MapLibre-based Explore map.
+ * Premium Google Flights-style markers + GoFlyFinder dark/purple theme.
  */
 
 /* ── Wrapper ── */
@@ -10,41 +10,26 @@
   height: 100%;
   min-height: 420px;
   overflow: hidden;
-  border-radius: 0;
 }
 
-/* ── Leaflet container ── */
-.explore-leaflet {
+/* ── MapLibre container ── */
+.explore-map-container {
   width: 100%;
   height: 100%;
-  background: #0b1020 !important;
-  z-index: 0;
-  /* Subtle filter to soften harsh tile contrast */
+  background: #0b1020;
+}
+
+/* Soften harsh tile contrast */
+.explore-map-container canvas {
   filter: brightness(1.05) contrast(0.95);
 }
 
-/* ─────────────────────────────────────────────
-   CRITICAL: override Tailwind preflight rules
-   that break Leaflet tile rendering.
-   ───────────────────────────────────────────── */
-.explore-leaflet img {
-  max-width: none !important;
-  max-height: none !important;
-  width: auto !important;
-  height: auto !important;
-  display: block !important;
-}
-
-/* Tile images — never allow global filters to hide them */
-.explore-leaflet img.leaflet-tile {
-  filter: none !important;
-  opacity: 1 !important;
-  mix-blend-mode: normal !important;
-  transition: none !important;
-}
-
 /* ── Price pill markers — Google Flights style ── */
-.explore-marker { background: none !important; border: none !important; }
+.explore-marker {
+  background: none !important;
+  border: none !important;
+  cursor: pointer;
+}
 
 .xpin {
   font-family: system-ui, -apple-system, sans-serif;
@@ -55,12 +40,11 @@
   gap: 4px;
   line-height: 1;
   pointer-events: auto;
-  transform: translate(-50%, -100%);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   will-change: transform;
 }
 
-/* Default white pill — Google Flights style */
+/* Default white pill */
 .xpin--pill {
   background: #ffffff;
   color: #1f2937;
@@ -68,16 +52,16 @@
   border-radius: 999px;
   font-weight: 600;
   font-size: 13px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  border: 1.5px solid rgba(255,255,255,0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
 }
 .xpin--pill:hover {
-  transform: translate(-50%, -100%) scale(1.08);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35), 0 2px 8px rgba(0,0,0,0.25);
+  transform: scale(1.08);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
   border-color: #8b5cf6;
 }
 
-/* Cheapest variant — green tint */
+/* Cheapest — green tint */
 .xpin--cheap {
   background: #ecfdf5;
   color: #065f46;
@@ -85,14 +69,15 @@
 }
 .xpin--cheap:hover {
   border-color: #34d399;
-  box-shadow: 0 4px 16px rgba(52, 211, 153, 0.35), 0 2px 8px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 16px rgba(52, 211, 153, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-.xpin--dim { opacity: 0.45; }
+.xpin--dim {
+  opacity: 0.45;
+}
 
-/* Active / selected pill — purple glow ring */
+/* Active / selected — purple glow ring */
 .xpin--active {
-  position: relative;
   background: #ffffff;
   color: #1f2937;
   padding: 8px 14px;
@@ -102,95 +87,78 @@
   box-shadow:
     0 0 0 3px rgba(139, 92, 246, 0.5),
     0 4px 20px rgba(139, 92, 246, 0.3),
-    0 2px 8px rgba(0,0,0,0.2);
+    0 2px 8px rgba(0, 0, 0, 0.2);
   border: 2px solid #8b5cf6;
   z-index: 100;
 }
 
-.xpin__price { font-weight: 700; }
-.xpin--active .xpin__price { color: #1e293b; }
+.xpin__price {
+  font-weight: 700;
+}
+.xpin--active .xpin__price {
+  color: #1e293b;
+}
 
 /* ── Origin dot ── */
 .xpin-origin {
-  width: 14px; height: 14px;
+  width: 14px;
+  height: 14px;
   background: #8b5cf6;
   border-radius: 50%;
   border: 2.5px solid #fff;
-  box-shadow: 0 0 0 3px rgba(139,92,246,0.3), 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3);
   pointer-events: none;
 }
 
-/* ── Zoom controls — dark glass ── */
-.explore-leaflet .leaflet-control-zoom {
+/* ── MapLibre controls — dark glass ── */
+.explore-map-container .maplibregl-ctrl-group {
   border: none !important;
   border-radius: 12px !important;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.35) !important;
-  margin-bottom: 48px !important;
-  margin-right: 14px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35) !important;
   backdrop-filter: blur(12px);
   background: rgba(17, 24, 39, 0.8) !important;
 }
-.explore-leaflet .leaflet-control-zoom a {
+.explore-map-container .maplibregl-ctrl-group button {
   background: transparent !important;
-  color: rgba(255,255,255,0.85) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
-  width: 36px !important; height: 36px !important;
-  line-height: 36px !important; font-size: 16px !important;
-  transition: background 0.15s ease, color 0.15s ease !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  width: 36px !important;
+  height: 36px !important;
+  transition: background 0.15s ease !important;
 }
-.explore-leaflet .leaflet-control-zoom a:last-child { border-bottom: none !important; }
-.explore-leaflet .leaflet-control-zoom a:hover {
+.explore-map-container .maplibregl-ctrl-group button:last-child {
+  border-bottom: none !important;
+}
+.explore-map-container .maplibregl-ctrl-group button:hover {
   background: rgba(139, 92, 246, 0.15) !important;
-  color: #c4b5fd !important;
+}
+.explore-map-container .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(0.85);
 }
 
 /* ── Attribution — subtle ── */
-.explore-leaflet .leaflet-control-attribution {
+.explore-map-container .maplibregl-ctrl-attrib {
   background: rgba(0, 0, 0, 0.45) !important;
   backdrop-filter: blur(8px) !important;
-  color: rgba(255,255,255,0.45) !important;
+  color: rgba(255, 255, 255, 0.45) !important;
   font-size: 9px !important;
   border-radius: 6px !important;
   padding: 2px 6px !important;
-  margin: 0 10px 10px 0 !important;
-  border: none !important;
   opacity: 0.5;
   transition: opacity 0.2s ease;
 }
-.explore-leaflet .leaflet-control-attribution:hover { opacity: 1; }
-.explore-leaflet .leaflet-control-attribution a {
-  color: rgba(255,255,255,0.55) !important;
+.explore-map-container .maplibregl-ctrl-attrib:hover {
+  opacity: 1;
+}
+.explore-map-container .maplibregl-ctrl-attrib a {
+  color: rgba(255, 255, 255, 0.55) !important;
   text-decoration: none !important;
 }
-.explore-leaflet .leaflet-control-attribution a:hover {
+.explore-map-container .maplibregl-ctrl-attrib a:hover {
   text-decoration: underline !important;
   color: #c4b5fd !important;
-}
-.explore-leaflet .leaflet-control-attribution .leaflet-attribution-flag {
-  display: none !important;
-}
-
-/* ── Tile retry pill ── */
-.explore-tile-retry {
-  position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%);
-  z-index: 1000;
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(12px);
-  color: rgba(255,255,255,0.85);
-  font-size: 12px; font-weight: 500;
-  padding: 8px 18px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  cursor: pointer;
-  transition: border-color 0.2s ease;
-}
-.explore-tile-retry:hover { border-color: rgba(139,92,246,0.5); }
-
-@media (prefers-reduced-motion: reduce) {
-  .xpin, .xpin--pill:hover { transition: none !important; }
 }
 
 /* ── Sidebar gradient edge ── */
@@ -205,11 +173,14 @@
   top: 0;
   height: 100%;
   width: 40px;
-  background: linear-gradient(
-    to right,
-    rgba(17,24,39,0.8),
-    rgba(17,24,39,0)
-  );
+  background: linear-gradient(to right, rgba(17, 24, 39, 0.8), rgba(17, 24, 39, 0));
   pointer-events: none;
   z-index: 6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xpin,
+  .xpin--pill:hover {
+    transition: none !important;
+  }
 }
