@@ -70,7 +70,7 @@ const Header = () => {
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             )}
           >
-            Explore
+            {t("nav.explore")}
           </Link>
 
           <LocaleSelector />

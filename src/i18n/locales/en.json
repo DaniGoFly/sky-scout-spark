@@ -1,7 +1,8 @@
 {
   "nav": {
     "flights": "Flights",
-    "hotels": "Hotels"
+    "hotels": "Hotels",
+    "explore": "Explore"
   },
   "hero": {
     "title_search": "Search ",
@@ -17,6 +18,7 @@
     "where_from": "Where from?",
     "where_to": "Where to?",
     "search_flights": "Search Flights",
+    "search": "Search",
     "nearby_airports": "Nearby airports",
     "nearby": "Nearby",
     "origin": "origin",
@@ -28,7 +30,9 @@
     "select_depart_date": "Please select departure date",
     "select_return_date": "Please select return date",
     "return_after_depart": "Return date must be after departure",
-    "infant_needs_adult": "Each infant needs an adult"
+    "infant_needs_adult": "Each infant needs an adult",
+    "use_location": "Use my location",
+    "compare_airports": "Compare multiple departure airports at once"
   },
   "sort": {
     "best": "Best",
@@ -109,6 +113,59 @@
     "traveler": "traveler",
     "travelers": "travelers",
     "back_to_search": "Back to search"
+  },
+  "travelers": {
+    "title": "Travelers",
+    "passengers": "Passengers",
+    "adults": "Adults",
+    "adults_age": "12+ years",
+    "children": "Children",
+    "children_age": "2–11 years",
+    "infants_seat": "Infants",
+    "infants_seat_age": "In seat, under 2",
+    "infants_lap": "Infants",
+    "infants_lap_age": "On lap, under 2",
+    "cabin_class": "Cabin class",
+    "economy": "Economy",
+    "premium_economy": "Premium Economy",
+    "business": "Business",
+    "first": "First",
+    "done": "Done",
+    "max_reached": "Maximum 9 travelers reached",
+    "infant_limit": "Each infant requires an adult",
+    "travelers_cabin": "Travelers & Cabin Class"
+  },
+  "calendar": {
+    "dates": "Dates",
+    "depart": "Depart",
+    "select_date": "Select date",
+    "select_dates": "Select dates",
+    "select_return": "Select return",
+    "select_departure": "Select departure date",
+    "select_return_date": "Select return date",
+    "clear": "Clear",
+    "done": "Done"
+  },
+  "explore": {
+    "from": "From",
+    "dates_filters": "Dates & Filters",
+    "flexible_dates": "Flexible dates",
+    "exact_dates": "Exact dates",
+    "direct_only": "Direct only",
+    "filters": "Filters",
+    "trip_length": "Trip length",
+    "max_price": "Max price",
+    "days": "days",
+    "destinations": "destinations",
+    "destinations_from": "destinations from {{city}}",
+    "by_price": "by price",
+    "searching": "Searching…",
+    "finding": "Finding destinations…",
+    "no_destinations": "No destinations found",
+    "no_destinations_sub": "Try widening the trip window, turning off 'Direct only', or selecting a different origin.",
+    "select_origin": "Select an origin airport to explore.",
+    "cheapest": "Cheapest",
+    "select_origin_label": "Select origin"
   },
   "footer": {
     "brand_desc": "Compare flights and hotels from trusted travel providers.",
