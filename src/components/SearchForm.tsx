@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Calendar, Users, Search, X } from "lucide-react";
+import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -20,15 +20,16 @@ const SearchForm = () => {
   const [from, setFrom] = useState<AirportSelection | null>(null);
   const [to, setTo] = useState<AirportSelection | null>(null);
   
-  // Dynamic default dates using centralized utility (today + 30 / today + 37)
   const [departDate, setDepartDate] = useState<Date>(() => getDefaultDates().depart);
   const [returnDate, setReturnDate] = useState<Date>(() => getDefaultDates().return);
   const [passengers, setPassengers] = useState(1);
   
-  // Control popover open states
   const [departOpen, setDepartOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
   const [passengersOpen, setPassengersOpen] = useState(false);
+
+  // Track if we should auto-jump to return after depart selection
+  const shouldAutoJump = useRef(false);
 
   const swapLocations = () => {
     const temp = from;
@@ -41,7 +42,6 @@ const SearchForm = () => {
   const handleSearch = () => {
     if (!isValid) return;
 
-    // Build search params for internal results page
     const searchParams = new URLSearchParams({
       from: from.code,
       to: to.code,
@@ -50,14 +50,22 @@ const SearchForm = () => {
       trip: tripType,
     });
 
-    // Add return date for roundtrip
     if (tripType === "roundtrip") {
       searchParams.set("return", format(returnDate, "yyyy-MM-dd"));
     }
 
-    // Navigate to internal search results page
     navigate(`/search?${searchParams.toString()}`);
   };
+
+  // Auto-jump: when depart dialog closes after selection, open return dialog
+  useEffect(() => {
+    if (!departOpen && shouldAutoJump.current && tripType === "roundtrip") {
+      shouldAutoJump.current = false;
+      // Small delay so the depart dialog finishes closing
+      const timer = setTimeout(() => setReturnOpen(true), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [departOpen, tripType]);
 
   return (
     <div className="bg-card rounded-2xl shadow-lg p-4 md:p-6 w-full max-w-5xl mx-auto">
@@ -146,6 +154,10 @@ const SearchForm = () => {
                       setDepartDate(date);
                       if (date > returnDate) {
                         setReturnDate(new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+                      }
+                      // Mark auto-jump for roundtrip
+                      if (tripType === "roundtrip") {
+                        shouldAutoJump.current = true;
                       }
                       setDepartOpen(false);
                     }
