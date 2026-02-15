@@ -6,12 +6,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, parse } from "date-fns";
 import AirportAutocomplete from "./AirportAutocomplete";
+import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
 import { getDefaultDates } from "@/lib/dateUtils";
-
-interface AirportSelection {
-  code: string;
-  display: string;
-}
 
 const CompactSearchBar = () => {
   const [searchParams] = useSearchParams();
@@ -23,12 +19,15 @@ const CompactSearchBar = () => {
     (searchParams.get("trip") as "roundtrip" | "oneway") || "roundtrip"
   );
   
-  const fromCode = searchParams.get("from")?.split(",")[0] || "";
-  const toCode = searchParams.get("to")?.split(",")[0] || "";
+  // Parse multi-origin from URL
+  const fromParam = searchParams.get("from") || "";
+  const fromCodes = fromParam.split(",").map(s => s.trim()).filter(Boolean);
   
-  const [from, setFrom] = useState<AirportSelection | null>(
-    fromCode ? { code: fromCode, display: fromCode } : null
+  const [origins, setOrigins] = useState<AirportSelection[]>(
+    fromCodes.map(code => ({ code, display: code }))
   );
+  
+  const toCode = searchParams.get("to")?.split(",")[0] || "";
   const [to, setTo] = useState<AirportSelection | null>(
     toCode ? { code: toCode, display: toCode } : null
   );
@@ -44,7 +43,6 @@ const CompactSearchBar = () => {
   const [passengers, setPassengers] = useState(Number(searchParams.get("adults")) || 1);
   const isInitialMount = useRef(true);
 
-  // Auto-jump depart → return
   const [departPopoverOpen, setDepartPopoverOpen] = useState(false);
   const [returnPopoverOpen, setReturnPopoverOpen] = useState(false);
   const shouldAutoJump = useRef(false);
@@ -58,17 +56,19 @@ const CompactSearchBar = () => {
   }, [departPopoverOpen, tripType]);
 
   const swapLocations = () => {
-    const temp = from;
-    setFrom(to);
-    setTo(temp);
+    if (origins.length === 1 && to) {
+      const temp = origins[0];
+      setOrigins([to]);
+      setTo(temp);
+    }
   };
 
-  const isValid = from !== null && to !== null;
+  const isValid = origins.length > 0 && to !== null;
 
   const handleSearchNav = useCallback(() => {
-    if (!from || !to) return;
+    if (origins.length === 0 || !to) return;
     const params = new URLSearchParams({
-      from: from.code,
+      from: origins.map(o => o.code).join(","),
       to: to.code,
       depart: format(departDate, "yyyy-MM-dd"),
       adults: passengers.toString(),
@@ -81,19 +81,22 @@ const CompactSearchBar = () => {
       params.set("return", format(returnDate, "yyyy-MM-dd"));
     }
     navigate(`/flights/results?${params.toString()}`);
-  }, [from, to, departDate, returnDate, passengers, tripType, navigate]);
+  }, [origins, to, departDate, returnDate, passengers, tripType, navigate]);
+
+  // Build a stable key for auto-search
+  const originsKey = origins.map(o => o.code).join(",");
 
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
-    if (!from || !to) return;
+    if (origins.length === 0 || !to) return;
     const timer = setTimeout(() => {
       handleSearchNav();
     }, 600);
     return () => clearTimeout(timer);
-  }, [from?.code, to?.code, departDate.getTime(), returnDate.getTime(), passengers, tripType, handleSearchNav]);
+  }, [originsKey, to?.code, departDate.getTime(), returnDate.getTime(), passengers, tripType, handleSearchNav]);
 
   const handleSearch = () => handleSearchNav();
 
@@ -124,13 +127,12 @@ const CompactSearchBar = () => {
           </button>
         </div>
 
-        {/* From */}
-        <div className="flex-1 min-w-[120px] max-w-[200px]">
-          <AirportAutocomplete
-            value={from}
-            onChange={setFrom}
+        {/* From — Multi-Origin */}
+        <div className="flex-1 min-w-[140px] max-w-[260px]">
+          <MultiOriginInput
+            values={origins}
+            onChange={setOrigins}
             placeholder="From"
-            icon="from"
             compact
           />
         </div>
@@ -140,7 +142,8 @@ const CompactSearchBar = () => {
           variant="ghost"
           size="icon"
           onClick={swapLocations}
-          className="h-10 w-10 rounded-full hover:bg-secondary shrink-0"
+          disabled={origins.length !== 1}
+          className="h-10 w-10 rounded-full hover:bg-secondary shrink-0 disabled:opacity-30"
         >
           <ArrowRightLeft className="w-4 h-4" />
         </Button>
@@ -237,23 +240,11 @@ const CompactSearchBar = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Adults</span>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8"
-                  onClick={() => setPassengers(Math.max(1, passengers - 1))}
-                >
-                  -
-                </Button>
+                <Button variant="outline" size="sm" className="h-8 w-8"
+                  onClick={() => setPassengers(Math.max(1, passengers - 1))}>-</Button>
                 <span className="w-4 text-center">{passengers}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8"
-                  onClick={() => setPassengers(passengers + 1)}
-                >
-                  +
-                </Button>
+                <Button variant="outline" size="sm" className="h-8 w-8"
+                  onClick={() => setPassengers(passengers + 1)}>+</Button>
               </div>
             </div>
           </PopoverContent>

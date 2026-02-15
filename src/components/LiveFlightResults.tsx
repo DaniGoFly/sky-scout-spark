@@ -15,7 +15,9 @@ import PriceInsight from "./PriceInsight";
 import PriceGraph from "./PriceGraph";
 import TrustSignals from "./TrustSignals";
 import StickyMobileCTA from "./StickyMobileCTA";
+import OriginComparePanel from "./OriginComparePanel";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
+import { useMultiOriginSearch, type MultiOriginFlight } from "@/hooks/useMultiOriginSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
 import { enrichFlights, type EnrichedFlight } from "@/lib/flightEnrichment";
 import { getPriceIntelligence } from "@/lib/priceIntelligence";
@@ -51,19 +53,36 @@ const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { formatDate, currency } = useLocale();
+  const { formatDate, currency, formatPrice } = useLocale();
   const isMobile = useIsMobile();
+
+  // Single-origin search hook
   const {
-    flights: rawFlights, status, error, isSearching, searchFlights, forceSearchFlights, cancelSearch, cachedAt,
+    flights: singleRawFlights, status: singleStatus, error: singleError,
+    isSearching: singleIsSearching, searchFlights, forceSearchFlights,
+    cancelSearch: singleCancelSearch, cachedAt,
   } = useLiveFlightSearch();
+
+  // Multi-origin search hook
+  const {
+    flights: multiRawFlights, status: multiStatus, error: multiError,
+    isSearching: multiIsSearching, failedOrigins, searchMultiOrigin,
+    cancelSearch: multiCancelSearch,
+  } = useMultiOriginSearch();
 
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
+  const [selectedOrigin, setSelectedOrigin] = useState<string | null>(null);
   const prevSearchKeyRef = useRef<string>("");
   const prevSortRef = useRef<string>("best");
   const prevResultsRef = useRef<EnrichedFlight[]>([]);
 
-  const from = searchParams.get("from") || searchParams.get("origin") || "";
+  // Parse multi-origin from URL
+  const fromParam = searchParams.get("from") || searchParams.get("origin") || "";
+  const origins = useMemo(() => fromParam.split(",").map(s => s.trim().toUpperCase()).filter(Boolean), [fromParam]);
+  const isMultiOrigin = origins.length > 1;
+  const from = origins[0] || "";
+
   const to = searchParams.get("to") || searchParams.get("destination") || "";
   const depart = searchParams.get("depart") || "";
   const returnDate = searchParams.get("return") || "";
@@ -74,9 +93,20 @@ const LiveFlightResults = () => {
   const tripClass = searchParams.get("class") || "economy";
   const isRoundtrip = tripType === "roundtrip";
 
+  // Choose the right status/error based on mode
+  const status = isMultiOrigin ? multiStatus : singleStatus;
+  const error = isMultiOrigin ? multiError : singleError;
+  const isSearching = isMultiOrigin ? multiIsSearching : singleIsSearching;
+  const rawFlights = isMultiOrigin ? multiRawFlights : singleRawFlights;
+
+  const cancelSearch = useCallback(() => {
+    singleCancelSearch();
+    multiCancelSearch();
+  }, [singleCancelSearch, multiCancelSearch]);
+
   const searchKey = useMemo(
-    () => [from, to, depart, returnDate, adults, children, infants, tripType, tripClass, currency].join("|"),
-    [from, to, depart, returnDate, adults, children, infants, tripType, tripClass, currency]
+    () => [origins.join(","), to, depart, returnDate, adults, children, infants, tripType, tripClass, currency].join("|"),
+    [origins, to, depart, returnDate, adults, children, infants, tripType, tripClass, currency]
   );
 
   useEffect(() => {
@@ -87,27 +117,50 @@ const LiveFlightResults = () => {
     cancelSearch();
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
+    setSelectedOrigin(null);
 
-    const directions: { origin: string; destination: string; date: string }[] = [];
-    if (isRoundtrip && returnDate) {
-      directions.push(
-        { origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart },
-        { origin: to.toUpperCase(), destination: from.toUpperCase(), date: returnDate }
-      );
+    if (isMultiOrigin) {
+      // Fire parallel searches
+      searchMultiOrigin({
+        origins,
+        destination: to,
+        departDate: depart,
+        returnDate: isRoundtrip ? returnDate : undefined,
+        isRoundtrip,
+        adults, children, infants, currency,
+        sort: "best", limit: 100, tripClass,
+      });
     } else {
-      directions.push({ origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart });
+      // Single origin — existing path
+      const directions: { origin: string; destination: string; date: string }[] = [];
+      if (isRoundtrip && returnDate) {
+        directions.push(
+          { origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart },
+          { origin: to.toUpperCase(), destination: from.toUpperCase(), date: returnDate }
+        );
+      } else {
+        directions.push({ origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart });
+      }
+      searchFlights({
+        directions, adults, children, infants, currency,
+        sort: "best" as const, limit: 100, tripClass,
+      });
     }
-
-    searchFlights({
-      directions, adults, children, infants, currency,
-      sort: "best" as const, limit: 100, tripClass,
-    });
-  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, tripClass, searchFlights, cancelSearch]);
+  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, tripClass, searchFlights, cancelSearch, isMultiOrigin, origins, searchMultiOrigin]);
 
   // ── Step 1: Enrich raw flights ──
   const enrichedFlights = useMemo<EnrichedFlight[]>(() => {
     if (!rawFlights.length) return [];
-    return enrichFlights(rawFlights, from, to, isRoundtrip);
+    // For multi-origin, enrich per flight's actual origin
+    return rawFlights.map(f => {
+      const flightOrigin = (f as any).origin_source || f.origin || from;
+      const enriched = enrichFlights([f], flightOrigin, to, isRoundtrip)[0];
+      // Preserve origin_source
+      if ((f as any).origin_source) {
+        (enriched as any).origin_source = (f as any).origin_source;
+      }
+      return enriched;
+    });
   }, [rawFlights, from, to, isRoundtrip]);
 
   useEffect(() => {
@@ -132,9 +185,17 @@ const LiveFlightResults = () => {
     return displayFlights[0]?.price?.currency || undefined;
   }, [displayFlights]);
 
-  // ── Step 2: Filter ──
+  // ── Step 2: Filter (including origin filter) ──
   const filteredFlights = useMemo(() => {
     let result = displayFlights;
+
+    // Origin filter for multi-origin
+    if (selectedOrigin) {
+      result = result.filter((f) => {
+        const src = ((f as any).origin_source || f.origin || "").toUpperCase();
+        return src === selectedOrigin.toUpperCase();
+      });
+    }
 
     if (filters.stopsMode === "direct") {
       result = result.filter((f) => f.isDirectItinerary);
@@ -172,13 +233,14 @@ const LiveFlightResults = () => {
     }
 
     return result;
-  }, [displayFlights, filters, actualPriceRange]);
+  }, [displayFlights, filters, actualPriceRange, selectedOrigin]);
 
   // ── Dedup ──
   const dedupedFlights = useMemo(() => {
     const seen = new Set<string>();
     return filteredFlights.filter((f) => {
       const contentKey = [
+        (f as any).origin_source || "",
         f.airlines?.[0] || "",
         f.departureTime || "",
         f.arrivalTime || "",
@@ -207,12 +269,10 @@ const LiveFlightResults = () => {
       return (a.departureTime || "").localeCompare(b.departureTime || "");
     };
 
-    // Always compute pinned candidates from the full set
     const byPrice = [...sorted].sort((a, b) => a.price.amount - b.price.amount);
     const byDuration = [...sorted].sort((a, b) => a.durationMinutes - b.durationMinutes);
     const byBest = [...sorted].sort(bestSort);
 
-    // Always set labels regardless of sort mode
     if (byPrice[0]) labels.set(byPrice[0].id, "Cheapest");
     if (byBest[0] && byBest[0].id !== byPrice[0]?.id) labels.set(byBest[0].id, "Best");
     if (byDuration[0] && !labels.has(byDuration[0].id)) labels.set(byDuration[0].id, "Fastest");
@@ -233,20 +293,13 @@ const LiveFlightResults = () => {
         });
         break;
       case "best": default: {
-        // Pin top 3 at top in order: Cheapest, Best, Fastest
         const pinnedIds = new Set<string>();
         const pinned: EnrichedFlight[] = [];
-
-        // Cheapest first
         if (byPrice[0]) { pinnedIds.add(byPrice[0].id); pinned.push(byPrice[0]); }
-        // Best second
         if (byBest[0] && !pinnedIds.has(byBest[0].id)) { pinnedIds.add(byBest[0].id); pinned.push(byBest[0]); }
-        // Fastest third
         if (byDuration[0] && !pinnedIds.has(byDuration[0].id)) { pinnedIds.add(byDuration[0].id); pinned.push(byDuration[0]); }
-
         const rest = sorted.filter(f => !pinnedIds.has(f.id));
         rest.sort(bestSort);
-
         return { sortedFlights: [...pinned, ...rest].slice(0, MAX_DISPLAY), pinnedLabels: labels };
       }
     }
@@ -266,7 +319,6 @@ const LiveFlightResults = () => {
     return directions;
   }, [from, to, depart, returnDate, isRoundtrip]);
 
-  // Sort tab change — client-side only, no backend re-fetch
   const handleSortChange = useCallback((s: "best" | "cheapest" | "fastest") => {
     setSortBy(s);
     prevSortRef.current = s;
@@ -284,31 +336,50 @@ const LiveFlightResults = () => {
     });
   }, [actualPriceRange]);
 
-  const handleClearAllFilters = useCallback(() => { setFilters({ ...DEFAULT_FILTERS, priceRange: actualPriceRange }); }, [actualPriceRange]);
+  const handleClearAllFilters = useCallback(() => {
+    setFilters({ ...DEFAULT_FILTERS, priceRange: actualPriceRange });
+    setSelectedOrigin(null);
+  }, [actualPriceRange]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.stopsMode !== "any") count++;
     count += filters.airlines.length + filters.departureTime.length;
     if (filters.priceRange[0] !== actualPriceRange[0] || filters.priceRange[1] !== actualPriceRange[1]) count++;
+    if (selectedOrigin) count++;
     return count;
-  }, [filters, actualPriceRange]);
+  }, [filters, actualPriceRange, selectedOrigin]);
 
   const handleRetry = useCallback(() => {
     prevSearchKeyRef.current = "";
     prevSortRef.current = sortBy;
     setFilters({ ...DEFAULT_FILTERS });
-    if (from && to && depart) {
+    setSelectedOrigin(null);
+    if (isMultiOrigin) {
+      searchMultiOrigin({
+        origins, destination: to, departDate: depart,
+        returnDate: isRoundtrip ? returnDate : undefined, isRoundtrip,
+        adults, children, infants, currency, sort: sortBy, limit: 100, tripClass,
+      });
+    } else if (from && to && depart) {
       forceSearchFlights({ directions: buildDirections(), adults, children, infants, currency, sort: sortBy, limit: 100, tripClass });
     }
-  }, [from, to, depart, adults, children, infants, currency, tripClass, sortBy, buildDirections, forceSearchFlights]);
+  }, [from, to, depart, adults, children, infants, currency, tripClass, sortBy, buildDirections, forceSearchFlights, isMultiOrigin, origins, searchMultiOrigin, isRoundtrip, returnDate]);
 
   const handleRefreshPrices = useCallback(() => {
     if (from && to && depart) {
       prevSearchKeyRef.current = "";
-      forceSearchFlights({ directions: buildDirections(), adults, children, infants, currency, sort: sortBy, limit: 100, tripClass });
+      if (isMultiOrigin) {
+        searchMultiOrigin({
+          origins, destination: to, departDate: depart,
+          returnDate: isRoundtrip ? returnDate : undefined, isRoundtrip,
+          adults, children, infants, currency, sort: sortBy, limit: 100, tripClass,
+        });
+      } else {
+        forceSearchFlights({ directions: buildDirections(), adults, children, infants, currency, sort: sortBy, limit: 100, tripClass });
+      }
     }
-  }, [from, to, depart, adults, children, infants, currency, tripClass, sortBy, buildDirections, forceSearchFlights]);
+  }, [from, to, depart, adults, children, infants, currency, tripClass, sortBy, buildDirections, forceSearchFlights, isMultiOrigin, origins, searchMultiOrigin, isRoundtrip, returnDate]);
 
   const cacheAgeLabel = useMemo(() => {
     if (!cachedAt) return null;
@@ -355,6 +426,8 @@ const LiveFlightResults = () => {
   const showSkeleton = isSearching && prevResultsRef.current.length === 0 && displayFlights.length === 0;
   const isRevalidating = isSearching && displayFlights.length > 0;
 
+  const headerTitle = isMultiOrigin ? `${origins.join(", ")} → ${to}` : `${from} → ${to}`;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
@@ -364,10 +437,11 @@ const LiveFlightResults = () => {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-base md:text-lg font-semibold text-foreground truncate">{from} → {to}</h1>
+              <h1 className="text-base md:text-lg font-semibold text-foreground truncate">{headerTitle}</h1>
               <p className="text-xs md:text-sm text-muted-foreground truncate">
                 {formatDate(depart)}
                 {returnDate && ` – ${formatDate(returnDate)}`} · {totalPassengers} {totalPassengers > 1 ? t("results.travelers") : t("results.traveler")}
+                {isMultiOrigin && ` · ${origins.length} airports`}
               </p>
             </div>
             <div className="lg:hidden">
@@ -386,7 +460,11 @@ const LiveFlightResults = () => {
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Loader2 className="w-10 h-10 text-primary animate-spin mb-3" />
               <p className="text-base font-semibold text-foreground">{t("results.searching")}</p>
-              <p className="text-sm text-muted-foreground">{t("results.searching_sub")}</p>
+              <p className="text-sm text-muted-foreground">
+                {isMultiOrigin
+                  ? `Searching ${origins.length} departure airports…`
+                  : t("results.searching_sub")}
+              </p>
             </div>
             <FlightResultsSkeleton />
           </div>
@@ -423,6 +501,26 @@ const LiveFlightResults = () => {
               <FlightFilters onFiltersChange={handleFiltersChange} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </aside>
             <div className="min-w-0 space-y-3">
+              {/* Multi-Origin Comparison Panel */}
+              {isMultiOrigin && (
+                <OriginComparePanel
+                  flights={displayFlights}
+                  origins={origins}
+                  selectedOrigin={selectedOrigin}
+                  onSelectOrigin={setSelectedOrigin}
+                  formatPrice={formatPrice}
+                  flightsCurrency={flightsCurrency}
+                />
+              )}
+
+              {/* Failed origins warning */}
+              {failedOrigins.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-400">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>No results from: {failedOrigins.join(", ")}</span>
+                </div>
+              )}
+
               {sortedFlights.length > 0 && (
                 <PriceInsight origin={from} destination={to} currentPrice={sortedFlights[0].price.amount} priceCurrency={flightsCurrency} />
               )}
@@ -475,6 +573,7 @@ const LiveFlightResults = () => {
                     sortedFlights.map((flight, index) => {
                       const pinLabel = pinnedLabels.get(flight.id);
                       const intel = getPriceIntelligence(flight, dedupedFlights);
+                      const originSource = (flight as any).origin_source || undefined;
                       return (
                         <div key={flight.id} className="flight-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
                           <FlightCard
@@ -484,6 +583,7 @@ const LiveFlightResults = () => {
                             departDate={depart}
                             returnDate={returnDate}
                             priceIntel={intel}
+                            originSource={isMultiOrigin ? originSource : undefined}
                           />
                         </div>
                       );
