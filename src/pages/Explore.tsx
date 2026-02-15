@@ -140,6 +140,7 @@ const Explore = () => {
 
   const handleSelectDestination = useCallback((dest: ExploreResult) => {
     setSelectedDest(dest);
+    const hasDates = !!(dest.departDate && dest.returnDate);
     const depart = dest.departDate || format(addDays(new Date(), 30), "yyyy-MM-dd");
     const ret = dest.returnDate || format(addDays(new Date(), 37), "yyyy-MM-dd");
     const params = new URLSearchParams({
@@ -152,9 +153,14 @@ const Explore = () => {
       infants: "0",
       class: "economy",
       trip: "roundtrip",
+      currency: currency.toLowerCase(),
     });
+    // Mark as explore estimate so results page can show info banner
+    if (!hasDates || dateMode === "flexible") {
+      params.set("explore_from_price", String(Math.round(dest.price)));
+    }
     navigate(`/flights/results?${params.toString()}`);
-  }, [origin, navigate]);
+  }, [origin, navigate, currency, dateMode]);
 
   const originAirport = useMemo(() =>
     origin ? AIRPORTS.find(a => a.code === origin.code) : null,
@@ -367,7 +373,12 @@ const Explore = () => {
                           </div>
                         </div>
                         <div className="text-right shrink-0 flex items-center gap-1.5">
-                          <p className="text-sm font-bold text-foreground tabular-nums">{formatPrice(dest.price)}</p>
+                          <div>
+                            <p className="text-sm font-bold text-foreground tabular-nums">From {formatPrice(dest.price)}</p>
+                            {dateMode === "flexible" && (
+                              <p className="text-[9px] text-muted-foreground/60 leading-tight">Flexible dates</p>
+                            )}
+                          </div>
                           <ArrowRight className={cn("w-3.5 h-3.5 transition-all duration-150", hoveredIata === dest.destinationIata ? "text-primary translate-x-0.5" : "text-muted-foreground/20")} />
                         </div>
                       </div>

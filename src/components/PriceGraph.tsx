@@ -132,7 +132,7 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
     });
   }, [data]);
 
-  // X-axis labels
+  // X-axis labels — real date labels like "Feb 1", "Feb 2"
   const xLabels = useMemo(() => {
     if (data.length < 2) return [];
     const count = Math.min(8, data.length);
@@ -143,8 +143,7 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
       const x = PAD_LEFT + (i / (data.length - 1)) * usableW;
       const d = data[i].date;
       try {
-        const daysAgo = Math.round((Date.now() - new Date(d + "T00:00:00").getTime()) / 86400000);
-        const label = daysAgo <= 0 ? "Today" : daysAgo <= 1 ? "Yesterday" : `${daysAgo}d ago`;
+        const label = format(new Date(d + "T00:00:00"), "MMM d");
         labels.push({ date: label, x });
       } catch {
         labels.push({ date: d, x });
