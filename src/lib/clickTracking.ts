@@ -1,8 +1,9 @@
 /**
  * Click tracking for monetization analytics.
- * Inserts a row into flight_clicks table on the YCP Supabase project.
+ * GDPR: Only runs when user has given marketing consent.
  */
 import { supabase } from "@/lib/supabaseClient";
+import { hasConsent } from "@/lib/consent";
 
 interface ClickEvent {
   search_id: string;
@@ -15,6 +16,12 @@ interface ClickEvent {
 }
 
 export async function trackFlightClick(event: ClickEvent): Promise<void> {
+  // GDPR: Only track if user consented to marketing/affiliate cookies
+  if (!hasConsent("marketing")) {
+    console.log("[monetization] tracking skipped — no marketing consent");
+    return;
+  }
+
   try {
     console.log("[monetization] tracking click", event);
     const { error } = await supabase.from("flight_clicks").insert({

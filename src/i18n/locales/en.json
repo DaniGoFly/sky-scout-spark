@@ -175,13 +175,53 @@
     "contact": "Contact",
     "legal": "Legal",
     "privacy": "Privacy",
+    "cookies": "Cookies",
     "terms": "Terms",
     "affiliate": "Affiliate Disclosure",
+    "impressum": "Impressum",
+    "cookie_settings": "Cookie Settings",
     "disclaimer": "Prices shown are estimates and may change. We earn a commission when you book through our partners. This does not affect the price you pay.",
     "copyright": "© 2026 GoFlyFinder. All rights reserved."
   },
   "locale_selector": {
     "language": "Language",
     "currency": "Currency"
+  },
+  "cookie": {
+    "banner_title": "We value your privacy",
+    "banner_text": "We use cookies to improve your experience. Analytics and marketing cookies are only used with your consent. You can change your preferences at any time.",
+    "cookie_policy": "Cookie Policy",
+    "accept_all": "Accept all",
+    "reject_all": "Reject all",
+    "manage": "Manage preferences",
+    "manage_title": "Cookie Preferences",
+    "necessary": "Necessary",
+    "necessary_desc": "Required for the website to function. Cannot be disabled.",
+    "analytics": "Analytics",
+    "analytics_desc": "Help us understand how visitors use our site.",
+    "marketing": "Marketing & Affiliate",
+    "marketing_desc": "Used for affiliate click tracking and personalized content.",
+    "save_preferences": "Save preferences"
+  },
+  "legal": {
+    "last_updated": "Last updated: February 15, 2026",
+    "cookies_title": "Cookie Policy",
+    "cookies_what_title": "What are cookies?",
+    "cookies_what_text": "Cookies are small text files stored on your device when you visit a website. They help the site remember your preferences and improve your experience.",
+    "cookies_necessary_text": "These cookies are essential for the website to function properly. They cannot be disabled.",
+    "cookies_necessary_1": "Session management and language/currency preferences",
+    "cookies_necessary_2": "Cookie consent choice storage",
+    "cookies_necessary_3": "Security and fraud prevention",
+    "cookies_analytics_text": "These cookies help us understand how visitors interact with our website by collecting anonymous usage data. They are only activated with your consent.",
+    "cookies_marketing_text": "These cookies are used for affiliate click tracking when you click 'View Deal' to book a flight. They help us earn commissions that keep this service free. Only activated with your consent.",
+    "cookies_manage_title": "Managing your preferences",
+    "cookies_manage_text": "You can change your cookie preferences at any time by clicking the button below or via the 'Cookie Settings' link in our footer.",
+    "impressum_title": "Impressum",
+    "impressum_operator": "Site Operator",
+    "impressum_contact": "Contact",
+    "impressum_responsible": "Responsible Person",
+    "impressum_vat": "VAT Identification Number",
+    "impressum_disclaimer": "Disclaimer",
+    "impressum_disclaimer_text": "GoFlyFinder is a flight and hotel comparison service. We do not sell tickets directly. All bookings are processed by third-party partners. Prices displayed are estimates and may vary at the time of booking."
   }
 }
