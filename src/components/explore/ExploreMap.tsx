@@ -23,7 +23,7 @@ interface ExploreMapProps {
 
 /* ── Tile providers ── */
 const TILE_CARTO =
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+  "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png";
 const TILE_OSM =
   "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ATTR =
@@ -31,22 +31,15 @@ const TILE_ATTR =
 
 /* ── DivIcon factories ── */
 function pricePill(
-  city: string,
   price: string,
   active: boolean,
   cheapest: boolean,
   dimmed: boolean,
 ): L.DivIcon {
-  const label = city.length > 14 ? city.slice(0, 13) + "…" : city;
-
   if (active) {
     return L.divIcon({
       className: "explore-marker",
-      html: `<div class="xpin xpin--active">
-               <span class="xpin__city">${label}</span>
-               <span class="xpin__price">${price}</span>
-               <div class="xpin__arrow"></div>
-             </div>`,
+      html: `<div class="xpin xpin--active"><span class="xpin__price">${price}</span></div>`,
       iconSize: [0, 0],
       iconAnchor: [0, 0],
     });
@@ -58,10 +51,7 @@ function pricePill(
 
   return L.divIcon({
     className: "explore-marker",
-    html: `<div class="xpin xpin--pill ${extra}">
-             <span class="xpin__city">${label}</span>
-             <span class="xpin__price">${price}</span>
-           </div>`,
+    html: `<div class="xpin xpin--pill ${extra}"><span class="xpin__price">${price}</span></div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
@@ -142,6 +132,7 @@ const ExploreMap = ({
     requestAnimationFrame(() => {
       map.invalidateSize();
     });
+    setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
       map.remove();
@@ -194,9 +185,10 @@ const ExploreMap = ({
         [dest.lat, dest.lon],
       ],
       {
-        color: "rgba(139,92,246,0.55)",
-        weight: 1.5,
-        dashArray: "6,6",
+        color: "#8b5cf6",
+        weight: 2,
+        opacity: 0.6,
+        dashArray: "4,6",
         interactive: false,
       },
     ).addTo(map);
@@ -231,7 +223,6 @@ const ExploreMap = ({
 
       const marker = L.marker([dest.lat, dest.lon], {
         icon: pricePill(
-          city,
           formatPrice(dest.price),
           isActive,
           isCheap,

@@ -167,7 +167,7 @@ const Explore = () => {
       <main className="flex-1 pt-16 overflow-hidden">
         <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden">
           {/* ── Left Sidebar ── */}
-          <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col bg-card border-r border-border shrink-0 overflow-hidden relative z-10">
+          <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col bg-card border-r border-border shrink-0 overflow-hidden relative z-10 explore-sidebar">
             {/* Search Controls */}
             <div className="p-4 space-y-3 border-b border-border">
               {/* Origin */}
