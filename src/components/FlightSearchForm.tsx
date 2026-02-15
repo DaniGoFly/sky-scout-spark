@@ -286,10 +286,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </Label>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           <Button
             variant="outline"
-            size="sm"
             onClick={() => {
               if (!navigator.geolocation) return;
               navigator.geolocation.getCurrentPosition(
@@ -308,15 +307,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 () => { /* permission denied — silent */ }
               );
             }}
-            className="gap-1.5 h-11 sm:h-auto"
+            className="gap-2 h-[52px] sm:h-12 px-5 rounded-xl font-semibold text-sm w-full sm:w-auto border-border/60 hover:border-primary/40 hover:bg-secondary/80 transition-all"
           >
-            <Navigation className="w-3.5 h-3.5" />
+            <Navigation className="w-4 h-4" />
             {t("search.use_location", "Use my location")}
           </Button>
           <Button 
-            size="lg" 
             onClick={handleSearch}
-            className="gap-2 px-8 h-12 sm:h-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity active:scale-[0.98]"
+            className="gap-2 h-[52px] sm:h-12 px-6 sm:px-8 rounded-xl font-semibold text-sm sm:text-base min-w-[180px] w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:scale-[1.02] transition-all active:scale-[0.98] shadow-md shadow-primary/20"
           >
             <Search className="w-4 h-4" />
             {t("search.search_flights")}
