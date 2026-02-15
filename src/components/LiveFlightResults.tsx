@@ -15,7 +15,7 @@ import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import PriceInsight from "./PriceInsight";
 import PriceGraph from "./PriceGraph";
 import TrustSignals from "./TrustSignals";
-import StickyMobileCTA from "./StickyMobileCTA";
+
 import OriginComparePanel, { type OriginViewMode } from "./OriginComparePanel";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { useMultiOriginSearch, type MultiOriginFlight } from "@/hooks/useMultiOriginSearch";
@@ -415,32 +415,6 @@ const LiveFlightResults = () => {
     return [...sortedFlights].sort((a, b) => a.price.amount - b.price.amount)[0];
   }, [sortedFlights]);
 
-  const handleMobileCTADeal = useCallback(async () => {
-    if (!cheapestFlight) return;
-    const pid = cheapestFlight.proposalId || cheapestFlight.click_id || "";
-    const sid = cheapestFlight.searchId || cheapestFlight.search_id || "";
-    const rb = cheapestFlight.resultsBase || cheapestFlight.results_base || "";
-    if (!pid || !sid) return;
-
-    trackFlightClick({
-      search_id: sid, proposal_id: pid,
-      airline: getAirlineName(cheapestFlight.airlines?.[0] || ""),
-      price: cheapestFlight.price?.amount, currency: cheapestFlight.price?.currency,
-      origin: cheapestFlight.origin, destination: cheapestFlight.destination,
-    });
-
-    const newTab = window.open("about:blank", "_blank");
-    try {
-      const result = await resolveDeal({ search_id: sid, proposal_id: pid, results_base: rb });
-      if (result.ok && result.deal_url) {
-        if (newTab && !newTab.closed) newTab.location.href = result.deal_url;
-      } else {
-        if (newTab && !newTab.closed) newTab.close();
-      }
-    } catch {
-      if (newTab && !newTab.closed) newTab.close();
-    }
-  }, [cheapestFlight]);
 
   const hasResults = displayFlights.length > 0;
   const showSkeleton = isSearching && prevResultsRef.current.length === 0 && displayFlights.length === 0;
@@ -656,9 +630,6 @@ const LiveFlightResults = () => {
           </div>
         )}
 
-        {status === "complete" && !isSearching && isMobile && cheapestFlight && (
-          <StickyMobileCTA cheapestFlight={cheapestFlight} onViewDeal={handleMobileCTADeal} />
-        )}
       </div>
       {status === "complete" && isMobile && <div className="h-20 md:hidden" />}
     </div>
