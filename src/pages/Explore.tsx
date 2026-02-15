@@ -162,10 +162,10 @@ const Explore = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       <Header />
-      <main className="flex-1 pt-16">
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)]">
+      <main className="flex-1 pt-16 overflow-hidden">
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden">
           {/* ── Left Sidebar ── */}
           <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col bg-card border-r border-border shrink-0 overflow-hidden">
             {/* Search Controls */}
