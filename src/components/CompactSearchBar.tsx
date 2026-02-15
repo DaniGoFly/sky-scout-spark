@@ -17,14 +17,12 @@ const CompactSearchBar = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
-  // Get dynamic default dates (today + 30 / today + 37)
   const defaultDates = getDefaultDates();
   
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">(
     (searchParams.get("trip") as "roundtrip" | "oneway") || "roundtrip"
   );
   
-  // Initialize from URL params - handle comma-separated nearby airports
   const fromCode = searchParams.get("from")?.split(",")[0] || "";
   const toCode = searchParams.get("to")?.split(",")[0] || "";
   
@@ -35,7 +33,6 @@ const CompactSearchBar = () => {
     toCode ? { code: toCode, display: toCode } : null
   );
   
-  // Dynamic default dates using centralized utility (no hardcoded dates)
   const [departDate, setDepartDate] = useState<Date>(() => {
     const dateStr = searchParams.get("depart");
     return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : defaultDates.depart;
@@ -46,6 +43,19 @@ const CompactSearchBar = () => {
   });
   const [passengers, setPassengers] = useState(Number(searchParams.get("adults")) || 1);
   const isInitialMount = useRef(true);
+
+  // Auto-jump depart → return
+  const [departPopoverOpen, setDepartPopoverOpen] = useState(false);
+  const [returnPopoverOpen, setReturnPopoverOpen] = useState(false);
+  const shouldAutoJump = useRef(false);
+
+  useEffect(() => {
+    if (!departPopoverOpen && shouldAutoJump.current && tripType === "roundtrip") {
+      shouldAutoJump.current = false;
+      const timer = setTimeout(() => setReturnPopoverOpen(true), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [departPopoverOpen, tripType]);
 
   const swapLocations = () => {
     const temp = from;
@@ -73,7 +83,6 @@ const CompactSearchBar = () => {
     navigate(`/flights/results?${params.toString()}`);
   }, [from, to, departDate, returnDate, passengers, tripType, navigate]);
 
-  // Auto-search with debounce when params change (skip initial mount)
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -148,7 +157,7 @@ const CompactSearchBar = () => {
         </div>
 
         {/* Depart */}
-        <Popover>
+        <Popover open={departPopoverOpen} onOpenChange={setDepartPopoverOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -163,7 +172,18 @@ const CompactSearchBar = () => {
             <CalendarComponent
               mode="single"
               selected={departDate}
-              onSelect={(date) => date && setDepartDate(date)}
+              onSelect={(date) => {
+                if (date) {
+                  setDepartDate(date);
+                  if (date > returnDate) {
+                    setReturnDate(new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000));
+                  }
+                  if (tripType === "roundtrip") {
+                    shouldAutoJump.current = true;
+                  }
+                  setDepartPopoverOpen(false);
+                }
+              }}
               disabled={(date) => date < new Date()}
               initialFocus
               className="pointer-events-auto"
@@ -173,7 +193,7 @@ const CompactSearchBar = () => {
 
         {/* Return */}
         {tripType === "roundtrip" && (
-          <Popover>
+          <Popover open={returnPopoverOpen} onOpenChange={setReturnPopoverOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -188,7 +208,12 @@ const CompactSearchBar = () => {
               <CalendarComponent
                 mode="single"
                 selected={returnDate}
-                onSelect={(date) => date && setReturnDate(date)}
+                onSelect={(date) => {
+                  if (date) {
+                    setReturnDate(date);
+                    setReturnPopoverOpen(false);
+                  }
+                }}
                 disabled={(date) => date < departDate}
                 initialFocus
                 className="pointer-events-auto"

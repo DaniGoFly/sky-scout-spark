@@ -61,7 +61,6 @@ const LiveFlightResults = () => {
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
   const prevSearchKeyRef = useRef<string>("");
   const prevSortRef = useRef<string>("best");
-  // Keep previous results visible during re-sort
   const prevResultsRef = useRef<EnrichedFlight[]>([]);
 
   const from = searchParams.get("from") || searchParams.get("origin") || "";
@@ -105,20 +104,18 @@ const LiveFlightResults = () => {
     });
   }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, tripClass, searchFlights, cancelSearch]);
 
-  // ── Step 1: Enrich raw flights with canonical per-direction stop data ──
+  // ── Step 1: Enrich raw flights ──
   const enrichedFlights = useMemo<EnrichedFlight[]>(() => {
     if (!rawFlights.length) return [];
     return enrichFlights(rawFlights, from, to, isRoundtrip);
   }, [rawFlights, from, to, isRoundtrip]);
 
-  // Store previous results so we can show them during re-sort
   useEffect(() => {
     if (enrichedFlights.length > 0) {
       prevResultsRef.current = enrichedFlights;
     }
   }, [enrichedFlights]);
 
-  // Use enriched or fallback to previous during loading
   const displayFlights = enrichedFlights.length > 0 ? enrichedFlights : prevResultsRef.current;
 
   const actualPriceRange = useMemo((): [number, number] => {
@@ -177,11 +174,10 @@ const LiveFlightResults = () => {
     return result;
   }, [displayFlights, filters, actualPriceRange]);
 
-  // ── Dedup by itinerary (same legs + price + airline) ──
+  // ── Dedup ──
   const dedupedFlights = useMemo(() => {
     const seen = new Set<string>();
     return filteredFlights.filter((f) => {
-      // Content-based key: airline + times + price
       const contentKey = [
         f.airlines?.[0] || "",
         f.departureTime || "",
@@ -197,7 +193,7 @@ const LiveFlightResults = () => {
     });
   }, [filteredFlights]);
 
-  // ── Step 3: Sort ──
+  // ── Step 3: Sort with color-coded pinned labels ──
   const { sortedFlights, pinnedLabels } = useMemo(() => {
     const sorted = [...dedupedFlights];
     const labels = new Map<string, string>();
@@ -210,6 +206,16 @@ const LiveFlightResults = () => {
       if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
       return (a.departureTime || "").localeCompare(b.departureTime || "");
     };
+
+    // Always compute pinned candidates from the full set
+    const byPrice = [...sorted].sort((a, b) => a.price.amount - b.price.amount);
+    const byDuration = [...sorted].sort((a, b) => a.durationMinutes - b.durationMinutes);
+    const byBest = [...sorted].sort(bestSort);
+
+    // Always set labels regardless of sort mode
+    if (byPrice[0]) labels.set(byPrice[0].id, "Cheapest");
+    if (byBest[0] && byBest[0].id !== byPrice[0]?.id) labels.set(byBest[0].id, "Best");
+    if (byDuration[0] && !labels.has(byDuration[0].id)) labels.set(byDuration[0].id, "Fastest");
 
     switch (sortBy) {
       case "cheapest":
@@ -227,16 +233,16 @@ const LiveFlightResults = () => {
         });
         break;
       case "best": default: {
-        const byPrice = [...sorted].sort((a, b) => a.price.amount - b.price.amount);
-        const byDuration = [...sorted].sort((a, b) => a.durationMinutes - b.durationMinutes);
-        const byBest = [...sorted].sort(bestSort);
-
+        // Pin top 3 at top in order: Cheapest, Best, Fastest
         const pinnedIds = new Set<string>();
         const pinned: EnrichedFlight[] = [];
 
-        if (byPrice[0]) { pinnedIds.add(byPrice[0].id); pinned.push(byPrice[0]); labels.set(byPrice[0].id, "Cheapest"); }
-        if (byBest[0] && !pinnedIds.has(byBest[0].id)) { pinnedIds.add(byBest[0].id); pinned.push(byBest[0]); labels.set(byBest[0].id, "Best"); }
-        if (byDuration[0] && !pinnedIds.has(byDuration[0].id)) { pinnedIds.add(byDuration[0].id); pinned.push(byDuration[0]); labels.set(byDuration[0].id, "Fastest"); }
+        // Cheapest first
+        if (byPrice[0]) { pinnedIds.add(byPrice[0].id); pinned.push(byPrice[0]); }
+        // Best second
+        if (byBest[0] && !pinnedIds.has(byBest[0].id)) { pinnedIds.add(byBest[0].id); pinned.push(byBest[0]); }
+        // Fastest third
+        if (byDuration[0] && !pinnedIds.has(byDuration[0].id)) { pinnedIds.add(byDuration[0].id); pinned.push(byDuration[0]); }
 
         const rest = sorted.filter(f => !pinnedIds.has(f.id));
         rest.sort(bestSort);
@@ -309,7 +315,7 @@ const LiveFlightResults = () => {
     const mins = Math.round((Date.now() - cachedAt) / 60000);
     if (mins < 1) return t("results.updated_just_now", "Updated just now");
     return t("results.updated_ago", { count: mins, defaultValue: `Updated ${mins} min ago` });
-  }, [cachedAt, t, status]); // status dep forces re-calc on search complete
+  }, [cachedAt, t, status]);
 
   const totalPassengers = adults + children + infants;
 
@@ -345,7 +351,6 @@ const LiveFlightResults = () => {
     }
   }, [cheapestFlight]);
 
-  // Show results: complete, or searching with existing data (stale-while-revalidate)
   const hasResults = displayFlights.length > 0;
   const showSkeleton = isSearching && prevResultsRef.current.length === 0 && displayFlights.length === 0;
   const isRevalidating = isSearching && displayFlights.length > 0;
@@ -474,8 +479,8 @@ const LiveFlightResults = () => {
                         <div key={flight.id} className="flight-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
                           <FlightCard
                             flight={flight}
-                            isBestValue={!!pinLabel || (index === 0 && sortBy === "cheapest")}
-                            badgeLabel={pinLabel || (index === 0 && sortBy === "cheapest" ? "🔥 Cheapest" : undefined)}
+                            isBestValue={!!pinLabel}
+                            badgeLabel={pinLabel}
                             departDate={depart}
                             returnDate={returnDate}
                             priceIntel={intel}

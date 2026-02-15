@@ -1,5 +1,6 @@
 /**
- * PriceGraph — real price trend chart using price-trend edge function
+ * PriceGraph — GoFlyFinder-style price trend chart
+ * Dark background, purple highlights, subtle gridlines
  */
 
 import { useState, useEffect, useMemo } from "react";
@@ -9,6 +10,7 @@ import { useLocale } from "@/hooks/useLocale";
 import { format, addMonths } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PriceGraphProps {
   origin: string;
@@ -46,7 +48,6 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
         ...(r2.ok ? r2.points : []),
       ].filter(p => p.price > 0);
       
-      // Deduplicate by date
       const seen = new Set<string>();
       const unique = combined.filter(p => {
         if (seen.has(p.date)) return false;
@@ -57,7 +58,6 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
 
       setData(unique);
 
-      // Use best stats available
       const best = r1.ok && r1.points.length > 0 ? r1 : r2;
       if (best.ok) {
         setTypicalMin(best.typicalMin);
@@ -68,7 +68,6 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
     }).finally(() => setIsLoading(false));
   }, [isOpen, origin, destination, currentMonth, nextMonth, currency]);
 
-  // Build SVG line chart
   const { linePath, areaPath, minPrice, maxPrice, chartPoints } = useMemo(() => {
     if (data.length < 2) return { linePath: "", areaPath: "", minPrice: 0, maxPrice: 0, chartPoints: [] };
 
@@ -90,7 +89,6 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
     return { linePath: lineD, areaPath: areaD, minPrice: min, maxPrice: max, chartPoints: points };
   }, [data]);
 
-  // Typical range band Y coords
   const typicalBand = useMemo(() => {
     if (!data.length || !typicalMin || !typicalMax) return null;
     const prices = data.map(d => d.price);
@@ -124,72 +122,102 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
       {isOpen && (
         <div className="px-4 pb-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            <div className="space-y-3 py-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <Skeleton className="h-32 w-full rounded-lg" />
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-16" />
+              </div>
             </div>
           ) : data.length < 2 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">
-              Not enough historical data yet for this route
-            </p>
+            <div className="py-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                <TrendingDown className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">Not enough historical data</p>
+              <p className="text-xs text-muted-foreground">
+                Price trends will appear as more data becomes available for this route.
+              </p>
+            </div>
           ) : (
             <>
               {/* Stats bar */}
               <div className="flex items-center gap-3 mb-3 flex-wrap">
                 {typicalMin > 0 && (
                   <div className="text-xs text-muted-foreground">
-                    Typical range: <span className="font-semibold text-foreground">{formatPrice(typicalMin)}</span>
+                    Typical: <span className="font-semibold text-foreground">{formatPrice(typicalMin)}</span>
                     {" – "}
                     <span className="font-semibold text-foreground">{formatPrice(typicalMax)}</span>
                   </div>
                 )}
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className={cn("text-[10px]",
+                  confidence === "high" ? "border-emerald-500/40 text-emerald-400" :
+                  confidence === "medium" ? "border-amber-500/40 text-amber-400" :
+                  "border-muted-foreground/40 text-muted-foreground"
+                )}>
                   {confidence === "high" ? "High confidence" : confidence === "medium" ? "Medium confidence" : "Limited data"}
                 </Badge>
               </div>
 
               {/* SVG Chart */}
-              <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-32" preserveAspectRatio="none">
-                {/* Typical range band */}
-                {typicalBand && (
-                  <rect
-                    x={0}
-                    y={typicalBand.y1}
-                    width={SVG_W}
-                    height={typicalBand.y2 - typicalBand.y1}
-                    className="fill-primary/5"
-                  />
-                )}
+              <div className="bg-secondary/30 rounded-lg p-2">
+                <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-32" preserveAspectRatio="none">
+                  {/* Subtle grid lines */}
+                  {[0.25, 0.5, 0.75].map(frac => (
+                    <line key={frac} x1={0} y1={PADDING_TOP + (SVG_H - PADDING_TOP - PADDING_BOTTOM) * frac} x2={SVG_W} y2={PADDING_TOP + (SVG_H - PADDING_TOP - PADDING_BOTTOM) * frac}
+                      stroke="currentColor" className="text-border" strokeWidth={0.5} strokeDasharray="4 4" />
+                  ))}
 
-                {/* Area under line */}
-                <path d={areaPath} className="fill-primary/10" />
-
-                {/* Line */}
-                <path d={linePath} fill="none" className="stroke-primary" strokeWidth={2} strokeLinejoin="round" />
-
-                {/* Hover dots + hit areas */}
-                {chartPoints.map((p, i) => (
-                  <g key={p.date}>
+                  {/* Typical range band */}
+                  {typicalBand && (
                     <rect
-                      x={p.x - SVG_W / chartPoints.length / 2}
-                      y={0}
-                      width={SVG_W / chartPoints.length}
-                      height={SVG_H}
-                      fill="transparent"
-                      onMouseEnter={() => setHoveredIdx(i)}
-                      onMouseLeave={() => setHoveredIdx(null)}
+                      x={0}
+                      y={typicalBand.y1}
+                      width={SVG_W}
+                      height={typicalBand.y2 - typicalBand.y1}
+                      className="fill-primary/8"
                     />
-                    {hoveredIdx === i && (
-                      <circle cx={p.x} cy={p.y} r={4} className="fill-primary" />
-                    )}
-                  </g>
-                ))}
-              </svg>
+                  )}
+
+                  {/* Area under line */}
+                  <path d={areaPath} className="fill-primary/10" />
+
+                  {/* Line */}
+                  <path d={linePath} fill="none" className="stroke-primary" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+
+                  {/* Hover dots + hit areas */}
+                  {chartPoints.map((p, i) => (
+                    <g key={p.date}>
+                      <rect
+                        x={p.x - SVG_W / chartPoints.length / 2}
+                        y={0}
+                        width={SVG_W / chartPoints.length}
+                        height={SVG_H}
+                        fill="transparent"
+                        onMouseEnter={() => setHoveredIdx(i)}
+                        onMouseLeave={() => setHoveredIdx(null)}
+                      />
+                      {hoveredIdx === i && (
+                        <>
+                          <line x1={p.x} y1={PADDING_TOP} x2={p.x} y2={SVG_H - PADDING_BOTTOM} stroke="currentColor" className="text-primary/30" strokeWidth={1} strokeDasharray="3 3" />
+                          <circle cx={p.x} cy={p.y} r={5} className="fill-primary" />
+                          <circle cx={p.x} cy={p.y} r={3} className="fill-card" />
+                        </>
+                      )}
+                    </g>
+                  ))}
+                </svg>
+              </div>
 
               {/* Axis labels */}
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-2 px-1">
                 <span>{data[0]?.date && format(new Date(data[0].date + "T00:00:00"), "MMM d")}</span>
                 {hoveredIdx !== null && chartPoints[hoveredIdx] && (
-                  <span className="font-semibold text-foreground">
+                  <span className="font-semibold text-primary">
                     {format(new Date(chartPoints[hoveredIdx].date + "T00:00:00"), "MMM d")}: {formatPrice(chartPoints[hoveredIdx].price)}
                   </span>
                 )}
@@ -199,16 +227,16 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
-                <span>Min: <strong className="text-emerald-600">{formatPrice(minPrice)}</strong></span>
+              <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground px-1">
+                <span>Low: <strong className="text-emerald-400">{formatPrice(minPrice)}</strong></span>
                 <span>·</span>
-                <span>Max: <strong className="text-foreground">{formatPrice(maxPrice)}</strong></span>
+                <span>High: <strong className="text-foreground">{formatPrice(maxPrice)}</strong></span>
                 {updatedAt && (
                   <>
                     <span>·</span>
                     <span className="flex items-center gap-0.5">
                       <Clock className="w-3 h-3" />
-                      Updated {format(new Date(updatedAt), "MMM d, HH:mm")}
+                      {format(new Date(updatedAt), "MMM d, HH:mm")}
                     </span>
                   </>
                 )}

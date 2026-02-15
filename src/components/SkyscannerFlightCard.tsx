@@ -2,6 +2,7 @@
  * Skyscanner-style Flight Card — Production Polish
  * Responsive: vertical text-only on mobile, rich timeline on tablet+
  * Price intelligence badges, smooth animations, partner disclaimers
+ * Color-coded pinned badges: Cheapest (green), Best (purple), Fastest (blue)
  */
 
 import { memo, useState, useRef, useCallback, useMemo } from "react";
@@ -53,7 +54,6 @@ function extractHHmm(raw: string | undefined | null): string {
 function extractDateLabel(raw: string | undefined | null): string | undefined {
   if (!raw) return undefined;
   try {
-    // Handle "YYYY-MM-DD HH:mm" or ISO format
     const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
     const dt = new Date(normalized);
     if (isNaN(dt.getTime())) return undefined;
@@ -63,39 +63,52 @@ function extractDateLabel(raw: string | undefined | null): string | undefined {
   }
 }
 
+/** Get badge color config based on label */
+function getBadgeConfig(label?: string): { bg: string; text: string; border: string } {
+  if (!label) return { bg: "bg-green-600", text: "text-white", border: "border-green-500/60 ring-green-500/20" };
+  const lower = label.toLowerCase();
+  if (lower.includes("cheapest")) return { bg: "bg-emerald-600", text: "text-white", border: "border-emerald-500/60 ring-emerald-500/20" };
+  if (lower.includes("best")) return { bg: "bg-primary", text: "text-primary-foreground", border: "border-primary/60 ring-primary/20" };
+  if (lower.includes("fastest")) return { bg: "bg-blue-600", text: "text-white", border: "border-blue-500/60 ring-blue-500/20" };
+  return { bg: "bg-green-600", text: "text-white", border: "border-green-500/60 ring-green-500/20" };
+}
+
 /* ─── Sub-components ─── */
 
 const AirlineHeader = memo(({
   logo, name, flightNumber, isBestValue, isMobile, bestLabel, badgeOverride,
 }: {
   logo: string; name: string; flightNumber: string; isBestValue: boolean; isMobile: boolean; bestLabel: string; badgeOverride?: string;
-}) => (
-  <div className="flex items-center gap-3 min-w-0">
-    <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-      {logo ? (
-        <img src={logo} alt={name} className="w-7 h-7 md:w-8 md:h-8 object-contain" loading="lazy" width={32} height={32}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-      ) : (
-        <Plane className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+}) => {
+  const badgeColors = getBadgeConfig(badgeOverride);
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+        {logo ? (
+          <img src={logo} alt={name} className="w-7 h-7 md:w-8 md:h-8 object-contain" loading="lazy" width={32} height={32}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+        ) : (
+          <Plane className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-bold text-foreground text-sm truncate">{name || "Airline"}</p>
+        {flightNumber && <p className="text-[11px] text-muted-foreground truncate">{flightNumber}</p>}
+      </div>
+      {isBestValue && isMobile && (
+        <Badge className={`${badgeColors.bg} ${badgeColors.text} text-[10px] px-2 py-0.5 flex-shrink-0`}>{badgeOverride || bestLabel}</Badge>
       )}
     </div>
-    <div className="min-w-0 flex-1">
-      <p className="font-bold text-foreground text-sm truncate">{name || "Airline"}</p>
-      {flightNumber && <p className="text-[11px] text-muted-foreground truncate">{flightNumber}</p>}
-    </div>
-    {isBestValue && isMobile && (
-      <Badge className="bg-green-600 text-white text-[10px] px-2 py-0.5 flex-shrink-0">{badgeOverride || bestLabel}</Badge>
-    )}
-  </div>
-));
+  );
+});
 AirlineHeader.displayName = "AirlineHeader";
 
 /** Mobile: text-only compact leg */
 const MobileLeg = memo(({
-  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel,
+  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel, arrivalDateLabel,
 }: {
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
-  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string;
+  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string; arrivalDateLabel?: string;
 }) => (
   <div className="flex flex-col gap-0.5">
     {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>}
@@ -112,12 +125,12 @@ const MobileLeg = memo(({
 ));
 MobileLeg.displayName = "MobileLeg";
 
-/** Desktop/tablet: timeline leg */
+/** Desktop/tablet: timeline leg with consistent time/date/airport hierarchy */
 const DesktopLeg = memo(({
-  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel,
+  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel, arrivalDateLabel,
 }: {
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
-  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string;
+  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string; arrivalDateLabel?: string;
 }) => (
   <div className="flex flex-col gap-1">
     {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{label}</span>}
@@ -140,6 +153,7 @@ const DesktopLeg = memo(({
       </div>
       <div className="flex-shrink-0 text-end" style={{ minWidth: "60px" }}>
         <p className="text-xl font-bold text-foreground leading-tight tracking-tight">{safeText(arrivalTime)}</p>
+        {(arrivalDateLabel || dateLabel) && <p className="text-[10px] text-muted-foreground">{arrivalDateLabel || dateLabel}</p>}
         <p className="text-xs font-semibold text-muted-foreground uppercase">{safeText(destination, "---")}</p>
       </div>
     </div>
@@ -168,6 +182,8 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { formatPrice } = useLocale();
+
+  const badgeColors = getBadgeConfig(badgeLabel);
 
   const { proposalId, searchId, resultsBase, canResolve, airlineName, airlineLogo, flightNumber } = useMemo(() => {
     const pid = flight.proposalId || flight.click_id || "";
@@ -272,7 +288,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   const outboundLabel = hasReturn || isMultiCity ? (isMultiCity ? "LEG 1" : t("card.outbound")) : null;
 
-  // ── Outbound: format times through extractHHmm so raw strings never leak ──
+  // ── Outbound data with unified formatting ──
   const outData = useMemo(() => {
     const rawDep = flight.departureTime || "";
     const rawArr = flight.arrivalTime || "";
@@ -280,6 +296,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       departureTime: extractHHmm(rawDep) || rawDep,
       arrivalTime: extractHHmm(rawArr) || rawArr,
       dateLabel: extractDateLabel(rawDep) || (departDate ? (() => { try { return format(parse(departDate, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; } })() : undefined),
+      arrivalDateLabel: extractDateLabel(rawArr),
     };
   }, [flight.departureTime, flight.arrivalTime, departDate]);
 
@@ -299,13 +316,14 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         stopsCount: Number(seg.stopsCount ?? 0),
         stopsAirports: seg.stopsAirports || [],
         dateLabel: extractDateLabel(rawDep),
+        arrivalDateLabel: extractDateLabel(rawArr),
       };
     });
   }, [isMultiCity, segments]);
 
-  // Return segment data — prefer segments[1] for roundtrip, fallback to enriched flight.return
+  // Return segment data — SAME formatting pipeline as outbound
   const retData = useMemo(() => {
-    if (isMultiCity) return null; // handled by extraLegs
+    if (isMultiCity) return null;
     if (retSegment) {
       const rawDep = retSegment.departureTime ?? retSegment.departure_time ?? retSegment.departure_at ?? retSegment.local_departure ?? "";
       const rawArr = retSegment.arrivalTime ?? retSegment.arrival_time ?? retSegment.arrival_at ?? retSegment.local_arrival ?? "";
@@ -317,23 +335,26 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       const stops = Number(retSegment.stopsCount ?? 0);
       const stopsAirports: string[] = retSegment.stopsAirports || [];
       const dateLabel = extractDateLabel(rawDep);
-      return { origin, destination: dest, departureTime: depTime, arrivalTime: arrTime, durationMinutes: duration, stopsCount: stops, stopsAirports, dateLabel };
+      const arrivalDateLabel = extractDateLabel(rawArr);
+      return { origin, destination: dest, departureTime: depTime, arrivalTime: arrTime, durationMinutes: duration, stopsCount: stops, stopsAirports, dateLabel, arrivalDateLabel };
     }
     if (flight.return) {
       const rawDep = flight.return.departureTime || "";
+      const rawArr = flight.return.arrivalTime || "";
       return {
         origin: flight.return.origin,
         destination: flight.return.destination,
         departureTime: extractHHmm(rawDep) || flight.return.departureTime,
-        arrivalTime: extractHHmm(flight.return.arrivalTime) || flight.return.arrivalTime,
+        arrivalTime: extractHHmm(rawArr) || flight.return.arrivalTime,
         durationMinutes: flight.return.durationMinutes,
         stopsCount: flight.return.stopsCount,
         stopsAirports: flight.return.stopsAirports || [],
-        dateLabel: extractDateLabel(rawDep),
+        dateLabel: extractDateLabel(rawDep) || (returnDateProp ? (() => { try { return format(parse(returnDateProp, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; } })() : undefined),
+        arrivalDateLabel: extractDateLabel(rawArr),
       };
     }
     return null;
-  }, [isMultiCity, retSegment, flight.return]);
+  }, [isMultiCity, retSegment, flight.return, returnDateProp]);
 
   const outboundStopsCount = isEnriched(flight) ? flight.outboundStopsTotal : Math.max(0, flight.stopsCount ?? 0);
   const returnStopsCount = isEnriched(flight)
@@ -355,7 +376,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   /* ═══════ MOBILE LAYOUT ═══════ */
   if (isMobile) {
     return (
-      <div className={`relative bg-card rounded-xl border w-full box-border ${isBestValue ? "border-green-500/60 ring-2 ring-green-500/20" : "border-border"}`}
+      <div className={`relative bg-card rounded-xl border w-full box-border ${isBestValue ? `${badgeColors.border} ring-2` : "border-border"}`}
         style={{ contain: "layout style" }}>
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
@@ -382,12 +403,6 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             </div>
             {saveButton}
           </div>
-          {isBestValue && (
-            <div className="flex items-center gap-1.5 text-green-500 text-xs font-medium">
-              <Flame className="w-3.5 h-3.5" />
-              <span>{t("card.best_price", "Best Price")}</span>
-            </div>
-          )}
           {ctaButton}
           <p className="text-[10px] text-muted-foreground/60 text-center leading-tight">{t("card.opens_partner", "Opens partner booking – price may change")}</p>
         </div>
@@ -397,11 +412,11 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   /* ═══════ DESKTOP LAYOUT ═══════ */
   return (
-    <div className={`relative bg-card rounded-xl border group flight-card-hover ${isBestValue ? "border-green-500/60 ring-2 ring-green-500/20" : "border-border"}`}
+    <div className={`relative bg-card rounded-xl border group flight-card-hover ${isBestValue ? `${badgeColors.border} ring-2` : "border-border"}`}
       style={{ contain: "layout style" }}>
       {isBestValue && (
         <div className="absolute -top-3 start-5 z-10">
-          <Badge className="bg-green-600 text-white shadow-md px-3 py-0.5 text-[11px] gap-1"><Flame className="w-3 h-3" />{badgeLabel || t("card.best_price", "Best Price")}</Badge>
+          <Badge className={`${badgeColors.bg} ${badgeColors.text} shadow-md px-3 py-0.5 text-[11px] gap-1`}><Flame className="w-3 h-3" />{badgeLabel || t("card.best_price", "Best Price")}</Badge>
         </div>
       )}
       <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
@@ -409,15 +424,15 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: "1fr 220px" }}>
           <div className="flex flex-col gap-3 min-w-0">
             <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={false} isMobile={false} bestLabel={t("card.best")} />
-            <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outData.dateLabel} />
+            <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outData.dateLabel} arrivalDateLabel={outData.arrivalDateLabel} />
             {retData && (
               <div className="pt-2 border-t border-border/40">
-                <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={retData.dateLabel} />
+                <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={retData.dateLabel} arrivalDateLabel={retData.arrivalDateLabel} />
               </div>
             )}
             {extraLegs.map((leg, i) => (
               <div key={i} className="pt-2 border-t border-border/40">
-                <LegComponent label={leg.label} origin={leg.origin} destination={leg.destination} departureTime={leg.departureTime} arrivalTime={leg.arrivalTime} durationMinutes={leg.durationMinutes} stopsCount={leg.stopsCount} stopsAirports={leg.stopsAirports} stopsLabel={getLocalizedStopsLabel(leg.stopsCount, leg.stopsAirports)} dateLabel={leg.dateLabel} />
+                <LegComponent label={leg.label} origin={leg.origin} destination={leg.destination} departureTime={leg.departureTime} arrivalTime={leg.arrivalTime} durationMinutes={leg.durationMinutes} stopsCount={leg.stopsCount} stopsAirports={leg.stopsAirports} stopsLabel={getLocalizedStopsLabel(leg.stopsCount, leg.stopsAirports)} dateLabel={leg.dateLabel} arrivalDateLabel={leg.arrivalDateLabel} />
               </div>
             ))}
           </div>
@@ -426,12 +441,8 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
               <p className={`text-2xl font-bold text-foreground whitespace-nowrap ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{t("card.per_person")}</p>
               {priceIntel && <div className="mt-1"><PriceIntelBadge intel={priceIntel} /></div>}
-              <p className="text-[10px] text-muted-foreground/50 mt-0.5">Compared to similar routes</p>
               {showScarcity && (
                 <p className="text-[10px] text-amber-500 font-medium mt-1">{t("card.scarcity", "Only a few seats left at this price")}</p>
-              )}
-              {isBestValue && (
-                <p className="text-[10px] text-green-500 font-medium mt-0.5">{t("card.lowest_fare", "Lowest fare available")}</p>
               )}
             </div>
             <div className="flex flex-col items-end gap-2 mt-3">
