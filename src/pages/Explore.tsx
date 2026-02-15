@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import AirportAutocomplete from "@/components/AirportAutocomplete";
-import ExploreMap from "@/components/ExploreMap";
+import ExploreMap from "@/components/explore/ExploreMap";
 import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
 import { detectGeo } from "@/lib/priceApi";
 import { useLocale } from "@/hooks/useLocale";
