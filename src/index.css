@@ -210,14 +210,3 @@
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-/* ── Leaflet global tile fix (Tailwind preflight breaks tiles) ── */
-.leaflet-container img {
-  max-width: none !important;
-  max-height: none !important;
-}
-.leaflet-container img.leaflet-tile {
-  filter: none !important;
-  opacity: 1 !important;
-  mix-blend-mode: normal !important;
-  transition: none !important;
-}
