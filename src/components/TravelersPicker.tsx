@@ -17,6 +17,7 @@ export interface TravelersData {
 interface TravelersPickerProps {
   value: TravelersData;
   onChange: (value: TravelersData) => void;
+  compact?: boolean;
 }
 
 const CABIN_CLASSES = [
@@ -28,7 +29,7 @@ const CABIN_CLASSES = [
 
 const MAX_TRAVELERS = 9;
 
-const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
+const TravelersPicker = ({ value, onChange, compact = false }: TravelersPickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -244,7 +245,7 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
     </div>
   );
 
-  if (isMobile) {
+  if (isMobile && !compact) {
     return (
       <div className="min-w-0">
         <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
@@ -274,6 +275,26 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
     );
   }
 
+  if (compact) {
+    return (
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm shrink-0 min-w-0"
+          >
+            <Users className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="truncate">{getDisplayText()}</span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-4 bg-card z-50" align="start">
+          <PickerContent />
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   return (
     <div className="min-w-0">
       <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
@@ -292,7 +313,7 @@ const TravelersPicker = ({ value, onChange }: TravelersPickerProps) => {
             <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80 p-4" align="start">
+        <PopoverContent className="w-80 p-4 bg-card" align="start">
           <PickerContent />
         </PopoverContent>
       </Popover>

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Calendar, Users, Search } from "lucide-react";
+import { ArrowRightLeft, Calendar, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, parse } from "date-fns";
 import AirportAutocomplete from "./AirportAutocomplete";
 import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
+import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import { getDefaultDates } from "@/lib/dateUtils";
 
 const CompactSearchBar = () => {
@@ -19,7 +20,6 @@ const CompactSearchBar = () => {
     (searchParams.get("trip") as "roundtrip" | "oneway") || "roundtrip"
   );
   
-  // Parse multi-origin from URL
   const fromParam = searchParams.get("from") || "";
   const fromCodes = fromParam.split(",").map(s => s.trim()).filter(Boolean);
   
@@ -40,7 +40,17 @@ const CompactSearchBar = () => {
     const dateStr = searchParams.get("return");
     return dateStr ? parse(dateStr, "yyyy-MM-dd", new Date()) : defaultDates.return;
   });
-  const [passengers, setPassengers] = useState(Number(searchParams.get("adults")) || 1);
+
+  // Parse full traveler data from URL params
+  const [travelers, setTravelers] = useState<TravelersData>(() => {
+    const adults = Number(searchParams.get("adults")) || 1;
+    const children = Number(searchParams.get("children")) || 0;
+    const infants = Number(searchParams.get("infants")) || 0;
+    const cabinRaw = searchParams.get("class") || "economy";
+    const cabinClass = (["economy", "premium_economy", "business", "first"].includes(cabinRaw) ? cabinRaw : "economy") as TravelersData["cabinClass"];
+    return { adults, children, infantsSeat: infants, infantsLap: 0, cabinClass };
+  });
+
   const isInitialMount = useRef(true);
 
   const [departPopoverOpen, setDepartPopoverOpen] = useState(false);
@@ -67,23 +77,23 @@ const CompactSearchBar = () => {
 
   const handleSearchNav = useCallback(() => {
     if (origins.length === 0 || !to) return;
+    const totalInfants = travelers.infantsSeat + travelers.infantsLap;
     const params = new URLSearchParams({
       from: origins.map(o => o.code).join(","),
       to: to.code,
       depart: format(departDate, "yyyy-MM-dd"),
-      adults: passengers.toString(),
-      children: "0",
-      infants: "0",
-      class: "economy",
+      adults: travelers.adults.toString(),
+      children: travelers.children.toString(),
+      infants: totalInfants.toString(),
+      class: travelers.cabinClass,
       trip: tripType,
     });
     if (tripType === "roundtrip") {
       params.set("return", format(returnDate, "yyyy-MM-dd"));
     }
     navigate(`/flights/results?${params.toString()}`);
-  }, [origins, to, departDate, returnDate, passengers, tripType, navigate]);
+  }, [origins, to, departDate, returnDate, travelers, tripType, navigate]);
 
-  // Build a stable key for auto-search
   const originsKey = origins.map(o => o.code).join(",");
 
   useEffect(() => {
@@ -96,7 +106,7 @@ const CompactSearchBar = () => {
       handleSearchNav();
     }, 600);
     return () => clearTimeout(timer);
-  }, [originsKey, to?.code, departDate.getTime(), returnDate.getTime(), passengers, tripType, handleSearchNav]);
+  }, [originsKey, to?.code, departDate.getTime(), returnDate.getTime(), travelers.adults, travelers.children, travelers.infantsSeat, travelers.infantsLap, travelers.cabinClass, tripType, handleSearchNav]);
 
   const handleSearch = () => handleSearchNav();
 
@@ -230,30 +240,14 @@ const CompactSearchBar = () => {
           </Popover>
         )}
 
-        {/* Passengers */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm shrink-0"
-            >
-              <Users className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
-              <span>{passengers}</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-48 bg-card" align="start">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Adults</span>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-8 w-8"
-                  onClick={() => setPassengers(Math.max(1, passengers - 1))}>-</Button>
-                <span className="w-4 text-center">{passengers}</span>
-                <Button variant="outline" size="sm" className="h-8 w-8"
-                  onClick={() => setPassengers(passengers + 1)}>+</Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+        {/* Travelers — shared component */}
+        <div className="shrink-0">
+          <TravelersPicker
+            value={travelers}
+            onChange={setTravelers}
+            compact
+          />
+        </div>
 
         {/* Search */}
         <Button onClick={handleSearch} disabled={!isValid} className="h-10 gap-2 shrink-0">
