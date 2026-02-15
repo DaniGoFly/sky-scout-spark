@@ -56,7 +56,7 @@ const PopularDestinations = ({ onDestinationClick }: PopularDestinationsProps) =
             <button
               key={destination.city}
               onClick={() => onDestinationClick?.({ city: destination.city, code: destination.code })}
-              className="group relative overflow-hidden rounded-2xl aspect-[3/4] bg-secondary animate-fade-in text-left snap-start flex-shrink-0 w-[70vw] sm:w-auto active:scale-[0.98] transition-transform"
+              className="group relative overflow-hidden rounded-2xl aspect-[3/4] bg-secondary animate-fade-in text-left snap-start flex-shrink-0 w-[70vw] sm:w-auto active:scale-[0.98] transition-transform focus:outline-none focus:ring-2 focus:ring-primary/40"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <img

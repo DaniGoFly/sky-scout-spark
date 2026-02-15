@@ -7,6 +7,7 @@ import type { AISearchParams } from "./FlightSearchHero";
 
 export interface HeroHandle {
   setDestination: (params: AISearchParams) => void;
+  setTravelPrompt: (prompt: string) => void;
 }
 
 interface HeroProps {
@@ -15,10 +16,14 @@ interface HeroProps {
 
 const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   const [aiSearchParams, setAiSearchParams] = useState<AISearchParams | null>(null);
+  const [travelPrompt, setTravelPrompt] = useState<string | null>(null);
 
   useImperativeHandle(ref, () => ({
     setDestination: (params: AISearchParams) => {
       setAiSearchParams(params);
+    },
+    setTravelPrompt: (prompt: string) => {
+      setTravelPrompt(prompt);
     },
   }));
 
@@ -31,7 +36,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   };
 
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden">
+    <section className="relative min-h-[100svh] flex flex-col overflow-hidden">
       {/* Base gradient background - Blue/Cyan theme for Flights */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-sky-500/10" />
       
@@ -83,7 +88,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
 
           {/* AI Travel Assistant */}
           <div className="mt-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <TravelAssistant onDestinationSelect={handleDestinationSelect} />
+            <TravelAssistant onDestinationSelect={handleDestinationSelect} initialPrompt={travelPrompt} />
           </div>
         </div>
       </div>

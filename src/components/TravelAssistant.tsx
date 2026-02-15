@@ -27,6 +27,7 @@ interface Message {
 
 interface TravelAssistantProps {
   onDestinationSelect?: (params: AISearchParams) => void;
+  initialPrompt?: string | null;
 }
 
 // High-quality destination images
@@ -96,7 +97,7 @@ const DESTINATION_VIBES: Record<string, { emoji: string; tags: string[] }> = {
 
 const STORAGE_KEY = "gofly_travel_assistant";
 
-const TravelAssistant = ({ onDestinationSelect }: TravelAssistantProps) => {
+const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistantProps) => {
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -128,6 +129,14 @@ const TravelAssistant = ({ onDestinationSelect }: TravelAssistantProps) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Handle external prompt prefill (e.g. from Popular Destinations)
+  useEffect(() => {
+    if (initialPrompt && !isLoading) {
+      setInput(initialPrompt);
+      setIsExpanded(true);
+    }
+  }, [initialPrompt]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,7 +259,7 @@ const TravelAssistant = ({ onDestinationSelect }: TravelAssistantProps) => {
                               onClick={() => handleDestinationClick(suggestion)}
                               className={`group cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
                                 isSelected 
-                                  ? "border-green-400 ring-4 ring-green-400/30 shadow-green-500/20" 
+                                  ? "border-green-400 ring-2 ring-green-400/30 shadow-green-500/20" 
                                   : "border-white/10 hover:border-primary/50"
                               }`}
                               style={{

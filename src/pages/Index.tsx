@@ -17,6 +17,10 @@ const Index = () => {
       destinationCode: dest.code,
       destinationName: `${dest.city} (${dest.code})`,
     });
+    // Prefill AI Travel Guide
+    heroRef.current?.setTravelPrompt(
+      `Plan me a trip to ${dest.city}. Suggest best dates, cheapest airports near me, and a 3-day itinerary.`
+    );
   }, []);
 
   return (
