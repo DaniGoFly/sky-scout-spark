@@ -42,8 +42,18 @@ const Footer = React.forwardRef<HTMLElement>((_, ref) => {
             <h4 className="font-semibold text-foreground mb-4">{t("footer.legal")}</h4>
             <ul className="space-y-3">
               <li><Link to="/privacy-policy" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.privacy")}</Link></li>
+              <li><Link to="/cookies" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.cookies")}</Link></li>
               <li><Link to="/terms-and-conditions" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.terms")}</Link></li>
               <li><Link to="/affiliate-disclosure" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.affiliate")}</Link></li>
+              <li><Link to="/impressum" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.impressum")}</Link></li>
+              <li>
+                <button
+                  onClick={() => window.dispatchEvent(new Event("open-cookie-settings"))}
+                  className="text-muted-foreground hover:text-primary text-sm transition-colors"
+                >
+                  {t("footer.cookie_settings")}
+                </button>
+              </li>
             </ul>
           </div>
         </div>
@@ -52,12 +62,8 @@ const Footer = React.forwardRef<HTMLElement>((_, ref) => {
           <p className="text-xs text-muted-foreground text-center max-w-2xl mx-auto leading-relaxed">{t("footer.disclaimer")}</p>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+        <div className="text-center text-sm text-muted-foreground">
           <p>{t("footer.copyright")}</p>
-          <div className="flex gap-6">
-            <Link to="/privacy-policy" className="hover:text-primary transition-colors">{t("footer.privacy")}</Link>
-            <Link to="/terms-and-conditions" className="hover:text-primary transition-colors">{t("footer.terms")}</Link>
-          </div>
         </div>
       </div>
     </footer>

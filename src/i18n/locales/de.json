@@ -175,13 +175,53 @@
     "contact": "Kontakt",
     "legal": "Rechtliches",
     "privacy": "Datenschutz",
+    "cookies": "Cookies",
     "terms": "AGB",
     "affiliate": "Affiliate-Offenlegung",
+    "impressum": "Impressum",
+    "cookie_settings": "Cookie-Einstellungen",
     "disclaimer": "Die angezeigten Preise sind Schätzungen und können sich ändern. Wir erhalten eine Provision, wenn Sie über unsere Partner buchen. Dies hat keinen Einfluss auf den Preis, den Sie zahlen.",
     "copyright": "© 2026 GoFlyFinder. Alle Rechte vorbehalten."
   },
   "locale_selector": {
     "language": "Sprache",
     "currency": "Währung"
+  },
+  "cookie": {
+    "banner_title": "Wir respektieren Ihre Privatsphäre",
+    "banner_text": "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern. Analyse- und Marketing-Cookies werden nur mit Ihrer Zustimmung verwendet. Sie können Ihre Einstellungen jederzeit ändern.",
+    "cookie_policy": "Cookie-Richtlinie",
+    "accept_all": "Alle akzeptieren",
+    "reject_all": "Alle ablehnen",
+    "manage": "Einstellungen verwalten",
+    "manage_title": "Cookie-Einstellungen",
+    "necessary": "Notwendig",
+    "necessary_desc": "Erforderlich für die Funktion der Website. Kann nicht deaktiviert werden.",
+    "analytics": "Analyse",
+    "analytics_desc": "Helfen uns zu verstehen, wie Besucher unsere Seite nutzen.",
+    "marketing": "Marketing & Affiliate",
+    "marketing_desc": "Wird für Affiliate-Klickverfolgung und personalisierte Inhalte verwendet.",
+    "save_preferences": "Einstellungen speichern"
+  },
+  "legal": {
+    "last_updated": "Zuletzt aktualisiert: 15. Februar 2026",
+    "cookies_title": "Cookie-Richtlinie",
+    "cookies_what_title": "Was sind Cookies?",
+    "cookies_what_text": "Cookies sind kleine Textdateien, die auf Ihrem Gerät gespeichert werden, wenn Sie eine Website besuchen. Sie helfen der Seite, Ihre Einstellungen zu speichern und Ihre Erfahrung zu verbessern.",
+    "cookies_necessary_text": "Diese Cookies sind für die ordnungsgemäße Funktion der Website unerlässlich. Sie können nicht deaktiviert werden.",
+    "cookies_necessary_1": "Sitzungsverwaltung und Sprach-/Währungseinstellungen",
+    "cookies_necessary_2": "Speicherung der Cookie-Zustimmung",
+    "cookies_necessary_3": "Sicherheit und Betrugsprävention",
+    "cookies_analytics_text": "Diese Cookies helfen uns zu verstehen, wie Besucher mit unserer Website interagieren, indem sie anonyme Nutzungsdaten sammeln. Sie werden nur mit Ihrer Zustimmung aktiviert.",
+    "cookies_marketing_text": "Diese Cookies werden für die Affiliate-Klickverfolgung verwendet, wenn Sie auf 'Angebot ansehen' klicken. Sie helfen uns, Provisionen zu verdienen, die diesen Service kostenlos halten. Nur mit Ihrer Zustimmung aktiviert.",
+    "cookies_manage_title": "Einstellungen verwalten",
+    "cookies_manage_text": "Sie können Ihre Cookie-Einstellungen jederzeit ändern, indem Sie auf die Schaltfläche unten klicken oder über den Link 'Cookie-Einstellungen' in unserer Fußzeile.",
+    "impressum_title": "Impressum",
+    "impressum_operator": "Seitenbetreiber",
+    "impressum_contact": "Kontakt",
+    "impressum_responsible": "Verantwortliche Person",
+    "impressum_vat": "USt-IdNr.",
+    "impressum_disclaimer": "Haftungsausschluss",
+    "impressum_disclaimer_text": "GoFlyFinder ist ein Flug- und Hotelvergleichsdienst. Wir verkaufen keine Tickets direkt. Alle Buchungen werden von Drittanbieter-Partnern abgewickelt. Die angezeigten Preise sind Schätzungen und können zum Zeitpunkt der Buchung abweichen."
   }
 }

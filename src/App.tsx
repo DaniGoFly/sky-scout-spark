@@ -19,7 +19,10 @@ import AffiliateDisclosure from "./pages/AffiliateDisclosure";
 import Contact from "./pages/Contact";
 import PriceDisclaimer from "./pages/PriceDisclaimer";
 import Out from "./pages/Out";
+import Cookies from "./pages/Cookies";
+import Impressum from "./pages/Impressum";
 import FlightErrorBoundary from "./components/FlightErrorBoundary";
+import CookieConsent from "./components/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -70,14 +73,17 @@ const App = () => (
           
           {/* Legal pages */}
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/cookies" element={<Cookies />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
           <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/price-disclaimer" element={<PriceDisclaimer />} />
+          <Route path="/impressum" element={<Impressum />} />
           
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <CookieConsent />
       </BrowserRouter>
     </TooltipProvider>
     </LocaleProvider>
