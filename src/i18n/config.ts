@@ -52,6 +52,22 @@ const LANGUAGE_TO_CURRENCY: Record<string, string> = {
   en: "USD",
 };
 
+/** Map country codes (ISO 3166-1 alpha-2) to currencies */
+const COUNTRY_TO_CURRENCY: Record<string, string> = {
+  US: "USD", GB: "GBP", DE: "EUR", FR: "EUR", ES: "EUR", IT: "EUR",
+  PT: "EUR", NL: "EUR", BE: "EUR", AT: "EUR", IE: "EUR", FI: "EUR",
+  GR: "EUR", LU: "EUR", SK: "EUR", SI: "EUR", EE: "EUR", LV: "EUR",
+  LT: "EUR", MT: "EUR", CY: "EUR", HR: "EUR",
+  CH: "CHF", TR: "TRY", PL: "PLN", CZ: "CZK", HU: "HUF",
+  SE: "SEK", DK: "DKK", NO: "NOK", RO: "RON", BG: "BGN",
+  CA: "CAD", AU: "AUD", NZ: "NZD", JP: "JPY", KR: "KRW",
+  CN: "CNY", IN: "INR", BR: "BRL", MX: "MXN", ZA: "ZAR",
+  SA: "SAR", AE: "AED", EG: "EGP", IL: "ILS", RU: "RUB",
+  UA: "UAH", TH: "THB", SG: "SGD", MY: "MYR", ID: "IDR",
+  PH: "PHP", VN: "VND", TW: "TWD", HK: "HKD", AR: "ARS",
+  CL: "CLP", CO: "COP", PE: "PEN",
+};
+
 /** RTL languages */
 export const RTL_LANGUAGES = ["ar", "he", "fa", "ur"];
 
@@ -59,14 +75,50 @@ export function isRtlLanguage(lang: string): boolean {
   return RTL_LANGUAGES.includes(lang.split("-")[0]);
 }
 
-/** Detect default currency from browser language */
+/** Try to detect user's country code from browser locale */
+function detectCountryCode(): string | null {
+  const browserLang = navigator.language || "";
+  // Extract region from locale like "de-DE", "en-US"
+  const parts = browserLang.split("-");
+  if (parts.length >= 2 && parts[1].length === 2) {
+    return parts[1].toUpperCase();
+  }
+  // Try Intl
+  try {
+    const resolved = new Intl.DateTimeFormat().resolvedOptions();
+    const locale = resolved.locale || "";
+    const localeParts = locale.split("-");
+    if (localeParts.length >= 2 && localeParts[localeParts.length - 1].length === 2) {
+      return localeParts[localeParts.length - 1].toUpperCase();
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+/** Detect default currency: country → language → USD */
 export function detectDefaultCurrency(): string {
+  // 1. Try country code
+  const country = detectCountryCode();
+  if (country && COUNTRY_TO_CURRENCY[country]) return COUNTRY_TO_CURRENCY[country];
+  // 2. Try language
   const browserLang = navigator.language || "en";
-  // Try exact match first (en-US, en-GB)
   if (LANGUAGE_TO_CURRENCY[browserLang]) return LANGUAGE_TO_CURRENCY[browserLang];
-  // Try base language (en, de, fr)
   const base = browserLang.split("-")[0];
   return LANGUAGE_TO_CURRENCY[base] || "USD";
+}
+
+/** Detect market code for API (country or fallback from language) */
+export function detectMarketCode(): string {
+  const country = detectCountryCode();
+  if (country) return country;
+  const browserLang = navigator.language || "en";
+  const parts = browserLang.split("-");
+  if (parts.length >= 2) return parts[1].toUpperCase();
+  // Fallback language → country map
+  const langToCountry: Record<string, string> = {
+    de: "DE", fr: "FR", es: "ES", it: "IT", pt: "PT", tr: "TR", ar: "SA", en: "US",
+  };
+  return langToCountry[parts[0]] || "US";
 }
 
 i18n

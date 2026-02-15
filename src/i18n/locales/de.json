@@ -1,7 +1,8 @@
 {
   "nav": {
     "flights": "Flüge",
-    "hotels": "Hotels"
+    "hotels": "Hotels",
+    "explore": "Entdecken"
   },
   "hero": {
     "title_search": "Suche ",
@@ -17,6 +18,7 @@
     "where_from": "Woher?",
     "where_to": "Wohin?",
     "search_flights": "Flüge suchen",
+    "search": "Suchen",
     "nearby_airports": "Nahegelegene Flughäfen",
     "nearby": "In der Nähe",
     "origin": "Abflug",
@@ -28,7 +30,9 @@
     "select_depart_date": "Bitte Abreisedatum wählen",
     "select_return_date": "Bitte Rückreisedatum wählen",
     "return_after_depart": "Rückreise muss nach Abreise sein",
-    "infant_needs_adult": "Jedes Kleinkind braucht einen Erwachsenen"
+    "infant_needs_adult": "Jedes Kleinkind braucht einen Erwachsenen",
+    "use_location": "Meinen Standort verwenden",
+    "compare_airports": "Mehrere Abflughäfen gleichzeitig vergleichen"
   },
   "sort": {
     "best": "Beste",
@@ -109,6 +113,59 @@
     "traveler": "Reisender",
     "travelers": "Reisende",
     "back_to_search": "Zurück zur Suche"
+  },
+  "travelers": {
+    "title": "Reisende",
+    "passengers": "Passagiere",
+    "adults": "Erwachsene",
+    "adults_age": "Ab 12 Jahre",
+    "children": "Kinder",
+    "children_age": "2–11 Jahre",
+    "infants_seat": "Kleinkinder",
+    "infants_seat_age": "Im Sitz, unter 2",
+    "infants_lap": "Kleinkinder",
+    "infants_lap_age": "Auf dem Schoß, unter 2",
+    "cabin_class": "Kabinenklasse",
+    "economy": "Economy",
+    "premium_economy": "Premium Economy",
+    "business": "Business",
+    "first": "First",
+    "done": "Fertig",
+    "max_reached": "Maximal 9 Reisende erreicht",
+    "infant_limit": "Jedes Kleinkind braucht einen Erwachsenen",
+    "travelers_cabin": "Reisende & Kabinenklasse"
+  },
+  "calendar": {
+    "dates": "Daten",
+    "depart": "Abflug",
+    "select_date": "Datum wählen",
+    "select_dates": "Daten wählen",
+    "select_return": "Rückflug wählen",
+    "select_departure": "Abreisedatum wählen",
+    "select_return_date": "Rückreisedatum wählen",
+    "clear": "Löschen",
+    "done": "Fertig"
+  },
+  "explore": {
+    "from": "Von",
+    "dates_filters": "Daten & Filter",
+    "flexible_dates": "Flexible Daten",
+    "exact_dates": "Feste Daten",
+    "direct_only": "Nur Direkt",
+    "filters": "Filter",
+    "trip_length": "Reisedauer",
+    "max_price": "Max. Preis",
+    "days": "Tage",
+    "destinations": "Ziele",
+    "destinations_from": "Ziele ab {{city}}",
+    "by_price": "nach Preis",
+    "searching": "Suche…",
+    "finding": "Ziele werden gesucht…",
+    "no_destinations": "Keine Ziele gefunden",
+    "no_destinations_sub": "Versuchen Sie, den Reisezeitraum zu erweitern, 'Nur Direkt' auszuschalten oder einen anderen Abflugort zu wählen.",
+    "select_origin": "Wählen Sie einen Abflughafen zum Entdecken.",
+    "cheapest": "Günstigste",
+    "select_origin_label": "Abflugort wählen"
   },
   "footer": {
     "brand_desc": "Vergleichen Sie Flüge und Hotels von vertrauenswürdigen Reiseanbietern.",
