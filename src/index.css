@@ -209,3 +209,8 @@
 .sort-tab-transition {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
+
+/* ── Leaflet Explore Map ── */
+.leaflet-container {
+  background: #1a1a2e !important;
+}
