@@ -1,0 +1,20 @@
+{
+  "name": "GoFlyFinder",
+  "short_name": "GoFlyFinder",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [
+    {
+      "src": "/brand/goflyfinder-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/goflyfinder-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
