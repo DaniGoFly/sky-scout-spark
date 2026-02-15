@@ -239,11 +239,33 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
     <>
       <style>{`
         .gf-marker, .gf-origin { background: none !important; border: none !important; }
-        .leaflet-control-zoom { border: none !important; border-radius: 8px !important; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important; }
+        .leaflet-control-zoom { border: none !important; border-radius: 8px !important; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important; margin-bottom: 40px !important; margin-right: 14px !important; }
         .leaflet-control-zoom a { background: rgba(48,48,56,0.92) !important; color: #e8eaed !important; border: none !important; width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 16px !important; }
         .leaflet-control-zoom a:hover { background: rgba(68,68,76,0.95) !important; }
-        .leaflet-control-attribution { background: rgba(30,30,40,0.7) !important; color: #9aa0a6 !important; font-size: 10px !important; }
-        .leaflet-control-attribution a { color: #9aa0a6 !important; }
+        .leaflet-control-attribution {
+          background: rgba(15,15,25,0.6) !important;
+          -webkit-backdrop-filter: blur(8px) !important;
+          backdrop-filter: blur(8px) !important;
+          color: rgba(255,255,255,0.8) !important;
+          font-size: 10px !important;
+          border-radius: 999px !important;
+          padding: 4px 10px !important;
+          margin: 0 14px 14px 0 !important;
+          border: 1px solid rgba(139,92,246,0.12) !important;
+          opacity: 0.55;
+          transition: opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+          cursor: pointer;
+          max-width: calc(100% - 80px);
+          line-height: 1.4;
+        }
+        .leaflet-control-attribution:hover {
+          opacity: 1;
+          border-color: rgba(139,92,246,0.35) !important;
+          box-shadow: 0 0 10px rgba(139,92,246,0.15);
+        }
+        .leaflet-control-attribution a { color: rgba(255,255,255,0.8) !important; text-decoration: none !important; }
+        .leaflet-control-attribution a:hover { text-decoration: underline !important; }
+        .leaflet-control-attribution .leaflet-attribution-flag { display: none !important; }
       `}</style>
       <div ref={containerRef} className="w-full h-full" style={{ minHeight: 300 }} />
     </>
