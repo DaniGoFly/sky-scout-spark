@@ -73,6 +73,7 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 

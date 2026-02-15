@@ -307,14 +307,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 () => { /* permission denied — silent */ }
               );
             }}
-            className="gap-2 h-[52px] sm:h-12 px-5 rounded-xl font-semibold text-sm w-full sm:w-auto border-border/60 hover:border-primary/40 hover:bg-secondary/80 transition-all"
+            className="gap-2 min-h-[44px] h-[52px] sm:h-12 px-5 rounded-xl font-semibold text-sm w-full sm:w-auto whitespace-nowrap shrink-0 border-border/60 hover:border-primary/40 hover:bg-secondary/80 transition-all"
           >
             <Navigation className="w-4 h-4" />
             {t("search.use_location", "Use my location")}
           </Button>
           <Button 
             onClick={handleSearch}
-            className="gap-2 h-[52px] sm:h-12 px-6 sm:px-8 rounded-xl font-semibold text-sm sm:text-base min-w-[180px] w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:scale-[1.02] transition-all active:scale-[0.98] shadow-md shadow-primary/20"
+            className="gap-2 min-h-[44px] h-[52px] sm:h-12 px-6 sm:px-8 rounded-xl font-semibold text-sm sm:text-base min-w-[180px] w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:scale-[1.02] transition-all active:scale-[0.98] shadow-md shadow-primary/20"
           >
             <Search className="w-4 h-4" />
             {t("search.search_flights")}

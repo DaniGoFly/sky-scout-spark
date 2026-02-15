@@ -51,7 +51,7 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
   ];
 
   return (
-    <div className="w-full mb-4">
+    <div className="w-full mt-3 mb-4">
       <Tabs value={sortBy} onValueChange={(v) => onSortChange(v as typeof sortBy)}>
         <TabsList className="grid w-full grid-cols-3 h-auto p-1 bg-muted/50 rounded-xl">
           {tabs.map(({ key, label, icon: Icon, description, sublabel, activeColor, activeBg, iconActiveClass }) => (

@@ -308,7 +308,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
             )}
             style={{ 
               width: isMobile ? "min(92vw, 420px)" : "min(720px, calc(100vw - 24px))",
-              maxHeight: "min(520px, calc(100vh - 24px))",
+              maxHeight: isMobile ? "min(78svh, calc(100vh - 48px))" : "min(520px, calc(100vh - 24px))",
               overflowY: "auto",
             }}
           >
