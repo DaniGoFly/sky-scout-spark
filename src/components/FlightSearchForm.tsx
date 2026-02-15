@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Search, MapPin, Plane, Navigation } from "lucide-react";
+import { ArrowRightLeft, Search, Plane, Navigation } from "lucide-react";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import FlightDateRangePicker from "./FlightDateRangePicker";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import MultiCitySearchForm from "./MultiCitySearchForm";
 import { getDefaultDates } from "@/lib/dateUtils";
-import { getNearbyAirports, AIRPORTS, calculateDistance } from "@/lib/airports";
+import { AIRPORTS, calculateDistance } from "@/lib/airports";
 import type { AISearchParams } from "./FlightSearchHero";
 
 interface FlightSearchFormProps {
@@ -26,7 +26,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const navigate = useNavigate();
   const { t } = useTranslation();
   
-  // Dynamic default dates using centralized utility (today + 30 / today + 37)
   const defaultDates = useMemo(() => getDefaultDates(), []);
   
   const [tripType, setTripType] = useState<TripType>("roundtrip");
@@ -41,23 +40,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     infantsLap: 0,
     cabinClass: "economy",
   });
-  const [flexibleDates, setFlexibleDates] = useState(false);
   const [directOnly, setDirectOnly] = useState(false);
-  const [nearbyOrigin, setNearbyOrigin] = useState(false);
-  const [nearbyDestination, setNearbyDestination] = useState(false);
   const [errors, setErrors] = useState<{ from?: string; to?: string; dates?: string }>({});
   const [highlightDestination, setHighlightDestination] = useState(false);
-
-  // Get nearby airports for display (use first origin)
-  const nearbyOriginAirports = useMemo(() => {
-    if (origins.length === 0 || !nearbyOrigin) return [];
-    return getNearbyAirports(origins[0].code);
-  }, [origins, nearbyOrigin]);
-
-  const nearbyDestinationAirports = useMemo(() => {
-    if (!to?.code || !nearbyDestination) return [];
-    return getNearbyAirports(to.code);
-  }, [to?.code, nearbyDestination]);
 
   // Handle AI search params
   useEffect(() => {
@@ -67,12 +52,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         display: aiSearchParams.destinationName,
       });
       setErrors(e => ({ ...e, to: undefined }));
-      
-      // Highlight the destination field briefly
       setHighlightDestination(true);
       setTimeout(() => setHighlightDestination(false), 2000);
-      
-      // Notify parent that params were consumed
       onParamsConsumed?.();
     }
   }, [aiSearchParams, onParamsConsumed]);
@@ -88,26 +69,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const validate = useCallback((): boolean => {
     const newErrors: { from?: string; to?: string; dates?: string } = {};
     
-    if (origins.length === 0) {
-      newErrors.from = "Please select origin";
-    }
-    if (!to) {
-      newErrors.to = "Please select destination";
-    }
-    if (!departDate) {
-      newErrors.dates = "Please select departure date";
-    }
-    if (tripType === "roundtrip" && !returnDate) {
-      newErrors.dates = "Please select return date";
-    }
+    if (origins.length === 0) newErrors.from = "Please select origin";
+    if (!to) newErrors.to = "Please select destination";
+    if (!departDate) newErrors.dates = "Please select departure date";
+    if (tripType === "roundtrip" && !returnDate) newErrors.dates = "Please select return date";
     if (tripType === "roundtrip" && departDate && returnDate && returnDate <= departDate) {
       newErrors.dates = "Return date must be after departure";
     }
-    
     const totalInfants = travelers.infantsSeat + travelers.infantsLap;
-    if (totalInfants > travelers.adults) {
-      newErrors.dates = "Each infant needs an adult";
-    }
+    if (totalInfants > travelers.adults) newErrors.dates = "Each infant needs an adult";
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -116,33 +86,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const handleSearch = useCallback(() => {
     if (!validate()) return;
 
-    // Normalize infants: combine infantsSeat + infantsLap
     const totalInfants = travelers.infantsSeat + travelers.infantsLap;
+    const originCodes = origins.map(o => o.code).join(",");
 
-    // Build origin airports list (multi-origin + nearby)
-    const originCodesArr = origins.map(o => o.code);
-    if (nearbyOrigin && nearbyOriginAirports.length > 0) {
-      originCodesArr.push(...nearbyOriginAirports);
-    }
-    const originCodes = originCodesArr.join(",");
-
-    // Build destination airports list (main + nearby)
-    let destCodes = to!.code;
-    if (nearbyDestination && nearbyDestinationAirports.length > 0) {
-      destCodes = [to!.code, ...nearbyDestinationAirports].join(",");
-    }
-
-    // Normalized parameters (unified schema)
     const params = new URLSearchParams({
       trip: tripType,
       from: originCodes,
-      to: destCodes,
+      to: to!.code,
       depart: format(departDate!, "yyyy-MM-dd"),
       adults: travelers.adults.toString(),
       children: travelers.children.toString(),
       infants: totalInfants.toString(),
       class: travelers.cabinClass,
-      flexible: flexibleDates.toString(),
       direct: directOnly.toString(),
     });
 
@@ -150,12 +105,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       params.set("return", format(returnDate, "yyyy-MM-dd"));
     }
 
-    // Store nearby settings for results page
-    if (nearbyOrigin) params.set("nearbyOrigin", "true");
-    if (nearbyDestination) params.set("nearbyDest", "true");
-
     navigate(`/flights/results?${params.toString()}`);
-  }, [validate, tripType, origins, to, departDate, travelers, flexibleDates, directOnly, returnDate, navigate, nearbyOrigin, nearbyDestination, nearbyOriginAirports, nearbyDestinationAirports]);
+  }, [validate, tripType, origins, to, departDate, travelers, directOnly, returnDate, navigate]);
 
   const handleOriginsChange = useCallback((vals: AirportSelection[]) => {
     setOrigins(vals);
@@ -182,16 +133,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }, []);
 
   const handleMultiCitySearch = useCallback((segments: any[], travelersData: TravelersData) => {
-    // Validate all segments are complete
     const validSegments = segments.filter(
       (seg) => seg.from?.code && seg.to?.code && seg.date
     );
-    
-    if (validSegments.length < 2) {
-      return; // Form validation should prevent this
-    }
+    if (validSegments.length < 2) return;
 
-    // Build URL with all segments
     const params = new URLSearchParams({
       trip: "multicity",
       adults: travelersData.adults.toString(),
@@ -200,7 +146,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       class: travelersData.cabinClass,
     });
 
-    // Add segment data
     validSegments.forEach((seg, i) => {
       params.set(`seg${i}_from`, seg.from.code);
       params.set(`seg${i}_to`, seg.to.code);
@@ -208,7 +153,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     });
     params.set("segments", validSegments.length.toString());
 
-    // Navigate to dedicated multi-city results page
     navigate(`/flights/multicity?${params.toString()}`);
   }, [navigate]);
 
@@ -216,7 +160,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   if (tripType === "multicity") {
     return (
       <div className="w-full max-w-5xl mx-auto">
-        {/* Trip Type Toggle */}
         <div className="flex gap-2 mb-6 justify-center">
           {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
             <button
@@ -240,7 +183,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   return (
     <div className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto">
       {/* Trip Type Toggle */}
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="flex gap-2 mb-5 flex-wrap">
         {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
           <button
             key={type}
@@ -269,13 +212,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           {errors.from && <p className="text-destructive text-xs mt-1 truncate">{errors.from}</p>}
           {origins.length > 1 && (
             <p className="text-xs text-accent mt-1">Compare multiple departure airports at once</p>
-          )}
-          {/* Nearby airports indicator */}
-          {nearbyOrigin && nearbyOriginAirports.length > 0 && (
-            <p className="text-xs text-accent mt-1 flex items-center gap-1 truncate">
-              <MapPin className="w-3 h-3 shrink-0" />
-              <span className="truncate">+{nearbyOriginAirports.join(", ")}</span>
-            </p>
           )}
         </div>
 
@@ -308,13 +244,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             hasError={!!errors.to}
           />
           {errors.to && <p className="text-destructive text-xs mt-1 truncate">{errors.to}</p>}
-          {/* Nearby airports indicator */}
-          {nearbyDestination && nearbyDestinationAirports.length > 0 && (
-            <p className="text-xs text-accent mt-1 flex items-center gap-1 truncate">
-              <MapPin className="w-3 h-3 shrink-0" />
-              <span className="truncate">+{nearbyDestinationAirports.join(", ")}</span>
-            </p>
-          )}
         </div>
 
         {/* Date Range Picker */}
@@ -340,47 +269,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      {/* Options Row */}
-      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-        {/* Nearby Airports - Origin */}
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="nearby-origin"
-            checked={nearbyOrigin}
-            onCheckedChange={(checked) => setNearbyOrigin(checked === true)}
-            className="border-muted-foreground data-[state=checked]:bg-accent data-[state=checked]:border-accent"
-          />
-          <Label 
-            htmlFor="nearby-origin" 
-            className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1"
-          >
-            <MapPin className="w-3 h-3" />
-            <span className="hidden sm:inline">Nearby airports</span>
-            <span className="sm:hidden">Nearby</span>
-            <span className="text-xs">(origin)</span>
-          </Label>
-        </div>
-
-        {/* Nearby Airports - Destination */}
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="nearby-dest"
-            checked={nearbyDestination}
-            onCheckedChange={(checked) => setNearbyDestination(checked === true)}
-            className="border-muted-foreground data-[state=checked]:bg-accent data-[state=checked]:border-accent"
-          />
-          <Label 
-            htmlFor="nearby-dest" 
-            className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1"
-          >
-            <MapPin className="w-3 h-3" />
-            <span className="hidden sm:inline">Nearby airports</span>
-            <span className="sm:hidden">Nearby</span>
-            <span className="text-xs">(dest)</span>
-          </Label>
-        </div>
-
-        {/* Direct Flights Only */}
+      {/* Options Row — only Direct flights */}
+      <div className="mt-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Checkbox
             id="direct-only"
@@ -397,59 +287,43 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </Label>
         </div>
 
-        {/* Flexible Dates */}
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="flexible-dates"
-            checked={flexibleDates}
-            onCheckedChange={(checked) => setFlexibleDates(checked === true)}
-            className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-          />
-          <Label 
-            htmlFor="flexible-dates" 
-            className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+        {/* Search Button + Use my location */}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!navigator.geolocation) return;
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  let nearest = null as any;
+                  let minDist = Infinity;
+                  for (const a of AIRPORTS) {
+                    const d = calculateDistance(pos.coords.latitude, pos.coords.longitude, a.lat, a.lon);
+                    if (d < minDist) { minDist = d; nearest = a; }
+                  }
+                  if (nearest) {
+                    setOrigins([{ code: nearest.code, display: `${nearest.city} (${nearest.code})` }]);
+                    setErrors(e => ({ ...e, from: undefined }));
+                  }
+                },
+                () => { /* permission denied — silent */ }
+              );
+            }}
+            className="gap-1.5"
           >
-            {t("search.flexible_dates")}
-          </Label>
+            <Navigation className="w-3.5 h-3.5" />
+            {t("search.use_location", "Use my location")}
+          </Button>
+          <Button 
+            size="lg" 
+            onClick={handleSearch}
+            className="gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+          >
+            <Search className="w-4 h-4" />
+            {t("search.search_flights")}
+          </Button>
         </div>
-      </div>
-
-      {/* Search Button + Use my location */}
-      <div className="mt-6 flex flex-wrap justify-center md:justify-end gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            if (!navigator.geolocation) return;
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                let nearest = null as any;
-                let minDist = Infinity;
-                for (const a of AIRPORTS) {
-                  const d = calculateDistance(pos.coords.latitude, pos.coords.longitude, a.lat, a.lon);
-                  if (d < minDist) { minDist = d; nearest = a; }
-                }
-             if (nearest) {
-                  setOrigins([{ code: nearest.code, display: `${nearest.city} (${nearest.code})` }]);
-                  setErrors(e => ({ ...e, from: undefined }));
-                }
-              },
-              () => { /* permission denied — silent */ }
-            );
-          }}
-          className="gap-1.5"
-        >
-          <Navigation className="w-3.5 h-3.5" />
-          {t("search.use_location", "Use my location")}
-        </Button>
-        <Button 
-          size="lg" 
-          onClick={handleSearch}
-          className="gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
-        >
-          <Search className="w-4 h-4" />
-          {t("search.search_flights")}
-        </Button>
       </div>
     </div>
   );
