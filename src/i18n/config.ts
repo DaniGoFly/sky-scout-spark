@@ -75,15 +75,58 @@ export function isRtlLanguage(lang: string): boolean {
   return RTL_LANGUAGES.includes(lang.split("-")[0]);
 }
 
-/** Try to detect user's country code from browser locale */
+/** Timezone → country mapping for reliable geo detection */
+const TIMEZONE_TO_COUNTRY: Record<string, string> = {
+  "Europe/Berlin": "DE", "Europe/Munich": "DE",
+  "Europe/Vienna": "AT", "Europe/Zurich": "CH",
+  "Europe/London": "GB", "Europe/Paris": "FR",
+  "Europe/Madrid": "ES", "Europe/Rome": "IT",
+  "Europe/Lisbon": "PT", "Europe/Amsterdam": "NL",
+  "Europe/Brussels": "BE", "Europe/Dublin": "IE",
+  "Europe/Helsinki": "FI", "Europe/Athens": "GR",
+  "Europe/Warsaw": "PL", "Europe/Prague": "CZ",
+  "Europe/Budapest": "HU", "Europe/Stockholm": "SE",
+  "Europe/Copenhagen": "DK", "Europe/Oslo": "NO",
+  "Europe/Bucharest": "RO", "Europe/Sofia": "BG",
+  "Europe/Istanbul": "TR", "Europe/Moscow": "RU",
+  "Europe/Kiev": "UA", "Europe/Zagreb": "HR",
+  "America/New_York": "US", "America/Chicago": "US",
+  "America/Denver": "US", "America/Los_Angeles": "US",
+  "America/Phoenix": "US", "America/Anchorage": "US",
+  "Pacific/Honolulu": "US",
+  "America/Toronto": "CA", "America/Vancouver": "CA",
+  "America/Sao_Paulo": "BR", "America/Argentina/Buenos_Aires": "AR",
+  "America/Mexico_City": "MX", "America/Bogota": "CO",
+  "America/Lima": "PE", "America/Santiago": "CL",
+  "Australia/Sydney": "AU", "Australia/Melbourne": "AU",
+  "Australia/Perth": "AU",
+  "Pacific/Auckland": "NZ",
+  "Asia/Tokyo": "JP", "Asia/Seoul": "KR",
+  "Asia/Shanghai": "CN", "Asia/Hong_Kong": "HK",
+  "Asia/Taipei": "TW", "Asia/Singapore": "SG",
+  "Asia/Kolkata": "IN", "Asia/Dubai": "AE",
+  "Asia/Riyadh": "SA", "Asia/Jerusalem": "IL",
+  "Asia/Bangkok": "TH", "Asia/Jakarta": "ID",
+  "Asia/Kuala_Lumpur": "MY", "Asia/Manila": "PH",
+  "Africa/Cairo": "EG", "Africa/Johannesburg": "ZA",
+};
+
+/** Try to detect user's country code from timezone, locale, or browser language */
 function detectCountryCode(): string | null {
+  // 1. Timezone-based (most reliable, no API needed)
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz && TIMEZONE_TO_COUNTRY[tz]) return TIMEZONE_TO_COUNTRY[tz];
+  } catch { /* ignore */ }
+
+  // 2. Extract region from browser locale like "de-DE", "en-US"
   const browserLang = navigator.language || "";
-  // Extract region from locale like "de-DE", "en-US"
   const parts = browserLang.split("-");
   if (parts.length >= 2 && parts[1].length === 2) {
     return parts[1].toUpperCase();
   }
-  // Try Intl
+
+  // 3. Try Intl resolved locale
   try {
     const resolved = new Intl.DateTimeFormat().resolvedOptions();
     const locale = resolved.locale || "";
@@ -92,6 +135,14 @@ function detectCountryCode(): string | null {
       return localeParts[localeParts.length - 1].toUpperCase();
     }
   } catch { /* ignore */ }
+
+  // 4. Map bare language code to likely country
+  const langToCountry: Record<string, string> = {
+    de: "DE", fr: "FR", es: "ES", it: "IT", pt: "PT", tr: "TR", ar: "SA",
+  };
+  const baseLang = parts[0]?.toLowerCase();
+  if (baseLang && langToCountry[baseLang]) return langToCountry[baseLang];
+
   return null;
 }
 
@@ -143,7 +194,7 @@ i18n
     detection: {
       order: ["querystring", "localStorage", "navigator"],
       lookupQuerystring: "lang",
-      lookupLocalStorage: "gff_language",
+      lookupLocalStorage: "gofly.lang",
       caches: ["localStorage"],
     },
   });

@@ -14,7 +14,7 @@ interface LocaleContextValue {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
-const CURRENCY_KEY = "gff_currency";
+const CURRENCY_KEY = "gofly.currency";
 
 function getInitialCurrency(): string {
   // 1. Check URL param
