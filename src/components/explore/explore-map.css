@@ -161,9 +161,52 @@
   color: #c4b5fd !important;
 }
 
+/* ── Sidebar panel — glassy premium ── */
+.explore-sidebar-panel {
+  background: rgba(14, 16, 28, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    4px 0 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Sticky controls area */
+.explore-sidebar-controls {
+  background: rgba(14, 16, 28, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Custom scrollbar — thin purple */
+.explore-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.25) transparent;
+}
+.explore-sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.explore-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.explore-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.25);
+  border-radius: 4px;
+}
+.explore-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.45);
+}
+
+/* Destination card hover lift */
+.explore-dest-card {
+  will-change: transform, box-shadow;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .xpin,
-  .xpin--pill:hover {
+  .xpin--pill:hover,
+  .explore-dest-card {
     transition: none !important;
   }
 }
