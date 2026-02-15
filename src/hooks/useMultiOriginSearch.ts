@@ -1,7 +1,8 @@
 /**
  * Multi-Origin Search Hook
- * Fires parallel searches for multiple origins, merges results
- * with origin_source property, handles partial failures gracefully.
+ * Fires parallel searches (max 3 concurrent) for multiple origins,
+ * merges results with origin_source property, reports progress,
+ * handles partial failures gracefully with retry support.
  */
 
 import { useState, useCallback, useRef } from "react";
@@ -27,13 +28,21 @@ interface OriginResult {
   error?: string;
 }
 
+export interface MultiOriginProgress {
+  completed: number;
+  total: number;
+  currentOrigin?: string;
+}
+
 interface UseMultiOriginSearchResult {
   flights: MultiOriginFlight[];
   status: MultiSearchStatus;
   error: string | null;
   isSearching: boolean;
   failedOrigins: string[];
+  progress: MultiOriginProgress;
   searchMultiOrigin: (params: MultiOriginSearchParams) => Promise<void>;
+  retryFailedOrigins: () => Promise<void>;
   cancelSearch: () => void;
 }
 
@@ -69,6 +78,7 @@ function detectMarket(override?: string): string {
 
 const POLL_INTERVAL_MS = 1300;
 const POLL_TIMEOUT_MS = 45000;
+const MAX_CONCURRENT = 3;
 
 async function searchSingleOrigin(
   origin: string,
@@ -157,12 +167,36 @@ async function searchSingleOrigin(
   }
 }
 
+/** Run tasks with max concurrency */
+async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  maxConcurrent: number,
+  onComplete?: (index: number) => void,
+): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let nextIndex = 0;
+
+  async function runNext(): Promise<void> {
+    while (nextIndex < tasks.length) {
+      const idx = nextIndex++;
+      results[idx] = await tasks[idx]();
+      onComplete?.(idx);
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(maxConcurrent, tasks.length) }, () => runNext());
+  await Promise.all(workers);
+  return results;
+}
+
 export function useMultiOriginSearch(): UseMultiOriginSearchResult {
   const [flights, setFlights] = useState<MultiOriginFlight[]>([]);
   const [status, setStatus] = useState<MultiSearchStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [failedOrigins, setFailedOrigins] = useState<string[]>([]);
+  const [progress, setProgress] = useState<MultiOriginProgress>({ completed: 0, total: 0 });
   const abortRef = useRef<AbortController | null>(null);
+  const lastParamsRef = useRef<MultiOriginSearchParams | null>(null);
 
   const cancelSearch = useCallback(() => {
     if (abortRef.current) {
@@ -172,70 +206,91 @@ export function useMultiOriginSearch(): UseMultiOriginSearchResult {
     setStatus("idle");
   }, []);
 
-  const searchMultiOrigin = useCallback(async (params: MultiOriginSearchParams) => {
+  const executeSearch = useCallback(async (params: MultiOriginSearchParams, originsToSearch?: string[]) => {
     if (abortRef.current) abortRef.current.abort();
 
-    setFlights([]);
-    setError(null);
-    setFailedOrigins([]);
+    const searchOrigins = originsToSearch || params.origins;
+    const isRetry = !!originsToSearch;
+
+    if (!isRetry) {
+      setFlights([]);
+      setError(null);
+      setFailedOrigins([]);
+    }
     setStatus("searching");
+    setProgress({ completed: 0, total: searchOrigins.length });
 
     const controller = new AbortController();
     abortRef.current = controller;
+    lastParamsRef.current = params;
 
     const market = detectMarket(params.market);
 
     try {
-      console.log("[multi-origin] Searching", params.origins.length, "origins in parallel");
-      
-      const results = await Promise.all(
-        params.origins.map((origin) =>
-          searchSingleOrigin(origin, params, controller.signal, market)
-        )
+      const tasks = searchOrigins.map((origin) => () =>
+        searchSingleOrigin(origin, params, controller.signal, market)
       );
+
+      let completed = 0;
+      const results = await runWithConcurrency(tasks, MAX_CONCURRENT, () => {
+        completed++;
+        setProgress({ completed, total: searchOrigins.length, currentOrigin: searchOrigins[Math.min(completed, searchOrigins.length - 1)] });
+      });
 
       if (controller.signal.aborted) return;
 
-      const allFlights: MultiOriginFlight[] = [];
+      const newFlights: MultiOriginFlight[] = [];
       const failed: string[] = [];
 
       for (const result of results) {
         if (result.error && result.error !== "cancelled") {
           failed.push(result.origin);
-          console.warn(`[multi-origin] ${result.origin} failed:`, result.error);
         }
-        allFlights.push(...result.flights);
+        newFlights.push(...result.flights);
       }
 
-      setFailedOrigins(failed);
-
-      if (allFlights.length === 0) {
-        setStatus("no_results");
-        if (failed.length === params.origins.length) {
-          setError("All origin searches failed");
-        }
-        return;
+      if (isRetry) {
+        // Merge with existing flights
+        setFlights((prev) => {
+          const combined = [...prev, ...newFlights];
+          // Deduplicate
+          const seen = new Set<string>();
+          return combined.filter((f) => {
+            const key = [f.origin_source, f.airlines?.[0] || "", f.departureTime || "", f.arrivalTime || "", Math.round(f.price?.amount || 0), f.durationMinutes || 0].join("|");
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        });
+        setFailedOrigins((prev) => {
+          const retried = new Set(searchOrigins.map((s) => s.toUpperCase()));
+          return [...prev.filter((o) => !retried.has(o.toUpperCase())), ...failed];
+        });
+      } else {
+        // Deduplicate
+        const seen = new Set<string>();
+        const deduped = newFlights.filter((f) => {
+          const key = [f.origin_source, f.airlines?.[0] || "", f.departureTime || "", f.arrivalTime || "", Math.round(f.price?.amount || 0), f.durationMinutes || 0].join("|");
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setFlights(deduped);
+        setFailedOrigins(failed);
       }
 
-      // Deduplicate by content key + origin
-      const seen = new Set<string>();
-      const deduped = allFlights.filter((f) => {
-        const key = [
-          f.origin_source,
-          f.airlines?.[0] || "",
-          f.departureTime || "",
-          f.arrivalTime || "",
-          Math.round(f.price?.amount || 0),
-          f.durationMinutes || 0,
-        ].join("|");
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
+      // Determine final status
+      setFlights((current) => {
+        if (current.length === 0) {
+          setStatus("no_results");
+          if (failed.length === searchOrigins.length) {
+            setError("All origin searches failed");
+          }
+        } else {
+          setStatus("complete");
+        }
+        return current;
       });
-
-      setFlights(deduped);
-      setStatus("complete");
-      console.log("[multi-origin] Merged", deduped.length, "flights from", params.origins.length, "origins");
     } catch (err) {
       if (controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : "Network error");
@@ -243,13 +298,24 @@ export function useMultiOriginSearch(): UseMultiOriginSearchResult {
     }
   }, []);
 
+  const searchMultiOrigin = useCallback(async (params: MultiOriginSearchParams) => {
+    await executeSearch(params);
+  }, [executeSearch]);
+
+  const retryFailedOrigins = useCallback(async () => {
+    if (!lastParamsRef.current || failedOrigins.length === 0) return;
+    await executeSearch(lastParamsRef.current, failedOrigins);
+  }, [executeSearch, failedOrigins]);
+
   return {
     flights,
     status,
     error,
     isSearching: status === "searching",
     failedOrigins,
+    progress,
     searchMultiOrigin,
+    retryFailedOrigins,
     cancelSearch,
   };
 }

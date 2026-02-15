@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, AlertCircle, Plane, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, AlertCircle, Plane, Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSortTabs from "./FlightSortTabs";
 import CompactSearchBar from "./CompactSearchBar";
@@ -15,7 +16,7 @@ import PriceInsight from "./PriceInsight";
 import PriceGraph from "./PriceGraph";
 import TrustSignals from "./TrustSignals";
 import StickyMobileCTA from "./StickyMobileCTA";
-import OriginComparePanel from "./OriginComparePanel";
+import OriginComparePanel, { type OriginViewMode } from "./OriginComparePanel";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
 import { useMultiOriginSearch, type MultiOriginFlight } from "@/hooks/useMultiOriginSearch";
 import { getAirlineName } from "@/lib/flightNormalizer";
@@ -66,13 +67,14 @@ const LiveFlightResults = () => {
   // Multi-origin search hook
   const {
     flights: multiRawFlights, status: multiStatus, error: multiError,
-    isSearching: multiIsSearching, failedOrigins, searchMultiOrigin,
-    cancelSearch: multiCancelSearch,
+    isSearching: multiIsSearching, failedOrigins, progress, searchMultiOrigin,
+    retryFailedOrigins, cancelSearch: multiCancelSearch,
   } = useMultiOriginSearch();
 
   const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
   const [selectedOrigin, setSelectedOrigin] = useState<string | null>(null);
+  const [originViewMode, setOriginViewMode] = useState<OriginViewMode>("all");
   const prevSearchKeyRef = useRef<string>("");
   const prevSortRef = useRef<string>("best");
   const prevResultsRef = useRef<EnrichedFlight[]>([]);
@@ -118,9 +120,9 @@ const LiveFlightResults = () => {
     setFilters({ ...DEFAULT_FILTERS });
     setSortBy("best");
     setSelectedOrigin(null);
+    setOriginViewMode("all");
 
     if (isMultiOrigin) {
-      // Fire parallel searches
       searchMultiOrigin({
         origins,
         destination: to,
@@ -131,7 +133,6 @@ const LiveFlightResults = () => {
         sort: "best", limit: 100, tripClass,
       });
     } else {
-      // Single origin — existing path
       const directions: { origin: string; destination: string; date: string }[] = [];
       if (isRoundtrip && returnDate) {
         directions.push(
@@ -151,11 +152,9 @@ const LiveFlightResults = () => {
   // ── Step 1: Enrich raw flights ──
   const enrichedFlights = useMemo<EnrichedFlight[]>(() => {
     if (!rawFlights.length) return [];
-    // For multi-origin, enrich per flight's actual origin
     return rawFlights.map(f => {
       const flightOrigin = (f as any).origin_source || f.origin || from;
       const enriched = enrichFlights([f], flightOrigin, to, isRoundtrip)[0];
-      // Preserve origin_source
       if ((f as any).origin_source) {
         (enriched as any).origin_source = (f as any).origin_source;
       }
@@ -189,7 +188,6 @@ const LiveFlightResults = () => {
   const filteredFlights = useMemo(() => {
     let result = displayFlights;
 
-    // Origin filter for multi-origin
     if (selectedOrigin) {
       result = result.filter((f) => {
         const src = ((f as any).origin_source || f.origin || "").toUpperCase();
@@ -305,6 +303,28 @@ const LiveFlightResults = () => {
     }
     return { sortedFlights: sorted.slice(0, MAX_DISPLAY), pinnedLabels: labels };
   }, [dedupedFlights, sortBy]);
+
+  // ── Grouped by origin (for "by-origin" view) ──
+  const groupedByOrigin = useMemo(() => {
+    if (!isMultiOrigin || originViewMode !== "by-origin") return null;
+    const groups = new Map<string, EnrichedFlight[]>();
+    for (const o of origins) groups.set(o, []);
+    for (const f of sortedFlights) {
+      const src = ((f as any).origin_source || f.origin || "").toUpperCase();
+      if (groups.has(src)) groups.get(src)!.push(f);
+      else {
+        if (!groups.has(src)) groups.set(src, []);
+        groups.get(src)!.push(f);
+      }
+    }
+    // Sort groups by cheapest price
+    const entries = Array.from(groups.entries()).map(([origin, flights]) => {
+      const cheapest = flights.length > 0 ? Math.min(...flights.map(f => f.price.amount)) : Infinity;
+      return { origin, flights: flights.slice(0, 10), cheapest };
+    });
+    entries.sort((a, b) => a.cheapest - b.cheapest);
+    return entries;
+  }, [isMultiOrigin, originViewMode, sortedFlights, origins]);
 
   const buildDirections = useCallback(() => {
     const directions: { origin: string; destination: string; date: string }[] = [];
@@ -428,6 +448,26 @@ const LiveFlightResults = () => {
 
   const headerTitle = isMultiOrigin ? `${origins.join(", ")} → ${to}` : `${from} → ${to}`;
 
+  // Render a flight card
+  const renderFlightCard = useCallback((flight: EnrichedFlight, index: number) => {
+    const pinLabel = pinnedLabels.get(flight.id);
+    const intel = getPriceIntelligence(flight, dedupedFlights);
+    const originSource = (flight as any).origin_source || undefined;
+    return (
+      <div key={flight.id} className="flight-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
+        <FlightCard
+          flight={flight}
+          isBestValue={!!pinLabel}
+          badgeLabel={pinLabel}
+          departDate={depart}
+          returnDate={returnDate}
+          priceIntel={intel}
+          originSource={isMultiOrigin ? originSource : undefined}
+        />
+      </div>
+    );
+  }, [pinnedLabels, dedupedFlights, depart, returnDate, isMultiOrigin]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
@@ -462,7 +502,7 @@ const LiveFlightResults = () => {
               <p className="text-base font-semibold text-foreground">{t("results.searching")}</p>
               <p className="text-sm text-muted-foreground">
                 {isMultiOrigin
-                  ? `Searching ${origins.length} departure airports…`
+                  ? `Searching ${progress.completed}/${progress.total} departure airports…`
                   : t("results.searching_sub")}
               </p>
             </div>
@@ -510,14 +550,26 @@ const LiveFlightResults = () => {
                   onSelectOrigin={setSelectedOrigin}
                   formatPrice={formatPrice}
                   flightsCurrency={flightsCurrency}
+                  viewMode={originViewMode}
+                  onViewModeChange={setOriginViewMode}
                 />
               )}
 
-              {/* Failed origins warning */}
+              {/* Failed origins warning with retry */}
               {failedOrigins.length > 0 && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-400">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>No results from: {failedOrigins.join(", ")}</span>
+                  <span className="flex-1">No results from: {failedOrigins.join(", ")}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={retryFailedOrigins}
+                    disabled={isSearching}
+                    className="h-6 px-2 text-[11px] text-amber-400 hover:text-amber-300 gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Retry
+                  </Button>
                 </div>
               )}
 
@@ -530,7 +582,11 @@ const LiveFlightResults = () => {
                 {isRevalidating && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                    <span>{t("results.updating", "Searching more fares…")}</span>
+                    <span>
+                      {isMultiOrigin
+                        ? `Searching ${progress.completed}/${progress.total} origins…`
+                        : t("results.updating", "Searching more fares…")}
+                    </span>
                   </div>
                 )}
                 {!isSearching && cacheAgeLabel && (
@@ -569,25 +625,28 @@ const LiveFlightResults = () => {
                       </p>
                       <Button variant="outline" size="sm" onClick={handleClearAllFilters}>{t("results.clear_filters")}</Button>
                     </div>
-                  ) : (
-                    sortedFlights.map((flight, index) => {
-                      const pinLabel = pinnedLabels.get(flight.id);
-                      const intel = getPriceIntelligence(flight, dedupedFlights);
-                      const originSource = (flight as any).origin_source || undefined;
-                      return (
-                        <div key={flight.id} className="flight-card-enter" style={{ animationDelay: `${index * 40}ms` }}>
-                          <FlightCard
-                            flight={flight}
-                            isBestValue={!!pinLabel}
-                            badgeLabel={pinLabel}
-                            departDate={depart}
-                            returnDate={returnDate}
-                            priceIntel={intel}
-                            originSource={isMultiOrigin ? originSource : undefined}
-                          />
+                  ) : groupedByOrigin ? (
+                    // By-origin grouped view
+                    groupedByOrigin.map(({ origin, flights: originFlights, cheapest }) => (
+                      <div key={origin} className="space-y-2">
+                        <div className="flex items-center gap-2 px-1 pt-3 pb-1 border-b border-border/40">
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <span className="text-[11px] font-bold text-primary">{origin}</span>
+                          </div>
+                          <span className="text-sm font-semibold text-foreground">
+                            From {origin}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            — best from {formatPrice(cheapest, flightsCurrency)}
+                          </span>
+                          <Badge variant="secondary" className="text-[10px] ml-auto">{originFlights.length} results</Badge>
                         </div>
-                      );
-                    })
+                        {originFlights.map((flight, index) => renderFlightCard(flight, index))}
+                      </div>
+                    ))
+                  ) : (
+                    // All origins flat view
+                    sortedFlights.map((flight, index) => renderFlightCard(flight, index))
                   )}
                 </div>
               </FlightResultsErrorBoundary>
