@@ -40,7 +40,7 @@ const DayCell = React.memo(({
       disabled={isDisabled}
       onClick={onClick}
       className={cn(
-        "relative h-10 w-10 text-sm font-medium transition-colors rounded-full",
+        "relative h-10 w-full max-w-10 text-sm font-medium transition-colors rounded-full",
         "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
         isDisabled && "text-muted-foreground/40 cursor-not-allowed",
         !isDisabled && !isStart && !isEnd && !isInRange && "hover:bg-secondary",
@@ -103,7 +103,7 @@ const MonthGrid = React.memo(({
       
       <div className="grid grid-cols-7 gap-1">
         {paddingDays.map((i) => (
-          <div key={`pad-${i}`} className="h-10 w-10" />
+          <div key={`pad-${i}`} className="h-10" />
         ))}
         
         {days.map((day) => {
@@ -307,8 +307,8 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
               "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
             )}
             style={{ 
-              width: isMobile ? "min(92vw, 420px)" : "min(720px, calc(100vw - 24px))",
-              maxHeight: isMobile ? "min(78svh, calc(100vh - 48px))" : "min(520px, calc(100vh - 24px))",
+              width: isMobile ? "min(95vw, 420px)" : "min(720px, calc(100vw - 24px))",
+              maxHeight: isMobile ? "85vh" : "min(520px, calc(100vh - 24px))",
               overflowY: "auto",
             }}
           >

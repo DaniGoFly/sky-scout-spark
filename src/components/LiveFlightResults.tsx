@@ -472,7 +472,7 @@ const LiveFlightResults = () => {
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-3 sm:px-4 py-3 w-full max-w-full box-border overflow-hidden">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-nowrap justify-between">
             <Button variant="ghost" size="icon" onClick={() => navigate("/flights")} className="h-9 w-9 shrink-0" aria-label={t("results.back_to_search")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
@@ -484,7 +484,7 @@ const LiveFlightResults = () => {
                 {isMultiOrigin && ` · ${origins.length} airports`}
               </p>
             </div>
-            <div className="lg:hidden">
+            <div className="lg:hidden shrink-0">
               <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={dedupedFlights.length} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </div>
           </div>
