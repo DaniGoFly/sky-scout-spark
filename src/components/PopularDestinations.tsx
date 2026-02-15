@@ -37,41 +37,43 @@ interface PopularDestinationsProps {
 
 const PopularDestinations = ({ onDestinationClick }: PopularDestinationsProps) => {
   return (
-    <section className="py-24 px-4 bg-background relative overflow-hidden">
+    <section className="py-16 sm:py-24 px-4 bg-background relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[120px]" />
       
       <div className="container mx-auto max-w-6xl relative z-10">
-        <div className="mb-12">
-          <span className="text-primary text-sm font-semibold uppercase tracking-widest mb-2 block">
+        <div className="mb-8 sm:mb-12">
+          <span className="text-primary text-xs sm:text-sm font-semibold uppercase tracking-widest mb-2 block">
             Trending now
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
             Popular destinations
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* Mobile: horizontal snap carousel / Desktop: grid */}
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 md:gap-6 sm:overflow-visible sm:pb-0 scrollbar-hide">
           {destinations.map((destination, index) => (
             <button
               key={destination.city}
               onClick={() => onDestinationClick?.({ city: destination.city, code: destination.code })}
-              className="group relative overflow-hidden rounded-2xl aspect-[3/4] bg-secondary animate-fade-in text-left"
+              className="group relative overflow-hidden rounded-2xl aspect-[3/4] bg-secondary animate-fade-in text-left snap-start flex-shrink-0 w-[70vw] sm:w-auto active:scale-[0.98] transition-transform"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <img
                 src={destination.image}
                 alt={destination.city}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                loading="lazy"
               />
               
               <div className={`absolute inset-0 bg-gradient-to-t ${destination.color} opacity-60 group-hover:opacity-70 transition-opacity`} />
               
-              <div className="absolute inset-0 p-5 flex flex-col justify-end">
-                <div className="flex items-center gap-1.5 text-white/80 text-xs mb-2">
+              <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-end">
+                <div className="flex items-center gap-1.5 text-white/80 text-xs mb-1.5">
                   <MapPin className="w-3 h-3" />
                   <span>{destination.country}</span>
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-2">
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-1.5">
                   {destination.city}
                 </h3>
                 <div className="flex items-center gap-2 text-white/80 text-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
