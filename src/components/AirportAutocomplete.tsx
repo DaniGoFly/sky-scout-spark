@@ -191,9 +191,9 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
           onFocus={() => query.length >= 2 && setIsOpen(true)}
           onKeyDown={handleKeyDown}
           className={compact 
-            ? `pl-9 h-10 bg-secondary/50 border-transparent rounded-lg text-sm truncate ${hasError ? "border border-destructive/50" : ""}`
-            : `pl-12 h-14 bg-secondary/50 border-2 rounded-xl focus:bg-card focus:ring-0 text-base font-medium transition-all truncate ${
-                hasError ? "border-destructive/50 focus:border-destructive" : "border-transparent focus:border-primary"
+            ? `pl-9 h-10 bg-secondary/50 border-transparent rounded-xl text-sm truncate focus:ring-0 focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:ring-offset-0 ${hasError ? "border border-destructive/50" : ""}`
+            : `pl-12 h-12 bg-secondary/50 border-2 rounded-xl focus:bg-card focus:ring-0 focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:ring-offset-0 text-sm sm:text-base font-medium transition-all truncate ${
+                hasError ? "border-destructive/50 focus:border-destructive" : "border-transparent focus:border-primary/60"
               }`
           }
           placeholder={placeholder}

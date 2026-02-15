@@ -158,13 +158,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   // Multi-city mode — same outer card as other tabs
   if (tripType === "multicity") {
     return (
-      <div className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto">
-        <div className="flex gap-2 mb-5 flex-wrap">
+      <div className="gradient-border bg-card rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto">
+        <div className="flex gap-1.5 sm:gap-2 mb-4 sm:mb-5 overflow-x-auto">
           {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
             <button
               key={type}
               onClick={() => setTripType(type)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
                 tripType === type
                   ? "bg-gradient-to-r from-primary to-accent text-white"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -180,14 +180,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }
 
   return (
-    <div className="gradient-border bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto">
+    <div className="gradient-border bg-card rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto">
       {/* Trip Type Toggle */}
-      <div className="flex gap-2 mb-5 flex-wrap">
+      <div className="flex gap-1.5 sm:gap-2 mb-4 sm:mb-5 overflow-x-auto">
         {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
           <button
             key={type}
             onClick={() => setTripType(type)}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               tripType === type
                 ? "bg-gradient-to-r from-primary to-accent text-white"
                 : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -215,9 +215,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
 
         {/* Swap Button */}
-        <div className="lg:col-span-1 flex justify-center">
+        <div className="hidden lg:flex lg:col-span-1 justify-center">
           {origins.length > 1 ? (
-            <div className="rounded-full h-12 w-12 border-2 border-dashed border-border/30 flex items-center justify-center shrink-0 opacity-30 cursor-not-allowed" title="Swap isn't available in multi-origin mode">
+            <div className="rounded-full h-10 w-10 border-2 border-dashed border-border/30 flex items-center justify-center shrink-0 opacity-30 cursor-not-allowed" title="Swap isn't available in multi-origin mode">
               <ArrowRightLeft className="w-4 h-4 text-muted-foreground" />
             </div>
           ) : (
@@ -225,7 +225,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               variant="outline"
               size="icon"
               onClick={swapLocations}
-              className="rounded-full h-12 w-12 border-2 border-dashed border-border hover:border-primary hover:text-primary transition-all bg-background shrink-0"
+              className="rounded-full h-10 w-10 border-2 border-dashed border-border hover:border-primary hover:text-primary transition-all bg-background shrink-0"
             >
               <ArrowRightLeft className="w-4 h-4" />
             </Button>
@@ -268,8 +268,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      {/* Options Row — only Direct flights */}
-      <div className="mt-5 flex items-center justify-between">
+      {/* Options Row */}
+      <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2">
           <Checkbox
             id="direct-only"
@@ -286,8 +286,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </Label>
         </div>
 
-        {/* Search Button + Use my location */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           <Button
             variant="outline"
             size="sm"
@@ -309,7 +308,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 () => { /* permission denied — silent */ }
               );
             }}
-            className="gap-1.5"
+            className="gap-1.5 h-11 sm:h-auto"
           >
             <Navigation className="w-3.5 h-3.5" />
             {t("search.use_location", "Use my location")}
@@ -317,7 +316,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <Button 
             size="lg" 
             onClick={handleSearch}
-            className="gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+            className="gap-2 px-8 h-12 sm:h-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity active:scale-[0.98]"
           >
             <Search className="w-4 h-4" />
             {t("search.search_flights")}

@@ -62,13 +62,13 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       <div className="relative z-10 flex-1 flex flex-col justify-center pt-24 pb-16 px-4">
         <div className="container mx-auto max-w-5xl">
           {/* Hero Text */}
-          <div className="text-center mb-12 animate-fade-in">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
+          <div className="text-center mb-8 sm:mb-12 animate-fade-in">
+            <h1 className="text-[32px] sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 leading-[1.1] tracking-tight">
               <span className="text-foreground">Find your next</span>
               <br />
               <span className="bg-gradient-to-r from-sky-400 to-cyan-400 bg-clip-text text-transparent">adventure</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed px-2">
               Compare prices from hundreds of airlines and book your dream trip in seconds
             </p>
           </div>
