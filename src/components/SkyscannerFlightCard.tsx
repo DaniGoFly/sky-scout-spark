@@ -64,13 +64,38 @@ function extractDateLabel(raw: string | undefined | null): string | undefined {
 }
 
 /** Get badge color config based on label */
-function getBadgeConfig(label?: string): { bg: string; text: string; border: string } {
-  if (!label) return { bg: "bg-emerald-500", text: "text-white", border: "border-emerald-400/70 ring-emerald-400/30" };
+function getBadgeConfig(label?: string): { bg: string; text: string; border: string; restBorder: string; hoverClass: string } {
+  if (!label) return {
+    bg: "bg-emerald-500", text: "text-white",
+    border: "border-emerald-400/70 ring-2 ring-emerald-400/25",
+    restBorder: "border-emerald-400/40",
+    hoverClass: "hover:border-emerald-400/80 hover:shadow-[0_0_16px_-4px_rgba(52,211,153,0.45)] hover:-translate-y-0.5",
+  };
   const lower = label.toLowerCase();
-  if (lower.includes("cheapest")) return { bg: "bg-emerald-500", text: "text-white", border: "border-emerald-400/70 ring-emerald-400/30" };
-  if (lower.includes("best")) return { bg: "bg-violet-500", text: "text-white", border: "border-violet-400/70 ring-violet-400/30" };
-  if (lower.includes("fastest")) return { bg: "bg-sky-500", text: "text-white", border: "border-sky-400/70 ring-sky-400/30" };
-  return { bg: "bg-emerald-500", text: "text-white", border: "border-emerald-400/70 ring-emerald-400/30" };
+  if (lower.includes("cheapest")) return {
+    bg: "bg-emerald-500", text: "text-white",
+    border: "border-emerald-400/70 ring-2 ring-emerald-400/25",
+    restBorder: "border-emerald-400/40",
+    hoverClass: "hover:border-emerald-400/90 hover:shadow-[0_0_20px_-4px_rgba(52,211,153,0.5)] hover:-translate-y-0.5",
+  };
+  if (lower.includes("best")) return {
+    bg: "bg-violet-500", text: "text-white",
+    border: "border-violet-400/70 ring-2 ring-violet-400/25",
+    restBorder: "border-violet-400/40",
+    hoverClass: "hover:border-violet-400/90 hover:shadow-[0_0_20px_-4px_rgba(139,92,246,0.5)] hover:-translate-y-0.5",
+  };
+  if (lower.includes("fastest")) return {
+    bg: "bg-sky-500", text: "text-white",
+    border: "border-sky-400/70 ring-2 ring-sky-400/25",
+    restBorder: "border-sky-400/40",
+    hoverClass: "hover:border-sky-400/90 hover:shadow-[0_0_20px_-4px_rgba(56,189,248,0.5)] hover:-translate-y-0.5",
+  };
+  return {
+    bg: "bg-emerald-500", text: "text-white",
+    border: "border-emerald-400/70 ring-2 ring-emerald-400/25",
+    restBorder: "border-emerald-400/40",
+    hoverClass: "hover:border-emerald-400/80 hover:shadow-[0_0_16px_-4px_rgba(52,211,153,0.45)] hover:-translate-y-0.5",
+  };
 }
 
 /* ─── Sub-components ─── */
@@ -376,7 +401,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   /* ═══════ MOBILE LAYOUT ═══════ */
   if (isMobile) {
     return (
-      <div className={`relative bg-card rounded-xl border w-full box-border ${isBestValue ? `${badgeColors.border} ring-2` : "border-border"}`}
+      <div className={`relative bg-card rounded-xl w-full box-border transition-all duration-200 ease-out active:shadow-[0_0_12px_-3px_rgba(139,92,246,0.4)] active:scale-[0.995] ${isBestValue ? `border-[1.5px] ${badgeColors.border}` : "border border-border/60"}`}
         style={{ contain: "layout style" }}>
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
@@ -412,7 +437,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   /* ═══════ DESKTOP LAYOUT ═══════ */
   return (
-    <div className={`relative bg-card rounded-xl border group flight-card-hover ${isBestValue ? `${badgeColors.border} ring-2` : "border-border"}`}
+    <div className={`relative bg-card rounded-xl group transition-all duration-200 ease-out ${isBestValue ? `border-[1.5px] ${badgeColors.border} ${badgeColors.hoverClass}` : "border border-border/60 hover:border-primary/40 hover:shadow-[0_0_14px_-4px_rgba(139,92,246,0.3)] hover:-translate-y-0.5"}`}
       style={{ contain: "layout style" }}>
       {isBestValue && (
         <div className="absolute -top-3 start-5 z-10">
