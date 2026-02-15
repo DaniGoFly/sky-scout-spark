@@ -3,7 +3,7 @@
  * Uses the YCP Supabase project for all requests
  */
 
-// Edge functions are deployed on this Lovable Cloud project
+// Edge functions backend configuration
 const CLOUD_URL = import.meta.env.VITE_SUPABASE_URL || "https://kvhykvuvsbmcselojbcn.supabase.co";
 const CLOUD_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2aHlrdnV2c2JtY3NlbG9qYmNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzEzODAsImV4cCI6MjA4MzA0NzM4MH0.ChYyprBwbeebvr9nr1xGuexrmciMqIsA2irToTCEQUc";
 
