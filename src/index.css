@@ -210,7 +210,28 @@
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-/* ── Leaflet Explore Map ── */
+/* ── Leaflet Explore Map — fix Tailwind preflight breaking tiles ── */
 .leaflet-container {
-  background: #1a1a2e !important;
+  background: #0b1020 !important;
+}
+/* Tailwind preflight sets img { max-width:100%; display:block; height:auto } 
+   which breaks Leaflet tile positioning. Override here: */
+.leaflet-container img {
+  max-width: none !important;
+  display: inline !important;
+  height: auto !important;
+}
+.leaflet-container img.leaflet-tile {
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  transition: none !important;
+}
+/* Dark-mode filter on tiles only */
+/* Dark filter applied via JS in ExploreMap.tsx to avoid browser screenshot issues */
+/* Marker/overlay panes must NOT inherit the dark filter */
+.leaflet-marker-pane,
+.leaflet-overlay-pane,
+.leaflet-popup-pane,
+.leaflet-tooltip-pane {
+  filter: none !important;
 }
