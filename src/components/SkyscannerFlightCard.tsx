@@ -402,7 +402,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   /* ═══════ MOBILE LAYOUT ═══════ */
   if (isMobile) {
     return (
-      <div className={`relative bg-card rounded-xl w-full box-border transition-all duration-200 ease-out active:scale-[0.995] ${isBestValue ? `border-[1.5px] ${badgeColors.border} active:shadow-[0_0_14px_-3px_rgba(139,92,246,0.4)]` : "border border-border/50 active:shadow-[0_0_12px_-3px_rgba(139,92,246,0.3)]"}`}
+      <div className={`relative bg-card rounded-xl w-full box-border transition-all duration-200 ease-out active:scale-[0.995] focus-within:ring-2 focus-within:ring-primary/60 ${isBestValue ? `border-[1.5px] ${badgeColors.border} active:shadow-[0_0_14px_-3px_rgba(139,92,246,0.4)]` : "border border-border/50 active:shadow-[0_0_12px_-3px_rgba(139,92,246,0.3)]"}`}
         style={{ contain: "layout style" }}>
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
@@ -444,7 +444,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   /* ═══════ DESKTOP LAYOUT ═══════ */
   return (
-    <div className={`relative bg-card rounded-xl group transition-all duration-200 ease-out ${isBestValue ? `border-[1.5px] ${badgeColors.border} ${badgeColors.hoverClass}` : "border border-border/50 hover:border-primary/50 hover:shadow-[0_0_18px_-4px_rgba(139,92,246,0.35)] hover:-translate-y-0.5"}`}
+    <div className={`relative bg-card rounded-xl group transition-all duration-200 ease-out focus-within:ring-2 focus-within:ring-primary/60 focus-within:ring-offset-0 ${isBestValue ? `border-[1.5px] ${badgeColors.border} ${badgeColors.hoverClass}` : "border border-border/50 hover:border-primary/50 hover:shadow-[0_0_20px_-4px_rgba(139,92,246,0.4)] hover:-translate-y-0.5 active:-translate-y-0"}`}
       style={{ contain: "layout style" }}>
       {isBestValue && (
         <div className="absolute -top-3 start-5 z-10">

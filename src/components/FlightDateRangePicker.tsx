@@ -265,40 +265,10 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
     return `${format(departDate, "MMM d")} - ${format(returnDate, "MMM d, yyyy")}`;
   }, [departDate, returnDate, tripType]);
 
-  // Calculate position for fixed dropdown
-  const triggerRef = React.useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = React.useState({ top: 0, left: 0 });
-
-  React.useEffect(() => {
-    if (isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const dropdownHeight = isMobile ? 500 : 520;
-      const dropdownWidth = isMobile ? window.innerWidth - 32 : 580;
-      
-      let top = rect.bottom + 8;
-      let left = rect.left;
-      
-      // Prevent dropdown from going off bottom of viewport
-      if (top + dropdownHeight > window.innerHeight - 16) {
-        top = Math.max(16, window.innerHeight - dropdownHeight - 16);
-      }
-      
-      // Prevent dropdown from going off right side
-      if (left + dropdownWidth > window.innerWidth - 16) {
-        left = Math.max(16, window.innerWidth - dropdownWidth - 16);
-      }
-      
-      // Center on mobile
-      if (isMobile) {
-        left = 16;
-      }
-      
-      setDropdownPosition({ top, left });
-    }
-  }, [isOpen, isMobile]);
+  // No position calculation needed — calendar is always viewport-centered
 
   return (
-    <div className="relative" data-date-picker ref={triggerRef}>
+    <div className="relative" data-date-picker>
       {/* Trigger Button */}
       <div className="lg:col-span-4">
         <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
@@ -328,18 +298,17 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
             onClick={() => setIsOpen(false)}
           />
 
-          {/* Calendar Dropdown - Fixed Position, always within viewport */}
+          {/* Calendar Dropdown - Always centered in viewport */}
           <div 
             data-date-picker
             className={cn(
               "fixed z-[9999] bg-card border border-border rounded-2xl shadow-xl",
               "animate-in fade-in-0 zoom-in-95 duration-200",
+              "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
             )}
             style={{ 
-              top: dropdownPosition.top,
-              left: dropdownPosition.left,
-              width: isMobile ? "calc(100vw - 32px)" : "580px",
-              maxHeight: "calc(100vh - 32px)",
+              width: isMobile ? "min(92vw, 420px)" : "min(860px, 92vw)",
+              maxHeight: "78vh",
               overflowY: "auto",
             }}
           >
