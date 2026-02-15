@@ -1,5 +1,6 @@
 /**
- * ExploreMap — Dark-themed Leaflet map with Google Flights-style city+price pill markers
+ * ExploreMap — Google Flights-inspired map with GoFlyFinder dark+purple style
+ * Rounded pill markers showing "City · Price" like Google Flights
  */
 
 import { useEffect, useRef, useMemo } from "react";
@@ -17,61 +18,73 @@ interface ExploreMapProps {
   formatPrice: (price: number) => string;
 }
 
-/** Google Flights-style dark pill: "City\nPrice" */
+/** Google Flights-style rounded pill: "City · €Price" */
 function createCityPriceIcon(
   cityName: string,
   price: string,
   isHovered: boolean,
   isCheapest: boolean,
 ): L.DivIcon {
+  const isHighlighted = isHovered || isCheapest;
+
+  // Google Flights uses white pill with dark text for selected, dark pill with white text for default
   const bgColor = isHovered
-    ? "rgba(139,92,246,0.95)"    // primary purple on hover
+    ? "#ffffff"
     : isCheapest
-    ? "rgba(16,185,129,0.92)"    // emerald for cheapest
-    : "rgba(30,32,44,0.92)";     // dark pill default
+    ? "#34d399"
+    : "rgba(30,30,40,0.92)";
 
-  const textColor = "#fff";
-  const scale = isHovered ? "scale(1.12)" : "scale(1)";
+  const textColor = isHovered ? "#1a1a2e" : isCheapest ? "#064e3b" : "#e2e8f0";
+  const scale = isHovered ? "scale(1.08)" : "scale(1)";
   const shadow = isHovered
-    ? "0 4px 20px rgba(139,92,246,0.4)"
-    : "0 2px 8px rgba(0,0,0,0.5)";
+    ? "0 4px 16px rgba(0,0,0,0.35), 0 0 0 2px rgba(139,92,246,0.5)"
+    : isCheapest
+    ? "0 2px 10px rgba(52,211,153,0.35)"
+    : "0 2px 8px rgba(0,0,0,0.45)";
 
-  // Truncate long city names
-  const displayCity = cityName.length > 14 ? cityName.slice(0, 12) + "…" : cityName;
+  const displayCity = cityName.length > 12 ? cityName.slice(0, 11) + "…" : cityName;
+  const fontSize = isHighlighted ? "12px" : "11px";
+  const fontWeight = isHighlighted ? "800" : "700";
+  const borderColor = isHovered ? "rgba(139,92,246,0.6)" : isCheapest ? "rgba(52,211,153,0.4)" : "rgba(255,255,255,0.08)";
 
   return L.divIcon({
     className: "explore-city-pin",
     html: `<div style="
       background:${bgColor};
       color:${textColor};
-      padding:4px 10px;
-      border-radius:16px;
+      padding:6px 12px;
+      border-radius:20px;
       font-family:'Plus Jakarta Sans',system-ui,sans-serif;
       white-space:nowrap;
       box-shadow:${shadow};
       transform:translate(-50%,-100%) ${scale};
       cursor:pointer;
-      transition:transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      transition:all 0.18s ease;
       display:flex;
-      flex-direction:column;
       align-items:center;
-      line-height:1.2;
+      gap:4px;
+      line-height:1;
       pointer-events:auto;
-      border:1px solid rgba(255,255,255,0.08);
+      border:1.5px solid ${borderColor};
+      font-size:${fontSize};
+      font-weight:${fontWeight};
+      letter-spacing:0.01em;
     ">
-      <span style="font-size:11px;font-weight:700;letter-spacing:0.01em;">${displayCity}</span>
-      <span style="font-size:11px;font-weight:600;opacity:0.85;">${price}</span>
+      <span>${displayCity}</span>
+      <span style="opacity:0.5;font-size:9px;">·</span>
+      <span style="font-weight:800;">${price}</span>
     </div>
     <div style="
       width:0;height:0;
-      border-left:5px solid transparent;
-      border-right:5px solid transparent;
-      border-top:5px solid ${bgColor};
+      border-left:6px solid transparent;
+      border-right:6px solid transparent;
+      border-top:6px solid ${bgColor};
       margin:0 auto;
       transform:translateX(-50%);
       position:absolute;
-      bottom:-5px;
+      bottom:-6px;
       left:50%;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));
     "></div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
@@ -82,16 +95,16 @@ function createOriginIcon(code: string): L.DivIcon {
   return L.divIcon({
     className: "explore-origin-pin",
     html: `<div style="
-      background:rgba(139,92,246,1);
+      background:linear-gradient(135deg, hsl(265 90% 60%), hsl(265 90% 72%));
       color:#fff;
-      width:32px;height:32px;
+      width:36px;height:36px;
       border-radius:50%;
       display:flex;align-items:center;justify-content:center;
       font-family:'Plus Jakarta Sans',system-ui,sans-serif;
       font-size:10px;font-weight:800;
-      letter-spacing:0.02em;
-      box-shadow:0 0 0 3px rgba(139,92,246,0.3), 0 2px 12px rgba(0,0,0,0.4);
-      border:2px solid rgba(255,255,255,0.6);
+      letter-spacing:0.03em;
+      box-shadow:0 0 0 4px rgba(139,92,246,0.25), 0 2px 16px rgba(0,0,0,0.4);
+      border:2.5px solid rgba(255,255,255,0.7);
       transform:translate(-50%,-50%);
     ">${code}</div>`,
     iconSize: [0, 0],
@@ -99,7 +112,7 @@ function createOriginIcon(code: string): L.DivIcon {
   });
 }
 
-// Dark map tiles
+// Dark map tiles — CartoDB Dark Matter (like Google Flights dark mode)
 const DARK_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
 const DARK_TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
 
@@ -121,14 +134,12 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
       attributionControl: true,
     });
 
-    // Dark tiles
     L.tileLayer(DARK_TILE_URL, {
       attribution: DARK_TILE_ATTR,
       maxZoom: 18,
       subdomains: "abcd",
     }).addTo(map);
 
-    // Zoom control top-right
     L.control.zoom({ position: "topright" }).addTo(map);
 
     mapRef.current = map;
@@ -155,7 +166,6 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
     const map = mapRef.current;
     if (!map) return;
 
-    // Remove old
     for (const [, marker] of markersRef.current) {
       map.removeLayer(marker);
     }
