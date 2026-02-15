@@ -10,39 +10,24 @@ const Impressum = () => {
       <Header />
       <main className="flex-1 pt-24 pb-16 px-4">
         <div className="container mx-auto max-w-4xl">
-          <h1 className="text-4xl font-bold text-foreground mb-8">{t("legal.impressum_title")}</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-8">Legal Notice</h1>
 
           <div className="prose prose-gray dark:prose-invert max-w-none space-y-8">
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">{t("legal.impressum_operator")}</h2>
-              <div className="text-muted-foreground leading-relaxed space-y-1">
-                <p className="font-medium text-foreground">GoFlyFinder</p>
-                <p>[Company Address]</p>
-                <p>[City, Postal Code]</p>
-                <p>[Country]</p>
-              </div>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">Site Operator</h2>
+              <p className="text-muted-foreground leading-relaxed font-medium text-foreground">GoFlyFinder</p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">{t("legal.impressum_contact")}</h2>
-              <div className="text-muted-foreground leading-relaxed space-y-1">
-                <p>Email: contact@goflyfinder.com</p>
-              </div>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">Contact</h2>
+              <p className="text-muted-foreground leading-relaxed">Email: goflyfinder@gmail.com</p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">{t("legal.impressum_responsible")}</h2>
-              <p className="text-muted-foreground leading-relaxed">[Responsible Person Name]</p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">{t("legal.impressum_vat")}</h2>
-              <p className="text-muted-foreground leading-relaxed">[VAT ID if applicable]</p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">{t("legal.impressum_disclaimer")}</h2>
-              <p className="text-muted-foreground leading-relaxed">{t("legal.impressum_disclaimer_text")}</p>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">Disclaimer</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                GoFlyFinder is a flight and hotel comparison platform. We do not sell tickets directly. All bookings are processed through third-party travel partners. Prices displayed are estimates and may vary at the time of booking.
+              </p>
             </section>
           </div>
         </div>
