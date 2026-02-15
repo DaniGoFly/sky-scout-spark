@@ -65,12 +65,12 @@ function extractDateLabel(raw: string | undefined | null): string | undefined {
 
 /** Get badge color config based on label */
 function getBadgeConfig(label?: string): { bg: string; text: string; border: string } {
-  if (!label) return { bg: "bg-green-600", text: "text-white", border: "border-green-500/60 ring-green-500/20" };
+  if (!label) return { bg: "bg-emerald-500", text: "text-white", border: "border-emerald-400/70 ring-emerald-400/30" };
   const lower = label.toLowerCase();
-  if (lower.includes("cheapest")) return { bg: "bg-emerald-600", text: "text-white", border: "border-emerald-500/60 ring-emerald-500/20" };
-  if (lower.includes("best")) return { bg: "bg-primary", text: "text-primary-foreground", border: "border-primary/60 ring-primary/20" };
-  if (lower.includes("fastest")) return { bg: "bg-blue-600", text: "text-white", border: "border-blue-500/60 ring-blue-500/20" };
-  return { bg: "bg-green-600", text: "text-white", border: "border-green-500/60 ring-green-500/20" };
+  if (lower.includes("cheapest")) return { bg: "bg-emerald-500", text: "text-white", border: "border-emerald-400/70 ring-emerald-400/30" };
+  if (lower.includes("best")) return { bg: "bg-violet-500", text: "text-white", border: "border-violet-400/70 ring-violet-400/30" };
+  if (lower.includes("fastest")) return { bg: "bg-sky-500", text: "text-white", border: "border-sky-400/70 ring-sky-400/30" };
+  return { bg: "bg-emerald-500", text: "text-white", border: "border-emerald-400/70 ring-emerald-400/30" };
 }
 
 /* ─── Sub-components ─── */
