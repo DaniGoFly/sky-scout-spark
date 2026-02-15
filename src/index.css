@@ -187,12 +187,20 @@
 
 /* Hover elevation for flight cards */
 .flight-card-hover {
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.2s ease-out, border-color 0.2s ease-out, transform 0.2s ease-out;
 }
 .flight-card-hover:hover {
-  box-shadow: 0 8px 24px -8px hsl(0 0% 0% / 0.3);
-  transform: translateY(-2px);
-  border-color: hsl(var(--primary) / 0.3);
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.35), 0 10px 30px -8px hsl(0 0% 0% / 0.35);
+  transform: translateY(-1px);
+  border-color: hsl(var(--primary) / 0.5);
+}
+.flight-card-hover:focus-visible {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.6);
+  border-color: hsl(var(--primary) / 0.5);
+  outline: none;
+}
+.flight-card-hover:active {
+  transform: translateY(0);
 }
 
 /* Price pulse for best price */
