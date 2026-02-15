@@ -1,10 +1,10 @@
 /**
  * ExploreMap — Google Flights-quality map with GoFlyFinder dark glass + purple brand
  * Vertical city/price pills, pink origin dot, dashed route on hover
- * Premium zoom controls, glass attribution, fade-in loading
+ * Tile fallback, fade-in loading, premium zoom controls
  */
 
-import { useEffect, useRef, useMemo, useState } from "react";
+import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { ExploreResult } from "@/lib/exploreApi";
@@ -29,7 +29,6 @@ function createPriceMarker(
   hasSelection: boolean,
 ): L.DivIcon {
   const displayCity = cityName.length > 14 ? cityName.slice(0, 13) + "…" : cityName;
-  // Dim non-hovered markers when something is selected
   const dimmed = hasSelection && !isHovered;
 
   if (isHovered) {
@@ -68,15 +67,14 @@ function createOriginDot(): L.DivIcon {
   });
 }
 
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const TILE_PRIMARY = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const TILE_FALLBACK = "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png";
 const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
 
-/* ── CSS (all map styling in one block) ── */
+/* ── CSS ── */
 const MAP_STYLES = `
-/* Reset Leaflet icon defaults */
 .gf-marker, .gf-origin { background: none !important; border: none !important; }
 
-/* ── Origin dot ── */
 .gf-origin-dot {
   width: 14px; height: 14px;
   background: #ea4335;
@@ -87,7 +85,6 @@ const MAP_STYLES = `
   pointer-events: none;
 }
 
-/* ── Price pins ── */
 .gf-pin {
   font-family: system-ui, -apple-system, sans-serif;
   white-space: nowrap;
@@ -124,9 +121,7 @@ const MAP_STYLES = `
   box-shadow: 0 0 14px rgba(110, 231, 183, 0.3), 0 2px 10px rgba(0,0,0,0.4);
 }
 
-.gf-pin--dimmed {
-  opacity: 0.45;
-}
+.gf-pin--dimmed { opacity: 0.45; }
 
 .gf-pin--active {
   position: relative;
@@ -137,15 +132,11 @@ const MAP_STYLES = `
   z-index: 100;
 }
 
-.gf-pin__city {
-  font-size: 11px; font-weight: 500; color: #9aa0a6;
-}
+.gf-pin__city { font-size: 11px; font-weight: 500; color: #9aa0a6; }
 .gf-pin--cheapest .gf-pin__city { color: #86efac; }
 .gf-pin--active .gf-pin__city { font-size: 13px; font-weight: 600; color: #202124; }
 
-.gf-pin__price {
-  font-size: 12px; font-weight: 700; color: #e8eaed; margin-top: 1px;
-}
+.gf-pin__price { font-size: 12px; font-weight: 700; color: #e8eaed; margin-top: 1px; }
 .gf-pin--cheapest .gf-pin__price { color: #6ee7b7; }
 .gf-pin--active .gf-pin__price { font-size: 14px; font-weight: 700; color: #202124; }
 
@@ -158,7 +149,7 @@ const MAP_STYLES = `
   filter: drop-shadow(0 2px 2px rgba(0,0,0,0.12));
 }
 
-/* ── Zoom controls: glass buttons ── */
+/* Zoom controls */
 .leaflet-control-zoom {
   border: none !important;
   border-radius: 10px !important;
@@ -174,24 +165,17 @@ const MAP_STYLES = `
   color: rgba(255,255,255,0.85) !important;
   border: none !important;
   border-bottom: 1px solid rgba(139, 92, 246, 0.1) !important;
-  width: 40px !important;
-  height: 40px !important;
-  line-height: 40px !important;
-  font-size: 18px !important;
-  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
+  width: 40px !important; height: 40px !important;
+  line-height: 40px !important; font-size: 18px !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
 }
 .leaflet-control-zoom a:last-child { border-bottom: none !important; }
 .leaflet-control-zoom a:hover {
   background: rgba(30, 30, 50, 0.95) !important;
   color: #c4b5fd !important;
-  box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.3) !important;
-}
-.leaflet-control-zoom a:active {
-  transform: scale(0.94);
-  background: rgba(40, 30, 60, 0.95) !important;
 }
 
-/* ── Attribution: glass pill ── */
+/* Attribution */
 .leaflet-control-attribution {
   background: rgba(15, 15, 25, 0.6) !important;
   backdrop-filter: blur(10px) !important;
@@ -203,7 +187,7 @@ const MAP_STYLES = `
   margin: 0 14px 14px 0 !important;
   border: 1px solid rgba(139, 92, 246, 0.1) !important;
   opacity: 0.45;
-  transition: opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
   cursor: pointer;
   max-width: none !important;
   line-height: 1.3;
@@ -214,22 +198,36 @@ const MAP_STYLES = `
 .leaflet-control-attribution:hover {
   opacity: 1;
   border-color: rgba(139, 92, 246, 0.35) !important;
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
-  white-space: normal;
-  overflow: visible;
+  white-space: normal; overflow: visible;
 }
 .leaflet-control-attribution a { color: rgba(255,255,255,0.7) !important; text-decoration: none !important; }
 .leaflet-control-attribution a:hover { text-decoration: underline !important; color: #c4b5fd !important; }
 .leaflet-control-attribution .leaflet-attribution-flag { display: none !important; }
 
-/* ── Fade-in wrapper ── */
+/* Fade-in */
 .explore-map-fade { opacity: 0; transition: opacity 0.35s ease; }
 .explore-map-fade--ready { opacity: 1; }
 
-/* ── Reduced motion ── */
+/* Tile error pill */
+.gf-tile-error {
+  position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(20, 20, 32, 0.92);
+  backdrop-filter: blur(12px);
+  color: rgba(255,255,255,0.85);
+  font-size: 12px; font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  pointer-events: auto;
+}
+.gf-tile-error:hover { border-color: rgba(139,92,246,0.5); }
+
 @media (prefers-reduced-motion: reduce) {
-  .gf-pin, .gf-pin--default:hover, .leaflet-control-zoom a:active,
-  .explore-map-fade { transition: none !important; }
+  .gf-pin, .gf-pin--default:hover, .explore-map-fade { transition: none !important; }
 }
 `;
 
@@ -238,7 +236,31 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const routeLineRef = useRef<L.Polyline | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const [ready, setReady] = useState(false);
+  const [tileError, setTileError] = useState(false);
+  const tileErrorCountRef = useRef(0);
+  const usedFallbackRef = useRef(false);
+
+  // Tile error handler — switch to fallback after repeated failures
+  const handleTileError = useCallback(() => {
+    tileErrorCountRef.current++;
+    if (tileErrorCountRef.current > 4 && !usedFallbackRef.current && mapRef.current && tileLayerRef.current) {
+      usedFallbackRef.current = true;
+      tileLayerRef.current.setUrl(TILE_FALLBACK);
+      tileErrorCountRef.current = 0;
+    } else if (tileErrorCountRef.current > 8) {
+      setTileError(true);
+    }
+  }, []);
+
+  const retryTiles = useCallback(() => {
+    if (!mapRef.current || !tileLayerRef.current) return;
+    setTileError(false);
+    tileErrorCountRef.current = 0;
+    usedFallbackRef.current = false;
+    tileLayerRef.current.setUrl(TILE_PRIMARY);
+  }, []);
 
   // Init map
   useEffect(() => {
@@ -252,28 +274,47 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
       attributionControl: true,
     });
 
-    L.tileLayer(TILE_URL, {
+    const tileLayer = L.tileLayer(TILE_PRIMARY, {
       attribution: TILE_ATTR,
       maxZoom: 18,
       subdomains: "abcd",
-    }).addTo(map);
+    });
+    tileLayer.on("tileerror", handleTileError);
+    tileLayer.addTo(map);
+    tileLayerRef.current = tileLayer;
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
     mapRef.current = map;
 
-    // Fade in once tiles load
     map.whenReady(() => {
       requestAnimationFrame(() => setReady(true));
     });
 
-    return () => { map.remove(); mapRef.current = null; };
-  }, []);
+    // Force a size recalc after mount
+    setTimeout(() => map.invalidateSize(), 100);
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      tileLayerRef.current = null;
+    };
+  }, [handleTileError]);
 
   // Center on origin
   useEffect(() => {
     if (!mapRef.current || !originAirport) return;
     mapRef.current.flyTo([originAirport.lat, originAirport.lon], 5, { duration: 1.2 });
   }, [originAirport]);
+
+  // Invalidate size when container resizes
+  useEffect(() => {
+    const map = mapRef.current;
+    const el = containerRef.current;
+    if (!map || !el) return;
+    const ro = new ResizeObserver(() => map.invalidateSize());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const cheapestIata = useMemo(() => {
     if (destinations.length === 0) return null;
@@ -308,7 +349,6 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
     for (const [, marker] of markersRef.current) map.removeLayer(marker);
     markersRef.current.clear();
 
-    // Origin dot
     if (originAirport) {
       const m = L.marker([originAirport.lat, originAirport.lon], {
         icon: createOriginDot(),
@@ -319,7 +359,6 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
       markersRef.current.set("__origin__", m);
     }
 
-    // Destination markers
     for (const dest of destinations) {
       if (!dest.lat || !dest.lon) continue;
       const isCheapest = dest.destinationIata === cheapestIata;
@@ -345,11 +384,17 @@ const ExploreMap = ({ destinations, originAirport, onSelect, hoveredIata, onHove
   return (
     <>
       <style>{MAP_STYLES}</style>
-      <div
-        ref={containerRef}
-        className={`w-full h-full explore-map-fade ${ready ? "explore-map-fade--ready" : ""}`}
-        style={{ minHeight: 300 }}
-      />
+      <div className="relative w-full h-full" style={{ minHeight: 300 }}>
+        <div
+          ref={containerRef}
+          className={`w-full h-full explore-map-fade ${ready ? "explore-map-fade--ready" : ""}`}
+        />
+        {tileError && (
+          <button className="gf-tile-error" onClick={retryTiles}>
+            Map unavailable — tap to retry
+          </button>
+        )}
+      </div>
     </>
   );
 };
