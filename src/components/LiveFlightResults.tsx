@@ -469,8 +469,8 @@ const LiveFlightResults = () => {
   }, [pinnedLabels, dedupedFlights, depart, returnDate, isMultiOrigin]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
+    <div className="min-h-screen bg-background pt-16" style={{ paddingTop: "calc(4rem + env(safe-area-inset-top))" }}>
+      <div className="sticky top-16 z-40 bg-card/95 backdrop-blur-sm border-b border-border" style={{ top: "calc(4rem + env(safe-area-inset-top))" }}>
         <div className="container mx-auto px-3 sm:px-4 py-3 w-full max-w-full box-border overflow-hidden">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-nowrap justify-between">
             <Button variant="ghost" size="icon" onClick={() => navigate("/flights")} className="h-9 w-9 shrink-0" aria-label={t("results.back_to_search")}>
