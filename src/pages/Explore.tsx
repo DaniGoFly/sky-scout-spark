@@ -162,12 +162,12 @@ const Explore = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-background flex flex-col overflow-hidden">
       <Header />
       <main className="flex-1 pt-16 overflow-hidden">
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] h-[calc(100vh-64px)] overflow-hidden">
           {/* ── Left Sidebar ── */}
-          <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col bg-card border-r border-border shrink-0 overflow-hidden relative z-10 explore-sidebar">
+          <div className="flex flex-col relative z-20 overflow-y-auto overflow-x-hidden bg-[rgba(15,18,30,0.92)] border-r border-[rgba(255,255,255,0.08)]">
             {/* Search Controls */}
             <div className="p-4 space-y-3 border-b border-border">
               {/* Origin */}
@@ -369,7 +369,7 @@ const Explore = () => {
           </div>
 
           {/* ── Map ── */}
-          <div className="flex-1 min-h-[420px] lg:min-h-[520px] relative overflow-hidden isolate">
+          <div className="relative z-[1] overflow-hidden min-h-[55vh] lg:min-h-0">
             {isLoading && (
               <div className="absolute inset-0 z-[1000] bg-background/40 backdrop-blur-sm flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2 bg-card/90 rounded-xl px-6 py-4 border border-border">
