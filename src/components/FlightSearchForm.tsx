@@ -42,7 +42,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   });
   const [directOnly, setDirectOnly] = useState(false);
   const [errors, setErrors] = useState<{ from?: string; to?: string; dates?: string }>({});
-  const [highlightDestination, setHighlightDestination] = useState(false);
+  
 
   // Handle AI search params
   useEffect(() => {
@@ -52,8 +52,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         display: aiSearchParams.destinationName,
       });
       setErrors(e => ({ ...e, to: undefined }));
-      setHighlightDestination(true);
-      setTimeout(() => setHighlightDestination(false), 2000);
+      onParamsConsumed?.();
       onParamsConsumed?.();
     }
   }, [aiSearchParams, onParamsConsumed]);
@@ -234,7 +233,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
 
         {/* To */}
-        <div className={`lg:col-span-3 transition-all duration-300 min-w-0 ${highlightDestination ? "ring-2 ring-primary ring-offset-2 ring-offset-card rounded-lg" : ""}`}>
+        <div className="lg:col-span-3 min-w-0">
           <label className="block text-xs font-medium text-muted-foreground mb-2">{t("search.to")}</label>
           <AirportAutocomplete
             value={to}
