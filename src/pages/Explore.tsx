@@ -167,7 +167,7 @@ const Explore = () => {
       <main className="flex-1 pt-16 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] h-[calc(100vh-64px)] overflow-hidden">
           {/* ── Left Sidebar ── */}
-          <div className="explore-sidebar-panel flex flex-col relative z-20 overflow-hidden">
+          <div className="explore-sidebar-panel flex flex-col relative z-10 overflow-hidden bg-background">
             {/* ── Sticky Controls ── */}
             <div className="shrink-0 explore-sidebar-controls">
               {/* FROM section */}
@@ -235,8 +235,8 @@ const Explore = () => {
 
                 {/* Expandable sliders */}
                 {(showFilters || dateMode === "flexible") && (
-                  <div className="space-y-3 pt-3">
-                    <div className="space-y-1.5">
+                  <div className="space-y-3 pt-3 w-full max-w-full overflow-visible box-border mb-6">
+                    <div className="space-y-1.5 w-full max-w-full">
                       <div className="flex justify-between text-[11px] text-muted-foreground">
                         <span>Trip length</span>
                         <span className="font-semibold text-foreground tabular-nums">{tripLength[0]}–{tripLength[1]} days</span>
@@ -247,11 +247,11 @@ const Explore = () => {
                         min={1}
                         max={21}
                         step={1}
-                        className="w-full"
+                        className="w-full max-w-full"
                       />
                     </div>
                     {showFilters && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 w-full max-w-full">
                         <div className="flex justify-between text-[11px] text-muted-foreground">
                           <span>Max price</span>
                           <span className="font-semibold text-foreground tabular-nums">{formatPrice(maxPrice)}</span>
@@ -262,7 +262,7 @@ const Explore = () => {
                           min={50}
                           max={priceMax}
                           step={25}
-                          className="w-full"
+                          className="w-full max-w-full"
                         />
                       </div>
                     )}
@@ -379,7 +379,7 @@ const Explore = () => {
           </div>
 
           {/* ── Map ── */}
-          <div className="relative z-[1] overflow-hidden min-h-[55vh] lg:min-h-0">
+          <div className="relative z-0 overflow-hidden min-h-[55vh] lg:min-h-0">
             {isLoading && (
               <div className="absolute inset-0 z-[1000] bg-background/40 backdrop-blur-sm flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2 bg-card/90 rounded-xl px-6 py-4 border border-border">

@@ -471,14 +471,14 @@ const LiveFlightResults = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="container mx-auto px-3 sm:px-4 py-3 w-full max-w-full box-border overflow-hidden">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
             <Button variant="ghost" size="icon" onClick={() => navigate("/flights")} className="h-9 w-9 shrink-0" aria-label={t("results.back_to_search")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-base md:text-lg font-semibold text-foreground truncate">{headerTitle}</h1>
-              <p className="text-xs md:text-sm text-muted-foreground truncate">
+              <h1 className="text-sm sm:text-base md:text-lg font-semibold text-foreground break-words">{headerTitle}</h1>
+              <p className="text-xs md:text-sm text-muted-foreground break-words">
                 {formatDate(depart)}
                 {returnDate && ` – ${formatDate(returnDate)}`} · {totalPassengers} {totalPassengers > 1 ? t("results.travelers") : t("results.traveler")}
                 {isMultiOrigin && ` · ${origins.length} airports`}
