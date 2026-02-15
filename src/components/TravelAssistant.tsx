@@ -94,13 +94,32 @@ const DESTINATION_VIBES: Record<string, { emoji: string; tags: string[] }> = {
   BUD: { emoji: "🛁", tags: ["Thermal Baths", "Ruin Bars", "Cheap"] },
 };
 
+const STORAGE_KEY = "gofly_travel_assistant";
+
 const TravelAssistant = ({ onDestinationSelect }: TravelAssistantProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved).length > 0 : false;
+    } catch { return false; }
+  });
   const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Persist messages to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
