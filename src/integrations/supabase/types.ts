@@ -50,6 +50,45 @@ export type Database = {
         }
         Relationships: []
       }
+      flight_price_history: {
+        Row: {
+          adults: number
+          cabin_class: string
+          created_at: string
+          currency: string
+          depart_date: string
+          destination: string
+          id: string
+          origin: string
+          price: number
+          return_date: string | null
+        }
+        Insert: {
+          adults?: number
+          cabin_class?: string
+          created_at?: string
+          currency?: string
+          depart_date: string
+          destination: string
+          id?: string
+          origin: string
+          price: number
+          return_date?: string | null
+        }
+        Update: {
+          adults?: number
+          cabin_class?: string
+          created_at?: string
+          currency?: string
+          depart_date?: string
+          destination?: string
+          id?: string
+          origin?: string
+          price?: number
+          return_date?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

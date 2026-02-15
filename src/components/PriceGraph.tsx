@@ -1,21 +1,29 @@
 /**
- * PriceGraph — Google Flights-style price trend chart
- * Dark background, white line, typical range band, GoFlyFinder purple accents
- * Uses ONLY real data from the price-trend endpoint
+ * PriceGraph — Price history chart built ONLY from real stored search data.
+ * Queries flight_price_history table. No mock data, no random generation.
  */
 
 import { useState, useEffect, useMemo } from "react";
 import { ChevronDown, ChevronUp, TrendingDown, Clock } from "lucide-react";
-import { fetchPriceTrend, type TrendPoint } from "@/lib/exploreApi";
 import { useLocale } from "@/hooks/useLocale";
-import { format, addMonths } from "date-fns";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PriceGraphProps {
   origin: string;
   destination: string;
+  departDate?: string;
+  returnDate?: string;
+  cabinClass?: string;
+  adults?: number;
+}
+
+interface HistoryRow {
+  price: number;
+  created_at: string;
 }
 
 const SVG_W = 700;
@@ -25,56 +33,46 @@ const PAD_BOTTOM = 8;
 const PAD_LEFT = 0;
 const PAD_RIGHT = 0;
 
-const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
+const PriceGraph = ({ origin, destination, departDate, returnDate, cabinClass = "economy", adults = 1 }: PriceGraphProps) => {
   const { currency, formatPrice } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
-  const [data, setData] = useState<TrendPoint[]>([]);
+  const [data, setData] = useState<HistoryRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [typicalMin, setTypicalMin] = useState(0);
-  const [typicalMax, setTypicalMax] = useState(0);
-  const [confidence, setConfidence] = useState<"low" | "medium" | "high">("low");
-  const [updatedAt, setUpdatedAt] = useState<string>("");
-
-  const currentMonth = format(new Date(), "yyyy-MM");
-  const nextMonth = format(addMonths(new Date(), 1), "yyyy-MM");
 
   useEffect(() => {
     if (!isOpen || !origin || !destination) return;
 
     setIsLoading(true);
-    Promise.all([
-      fetchPriceTrend({ origin, destination, month: currentMonth, currency }),
-      fetchPriceTrend({ origin, destination, month: nextMonth, currency }),
-    ]).then(([r1, r2]) => {
-      const combined = [
-        ...(r1.ok ? r1.points : []),
-        ...(r2.ok ? r2.points : []),
-      ].filter(p => p.price > 0);
-      
-      const seen = new Set<string>();
-      const unique = combined.filter(p => {
-        if (seen.has(p.date)) return false;
-        seen.add(p.date);
-        return true;
-      });
-      unique.sort((a, b) => a.date.localeCompare(b.date));
 
-      setData(unique);
+    let query = supabase
+      .from("flight_price_history")
+      .select("price, created_at")
+      .eq("origin", origin.toUpperCase())
+      .eq("destination", destination.toUpperCase())
+      .eq("currency", currency.toLowerCase())
+      .eq("cabin_class", cabinClass)
+      .eq("adults", adults)
+      .order("created_at", { ascending: true })
+      .limit(30);
 
-      const best = r1.ok && r1.points.length > 0 ? r1 : r2;
-      if (best.ok) {
-        setTypicalMin(best.typicalMin);
-        setTypicalMax(best.typicalMax);
-        setConfidence(best.confidence);
-        setUpdatedAt(best.updatedAt);
+    if (departDate) query = query.eq("depart_date", departDate);
+    if (returnDate) query = query.eq("return_date", returnDate);
+
+    query.then(({ data: rows, error }) => {
+      if (error) {
+        console.error("[PriceGraph] query error", error);
+        setData([]);
+      } else {
+        setData((rows || []) as HistoryRow[]);
       }
-    }).finally(() => setIsLoading(false));
-  }, [isOpen, origin, destination, currentMonth, nextMonth, currency]);
+      setIsLoading(false);
+    });
+  }, [isOpen, origin, destination, currency, cabinClass, adults, departDate, returnDate]);
 
   const { linePath, areaPath, minPrice, maxPrice, chartPoints } = useMemo(() => {
-    if (data.length < 2) return { linePath: "", areaPath: "", minPrice: 0, maxPrice: 0, chartPoints: [] };
+    if (data.length < 3) return { linePath: "", areaPath: "", minPrice: 0, maxPrice: 0, chartPoints: [] };
 
-    const prices = data.map(d => d.price);
+    const prices = data.map(d => Number(d.price));
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     const range = max - min || 1;
@@ -83,11 +81,10 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
 
     const points = data.map((d, i) => {
       const x = PAD_LEFT + (i / (data.length - 1)) * usableW;
-      const y = PAD_TOP + usableH - ((d.price - min) / range) * usableH;
-      return { x, y, price: d.price, date: d.date };
+      const y = PAD_TOP + usableH - ((Number(d.price) - min) / range) * usableH;
+      return { x, y, price: Number(d.price), date: d.created_at };
     });
 
-    // Smooth curve using cubic bezier
     let lineD = `M ${points[0].x} ${points[0].y}`;
     for (let i = 1; i < points.length; i++) {
       const prev = points[i - 1];
@@ -101,25 +98,10 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
     return { linePath: lineD, areaPath: areaD, minPrice: min, maxPrice: max, chartPoints: points };
   }, [data]);
 
-  const typicalBand = useMemo(() => {
-    if (!data.length || !typicalMin || !typicalMax) return null;
-    const prices = data.map(d => d.price);
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    const range = max - min || 1;
-    const usableH = SVG_H - PAD_TOP - PAD_BOTTOM;
-
-    const y1 = PAD_TOP + usableH - ((typicalMax - min) / range) * usableH;
-    const y2 = PAD_TOP + usableH - ((typicalMin - min) / range) * usableH;
-    return { y1: Math.max(0, y1), y2: Math.min(SVG_H, y2) };
-  }, [data, typicalMin, typicalMax]);
-
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   // Y-axis labels
   const yLabels = useMemo(() => {
-    if (!data.length) return [];
-    const prices = data.map(d => d.price);
+    if (data.length < 3) return [];
+    const prices = data.map(d => Number(d.price));
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     const range = max - min || 1;
@@ -132,25 +114,26 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
     });
   }, [data]);
 
-  // X-axis labels — real date labels like "Feb 1", "Feb 2"
+  // X-axis labels from real created_at timestamps
   const xLabels = useMemo(() => {
-    if (data.length < 2) return [];
+    if (data.length < 3) return [];
     const count = Math.min(8, data.length);
     const step = Math.max(1, Math.floor((data.length - 1) / (count - 1)));
     const labels: { date: string; x: number }[] = [];
     const usableW = SVG_W - PAD_LEFT - PAD_RIGHT;
     for (let i = 0; i < data.length; i += step) {
       const x = PAD_LEFT + (i / (data.length - 1)) * usableW;
-      const d = data[i].date;
       try {
-        const label = format(new Date(d + "T00:00:00"), "MMM d");
+        const label = format(new Date(data[i].created_at), "MMM d");
         labels.push({ date: label, x });
       } catch {
-        labels.push({ date: d, x });
+        labels.push({ date: "—", x });
       }
     }
     return labels;
   }, [data]);
+
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (!origin || !destination) return null;
 
@@ -171,70 +154,41 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
         <div className="px-4 pb-4">
           {isLoading ? (
             <div className="space-y-3 py-4">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-5 w-20 rounded-full" />
-              </div>
+              <Skeleton className="h-4 w-32" />
               <Skeleton className="h-40 w-full rounded-lg" />
-              <div className="flex justify-between">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-3 w-16" />
-              </div>
             </div>
-          ) : data.length < 2 ? (
+          ) : data.length < 3 ? (
             <div className="py-8 text-center">
               <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
                 <TrendingDown className="w-6 h-6 text-muted-foreground" />
               </div>
-              <p className="text-sm font-semibold text-foreground mb-1">Not enough historical data</p>
+              <p className="text-sm font-semibold text-foreground mb-1">Not enough historical data yet</p>
               <p className="text-xs text-muted-foreground">
-                Price trends will appear as more data becomes available for this route.
+                Price tracking starts after multiple searches on this route.
               </p>
             </div>
           ) : (
             <>
-              {/* Stats bar — Google Flights style */}
+              {/* Stats bar */}
               <div className="flex items-center gap-3 mb-3 flex-wrap">
-                {typicalMin > 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    Typical range: <span className="font-bold text-foreground">{formatPrice(typicalMin)}</span>
-                    {" – "}
-                    <span className="font-bold text-foreground">{formatPrice(typicalMax)}</span>
-                  </div>
-                )}
-                <Badge variant="outline" className={cn("text-[10px] font-semibold",
-                  confidence === "high" ? "border-emerald-500/40 text-emerald-400" :
-                  confidence === "medium" ? "border-amber-500/40 text-amber-400" :
-                  "border-muted-foreground/40 text-muted-foreground"
-                )}>
-                  {confidence === "high" ? "High confidence" : confidence === "medium" ? "Medium confidence" : "Limited data"}
+                <div className="text-xs text-muted-foreground">
+                  Range: <span className="font-bold text-foreground">{formatPrice(minPrice)}</span>
+                  {" – "}
+                  <span className="font-bold text-foreground">{formatPrice(maxPrice)}</span>
+                </div>
+                <Badge variant="outline" className="text-[10px] font-semibold border-muted-foreground/40 text-muted-foreground">
+                  {data.length} data points
                 </Badge>
               </div>
 
-              {/* SVG Chart — Google Flights style: white line, dark bg, subtle grid */}
+              {/* SVG Chart */}
               <div className="bg-secondary/20 rounded-xl p-3 relative">
                 <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full" style={{ height: "clamp(120px, 20vw, 180px)" }} preserveAspectRatio="none">
-                  {/* Horizontal grid lines — subtle */}
                   {yLabels.map((yl, i) => (
                     <line key={i} x1={PAD_LEFT} y1={yl.y} x2={SVG_W} y2={yl.y}
                       stroke="currentColor" className="text-border/50" strokeWidth={0.5} />
                   ))}
 
-                  {/* Typical range band — Google Flights uses a light shaded band */}
-                  {typicalBand && (
-                    <rect
-                      x={PAD_LEFT}
-                      y={typicalBand.y1}
-                      width={SVG_W - PAD_LEFT - PAD_RIGHT}
-                      height={Math.max(1, typicalBand.y2 - typicalBand.y1)}
-                      fill="hsl(265 90% 65% / 0.08)"
-                      stroke="hsl(265 90% 65% / 0.15)"
-                      strokeWidth={0.5}
-                      strokeDasharray="4 3"
-                    />
-                  )}
-
-                  {/* Area fill under the line — subtle gradient */}
                   <defs>
                     <linearGradient id="priceAreaGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="hsl(265 90% 65%)" stopOpacity="0.15" />
@@ -242,13 +196,10 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
                     </linearGradient>
                   </defs>
                   <path d={areaPath} fill="url(#priceAreaGrad)" />
-
-                  {/* Main line — white/light like Google Flights */}
                   <path d={linePath} fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
 
-                  {/* Hover crosshair + tooltip */}
                   {chartPoints.map((p, i) => (
-                    <g key={p.date}>
+                    <g key={i}>
                       <rect
                         x={p.x - SVG_W / chartPoints.length / 2}
                         y={0}
@@ -270,11 +221,10 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
                   ))}
                 </svg>
 
-                {/* Hover price tooltip overlay */}
                 {hoveredIdx !== null && chartPoints[hoveredIdx] && (
                   <div className="absolute top-2 right-3 bg-card/95 backdrop-blur-sm border border-border rounded-lg px-3 py-1.5 shadow-lg">
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(chartPoints[hoveredIdx].date + "T00:00:00"), "MMM d, yyyy")}
+                      {format(new Date(chartPoints[hoveredIdx].date), "MMM d, yyyy HH:mm")}
                     </p>
                     <p className="text-sm font-bold text-foreground">
                       {formatPrice(chartPoints[hoveredIdx].price)}
@@ -295,12 +245,12 @@ const PriceGraph = ({ origin, destination }: PriceGraphProps) => {
                 <span>Low: <strong className="text-emerald-400">{formatPrice(minPrice)}</strong></span>
                 <span className="text-border">·</span>
                 <span>High: <strong className="text-foreground">{formatPrice(maxPrice)}</strong></span>
-                {updatedAt && (
+                {data.length > 0 && (
                   <>
                     <span className="text-border">·</span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {format(new Date(updatedAt), "MMM d, HH:mm")}
+                      Last: {format(new Date(data[data.length - 1].created_at), "MMM d, HH:mm")}
                     </span>
                   </>
                 )}
