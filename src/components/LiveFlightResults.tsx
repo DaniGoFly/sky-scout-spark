@@ -556,7 +556,7 @@ const LiveFlightResults = () => {
               {sortedFlights.length > 0 && (
                 <PriceInsight origin={from} destination={to} currentPrice={sortedFlights[0].price.amount} priceCurrency={flightsCurrency} />
               )}
-              <PriceGraph origin={from} destination={to} />
+              <PriceGraph origin={from} destination={to} departDate={depart} returnDate={returnDate} cabinClass={tripClass} adults={adults} />
               <MemoizedSortTabs flights={dedupedFlights} sortBy={sortBy} onSortChange={handleSortChange} />
               <div className="flex items-center gap-2 px-1 flex-wrap">
                 {isRevalidating && (

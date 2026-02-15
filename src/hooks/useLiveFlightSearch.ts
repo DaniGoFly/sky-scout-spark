@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { Flight } from "@/lib/flightNormalizer";
+import { supabase } from "@/integrations/supabase/client";
 import {
   searchFlights as apiSearchFlights,
   pollResults as apiPollResults,
@@ -122,6 +123,32 @@ function detectMarket(override?: string): string {
 const POLL_INTERVAL_MS = 1300;
 const POLL_TIMEOUT_MS = 45000;
 
+/** Store cheapest price from results into flight_price_history */
+async function storePriceHistory(params: SearchParamsHook, flights: Flight[]) {
+  try {
+    if (!flights.length) return;
+    const cheapest = flights.reduce((a, b) => (a.price?.amount ?? Infinity) < (b.price?.amount ?? Infinity) ? a : b);
+    const price = cheapest.price?.amount;
+    if (!price || price <= 0) return;
+
+    const dir = params.directions[0];
+    if (!dir) return;
+
+    await supabase.from("flight_price_history").insert({
+      origin: dir.origin.toUpperCase(),
+      destination: dir.destination.toUpperCase(),
+      depart_date: dir.date,
+      return_date: params.directions[1]?.date || null,
+      cabin_class: params.tripClass || "economy",
+      adults: params.adults || 1,
+      currency: (params.currency || "USD").toLowerCase(),
+      price,
+    });
+  } catch (e) {
+    console.warn("[price-history] Failed to store", e);
+  }
+}
+
 export function useLiveFlightSearch(): UseLiveFlightSearchResult {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [status, setStatus] = useState<SearchStatus>("idle");
@@ -239,6 +266,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
             setDebugData(debug);
             setFlights(flightResults);
             setStatus("complete");
+            storePriceHistory(params, flightResults);
             return;
           }
 
@@ -271,6 +299,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       setDebugData(debug);
       setFlights(flightResults);
       setStatus("complete");
+      storePriceHistory(params, flightResults);
     } catch (err) {
       if (controller.signal.aborted) return;
       const msg = err instanceof Error ? err.message : "Network error";
