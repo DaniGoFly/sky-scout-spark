@@ -7,17 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import AirportAutocomplete from "./AirportAutocomplete";
+import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
 import FlightDateRangePicker from "./FlightDateRangePicker";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import MultiCitySearchForm from "./MultiCitySearchForm";
 import { getDefaultDates } from "@/lib/dateUtils";
 import { getNearbyAirports, AIRPORTS, calculateDistance } from "@/lib/airports";
 import type { AISearchParams } from "./FlightSearchHero";
-
-interface AirportSelection {
-  code: string;
-  display: string;
-}
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
@@ -34,7 +30,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const defaultDates = useMemo(() => getDefaultDates(), []);
   
   const [tripType, setTripType] = useState<TripType>("roundtrip");
-  const [from, setFrom] = useState<AirportSelection | null>(null);
+  const [origins, setOrigins] = useState<AirportSelection[]>([]);
   const [to, setTo] = useState<AirportSelection | null>(null);
   const [departDate, setDepartDate] = useState<Date | null>(defaultDates.depart);
   const [returnDate, setReturnDate] = useState<Date | null>(defaultDates.return);
@@ -52,11 +48,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [errors, setErrors] = useState<{ from?: string; to?: string; dates?: string }>({});
   const [highlightDestination, setHighlightDestination] = useState(false);
 
-  // Get nearby airports for display
+  // Get nearby airports for display (use first origin)
   const nearbyOriginAirports = useMemo(() => {
-    if (!from?.code || !nearbyOrigin) return [];
-    return getNearbyAirports(from.code);
-  }, [from?.code, nearbyOrigin]);
+    if (origins.length === 0 || !nearbyOrigin) return [];
+    return getNearbyAirports(origins[0].code);
+  }, [origins, nearbyOrigin]);
 
   const nearbyDestinationAirports = useMemo(() => {
     if (!to?.code || !nearbyDestination) return [];
@@ -82,16 +78,17 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }, [aiSearchParams, onParamsConsumed]);
 
   const swapLocations = useCallback(() => {
-    setFrom(prev => {
-      setTo(from);
-      return to;
-    });
-  }, [from, to]);
+    if (origins.length === 1 && to) {
+      const temp = origins[0];
+      setOrigins([to]);
+      setTo(temp);
+    }
+  }, [origins, to]);
 
   const validate = useCallback((): boolean => {
     const newErrors: { from?: string; to?: string; dates?: string } = {};
     
-    if (!from) {
+    if (origins.length === 0) {
       newErrors.from = "Please select origin";
     }
     if (!to) {
@@ -114,7 +111,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [from, to, tripType, returnDate, departDate, travelers]);
+  }, [origins, to, tripType, returnDate, departDate, travelers]);
 
   const handleSearch = useCallback(() => {
     if (!validate()) return;
@@ -122,11 +119,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     // Normalize infants: combine infantsSeat + infantsLap
     const totalInfants = travelers.infantsSeat + travelers.infantsLap;
 
-    // Build origin airports list (main + nearby)
-    let originCodes = from!.code;
+    // Build origin airports list (multi-origin + nearby)
+    const originCodesArr = origins.map(o => o.code);
     if (nearbyOrigin && nearbyOriginAirports.length > 0) {
-      originCodes = [from!.code, ...nearbyOriginAirports].join(",");
+      originCodesArr.push(...nearbyOriginAirports);
     }
+    const originCodes = originCodesArr.join(",");
 
     // Build destination airports list (main + nearby)
     let destCodes = to!.code;
@@ -157,10 +155,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     if (nearbyDestination) params.set("nearbyDest", "true");
 
     navigate(`/flights/results?${params.toString()}`);
-  }, [validate, tripType, from, to, departDate, travelers, flexibleDates, directOnly, returnDate, navigate, nearbyOrigin, nearbyDestination, nearbyOriginAirports, nearbyDestinationAirports]);
+  }, [validate, tripType, origins, to, departDate, travelers, flexibleDates, directOnly, returnDate, navigate, nearbyOrigin, nearbyDestination, nearbyOriginAirports, nearbyDestinationAirports]);
 
-  const handleFromChange = useCallback((val: AirportSelection | null) => {
-    setFrom(val);
+  const handleOriginsChange = useCallback((vals: AirportSelection[]) => {
+    setOrigins(vals);
     setErrors(e => ({ ...e, from: undefined }));
   }, []);
 
@@ -260,17 +258,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
       {/* Search Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
-        {/* From */}
+        {/* From — Multi-Origin */}
         <div className="lg:col-span-3 relative min-w-0">
           <label className="block text-xs font-medium text-muted-foreground mb-2">{t("search.from")}</label>
-          <AirportAutocomplete
-            value={from}
-            onChange={handleFromChange}
+          <MultiOriginInput
+            values={origins}
+            onChange={handleOriginsChange}
             placeholder="Where from?"
-            icon="from"
-            hasError={!!errors.from}
           />
           {errors.from && <p className="text-destructive text-xs mt-1 truncate">{errors.from}</p>}
+          {origins.length > 1 && (
+            <p className="text-xs text-accent mt-1">Compare multiple departure airports at once</p>
+          )}
           {/* Nearby airports indicator */}
           {nearbyOrigin && nearbyOriginAirports.length > 0 && (
             <p className="text-xs text-accent mt-1 flex items-center gap-1 truncate">
@@ -286,7 +285,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             variant="outline"
             size="icon"
             onClick={swapLocations}
-            className="rounded-full h-12 w-12 border-2 border-dashed border-border hover:border-primary hover:text-primary transition-all bg-background shrink-0"
+            disabled={origins.length !== 1}
+            className="rounded-full h-12 w-12 border-2 border-dashed border-border hover:border-primary hover:text-primary transition-all bg-background shrink-0 disabled:opacity-30"
           >
             <ArrowRightLeft className="w-4 h-4" />
           </Button>
@@ -424,8 +424,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                   const d = calculateDistance(pos.coords.latitude, pos.coords.longitude, a.lat, a.lon);
                   if (d < minDist) { minDist = d; nearest = a; }
                 }
-                if (nearest) {
-                  setFrom({ code: nearest.code, display: `${nearest.city} (${nearest.code})` });
+             if (nearest) {
+                  setOrigins([{ code: nearest.code, display: `${nearest.city} (${nearest.code})` }]);
                   setErrors(e => ({ ...e, from: undefined }));
                 }
               },
