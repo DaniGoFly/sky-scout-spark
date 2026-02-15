@@ -93,6 +93,7 @@ const LiveFlightResults = () => {
   const infants = Number(searchParams.get("infants")) || 0;
   const tripType = searchParams.get("trip") || "roundtrip";
   const tripClass = searchParams.get("class") || "economy";
+  const exploreFromPrice = searchParams.get("explore_from_price");
   const isRoundtrip = tripType === "roundtrip";
 
   // Choose the right status/error based on mode
@@ -468,7 +469,12 @@ const LiveFlightResults = () => {
       </div>
 
       <div className="container mx-auto px-4 py-4 md:py-6">
-
+        {exploreFromPrice && isSearching && (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 mb-4 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Explore prices are flexible "from" estimates.</span>{" "}
+            Exact prices update after selecting dates.
+          </div>
+        )}
         {showSkeleton && (
           <div className="space-y-6">
             <div className="flex flex-col items-center justify-center py-8 text-center">
