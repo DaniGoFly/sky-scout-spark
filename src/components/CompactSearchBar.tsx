@@ -138,15 +138,20 @@ const CompactSearchBar = () => {
         </div>
 
         {/* Swap */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={swapLocations}
-          disabled={origins.length !== 1}
-          className="h-10 w-10 rounded-full hover:bg-secondary shrink-0 disabled:opacity-30"
-        >
-          <ArrowRightLeft className="w-4 h-4" />
-        </Button>
+        {origins.length > 1 ? (
+          <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 opacity-30 cursor-not-allowed" title="Swap isn't available in multi-origin mode">
+            <ArrowRightLeft className="w-4 h-4 text-muted-foreground" />
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={swapLocations}
+            className="h-10 w-10 rounded-full hover:bg-secondary shrink-0"
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+          </Button>
+        )}
 
         {/* To */}
         <div className="flex-1 min-w-[120px] max-w-[200px]">

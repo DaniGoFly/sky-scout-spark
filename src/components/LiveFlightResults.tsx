@@ -629,17 +629,19 @@ const LiveFlightResults = () => {
                     // By-origin grouped view
                     groupedByOrigin.map(({ origin, flights: originFlights, cheapest }) => (
                       <div key={origin} className="space-y-2">
-                        <div className="flex items-center gap-2 px-1 pt-3 pb-1 border-b border-border/40">
-                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <span className="text-[11px] font-bold text-primary">{origin}</span>
+                        <div className="flex items-center gap-2 px-2 pt-4 pb-2 border-b border-border/40">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <span className="text-xs font-bold text-primary">{origin}</span>
                           </div>
-                          <span className="text-sm font-semibold text-foreground">
-                            From {origin}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            — best from {formatPrice(cheapest, flightsCurrency)}
-                          </span>
-                          <Badge variant="secondary" className="text-[10px] ml-auto">{originFlights.length} results</Badge>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-semibold text-foreground">
+                              From {origin}
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              — best from {formatPrice(cheapest, flightsCurrency)}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">{originFlights.length} results · Top 10 shown</span>
                         </div>
                         {originFlights.map((flight, index) => renderFlightCard(flight, index))}
                       </div>

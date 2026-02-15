@@ -281,15 +281,20 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* Swap Button */}
         <div className="lg:col-span-1 flex justify-center">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={swapLocations}
-            disabled={origins.length !== 1}
-            className="rounded-full h-12 w-12 border-2 border-dashed border-border hover:border-primary hover:text-primary transition-all bg-background shrink-0 disabled:opacity-30"
-          >
-            <ArrowRightLeft className="w-4 h-4" />
-          </Button>
+          {origins.length > 1 ? (
+            <div className="rounded-full h-12 w-12 border-2 border-dashed border-border/30 flex items-center justify-center shrink-0 opacity-30 cursor-not-allowed" title="Swap isn't available in multi-origin mode">
+              <ArrowRightLeft className="w-4 h-4 text-muted-foreground" />
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={swapLocations}
+              className="rounded-full h-12 w-12 border-2 border-dashed border-border hover:border-primary hover:text-primary transition-all bg-background shrink-0"
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+            </Button>
+          )}
         </div>
 
         {/* To */}
