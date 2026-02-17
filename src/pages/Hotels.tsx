@@ -170,15 +170,6 @@ const Hotels = () => {
               "radial-gradient(1200px circle at 50% 10%, rgba(217,119,6,0.08), transparent 60%), linear-gradient(180deg, hsl(222 47% 6%), hsl(222 40% 8%))",
           }}
         />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-            opacity: 0.4,
-          }}
-        />
 
         {/* Content */}
         <div className="relative z-10 flex-1 flex flex-col justify-center pt-28 pb-20 px-4">
