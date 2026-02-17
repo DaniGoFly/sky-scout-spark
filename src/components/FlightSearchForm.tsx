@@ -159,12 +159,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   if (tripType === "multicity") {
     return (
       <div className="gradient-border bg-card rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto">
-        <div className="flex gap-1.5 sm:gap-2 mb-4 sm:mb-5 overflow-x-auto">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4 sm:mb-5">
           {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
             <button
               key={type}
               onClick={() => setTripType(type)}
-              className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+              className={`min-w-0 px-2 sm:px-4 py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 truncate ${
                 tripType === type
                   ? "bg-gradient-to-r from-primary to-accent text-white"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -182,12 +182,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   return (
     <div className="gradient-border bg-card rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto">
       {/* Trip Type Toggle */}
-      <div className="flex gap-1.5 sm:gap-2 mb-4 sm:mb-5 overflow-x-auto">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4 sm:mb-5">
         {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
           <button
             key={type}
             onClick={() => setTripType(type)}
-            className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+            className={`min-w-0 px-2 sm:px-4 py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 truncate ${
               tripType === type
                 ? "bg-gradient-to-r from-primary to-accent text-white"
                 : "bg-secondary text-muted-foreground hover:text-foreground"
