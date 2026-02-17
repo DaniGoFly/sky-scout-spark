@@ -28,7 +28,7 @@ const DestinationCard = ({ city, country, price, image }: DestinationCardProps) 
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-6">
         <h3 className="text-2xl font-bold text-primary-foreground mb-1">{city}</h3>
         <p className="text-primary-foreground/70 text-sm font-medium mb-3">{country}</p>

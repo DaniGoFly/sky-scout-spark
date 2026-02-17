@@ -158,15 +158,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   // Multi-city mode — same outer card as other tabs
   if (tripType === "multicity") {
     return (
-    <div className="gradient-border bg-card rounded-xl p-5 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4 sm:mb-5">
+    <div className="gradient-border bg-card rounded-xl p-6 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-5 sm:mb-6">
           {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
             <button
               key={type}
               onClick={() => setTripType(type)}
               className={`min-w-0 px-2 sm:px-4 py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 truncate ${
                 tripType === type
-                  ? "bg-gradient-to-r from-primary to-accent text-white"
+                  ? "bg-primary text-white"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -180,16 +180,16 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }
 
   return (
-    <div className="gradient-border bg-card rounded-xl p-5 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
+    <div className="gradient-border bg-card rounded-xl p-6 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
       {/* Trip Type Toggle */}
-      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4 sm:mb-5">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-5 sm:mb-6">
         {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
           <button
             key={type}
             onClick={() => setTripType(type)}
             className={`min-w-0 px-2 sm:px-4 py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 truncate ${
               tripType === type
-                ? "bg-gradient-to-r from-primary to-accent text-white"
+                ? "bg-primary text-white"
                 : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -199,7 +199,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* Search Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-end">
         {/* From — Multi-Origin */}
         <div className="lg:col-span-3 relative min-w-0">
           <label className="block text-xs font-medium text-muted-foreground mb-2">{t("search.from")}</label>
@@ -269,7 +269,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* Options Row */}
-      <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2">
           <Checkbox
             id="direct-only"
@@ -296,14 +296,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 setErrors(e => ({ ...e, from: undefined }));
               }
             }}
-            className="gap-2 min-h-[44px] h-[52px] sm:h-12 px-5 rounded-xl font-semibold text-sm w-full sm:w-auto whitespace-nowrap shrink-0 border-border/60 hover:border-primary/40 hover:bg-secondary/80 transition-all"
+            className="gap-2 min-h-[44px] h-[52px] sm:h-12 px-5 rounded-lg font-semibold text-sm w-full sm:w-auto whitespace-nowrap shrink-0 border-border hover:border-primary/40 hover:bg-secondary/80 transition-all"
           >
             <Navigation className="w-4 h-4" />
             {t("search.use_location", "Use my location")}
           </Button>
           <Button 
             onClick={handleSearch}
-            className="gap-2 min-h-[44px] h-[52px] sm:h-12 px-6 sm:px-8 rounded-xl font-semibold text-sm sm:text-base min-w-[180px] w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:scale-[1.02] transition-all active:scale-[0.98] shadow-md shadow-primary/20"
+            className="gap-2 min-h-[44px] h-[52px] sm:h-12 px-6 sm:px-8 rounded-lg font-semibold text-sm sm:text-base min-w-[180px] w-full sm:w-auto bg-primary hover:bg-[hsl(217,91%,63%)] transition-all active:scale-[0.98] shadow-lg shadow-primary/15"
           >
             <Search className="w-4 h-4" />
             {t("search.search_flights")}
