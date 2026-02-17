@@ -207,7 +207,7 @@ const Explore = () => {
                       className={cn(
                         "h-8 px-3 rounded-full text-xs font-medium border transition-all duration-150",
                         chip.active
-                          ? "bg-primary/15 text-primary border-primary/40 shadow-[0_0_8px_rgba(139,92,246,0.15)]"
+                          ? "bg-primary/15 text-primary border-primary/40"
                           : "border-[rgba(255,255,255,0.1)] text-muted-foreground hover:text-foreground hover:border-[rgba(255,255,255,0.2)]"
                       )}
                     >
@@ -219,7 +219,7 @@ const Explore = () => {
                     className={cn(
                       "h-8 px-3 rounded-full text-xs font-medium border transition-all duration-150 flex items-center gap-1",
                       showFilters
-                        ? "bg-primary/15 text-primary border-primary/40 shadow-[0_0_8px_rgba(139,92,246,0.15)]"
+                        ? "bg-primary/15 text-primary border-primary/40"
                         : "border-[rgba(255,255,255,0.1)] text-muted-foreground hover:text-foreground hover:border-[rgba(255,255,255,0.2)]"
                     )}
                   >
@@ -368,7 +368,7 @@ const Explore = () => {
                           className={cn(
                             "w-full rounded-xl border transition-all duration-150 text-left explore-dest-card",
                             hoveredIata === dest.destinationIata
-                              ? "border-primary/50 bg-primary/[0.07] shadow-[0_2px_12px_rgba(139,92,246,0.12)] -translate-y-px"
+                              ? "border-primary/50 bg-primary/[0.07] shadow-[0_2px_12px_rgba(47,122,248,0.12)] -translate-y-px"
                               : "border-[rgba(255,255,255,0.06)] bg-transparent hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]"
                           )}
                         >
