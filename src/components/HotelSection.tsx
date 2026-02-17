@@ -6,22 +6,22 @@ const destinations = [
   {
     city: "New York",
     properties: "12,500+ hotels",
-    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=3840&auto=format&fit=crop&q=90",
   },
   {
     city: "London",
     properties: "9,800+ hotels",
-    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=3840&auto=format&fit=crop&q=90",
   },
   {
     city: "Paris",
     properties: "8,200+ hotels",
-    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=3840&auto=format&fit=crop&q=90",
   },
   {
     city: "Tokyo",
     properties: "7,500+ hotels",
-    image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=3840&auto=format&fit=crop&q=90",
   },
 ];
 
