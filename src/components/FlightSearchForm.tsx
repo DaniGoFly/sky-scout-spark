@@ -12,7 +12,7 @@ import FlightDateRangePicker from "./FlightDateRangePicker";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import MultiCitySearchForm from "./MultiCitySearchForm";
 import { getDefaultDates } from "@/lib/dateUtils";
-import { AIRPORTS, calculateDistance } from "@/lib/airports";
+import { requestNearestAirport } from "@/lib/nearestAirport";
 import type { AISearchParams } from "./FlightSearchHero";
 
 interface FlightSearchFormProps {
@@ -289,23 +289,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           <Button
             variant="outline"
-            onClick={() => {
-              if (!navigator.geolocation) return;
-              navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                  let nearest = null as any;
-                  let minDist = Infinity;
-                  for (const a of AIRPORTS) {
-                    const d = calculateDistance(pos.coords.latitude, pos.coords.longitude, a.lat, a.lon);
-                    if (d < minDist) { minDist = d; nearest = a; }
-                  }
-                  if (nearest) {
-                    setOrigins([{ code: nearest.code, display: `${nearest.city} (${nearest.code})` }]);
-                    setErrors(e => ({ ...e, from: undefined }));
-                  }
-                },
-                () => { /* permission denied — silent */ }
-              );
+            onClick={async () => {
+              const result = await requestNearestAirport();
+              if (result) {
+                setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
+                setErrors(e => ({ ...e, from: undefined }));
+              }
             }}
             className="gap-2 min-h-[44px] h-[52px] sm:h-12 px-5 rounded-xl font-semibold text-sm w-full sm:w-auto whitespace-nowrap shrink-0 border-border/60 hover:border-primary/40 hover:bg-secondary/80 transition-all"
           >
