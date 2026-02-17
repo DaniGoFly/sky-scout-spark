@@ -17,11 +17,11 @@ const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps
 
   return (
     <div
-      className={`relative bg-card rounded-2xl p-6 border transition-all duration-200 ease-out
+      className={`relative bg-card rounded-2xl p-6 border transition-all duration-200 ease-out flight-card-hover
         focus-within:ring-2 focus-within:ring-primary/60 focus-within:ring-offset-0
         ${featured
-          ? "ring-2 ring-primary border-primary/40 shadow-card hover:border-primary/70 hover:shadow-[0_0_0_1px_rgba(168,85,247,0.45),0_10px_30px_rgba(0,0,0,0.35)] hover:-translate-y-0.5"
-          : "border-border/50 shadow-card hover:border-primary/50 hover:shadow-[0_0_18px_-4px_rgba(139,92,246,0.35)] hover:-translate-y-0.5 active:-translate-y-0"
+          ? "ring-2 ring-primary border-primary/40 shadow-lg"
+          : "border-border/50 shadow-lg"
         }`}
     >
       {featured && (
@@ -88,7 +88,6 @@ const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps
             <p className="text-xs text-muted-foreground">per person</p>
           </div>
           <Button 
-            variant="hero" 
             size="lg" 
             className="gap-2" 
             onClick={(e) => {

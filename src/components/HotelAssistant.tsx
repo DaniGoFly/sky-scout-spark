@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Sparkles, Send, Loader2, Building2, MapPin, ArrowRight, CheckCircle, 
-  Star, Heart, Bed
+  Heart, Bed
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -38,7 +38,6 @@ const DESTINATION_IMAGES: Record<string, string> = {
   "Sydney": "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800&auto=format&fit=crop&q=80",
 };
 
-// Destination vibes for hotels
 const DESTINATION_VIBES: Record<string, { emoji: string; tags: string[] }> = {
   "New York": { emoji: "🗽", tags: ["Urban", "Culture", "Shopping"] },
   "Paris": { emoji: "🥐", tags: ["Romance", "Art", "Cafes"] },
@@ -90,7 +89,7 @@ const HotelAssistant = () => {
         body: { 
           message: userMessage, 
           conversationHistory,
-          mode: "hotels" // Tell the assistant we're looking for hotels
+          mode: "hotels"
         },
       });
 
@@ -102,7 +101,6 @@ const HotelAssistant = () => {
         return;
       }
 
-      // Transform flight suggestions to hotel-style suggestions
       const hotelSuggestions = data.suggestions?.map((s: any) => ({
         city: s.city,
         country: s.country,
@@ -129,7 +127,6 @@ const HotelAssistant = () => {
   };
 
   const handleDestinationClick = (suggestion: Suggestion) => {
-    // For hotels, we'll fill in the destination input
     const destinationInput = document.querySelector('[data-hotel-search-form] input') as HTMLInputElement;
     if (destinationInput) {
       destinationInput.value = suggestion.city;
@@ -155,16 +152,16 @@ const HotelAssistant = () => {
 
   return (
     <div className="w-full max-w-5xl mx-auto">
-      {/* Main Card */}
-      <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 overflow-hidden shadow-2xl">
+      {/* Main Card — using design system tokens */}
+      <div className="gradient-border-amber bg-card rounded-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center gap-3 bg-gradient-to-r from-amber-500/20 to-transparent">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
-            <Sparkles className="w-6 h-6 text-white" />
+        <div className="px-6 py-4 border-b border-border/50 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <h3 className="text-white font-bold text-lg">AI Hotel Guide</h3>
-            <p className="text-white/60 text-sm">Tell me what you're looking for — I'll find the perfect stay ✨</p>
+            <h3 className="text-foreground font-bold text-base">AI Hotel Guide</h3>
+            <p className="text-muted-foreground text-sm">Tell me what you're looking for — I'll find the perfect stay</p>
           </div>
         </div>
 
@@ -178,8 +175,8 @@ const HotelAssistant = () => {
                   <div
                     className={`rounded-2xl px-4 py-3 ${
                       msg.role === "user"
-                        ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg"
-                        : "bg-white/10 text-white backdrop-blur-sm"
+                        ? "bg-amber-500 text-primary-foreground shadow-lg shadow-amber-500/15"
+                        : "bg-secondary/50 text-foreground border border-border/50"
                     }`}
                   >
                     {msg.content}
@@ -188,7 +185,7 @@ const HotelAssistant = () => {
                   {/* Destination Cards */}
                   {msg.suggestions && msg.suggestions.length > 0 && (
                     <div className="mt-5 space-y-4">
-                      <div className="flex items-center gap-2 text-white/60 text-xs">
+                      <div className="flex items-center gap-2 text-muted-foreground text-xs">
                         <Heart className="w-3 h-3 text-red-400" />
                         <span>Click any destination to search hotels there</span>
                       </div>
@@ -202,35 +199,32 @@ const HotelAssistant = () => {
                             <div
                               key={sIdx}
                               onClick={() => handleDestinationClick(suggestion)}
-                              className={`group cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+                              className={`group cursor-pointer rounded-2xl overflow-hidden border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
                                 isSelected 
-                                  ? "border-green-400 ring-4 ring-green-400/30 shadow-green-500/20" 
-                                  : "border-white/10 hover:border-amber-500/50"
+                                  ? "border-emerald-500 shadow-lg shadow-emerald-500/10" 
+                                  : "border-border/50 hover:border-amber-500/40"
                               }`}
-                              style={{
-                                background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
-                              }}
                             >
                               {/* Large Image */}
                               <div className="relative h-36 overflow-hidden">
                                 <img
                                   src={getDestinationImage(suggestion.city)}
                                   alt={suggestion.city}
-                                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
                                 
                                 {/* Price Badge */}
                                 <div className="absolute top-3 right-3">
-                                  <div className="px-3 py-1.5 rounded-full bg-amber-500/90 text-white backdrop-blur-md shadow-lg flex items-center gap-1.5">
+                                  <div className="px-2.5 py-1 rounded-full bg-amber-500/90 text-white text-xs font-bold flex items-center gap-1">
                                     <Bed className="w-3 h-3" />
-                                    <span className="font-bold text-sm">{suggestion.priceRange}</span>
+                                    {suggestion.priceRange}
                                   </div>
                                 </div>
 
                                 {/* Selected Checkmark */}
                                 {isSelected && (
-                                  <div className="absolute top-3 left-3 bg-green-500 rounded-full p-1.5 shadow-lg">
+                                  <div className="absolute top-3 left-3 bg-emerald-500 rounded-full p-1.5 shadow-lg">
                                     <CheckCircle className="w-4 h-4 text-white" />
                                   </div>
                                 )}
@@ -251,13 +245,13 @@ const HotelAssistant = () => {
                               </div>
 
                               {/* Content */}
-                              <div className="p-4">
+                              <div className="p-4 bg-card">
                                 {/* Tags */}
                                 <div className="flex flex-wrap gap-1.5 mb-3">
                                   {vibes.tags.slice(0, 3).map((tag, tIdx) => (
                                     <span 
                                       key={tIdx}
-                                      className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/10"
+                                      className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border/50"
                                     >
                                       {tag}
                                     </span>
@@ -265,18 +259,18 @@ const HotelAssistant = () => {
                                 </div>
 
                                 {/* Reason */}
-                                <p className="text-white/80 text-sm leading-relaxed line-clamp-2 mb-4">
+                                <p className="text-foreground/80 text-sm leading-relaxed line-clamp-2 mb-4">
                                   {suggestion.reason}
                                 </p>
 
                                 {/* Action Button */}
                                 <div className={`flex items-center justify-between p-2 rounded-xl transition-colors ${
                                   isSelected 
-                                    ? "bg-green-500/20" 
-                                    : "bg-amber-500/10 group-hover:bg-amber-500/20"
+                                    ? "bg-emerald-500/10" 
+                                    : "bg-amber-500/10 group-hover:bg-amber-500/15"
                                 }`}>
                                   <div className={`flex items-center gap-2 text-sm font-medium ${
-                                    isSelected ? "text-green-400" : "text-amber-400"
+                                    isSelected ? "text-emerald-400" : "text-amber-400"
                                   }`}>
                                     {isSelected ? (
                                       <>
@@ -291,7 +285,7 @@ const HotelAssistant = () => {
                                     )}
                                   </div>
                                   <ArrowRight className={`w-4 h-4 transition-transform ${
-                                    isSelected ? "text-green-400" : "text-amber-400 group-hover:translate-x-1"
+                                    isSelected ? "text-emerald-400" : "text-amber-400 group-hover:translate-x-1"
                                   }`} />
                                 </div>
                               </div>
@@ -304,8 +298,8 @@ const HotelAssistant = () => {
 
                   {/* Travel Tip */}
                   {msg.travelTip && (
-                    <div className="mt-4 bg-gradient-to-r from-amber-500/20 to-orange-500/10 border border-amber-500/30 rounded-xl px-4 py-3 backdrop-blur-sm">
-                      <p className="text-sm text-white flex items-start gap-3">
+                    <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
+                      <p className="text-sm text-foreground flex items-start gap-3">
                         <span className="text-xl">💡</span>
                         <span>
                           <span className="font-semibold text-amber-400">Pro tip: </span>
@@ -320,8 +314,8 @@ const HotelAssistant = () => {
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-white/10 rounded-2xl px-4 py-3 backdrop-blur-sm">
-                  <div className="flex items-center gap-2 text-white/70">
+                <div className="bg-secondary/50 border border-border/50 rounded-2xl px-4 py-3">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">Finding perfect hotels...</span>
                   </div>
@@ -334,19 +328,19 @@ const HotelAssistant = () => {
         )}
 
         {/* Input Area */}
-        <form onSubmit={handleSubmit} className="p-4 border-t border-white/10">
+        <form onSubmit={handleSubmit} className="p-4 border-t border-border/50">
           <div className="flex gap-3">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Looking for a beachfront resort in Bali? A boutique hotel in Paris?"
-              className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-amber-500/50 focus:ring-amber-500/20"
+              className="flex-1 bg-secondary border-border text-foreground placeholder:text-muted-foreground focus:border-amber-500/50 focus:ring-amber-500/20"
               disabled={isLoading}
             />
             <Button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 text-white px-6"
+              className="bg-amber-500 hover:bg-amber-400 text-white px-6"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

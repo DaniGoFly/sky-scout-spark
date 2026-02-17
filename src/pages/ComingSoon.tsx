@@ -32,15 +32,15 @@ const ComingSoon = ({ type = "feature" }: ComingSoonProps) => {
       
       <main className="flex-1 flex items-center justify-center px-4 pt-24 pb-16">
         <div className="text-center max-w-md">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl gradient-hero flex items-center justify-center">
-            <Plane className="w-10 h-10 text-primary-foreground" />
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Plane className="w-10 h-10 text-primary" />
           </div>
           
           <h1 className="text-3xl font-bold text-foreground mb-4">{title}</h1>
           <p className="text-muted-foreground mb-8">{description}</p>
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild variant="hero" size="lg">
+            <Button asChild size="lg">
               <Link to="/flights" className="gap-2">
                 <Plane className="w-5 h-5" />
                 Search Flights
