@@ -8,6 +8,11 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  detectIntent, extractContext, generateReply, generateClarifyingQuestions,
+  loadContext, saveContext, SUGGESTION_CHIPS,
+  type TravelContext,
+} from "@/lib/travelGuideBrain";
 import type { AISearchParams } from "./FlightSearchHero";
 
 /* ───── types ───── */
@@ -174,12 +179,12 @@ function humanError(err: unknown): string {
 
 function GuideSection({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
-      <h4 className="flex items-center gap-2 text-white font-semibold text-sm">
+    <div className="bg-secondary/30 border border-border/50 rounded-xl p-4 space-y-2">
+      <h4 className="flex items-center gap-2 text-foreground font-semibold text-sm">
         <Icon className="w-4 h-4 text-primary" />
         {title}
       </h4>
-      <div className="text-white/80 text-sm leading-relaxed">{children}</div>
+      <div className="text-foreground/80 text-sm leading-relaxed">{children}</div>
     </div>
   );
 }
@@ -189,34 +194,30 @@ function GuideDisplay({ guide }: { guide: TravelGuide }) {
 
   return (
     <div className="mt-4 space-y-3">
-      {/* Summary */}
-      <div className="bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 rounded-xl px-4 py-3">
-        <p className="text-white text-sm leading-relaxed">{guide.summary}</p>
-      </div>
+      {guide.summary && (
+        <div className="bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 rounded-xl px-4 py-3">
+          <p className="text-foreground text-sm leading-relaxed">{guide.summary}</p>
+        </div>
+      )}
 
-      {/* Daily Plan */}
-      {guide.dailyPlan.length > 0 && (
+      {guide.dailyPlan && guide.dailyPlan.length > 0 && (
         <GuideSection icon={Calendar} title="Daily Plan">
           <div className="space-y-2">
             {guide.dailyPlan.map((day, i) => (
-              <div key={i} className="bg-white/5 rounded-lg overflow-hidden">
+              <div key={i} className="bg-secondary/30 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setExpandedDay(expandedDay === i ? null : i)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-secondary/50 transition-colors"
                 >
-                  <span className="text-white font-medium text-sm">
+                  <span className="text-foreground font-medium text-sm">
                     Day {day.day}: {day.title}
                   </span>
-                  {expandedDay === i ? (
-                    <ChevronUp className="w-4 h-4 text-white/50" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-white/50" />
-                  )}
+                  {expandedDay === i ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </button>
                 {expandedDay === i && (
                   <ul className="px-3 pb-3 space-y-1">
                     {day.items.map((item, j) => (
-                      <li key={j} className="text-white/70 text-sm flex items-start gap-2">
+                      <li key={j} className="text-foreground/70 text-sm flex items-start gap-2">
                         <span className="text-primary mt-0.5">•</span>
                         {item}
                       </li>
@@ -230,14 +231,11 @@ function GuideDisplay({ guide }: { guide: TravelGuide }) {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Best Time */}
         {guide.bestTimeToGo && (
           <GuideSection icon={Calendar} title="Best Time to Go">
             <p>{guide.bestTimeToGo}</p>
           </GuideSection>
         )}
-
-        {/* Budget */}
         {guide.estimatedDailyBudget && (
           <GuideSection icon={DollarSign} title="Daily Budget">
             <p>{guide.estimatedDailyBudget}</p>
@@ -245,51 +243,69 @@ function GuideDisplay({ guide }: { guide: TravelGuide }) {
         )}
       </div>
 
-      {/* Must See */}
-      {guide.mustSee.length > 0 && (
+      {guide.mustSee && guide.mustSee.length > 0 && (
         <GuideSection icon={Eye} title="Must See">
           <ul className="space-y-1">
             {guide.mustSee.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>{item}
-              </li>
+              <li key={i} className="flex items-start gap-2"><span className="text-primary mt-0.5">•</span>{item}</li>
             ))}
           </ul>
         </GuideSection>
       )}
 
-      {/* Food */}
-      {guide.foodToTry.length > 0 && (
+      {guide.foodToTry && guide.foodToTry.length > 0 && (
         <GuideSection icon={Utensils} title="Food to Try">
           <ul className="space-y-1">
             {guide.foodToTry.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>{item}
-              </li>
+              <li key={i} className="flex items-start gap-2"><span className="text-primary mt-0.5">•</span>{item}</li>
             ))}
           </ul>
         </GuideSection>
       )}
 
-      {/* Local Tips */}
-      {guide.localTips.length > 0 && (
+      {guide.localTips && guide.localTips.length > 0 && (
         <GuideSection icon={Lightbulb} title="Local Tips">
           <ul className="space-y-1">
             {guide.localTips.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>{item}
-              </li>
+              <li key={i} className="flex items-start gap-2"><span className="text-primary mt-0.5">•</span>{item}</li>
             ))}
           </ul>
         </GuideSection>
       )}
 
-      {/* Safety */}
       {guide.safety && (
         <GuideSection icon={Shield} title="Safety & Practical Info">
           <p>{guide.safety}</p>
         </GuideSection>
       )}
+    </div>
+  );
+}
+
+/* ───── Markdown-lite renderer ───── */
+function MarkdownLite({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <div className="space-y-1.5">
+      {lines.map((line, i) => {
+        if (line.startsWith("## ")) return <h3 key={i} className="text-foreground font-bold text-base mt-2">{line.slice(3)}</h3>;
+        if (line.startsWith("**") && line.endsWith("**")) return <p key={i} className="text-foreground font-semibold text-sm">{line.slice(2, -2)}</p>;
+        if (line.startsWith("• ") || line.startsWith("- ") || line.startsWith("✅ ") || line.startsWith("✅")) {
+          return <p key={i} className="text-foreground/80 text-sm pl-2">{line}</p>;
+        }
+        if (line.trim() === "") return <div key={i} className="h-1" />;
+        // bold inline
+        const parts = line.split(/(\*\*.*?\*\*)/g);
+        return (
+          <p key={i} className="text-foreground/80 text-sm leading-relaxed">
+            {parts.map((part, j) =>
+              part.startsWith("**") && part.endsWith("**")
+                ? <strong key={j} className="text-foreground font-semibold">{part.slice(2, -2)}</strong>
+                : part
+            )}
+          </p>
+        );
+      })}
     </div>
   );
 }
@@ -319,7 +335,10 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
   const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
   const [lastRequest, setLastRequest] = useState<{ body: unknown; status?: number; error?: string } | null>(null);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [travelCtx, setTravelCtx] = useState<TravelContext>(loadContext);
+
+  // Refs for internal scroll only
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -327,13 +346,17 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
     }
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Scroll messages container internally — never scroll the page
+  const scrollMessagesDown = () => {
+    const el = messagesContainerRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    scrollMessagesDown();
+  }, [messages, isLoading]);
 
   useEffect(() => {
     if (initialPrompt && !isLoading) {
@@ -345,17 +368,9 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
   // Loading text animation
   useEffect(() => {
     if (!isLoading) return;
-    const texts = [
-      "Generating your guide…",
-      "Checking best deals…",
-      "Planning your itinerary…",
-      "Almost there…",
-    ];
+    const texts = ["Generating your guide…", "Checking best deals…", "Planning your itinerary…", "Almost there…"];
     let i = 0;
-    const interval = setInterval(() => {
-      i = (i + 1) % texts.length;
-      setLoadingText(texts[i]);
-    }, 2500);
+    const interval = setInterval(() => { i = (i + 1) % texts.length; setLoadingText(texts[i]); }, 2500);
     return () => clearInterval(interval);
   }, [isLoading]);
 
@@ -372,20 +387,33 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);
 
+    // Phase 3: Local brain — try local intelligence first
+    const intent = detectIntent(userMessage);
+    const updatedCtx = extractContext(userMessage, travelCtx);
+    setTravelCtx(updatedCtx);
+    saveContext(updatedCtx);
+
+    const clarifying = generateClarifyingQuestions(intent, updatedCtx);
+
+    // If we can generate a useful local reply, use it (no API needed)
+    if (intent !== "general" || updatedCtx.destination) {
+      let reply = generateReply(intent, updatedCtx);
+      if (clarifying.length > 0) {
+        reply += "\n\n" + clarifying.map(q => `❓ ${q}`).join("\n");
+      }
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Fallback: try remote travel-assistant API
     const requestBody = { message: userMessage };
     setLastRequest({ body: requestBody });
 
     try {
-      const conversationHistory = messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      // Try travel-assistant (chat-style) first
+      const conversationHistory = messages.map((m) => ({ role: m.role, content: m.content }));
       const data = await callTravelAssistant(userMessage, conversationHistory);
-
       setLastRequest((prev) => (prev ? { ...prev, status: 200 } : null));
-
       setMessages((prev) => [
         ...prev,
         {
@@ -396,15 +424,10 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
         },
       ]);
     } catch (err) {
-      const errorMsg = humanError(err);
-      console.error("TravelAssistant error:", err);
-      setLastRequest((prev) => (prev ? { ...prev, status: 0, error: errorMsg } : null));
-      setRetryMessage(userMessage);
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "", error: errorMsg },
-      ]);
+      // If API fails, generate a local fallback
+      const localReply = generateReply("general", updatedCtx);
+      setMessages((prev) => [...prev, { role: "assistant", content: localReply }]);
+      setLastRequest((prev) => (prev ? { ...prev, status: 0, error: humanError(err) } : null));
     } finally {
       setIsLoading(false);
     }
@@ -412,7 +435,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
 
   const handleRetry = () => {
     if (!retryMessage) return;
-    // Remove the error message
     setMessages((prev) => prev.slice(0, -2));
     sendMessage(retryMessage);
   };
@@ -425,7 +447,7 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
       });
       setSelectedDestination(suggestion.iataCode);
       toast.success(`${suggestion.city} added to search! Now select your dates and search.`, { duration: 4000 });
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // Phase 2: Do NOT scroll the page — only scroll chat internally
       setTimeout(() => setSelectedDestination(null), 3000);
     }
   };
@@ -441,11 +463,7 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
       if (result?.ok && result.guide) {
         setMessages((prev) => [
           ...prev,
-          {
-            role: "assistant",
-            content: `Here's your travel guide for ${suggestion.city}:`,
-            guide: result.guide,
-          },
+          { role: "assistant", content: `Here's your travel guide for ${suggestion.city}:`, guide: result.guide },
         ]);
       }
     } catch (err) {
@@ -465,220 +483,179 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
 
   return (
     <div className="w-full max-w-4xl mx-auto mt-8">
-      <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 overflow-hidden shadow-2xl">
+      <div className="travelguide-shell bg-card/80 backdrop-blur-md rounded-2xl border border-border overflow-hidden shadow-2xl flex flex-col" style={{ height: "min(70vh, 640px)" }}>
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center gap-3 bg-gradient-to-r from-primary/20 to-transparent">
+        <div className="px-6 py-4 border-b border-border flex items-center gap-3 bg-gradient-to-r from-primary/20 to-transparent shrink-0">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shadow-lg">
-            <Sparkles className="w-6 h-6 text-white" />
+            <Sparkles className="w-6 h-6 text-primary-foreground" />
           </div>
           <div>
-            <h3 className="text-white font-bold text-lg">AI Travel Guide</h3>
-            <p className="text-white/60 text-sm">Tell me your dream trip — I'll find the best deals ✨</p>
+            <h3 className="text-foreground font-bold text-lg">AI Travel Guide</h3>
+            <p className="text-muted-foreground text-sm">Tell me your dream trip — I'll help you plan ✨</p>
           </div>
         </div>
 
-        {/* Messages Area */}
-        {isExpanded && messages.length > 0 && (
-          <div className="max-h-[600px] overflow-y-auto p-4 space-y-4">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[90%] ${msg.role === "user" ? "order-2" : ""}`}>
-                  {/* Error State */}
-                  {msg.error && (
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3 space-y-3">
-                      <div className="flex items-center gap-2 text-red-400 text-sm">
-                        <AlertTriangle className="w-4 h-4" />
-                        <span>{msg.error}</span>
-                      </div>
-                      {retryMessage && idx === messages.length - 1 && (
-                        <Button
-                          onClick={handleRetry}
-                          variant="outline"
-                          size="sm"
-                          className="border-red-500/30 text-red-300 hover:bg-red-500/10"
-                        >
-                          <RefreshCw className="w-3 h-3 mr-2" />
-                          Retry
-                        </Button>
-                      )}
+        {/* Messages Area — internal scroll only */}
+        <div
+          ref={messagesContainerRef}
+          className="travelguide-messages flex-1 overflow-y-auto p-4 space-y-4"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          {messages.length === 0 && !isLoading && (
+            <div className="text-center py-8 space-y-4">
+              <p className="text-muted-foreground text-sm">Ask me anything about travel — I can help with itineraries, budgets, packing, visa info, and more!</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {SUGGESTION_CHIPS.map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => { setInput(chip.prompt); }}
+                    className="text-sm px-4 py-2 rounded-full bg-secondary/50 border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[90%] ${msg.role === "user" ? "order-2" : ""}`}>
+                {/* Error State */}
+                {msg.error && (
+                  <div className="bg-destructive/10 border border-destructive/30 rounded-2xl px-4 py-3 space-y-3">
+                    <div className="flex items-center gap-2 text-destructive text-sm">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>{msg.error}</span>
                     </div>
-                  )}
+                    {retryMessage && idx === messages.length - 1 && (
+                      <Button onClick={handleRetry} variant="outline" size="sm" className="border-destructive/30 text-destructive hover:bg-destructive/10">
+                        <RefreshCw className="w-3 h-3 mr-2" /> Retry
+                      </Button>
+                    )}
+                  </div>
+                )}
 
-                  {/* Normal Message */}
-                  {!msg.error && msg.content && (
-                    <div
-                      className={`rounded-2xl px-4 py-3 ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground shadow-lg"
-                          : "bg-white/10 text-white backdrop-blur-sm"
-                      }`}
-                    >
-                      {msg.content}
+                {/* Normal Message */}
+                {!msg.error && msg.content && (
+                  <div className={`rounded-2xl px-4 py-3 ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "bg-secondary/50 text-foreground backdrop-blur-sm"
+                  }`}>
+                    {msg.role === "assistant" ? <MarkdownLite text={msg.content} /> : msg.content}
+                  </div>
+                )}
+
+                {/* Travel Guide */}
+                {msg.guide && <GuideDisplay guide={msg.guide} />}
+
+                {/* Destination Cards */}
+                {msg.suggestions && msg.suggestions.length > 0 && (
+                  <div className="mt-5 space-y-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                      <Heart className="w-3 h-3 text-destructive" />
+                      <span>Click any destination to search flights, or generate a full guide</span>
                     </div>
-                  )}
-
-                  {/* Travel Guide */}
-                  {msg.guide && <GuideDisplay guide={msg.guide} />}
-
-                  {/* Destination Cards */}
-                  {msg.suggestions && msg.suggestions.length > 0 && (
-                    <div className="mt-5 space-y-4">
-                      <div className="flex items-center gap-2 text-white/60 text-xs">
-                        <Heart className="w-3 h-3 text-red-400" />
-                        <span>Click any destination to search flights, or generate a full guide</span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {msg.suggestions.map((suggestion, sIdx) => {
-                          const isSelected = selectedDestination === suggestion.iataCode;
-                          const vibes = getDestinationVibes(suggestion.iataCode);
-                          return (
-                            <div
-                              key={sIdx}
-                              className={`group rounded-2xl overflow-hidden border-2 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
-                                isSelected
-                                  ? "border-green-400 ring-2 ring-green-400/30 shadow-green-500/20"
-                                  : "border-white/10 hover:border-primary/50"
-                              }`}
-                              style={{
-                                background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
-                              }}
-                            >
-                              {/* Image */}
-                              <div
-                                className="relative h-36 overflow-hidden cursor-pointer"
-                                onClick={() => handleDestinationClick(suggestion)}
-                              >
-                                <img
-                                  src={getDestinationImage(suggestion.iataCode)}
-                                  alt={suggestion.city}
-                                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                                {suggestion.price > 0 && (
-                                  <div className="absolute top-3 right-3">
-                                    <div
-                                      className={`px-3 py-1.5 rounded-full backdrop-blur-md shadow-lg flex items-center gap-1.5 ${
-                                        suggestion.isLivePrice ? "bg-green-500/90 text-white" : "bg-white/90 text-gray-900"
-                                      }`}
-                                    >
-                                      {suggestion.isLivePrice && <span className="w-2 h-2 bg-white rounded-full animate-pulse" />}
-                                      <span className="font-bold text-sm">€{suggestion.price}</span>
-                                    </div>
-                                  </div>
-                                )}
-                                {isSelected && (
-                                  <div className="absolute top-3 left-3 bg-green-500 rounded-full p-1.5 shadow-lg">
-                                    <CheckCircle className="w-4 h-4 text-white" />
-                                  </div>
-                                )}
-                                <div className="absolute bottom-3 left-3 right-3">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-2xl">{vibes.emoji}</span>
-                                    <div>
-                                      <h4 className="text-white font-bold text-lg leading-tight">{suggestion.city}</h4>
-                                      <p className="text-white/70 text-xs flex items-center gap-1">
-                                        <MapPin className="w-3 h-3" />
-                                        {suggestion.country}
-                                      </p>
-                                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {msg.suggestions.map((suggestion, sIdx) => {
+                        const isSelected = selectedDestination === suggestion.iataCode;
+                        const vibes = getDestinationVibes(suggestion.iataCode);
+                        return (
+                          <div
+                            key={sIdx}
+                            className={`group rounded-2xl overflow-hidden border-2 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+                              isSelected ? "border-green-400 ring-2 ring-green-400/30" : "border-border hover:border-primary/50"
+                            }`}
+                            style={{ background: "linear-gradient(135deg, hsl(var(--secondary) / 0.5) 0%, hsl(var(--secondary) / 0.2) 100%)" }}
+                          >
+                            <div className="relative h-36 overflow-hidden cursor-pointer" onClick={() => handleDestinationClick(suggestion)}>
+                              <img src={getDestinationImage(suggestion.iataCode)} alt={suggestion.city} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                              {suggestion.price > 0 && (
+                                <div className="absolute top-3 right-3">
+                                  <div className={`px-3 py-1.5 rounded-full backdrop-blur-md shadow-lg flex items-center gap-1.5 ${suggestion.isLivePrice ? "bg-green-500/90 text-white" : "bg-secondary text-foreground"}`}>
+                                    {suggestion.isLivePrice && <span className="w-2 h-2 bg-white rounded-full animate-pulse" />}
+                                    <span className="font-bold text-sm">€{suggestion.price}</span>
                                   </div>
                                 </div>
-                              </div>
-
-                              {/* Content */}
-                              <div className="p-4">
-                                <div className="flex flex-wrap gap-1.5 mb-3">
-                                  {vibes.tags.slice(0, 3).map((tag, tIdx) => (
-                                    <span
-                                      key={tIdx}
-                                      className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/10"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
+                              )}
+                              {isSelected && (
+                                <div className="absolute top-3 left-3 bg-green-500 rounded-full p-1.5 shadow-lg">
+                                  <CheckCircle className="w-4 h-4 text-white" />
                                 </div>
-                                <p className="text-white/80 text-sm leading-relaxed line-clamp-2 mb-4">{suggestion.reason}</p>
-
-                                {/* Action buttons */}
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleDestinationClick(suggestion)}
-                                    className={`flex-1 flex items-center justify-center gap-2 p-2 rounded-xl text-sm font-medium transition-colors ${
-                                      isSelected
-                                        ? "bg-green-500/20 text-green-400"
-                                        : "bg-primary/10 text-primary hover:bg-primary/20"
-                                    }`}
-                                  >
-                                    {isSelected ? (
-                                      <>
-                                        <CheckCircle className="w-4 h-4" />
-                                        Added!
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Plane className="w-4 h-4" />
-                                        Search
-                                      </>
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() => handleGenerateGuide(suggestion)}
-                                    disabled={isLoading}
-                                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors border border-white/10"
-                                  >
-                                    <Sparkles className="w-3.5 h-3.5" />
-                                    Guide
-                                  </button>
+                              )}
+                              <div className="absolute bottom-3 left-3 right-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-2xl">{vibes.emoji}</span>
+                                  <div>
+                                    <h4 className="text-white font-bold text-lg leading-tight">{suggestion.city}</h4>
+                                    <p className="text-white/70 text-xs flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" />{suggestion.country}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                            <div className="p-4">
+                              <div className="flex flex-wrap gap-1.5 mb-3">
+                                {vibes.tags.slice(0, 3).map((tag, tIdx) => (
+                                  <span key={tIdx} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground border border-border">{tag}</span>
+                                ))}
+                              </div>
+                              <p className="text-foreground/80 text-sm leading-relaxed line-clamp-2 mb-4">{suggestion.reason}</p>
+                              <div className="flex gap-2">
+                                <button onClick={() => handleDestinationClick(suggestion)} className={`flex-1 flex items-center justify-center gap-2 p-2 rounded-xl text-sm font-medium transition-colors ${isSelected ? "bg-green-500/20 text-green-400" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>
+                                  {isSelected ? <><CheckCircle className="w-4 h-4" />Added!</> : <><Plane className="w-4 h-4" />Search</>}
+                                </button>
+                                <button onClick={() => handleGenerateGuide(suggestion)} disabled={isLoading} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors border border-border">
+                                  <Sparkles className="w-3.5 h-3.5" />Guide
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-
-                  {/* Travel Tip */}
-                  {msg.travelTip && (
-                    <div className="mt-4 bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 rounded-xl px-4 py-3 backdrop-blur-sm">
-                      <p className="text-sm text-white flex items-start gap-3">
-                        <span className="text-xl">💡</span>
-                        <span>
-                          <span className="font-semibold text-primary">Pro tip: </span>
-                          {msg.travelTip}
-                        </span>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {/* Loading State */}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-4 flex items-center gap-3 border border-white/10">
-                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                  <div>
-                    <span className="text-white text-sm font-medium">{loadingText}</span>
-                    <p className="text-white/50 text-xs">This may take a few seconds</p>
                   </div>
+                )}
+
+                {/* Travel Tip */}
+                {msg.travelTip && (
+                  <div className="mt-4 bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 rounded-xl px-4 py-3 backdrop-blur-sm">
+                    <p className="text-sm text-foreground flex items-start gap-3">
+                      <span className="text-xl">💡</span>
+                      <span><span className="font-semibold text-primary">Pro tip: </span>{msg.travelTip}</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-secondary/50 backdrop-blur-sm rounded-2xl px-5 py-4 flex items-center gap-3 border border-border">
+                <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                <div>
+                  <span className="text-foreground text-sm font-medium">{loadingText}</span>
+                  <p className="text-muted-foreground text-xs">This may take a few seconds</p>
                 </div>
               </div>
-            )}
+            </div>
+          )}
+        </div>
 
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-
-        {/* Input Area */}
-        <form onSubmit={handleSubmit} className="p-4 border-t border-white/10 bg-white/5">
+        {/* Input Area — sticky bottom */}
+        <form onSubmit={handleSubmit} className="travelguide-inputbar p-4 border-t border-border bg-card/80 shrink-0">
           <div className="flex gap-3">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Try: 'Beach trip from Berlin for under €200' ✈️"
-              className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-primary h-12 text-base rounded-xl"
+              className="flex-1 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary h-12 text-base rounded-xl"
               disabled={isLoading}
             />
             <Button
@@ -690,22 +667,17 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
             </Button>
           </div>
 
-          {/* Example Prompts */}
-          {!isExpanded && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {[
-                { text: "🏖️ Beach vacation under €300", prompt: "I want a beach vacation for under €300" },
-                { text: "🏰 Cultural trip to Europe", prompt: "Cultural trip to Europe with history and good food" },
-                { text: "🌴 Warm escape in January", prompt: "Warm destination to escape winter in January" },
-                { text: "💰 Cheapest deals right now", prompt: "Show me the cheapest flight deals right now" },
-              ].map((item) => (
+          {/* Suggestion Chips */}
+          {messages.length > 0 && !isLoading && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {SUGGESTION_CHIPS.slice(0, 4).map((chip) => (
                 <button
-                  key={item.text}
+                  key={chip.label}
                   type="button"
-                  onClick={() => setInput(item.prompt)}
-                  className="text-sm px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all"
+                  onClick={() => setInput(chip.prompt)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-secondary/50 border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
                 >
-                  {item.text}
+                  {chip.label}
                 </button>
               ))}
             </div>
@@ -714,11 +686,11 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
 
         {/* Dev Debug Panel */}
         {isDev && lastRequest && (
-          <div className="border-t border-yellow-500/30 bg-yellow-500/5 p-3 text-xs font-mono">
+          <div className="border-t border-yellow-500/30 bg-yellow-500/5 p-3 text-xs font-mono shrink-0">
             <p className="text-yellow-400 font-bold mb-1">🔧 Debug (dev only)</p>
-            <p className="text-white/60">Request: {JSON.stringify(lastRequest.body)}</p>
-            <p className="text-white/60">Status: {lastRequest.status ?? "pending"}</p>
-            {lastRequest.error && <p className="text-red-400">Error: {lastRequest.error}</p>}
+            <p className="text-muted-foreground">Request: {JSON.stringify(lastRequest.body)}</p>
+            <p className="text-muted-foreground">Status: {lastRequest.status ?? "pending"}</p>
+            {lastRequest.error && <p className="text-destructive">Error: {lastRequest.error}</p>}
           </div>
         )}
       </div>

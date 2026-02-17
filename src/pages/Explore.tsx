@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addDays } from "date-fns";
-import { Loader2, Navigation, Plane, SlidersHorizontal, MapPin, ArrowRight } from "lucide-react";
+import { Loader2, Navigation, Plane, SlidersHorizontal, MapPin, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,22 +17,14 @@ import ExploreMap from "@/components/explore/ExploreMap";
 import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
 import { detectGeo } from "@/lib/priceApi";
 import { useLocale } from "@/hooks/useLocale";
-import { AIRPORTS, calculateDistance, type AirportData } from "@/lib/airports";
+import { AIRPORTS, type AirportData } from "@/lib/airports";
+import { requestNearestAirport } from "@/lib/nearestAirport";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AirportSelection {
   code: string;
   display: string;
-}
-
-function findNearestAirport(lat: number, lon: number): AirportData | null {
-  let nearest: AirportData | null = null;
-  let minDist = Infinity;
-  for (const a of AIRPORTS) {
-    const d = calculateDistance(lat, lon, a.lat, a.lon);
-    if (d < minDist) { minDist = d; nearest = a; }
-  }
-  return nearest;
 }
 
 function getDefaultAirportByCountry(countryCode: string): AirportData | null {
@@ -66,7 +58,8 @@ const Explore = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDest, setSelectedDest] = useState<ExploreResult | null>(null);
   const [maxPrice, setMaxPrice] = useState<number>(2000);
-
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
+  const isMobile = useIsMobile();
   // Auto-detect origin from geo
   useEffect(() => {
     if (origin) return;
@@ -96,15 +89,11 @@ const Explore = () => {
       .finally(() => setIsLoading(false));
   }, [origin?.code, currency, directOnly, tripLength[0], tripLength[1]]);
 
-  const handleUseMyLocation = useCallback(() => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const nearest = findNearestAirport(pos.coords.latitude, pos.coords.longitude);
-        if (nearest) setOrigin({ code: nearest.code, display: `${nearest.city} (${nearest.code})` });
-      },
-      () => { /* denied */ }
-    );
+  const handleUseMyLocation = useCallback(async () => {
+    const result = await requestNearestAirport();
+    if (result) {
+      setOrigin({ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` });
+    }
   }, []);
 
   // Enrich destinations with lat/lon from airports DB
@@ -327,64 +316,108 @@ const Explore = () => {
                   </p>
                 </div>
               ) : (
-                <div className="p-2 space-y-1">
-                  {sortedDestinations.map((dest, i) => (
-                    <button
-                      key={dest.destinationIata}
-                      onClick={() => handleSelectDestination(dest)}
-                      onMouseEnter={() => setHoveredIata(dest.destinationIata)}
-                      onMouseLeave={() => setHoveredIata(null)}
-                      className={cn(
-                        "w-full rounded-xl border transition-all duration-150 text-left explore-dest-card",
-                        hoveredIata === dest.destinationIata
-                          ? "border-primary/50 bg-primary/[0.07] shadow-[0_2px_12px_rgba(139,92,246,0.12)] -translate-y-px"
-                          : "border-[rgba(255,255,255,0.06)] bg-transparent hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]"
-                      )}
-                    >
-                      <div className="px-3 py-2.5 flex items-center gap-3">
-                        <div className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                          hoveredIata === dest.destinationIata ? "bg-primary/15" : "bg-[rgba(255,255,255,0.04)]"
-                        )}>
-                          <MapPin className={cn("w-3.5 h-3.5", hoveredIata === dest.destinationIata ? "text-primary" : "text-muted-foreground/60")} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <h3 className="font-semibold text-[13px] text-foreground truncate leading-tight">
-                              {dest.destinationName || dest.destinationIata}
-                            </h3>
-                            {i === 0 && (
-                              <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 border-emerald-500/40 text-emerald-400 shrink-0 font-semibold">
-                                Cheapest
-                              </Badge>
+                <>
+                  {/* Mobile: horizontal scroll or expanded grid */}
+                  {isMobile ? (
+                    <div className="p-2 space-y-3">
+                      <div className={isMobileExpanded
+                        ? "grid grid-cols-2 gap-3"
+                        : "flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide"
+                      }>
+                        {(isMobileExpanded ? sortedDestinations : sortedDestinations.slice(0, 10)).map((dest, i) => (
+                          <button
+                            key={dest.destinationIata}
+                            onClick={() => handleSelectDestination(dest)}
+                            className={cn(
+                              "rounded-xl border transition-all text-left",
+                              isMobileExpanded ? "" : "min-w-[260px] snap-start flex-shrink-0",
+                              "border-border/30 bg-secondary/20 hover:border-primary/40 hover:bg-secondary/40"
                             )}
-                          </div>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            {dest.departDate && (
-                              <p className="text-[11px] text-muted-foreground/70">
-                                {formatDateRange(dest.departDate, dest.returnDate)}
-                              </p>
-                            )}
-                            {(dest as any).transfers === 0 ? (
-                              <span className="text-[10px] text-emerald-400/80 font-medium">Direct</span>
-                            ) : (dest as any).transfers !== undefined ? (
-                              <span className="text-[10px] text-muted-foreground/50">{(dest as any).transfers} stop{(dest as any).transfers > 1 ? "s" : ""}</span>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0 flex items-center gap-1.5">
-                          <div>
-                            <p className="text-sm font-bold text-foreground tabular-nums">From {formatPrice(dest.price)}</p>
-                            {dateMode === "flexible" && (
-                              <p className="text-[9px] text-muted-foreground/60 leading-tight">Flexible dates</p>
-                            )}
-                          </div>
-                          <ArrowRight className={cn("w-3.5 h-3.5 transition-all duration-150", hoveredIata === dest.destinationIata ? "text-primary translate-x-0.5" : "text-muted-foreground/20")} />
-                        </div>
+                          >
+                            <div className="px-3 py-2.5 flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-secondary/50">
+                                <MapPin className="w-3.5 h-3.5 text-muted-foreground/60" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="font-semibold text-[13px] text-foreground truncate">{dest.destinationName || dest.destinationIata}</h3>
+                                {dest.departDate && <p className="text-[11px] text-muted-foreground/70">{formatDateRange(dest.departDate, dest.returnDate)}</p>}
+                              </div>
+                              <p className="text-sm font-bold text-foreground tabular-nums shrink-0">From {formatPrice(dest.price)}</p>
+                            </div>
+                          </button>
+                        ))}
                       </div>
-                    </button>
-                  ))}
-                </div>
+                      {sortedDestinations.length > 10 && (
+                        <button
+                          onClick={() => setIsMobileExpanded(!isMobileExpanded)}
+                          className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                        >
+                          {isMobileExpanded ? <><ChevronUp className="w-4 h-4" /> Show Less</> : <><ChevronDown className="w-4 h-4" /> Show More ({sortedDestinations.length - 10} more)</>}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    /* Desktop: existing list */
+                    <div className="p-2 space-y-1">
+                      {sortedDestinations.map((dest, i) => (
+                        <button
+                          key={dest.destinationIata}
+                          onClick={() => handleSelectDestination(dest)}
+                          onMouseEnter={() => setHoveredIata(dest.destinationIata)}
+                          onMouseLeave={() => setHoveredIata(null)}
+                          className={cn(
+                            "w-full rounded-xl border transition-all duration-150 text-left explore-dest-card",
+                            hoveredIata === dest.destinationIata
+                              ? "border-primary/50 bg-primary/[0.07] shadow-[0_2px_12px_rgba(139,92,246,0.12)] -translate-y-px"
+                              : "border-[rgba(255,255,255,0.06)] bg-transparent hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]"
+                          )}
+                        >
+                          <div className="px-3 py-2.5 flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                              hoveredIata === dest.destinationIata ? "bg-primary/15" : "bg-[rgba(255,255,255,0.04)]"
+                            )}>
+                              <MapPin className={cn("w-3.5 h-3.5", hoveredIata === dest.destinationIata ? "text-primary" : "text-muted-foreground/60")} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <h3 className="font-semibold text-[13px] text-foreground truncate leading-tight">
+                                  {dest.destinationName || dest.destinationIata}
+                                </h3>
+                                {i === 0 && (
+                                  <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 border-emerald-500/40 text-emerald-400 shrink-0 font-semibold">
+                                    Cheapest
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {dest.departDate && (
+                                  <p className="text-[11px] text-muted-foreground/70">
+                                    {formatDateRange(dest.departDate, dest.returnDate)}
+                                  </p>
+                                )}
+                                {(dest as any).transfers === 0 ? (
+                                  <span className="text-[10px] text-emerald-400/80 font-medium">Direct</span>
+                                ) : (dest as any).transfers !== undefined ? (
+                                  <span className="text-[10px] text-muted-foreground/50">{(dest as any).transfers} stop{(dest as any).transfers > 1 ? "s" : ""}</span>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0 flex items-center gap-1.5">
+                              <div>
+                                <p className="text-sm font-bold text-foreground tabular-nums">From {formatPrice(dest.price)}</p>
+                                {dateMode === "flexible" && (
+                                  <p className="text-[9px] text-muted-foreground/60 leading-tight">Flexible dates</p>
+                                )}
+                              </div>
+                              <ArrowRight className={cn("w-3.5 h-3.5 transition-all duration-150", hoveredIata === dest.destinationIata ? "text-primary translate-x-0.5" : "text-muted-foreground/20")} />
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
