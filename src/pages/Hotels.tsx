@@ -170,6 +170,10 @@ const Hotels = () => {
               "radial-gradient(1200px circle at 50% 10%, rgba(217,119,6,0.08), transparent 60%), linear-gradient(180deg, hsl(222 47% 6%), hsl(222 40% 8%))",
           }}
         />
+        {/* Subtle background hotel icon */}
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <Building2 className="w-[320px] h-[320px] text-white/[0.02]" strokeWidth={0.5} />
+        </div>
 
         {/* Content */}
         <div className="relative z-10 flex-1 flex flex-col justify-center pt-28 pb-20 px-4">
