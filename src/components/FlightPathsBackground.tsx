@@ -138,26 +138,13 @@ const FlightPathsBackground = () => {
         </g>
       </svg>
 
-      {/* Floating destination markers */}
-      <div className={`absolute top-[15%] right-[20%] transition-all duration-1000 delay-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="relative">
-          <div className="w-3 h-3 bg-accent rounded-full animate-ping absolute" />
-          <div className="w-3 h-3 bg-accent rounded-full relative" />
-        </div>
+      {/* Floating destination markers — reduced */}
+      <div className={`absolute top-[15%] right-[20%] transition-all duration-1000 delay-700 ${mounted ? 'opacity-50 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className="w-2 h-2 bg-accent/60 rounded-full" />
       </div>
       
-      <div className={`absolute top-[60%] left-[15%] transition-all duration-1000 delay-900 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="relative">
-          <div className="w-2 h-2 bg-primary rounded-full animate-ping absolute" style={{ animationDuration: '2s' }} />
-          <div className="w-2 h-2 bg-primary rounded-full relative" />
-        </div>
-      </div>
-      
-      <div className={`absolute top-[35%] right-[35%] transition-all duration-1000 delay-1100 ${mounted ? 'opacity-70 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="relative">
-          <div className="w-2 h-2 bg-primary/80 rounded-full animate-ping absolute" style={{ animationDuration: '2.5s' }} />
-          <div className="w-2 h-2 bg-primary/80 rounded-full relative" />
-        </div>
+      <div className={`absolute top-[60%] left-[15%] transition-all duration-1000 delay-900 ${mounted ? 'opacity-40 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className="w-2 h-2 bg-primary/50 rounded-full" />
       </div>
     </div>
   );

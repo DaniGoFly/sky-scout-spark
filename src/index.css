@@ -27,7 +27,7 @@
     --background: 230 25% 8%;
     --foreground: 0 0% 98%;
 
-    --card: 230 25% 12%;
+    --card: 230 22% 14%;
     --card-foreground: 0 0% 98%;
 
     --popover: 230 25% 12%;
@@ -86,7 +86,8 @@
 .gradient-text {
   @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-primary;
   background-size: 200% auto;
-  animation: gradient-shift 3s ease infinite;
+  animation: gradient-shift 6s ease infinite;
+  filter: brightness(0.92);
 }
 
 @keyframes gradient-shift {
@@ -96,7 +97,7 @@
 
 /* Glow effects */
 .glow-primary {
-  box-shadow: 0 0 60px -15px hsl(265 90% 65% / 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
 .glow-accent {
@@ -107,22 +108,13 @@
   box-shadow: 0 0 60px -15px hsl(38 92% 50% / 0.4);
 }
 
-/* Animated gradient border */
+/* Subtle structured border */
 .gradient-border {
   position: relative;
   background: hsl(var(--card));
   border-radius: var(--radius);
-}
-
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: calc(var(--radius) + 1px);
-  background: linear-gradient(135deg, hsl(265 90% 65%), hsl(200 100% 60%), hsl(265 90% 65%));
-  background-size: 200% 200%;
-  animation: gradient-rotate 4s linear infinite;
-  z-index: -1;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
 /* Amber variant for Hotels */
