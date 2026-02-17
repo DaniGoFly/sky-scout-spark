@@ -158,7 +158,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   // Multi-city mode — same outer card as other tabs
   if (tripType === "multicity") {
     return (
-      <div className="gradient-border bg-card rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto">
+    <div className="gradient-border bg-card rounded-xl p-5 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
         <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4 sm:mb-5">
           {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
             <button
@@ -180,7 +180,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }
 
   return (
-    <div className="gradient-border bg-card rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto">
+    <div className="gradient-border bg-card rounded-xl p-5 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
       {/* Trip Type Toggle */}
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4 sm:mb-5">
         {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
