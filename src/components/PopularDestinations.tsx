@@ -5,25 +5,25 @@ const destinations = [
     city: "Paris",
     country: "France",
     code: "CDG",
-    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=3840&auto=format&fit=crop&q=90",
   },
   {
     city: "Tokyo",
     country: "Japan",
     code: "TYO",
-    image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=3840&auto=format&fit=crop&q=90",
   },
   {
     city: "New York",
     country: "United States",
     code: "JFK",
-    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=3840&auto=format&fit=crop&q=90",
   },
   {
     city: "London",
     country: "United Kingdom",
     code: "LHR",
-    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=3840&auto=format&fit=crop&q=90",
   },
 ];
 
