@@ -20,10 +20,7 @@
   background: #0b1020;
 }
 
-/* Soften harsh tile contrast */
-.explore-map-container canvas {
-  filter: brightness(1.05) contrast(0.95);
-}
+/* Sharp crisp tiles */
 
 /* ── Price pill markers — Google Flights style ── */
 .explore-marker {
