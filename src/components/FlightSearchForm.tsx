@@ -159,6 +159,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   if (tripType === "multicity") {
     return (
     <div className="gradient-border bg-card rounded-xl p-6 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
+        {/* Flights context row */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4 pb-4 border-b border-border/50">
+          <Plane className="w-3.5 h-3.5 text-primary" />
+          <span className="font-semibold text-foreground/80">Flights</span>
+          <span className="text-muted-foreground/50">•</span>
+          <span>Compare airline & agency prices</span>
+          <span className="text-muted-foreground/50 hidden sm:inline">•</span>
+          <span className="hidden sm:inline">Secure booking via verified partners</span>
+        </div>
         <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-5 sm:mb-6">
           {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
             <button
@@ -181,6 +190,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
   return (
     <div className="gradient-border bg-card rounded-xl p-6 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
+      {/* Flights context row */}
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4 pb-4 border-b border-border/50">
+        <Plane className="w-3.5 h-3.5 text-primary" />
+        <span className="font-semibold text-foreground/80">Flights</span>
+        <span className="text-muted-foreground/50">•</span>
+        <span>Compare airline & agency prices</span>
+        <span className="text-muted-foreground/50 hidden sm:inline">•</span>
+        <span className="hidden sm:inline">Secure booking via verified partners</span>
+      </div>
       {/* Trip Type Toggle */}
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-5 sm:mb-6">
         {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
