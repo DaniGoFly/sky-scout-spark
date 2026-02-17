@@ -18,26 +18,22 @@ const destinations = [
   {
     city: "New York",
     country: "USA",
-    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&h=300&fit=crop",
-    color: "from-cyan-500/80 to-blue-900/90",
+    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=3840&auto=format&fit=crop&q=90",
   },
   {
     city: "London",
     country: "UK",
-    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400&h=300&fit=crop",
-    color: "from-amber-500/80 to-orange-900/90",
+    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=3840&auto=format&fit=crop&q=90",
   },
   {
     city: "Paris",
     country: "France",
-    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&h=300&fit=crop",
-    color: "from-violet-500/80 to-purple-900/90",
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=3840&auto=format&fit=crop&q=90",
   },
   {
     city: "Tokyo",
     country: "Japan",
-    image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=300&fit=crop",
-    color: "from-pink-500/80 to-rose-900/90",
+    image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=3840&auto=format&fit=crop&q=90",
   },
 ];
 
@@ -166,41 +162,34 @@ const Hotels = () => {
       
       {/* Hero Section */}
       <section className="relative min-h-screen flex flex-col overflow-hidden">
-        {/* Base gradient background - Warm amber/orange theme for Hotels */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-amber-500/10" />
-        
-        {/* Floating orbs - Warm amber theme */}
-        <div className="absolute top-20 left-[10%] w-96 h-96 bg-amber-500/20 rounded-full blur-[120px] animate-float" />
-        <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-orange-400/15 rounded-full blur-[100px] animate-float-delayed" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[150px]" />
-        
-        {/* Subtle floating buildings pattern */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <Building2 className="absolute top-[15%] left-[5%] w-6 h-6 text-amber-500/10" />
-          <Building2 className="absolute top-[25%] right-[8%] w-8 h-8 text-orange-400/10" />
-          <Building2 className="absolute bottom-[30%] left-[12%] w-5 h-5 text-amber-400/10" />
-          <Building2 className="absolute top-[60%] right-[15%] w-7 h-7 text-amber-500/10" />
-          <Building2 className="absolute bottom-[20%] right-[25%] w-4 h-4 text-orange-500/10" />
-        </div>
-        
-        {/* Subtle noise overlay */}
-        <div className="absolute inset-0 opacity-[0.015] pointer-events-none"
+        {/* Calm navy gradient with warm accent — no floating orbs */}
+        <div
+          className="absolute inset-0"
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
+            background:
+              "radial-gradient(1200px circle at 50% 10%, rgba(217,119,6,0.08), transparent 60%), linear-gradient(180deg, hsl(222 47% 6%), hsl(222 40% 8%))",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+            opacity: 0.4,
           }}
         />
 
         {/* Content */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center pt-24 pb-16 px-4">
+        <div className="relative z-10 flex-1 flex flex-col justify-center pt-28 pb-20 px-4">
           <div className="container mx-auto max-w-5xl">
             {/* Hero Text */}
-            <div className="text-center mb-12 animate-fade-in">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
-                <span className="text-foreground">Find your perfect</span>
-                <br />
-                <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">stay</span>
+            <div className="text-center mb-14 animate-fade-in">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-5 leading-tight tracking-tight text-foreground">
+                Find your perfect{" "}
+                <span className="text-amber-400">stay</span>
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              <p className="text-lg md:text-xl text-foreground/65 max-w-xl mx-auto leading-relaxed">
                 Compare hotel prices from all major booking sites in seconds
               </p>
             </div>
@@ -209,8 +198,17 @@ const Hotels = () => {
             <div 
               ref={searchFormRef}
               data-hotel-search-form
-              className="gradient-border-amber bg-card rounded-2xl p-6 md:p-8 w-full max-w-5xl mx-auto"
+              className="gradient-border bg-card rounded-xl p-6 md:p-8 w-full max-w-5xl mx-auto"
             >
+              {/* Hotels context row */}
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4 pb-4 border-b border-border/50">
+                <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                <span className="font-semibold text-foreground/80">Hotels</span>
+                <span className="text-muted-foreground/50">•</span>
+                <span>Compare prices from all major booking sites</span>
+                <span className="text-muted-foreground/50 hidden sm:inline">•</span>
+                <span className="hidden sm:inline">Secure booking via verified partners</span>
+              </div>
               {/* Search Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
                 {/* Destination */}
@@ -359,7 +357,7 @@ const Hotels = () => {
                           </div>
                         </div>
                         <Button
-                          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 text-white"
+                          className="w-full bg-amber-500 hover:bg-amber-400 text-white"
                           size="sm"
                           onClick={() => setGuestPopoverOpen(false)}
                         >
@@ -375,7 +373,7 @@ const Hotels = () => {
               <div className="mt-6 flex justify-center md:justify-end">
                 <Button
                   size="lg"
-                  className="gap-2 px-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 transition-opacity text-white"
+                  className="gap-2 px-8 bg-amber-500 hover:bg-amber-400 transition-colors text-white shadow-lg shadow-amber-500/15"
                   onClick={handleSearch}
                   disabled={isLoading}
                 >
@@ -411,13 +409,10 @@ const Hotels = () => {
       {/* Popular Destinations */}
       {!hasSearched && (
         <section className="py-24 px-4 bg-background relative overflow-hidden">
-          {/* Background accent */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/5 rounded-full blur-[120px]" />
-          
           <div className="container mx-auto max-w-6xl relative z-10">
             <div className="flex items-end justify-between mb-12">
               <div>
-                <span className="text-accent text-sm font-semibold uppercase tracking-widest mb-2 block">
+                <span className="text-amber-400 text-sm font-semibold uppercase tracking-widest mb-2 block">
                   Trending now
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground">
@@ -431,17 +426,18 @@ const Hotels = () => {
                 <div
                   key={dest.city}
                   onClick={() => handleDestinationClick(dest.city)}
-                  className="group relative rounded-2xl overflow-hidden aspect-[3/4] cursor-pointer animate-fade-in"
+                  className="group relative rounded-xl overflow-hidden aspect-[3/4] cursor-pointer animate-fade-in"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <img
                     src={dest.image}
                     alt={`${dest.city}, ${dest.country}`}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
                   />
                   
-                  {/* Gradient overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-t ${dest.color} opacity-60 group-hover:opacity-70 transition-opacity`} />
+                  {/* Natural dark gradient — no color tint */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
                   
                   {/* Content */}
                   <div className="absolute inset-0 p-5 flex flex-col justify-end">
