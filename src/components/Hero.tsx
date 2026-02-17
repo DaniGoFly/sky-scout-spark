@@ -47,11 +47,11 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       
       {/* Subtle floating planes pattern */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <Plane className="absolute top-[15%] left-[5%] w-6 h-6 text-sky-500/10 rotate-45" />
-        <Plane className="absolute top-[25%] right-[8%] w-8 h-8 text-cyan-400/10 rotate-12" />
-        <Plane className="absolute bottom-[30%] left-[12%] w-5 h-5 text-sky-400/10 -rotate-12" />
-        <Plane className="absolute top-[60%] right-[15%] w-7 h-7 text-sky-500/10 rotate-45" />
-        <Plane className="absolute bottom-[20%] right-[25%] w-4 h-4 text-cyan-500/10 rotate-90" />
+        <Plane className="absolute top-[15%] left-[5%] w-6 h-6 text-sky-400/30 rotate-45" />
+        <Plane className="absolute top-[25%] right-[8%] w-8 h-8 text-cyan-400/25 rotate-12" />
+        <Plane className="absolute bottom-[30%] left-[12%] w-5 h-5 text-sky-400/25 -rotate-12" />
+        <Plane className="absolute top-[60%] right-[15%] w-7 h-7 text-sky-400/30 rotate-45" />
+        <Plane className="absolute bottom-[20%] right-[25%] w-4 h-4 text-cyan-400/25 rotate-90" />
       </div>
       
       <FlightPathsBackground />

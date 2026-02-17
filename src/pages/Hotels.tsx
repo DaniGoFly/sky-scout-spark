@@ -172,11 +172,11 @@ const Hotels = () => {
         />
         {/* Subtle floating buildings — matching flights page plane positions */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <Building2 className="absolute top-[15%] left-[5%] w-6 h-6 text-amber-400/10 rotate-12" />
-          <Building2 className="absolute top-[25%] right-[8%] w-8 h-8 text-amber-300/10 -rotate-6" />
-          <Building2 className="absolute bottom-[30%] left-[12%] w-5 h-5 text-amber-400/10 rotate-6" />
-          <Building2 className="absolute top-[60%] right-[15%] w-7 h-7 text-amber-400/10 -rotate-12" />
-          <Building2 className="absolute bottom-[20%] right-[25%] w-4 h-4 text-amber-300/10 rotate-12" />
+          <Building2 className="absolute top-[15%] left-[5%] w-6 h-6 text-amber-400/30 rotate-12" />
+          <Building2 className="absolute top-[25%] right-[8%] w-8 h-8 text-amber-300/25 -rotate-6" />
+          <Building2 className="absolute bottom-[30%] left-[12%] w-5 h-5 text-amber-400/25 rotate-6" />
+          <Building2 className="absolute top-[60%] right-[15%] w-7 h-7 text-amber-400/30 -rotate-12" />
+          <Building2 className="absolute bottom-[20%] right-[25%] w-4 h-4 text-amber-300/25 rotate-12" />
         </div>
 
         {/* Content */}
