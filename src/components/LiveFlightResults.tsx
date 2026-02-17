@@ -418,7 +418,8 @@ const LiveFlightResults = () => {
 
 
   const hasResults = displayFlights.length > 0;
-  const showSkeleton = isSearching && prevResultsRef.current.length === 0 && displayFlights.length === 0;
+  const hasValidParams = !!(from && to && depart);
+  const showSkeleton = (isSearching || (status === "idle" && hasValidParams)) && prevResultsRef.current.length === 0 && displayFlights.length === 0;
   const isRevalidating = isSearching && displayFlights.length > 0;
 
   const headerTitle = isMultiOrigin ? `${origins.join(", ")} → ${to}` : `${from} → ${to}`;
@@ -501,6 +502,17 @@ const LiveFlightResults = () => {
               <Button onClick={handleRetry}>{t("results.try_again")}</Button>
               <Button variant="outline" onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
             </div>
+          </div>
+        )}
+
+        {!hasValidParams && !isSearching && displayFlights.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-5">
+              <Plane className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <p className="text-lg font-semibold text-foreground mb-2">Select a route to search</p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-sm">Choose your origin, destination, and dates to find the best flights.</p>
+            <Button onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
           </div>
         )}
 
