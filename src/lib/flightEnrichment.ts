@@ -307,6 +307,8 @@ export function enrichFlightStops(
       stopsAirports: returnStopsAirports,
       airlines: extractAirlines(returnLegs),
       flightNumbers: extractFlightNumbers(returnLegs),
+      stopLabel: returnStopLabel,
+      totalLayoverMinutes: returnLayoverMinutes,
     };
   }
 
@@ -332,6 +334,9 @@ export function enrichFlightStops(
     durationMinutes: outboundDuration || flight.durationMinutes,
     stopsCount: outboundStops,
     stopsAirports: outboundStopsAirports,
+    // Top-level stop label and layover for direct card consumption
+    stopLabel: outboundStopLabel,
+    totalLayoverMinutes: outboundLayoverMinutes || undefined,
     // Return leg
     return: returnLegInfo,
     // Enriched stop fields
