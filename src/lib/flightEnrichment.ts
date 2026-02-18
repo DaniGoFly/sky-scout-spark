@@ -105,19 +105,36 @@ export function enrichFlightStops(
   searchDest: string,
   isRoundtrip: boolean,
 ): EnrichedFlight {
-  const segments: any[] = (flight as any).segments || [];
+  const anyFlight = flight as any;
 
-  // No segment data available — fall back to top-level stopsCount
+  // Resolve segments from multiple possible shapes
+  const segments: any[] =
+    anyFlight.segments ||
+    anyFlight.segment ||
+    anyFlight.itineraries?.[0]?.segments ||
+    anyFlight.segments_outbound /* rarely present */ ||
+    [];
+
+  // No segment data — fall back to top-level stopsCount, but NEVER default to 0
+  // stopsCount=0 is only safe when explicitly provided; null=unknown
   if (segments.length === 0) {
-    const stops = Math.max(0, flight.stopsCount ?? 0);
+    const rawStops = flight.stopsCount;
+    // If stopsCount is explicitly 0, honour it; otherwise treat as unknown
+    const stops = typeof rawStops === "number" && Number.isFinite(rawStops) && rawStops >= 0
+      ? rawStops
+      : null;
+
+    // Safety: long flights with no segment data should never claim "Direct"
+    const isDirect = stops === 0 && (flight.durationMinutes == null || flight.durationMinutes <= 600);
+
     return {
       ...flight,
-      outboundStopsTotal: stops,
+      outboundStopsTotal: stops ?? -1, // -1 = unknown, handled by card
       returnStopsTotal: 0,
-      stopsTotal: stops,
-      isDirectOutbound: stops === 0,
+      stopsTotal: stops ?? 0,
+      isDirectOutbound: isDirect,
       isDirectReturn: true,
-      isDirectItinerary: stops === 0,
+      isDirectItinerary: isDirect,
       outboundStopsAirports: flight.stopsAirports || [],
       returnStopsAirports: [],
     };

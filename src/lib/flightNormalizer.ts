@@ -198,21 +198,26 @@ export function formatDuration(minutes: number): string {
 export function getStopsCount(leg: Record<string, any>): number | null {
   if (!leg) return null;
 
-  // 1. Explicit numeric field
+  // -1 is used as a sentinel for "unknown" from the enrichment fallback path
   const explicit =
     leg.stopsCount ?? leg.stops_count ?? leg.transfers ?? leg.numberOfStops;
   if (typeof explicit === "number" && Number.isFinite(explicit)) {
-    return Math.max(0, explicit);
+    if (explicit < 0) return null; // -1 sentinel → unknown
+    return explicit; // trust the explicit field (edge fn computes allLegs.length-1)
   }
 
-  // 2. stops array
+  // 2. stops array (rare)
   if (Array.isArray(leg.stops) && leg.stops.length >= 0) {
     return Math.max(0, leg.stops.length);
   }
 
-  // 3. segments array: each extra segment is a stop
-  if (Array.isArray(leg.segments) && leg.segments.length > 0) {
-    return Math.max(0, leg.segments.length - 1);
+  // 3. segments array: primary source of truth — segments.length - 1
+  const segs =
+    leg.segments ||
+    leg.segment ||
+    leg.itineraries?.[0]?.segments;
+  if (Array.isArray(segs) && segs.length > 0) {
+    return Math.max(0, segs.length - 1);
   }
 
   return null; // genuinely unknown
@@ -221,15 +226,16 @@ export function getStopsCount(leg: Record<string, any>): number | null {
 /**
  * Readable label from a nullable stops count.
  * Never returns "Direct" when stopsCount is null.
+ * Safety rule: duration > 600 min (10h) with null stops → "Stops unknown".
  */
 export function stopsLabel(
   stopsCount: number | null,
   durationMinutes?: number,
   stopsAirports?: string[]
 ): string {
-  // Safety rule: very long leg with unknown stops → "Stops unknown"
-  if (stopsCount === null) {
-    if (durationMinutes && durationMinutes > 20 * 60) return "Stops unknown";
+  if (stopsCount === null || stopsCount < 0) {
+    // Safety: long flights should never silently claim "Direct"
+    if (durationMinutes && durationMinutes > 600) return "Stops unknown";
     return "Stops unknown";
   }
 
