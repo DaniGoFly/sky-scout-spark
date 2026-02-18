@@ -263,7 +263,7 @@ const FlightFilters = memo(({
     priceRange[0] !== actualPriceRange[0] || priceRange[1] !== actualPriceRange[1];
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+    <div className="bg-card border border-border rounded-xl p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-foreground font-semibold">
           <Filter className="w-5 h-5" />
@@ -296,7 +296,7 @@ const FlightFilters = memo(({
       </div>
 
       {/* Price range */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <h3 className="text-sm font-medium text-foreground">{t("filters.price_range")}</h3>
         <PriceSlider
           value={priceRange}
