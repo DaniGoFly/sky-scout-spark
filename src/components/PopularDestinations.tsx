@@ -33,7 +33,7 @@ interface PopularDestinationsProps {
 
 const PopularDestinations = ({ onDestinationClick }: PopularDestinationsProps) => {
   return (
-    <section className="py-16 sm:py-24 px-4 bg-background relative overflow-hidden">
+    <section className="py-16 sm:py-24 px-4 bg-background relative overflow-hidden border-t border-border">
       <div className="container mx-auto max-w-6xl relative z-10">
         <div className="mb-8 sm:mb-12">
           <span className="text-primary text-xs sm:text-sm font-semibold uppercase tracking-widest mb-2 block">

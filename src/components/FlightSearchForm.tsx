@@ -195,12 +195,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   return (
     <div className="gradient-border bg-card rounded-xl p-6 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
       {/* Flights context row */}
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4 pb-4 border-b border-border/50">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4 pb-4 border-b border-border">
         <Plane className="w-3.5 h-3.5 text-primary" />
         <span className="font-semibold text-foreground/80">Flights</span>
-        <span className="text-muted-foreground/50">•</span>
+        <span className="text-muted-foreground/40">•</span>
         <span>Compare airline & agency prices</span>
-        <span className="text-muted-foreground/50 hidden sm:inline">•</span>
+        <span className="text-muted-foreground/40 hidden sm:inline">•</span>
         <span className="hidden sm:inline">Secure booking via verified partners</span>
       </div>
       {/* Trip Type Toggle */}
