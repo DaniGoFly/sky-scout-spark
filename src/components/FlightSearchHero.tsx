@@ -17,24 +17,24 @@ const FlightSearchHero = () => {
   }, []);
 
   return (
-    <section className="hero-section relative min-h-screen flex flex-col overflow-hidden">
-      {/* Radial highlight */}
+    <section className="relative min-h-screen flex flex-col overflow-hidden">
+      {/* Calm navy gradient */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(900px circle at 50% 0%, rgba(47,122,248,0.18), transparent 60%)",
+            "radial-gradient(1200px circle at 50% 10%, rgba(47,122,248,0.10), transparent 60%), linear-gradient(180deg, hsl(222 40% 10%), hsl(222 35% 12%))",
         }}
       />
 
       <div className="relative z-10 flex-1 flex flex-col justify-center pt-28 pb-20 px-4">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-14 animate-fade-in">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-5 leading-tight tracking-tight text-white">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-5 leading-tight tracking-tight text-foreground">
               {t("hero.title_search")}{" "}
-              <span className="text-[hsl(200,100%,72%)]">{t("hero.title_flights")}</span>
+              <span className="gradient-text">{t("hero.title_flights")}</span>
             </h1>
-            <p className="text-lg md:text-xl text-white/60 max-w-xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-foreground/65 max-w-xl mx-auto leading-relaxed">
               {t("hero.subtitle")}
             </p>
           </div>
