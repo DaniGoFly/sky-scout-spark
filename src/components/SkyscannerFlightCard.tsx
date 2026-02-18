@@ -138,60 +138,76 @@ AirlineHeader.displayName = "AirlineHeader";
 
 /** Mobile: text-only compact leg */
 const MobileLeg = memo(({
-  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel, arrivalDateLabel,
+  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, layoverMinutes, dateLabel, arrivalDateLabel,
 }: {
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
-  durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; dateLabel?: string; arrivalDateLabel?: string;
-}) => (
-  <div className="flex flex-col gap-0.5">
-    {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>}
-    <div className="flex items-baseline gap-1.5">
-      <p className="text-[15px] font-bold text-foreground leading-snug">
-        {safeText(origin, "---")} {safeText(departureTime)} → {safeText(destination, "---")} {safeText(arrivalTime)}
+  durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; layoverMinutes?: number; dateLabel?: string; arrivalDateLabel?: string;
+}) => {
+  const isDirect = stopsLabel === "Direct";
+  const isUnknown = stopsLabel === "Stops unknown";
+  return (
+    <div className="flex flex-col gap-0.5">
+      {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>}
+      <div className="flex items-baseline gap-1.5">
+        <p className="text-[15px] font-bold text-foreground leading-snug">
+          {safeText(origin, "---")} {safeText(departureTime)} → {safeText(destination, "---")} {safeText(arrivalTime)}
+        </p>
+      </div>
+      {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
+      <p className={`text-xs font-medium ${isDirect ? "text-green-500" : isUnknown ? "text-muted-foreground" : "text-accent"}`}>
+        {stopsLabel} · {formatDuration(durationMinutes)}
+        {layoverMinutes && layoverMinutes > 0 && !isDirect && (
+          <span className="text-muted-foreground font-normal"> · Layover: {formatDuration(layoverMinutes)}</span>
+        )}
       </p>
     </div>
-    {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
-    <p className={`text-xs font-medium ${stopsCount === 0 ? "text-green-500" : stopsCount === null ? "text-muted-foreground" : "text-accent"}`}>
-      {stopsLabel} · {formatDuration(durationMinutes)}
-    </p>
-  </div>
-));
+  );
+});
 MobileLeg.displayName = "MobileLeg";
 
 /** Desktop/tablet: timeline leg with consistent time/date/airport hierarchy */
 const DesktopLeg = memo(({
-  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel, arrivalDateLabel,
+  label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, layoverMinutes, dateLabel, arrivalDateLabel,
 }: {
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
-  durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; dateLabel?: string; arrivalDateLabel?: string;
-}) => (
-  <div className="flex flex-col gap-1">
-    {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{label}</span>}
-    <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
-      <div className="flex-shrink-0 text-start" style={{ minWidth: "60px" }}>
-        <p className="text-xl font-bold text-foreground leading-tight tracking-tight">{safeText(departureTime)}</p>
-        {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
-        <p className="text-xs font-semibold text-muted-foreground uppercase">{safeText(origin, "---")}</p>
-      </div>
-      <div className="flex-1 flex flex-col items-center px-2" style={{ minWidth: "80px" }}>
-        <span className="text-[11px] text-muted-foreground font-medium mb-1 whitespace-nowrap">{formatDuration(durationMinutes)}</span>
-        <div className="w-full h-[2px] bg-border relative">
-          <div className="absolute start-0 w-1.5 h-1.5 bg-muted-foreground rounded-full -translate-y-[2px]" />
-          <Plane className="absolute start-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary rotate-90 rtl:-rotate-90" />
-          <div className="absolute end-0 w-1.5 h-1.5 bg-primary rounded-full -translate-y-[2px]" />
+  durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; layoverMinutes?: number; dateLabel?: string; arrivalDateLabel?: string;
+}) => {
+  const isDirect = stopsLabel === "Direct";
+  const isUnknown = stopsLabel === "Stops unknown";
+  return (
+    <div className="flex flex-col gap-1">
+      {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{label}</span>}
+      <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
+        <div className="flex-shrink-0 text-start" style={{ minWidth: "60px" }}>
+          <p className="text-xl font-bold text-foreground leading-tight tracking-tight">{safeText(departureTime)}</p>
+          {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
+          <p className="text-xs font-semibold text-muted-foreground uppercase">{safeText(origin, "---")}</p>
         </div>
-        <span className={`text-[11px] mt-1 font-semibold whitespace-nowrap ${stopsCount === 0 ? "text-green-500" : stopsCount === null ? "text-muted-foreground" : "text-accent"}`}>
-          {stopsLabel}
-        </span>
-      </div>
-      <div className="flex-shrink-0 text-end" style={{ minWidth: "60px" }}>
-        <p className="text-xl font-bold text-foreground leading-tight tracking-tight">{safeText(arrivalTime)}</p>
-        {(arrivalDateLabel || dateLabel) && <p className="text-[10px] text-muted-foreground">{arrivalDateLabel || dateLabel}</p>}
-        <p className="text-xs font-semibold text-muted-foreground uppercase">{safeText(destination, "---")}</p>
+        <div className="flex-1 flex flex-col items-center px-2" style={{ minWidth: "80px" }}>
+          <span className="text-[11px] text-muted-foreground font-medium mb-1 whitespace-nowrap">{formatDuration(durationMinutes)}</span>
+          <div className="w-full h-[2px] bg-border relative">
+            <div className="absolute start-0 w-1.5 h-1.5 bg-muted-foreground rounded-full -translate-y-[2px]" />
+            <Plane className="absolute start-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary rotate-90 rtl:-rotate-90" />
+            <div className="absolute end-0 w-1.5 h-1.5 bg-primary rounded-full -translate-y-[2px]" />
+          </div>
+          <span className={`text-[11px] mt-1 font-semibold whitespace-nowrap ${isDirect ? "text-green-500" : isUnknown ? "text-muted-foreground" : "text-accent"}`}>
+            {stopsLabel}
+          </span>
+          {layoverMinutes && layoverMinutes > 0 && !isDirect && (
+            <span className="text-[10px] text-muted-foreground mt-0.5 whitespace-nowrap">
+              Layover: {formatDuration(layoverMinutes)}
+            </span>
+          )}
+        </div>
+        <div className="flex-shrink-0 text-end" style={{ minWidth: "60px" }}>
+          <p className="text-xl font-bold text-foreground leading-tight tracking-tight">{safeText(arrivalTime)}</p>
+          {(arrivalDateLabel || dateLabel) && <p className="text-[10px] text-muted-foreground">{arrivalDateLabel || dateLabel}</p>}
+          <p className="text-xs font-semibold text-muted-foreground uppercase">{safeText(destination, "---")}</p>
+        </div>
       </div>
     </div>
-  </div>
-));
+  );
+});
 DesktopLeg.displayName = "DesktopLeg";
 
 /** Price Intelligence Badge */
@@ -395,8 +411,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     return null;
   }, [isMultiCity, retSegment, flight.return, returnDateProp]);
 
-  // Use getStopsCount for robust null-safe resolution — never default missing data to 0
-  // outboundStopsTotal === -1 signals "unknown" from the enrichment fallback path
+  // ── Stop labels: prefer enriched stopLabel from segment analysis, fallback to local computation ──
   const outboundStopsCount: number | null = isEnriched(flight)
     ? (flight.outboundStopsTotal < 0 ? null : flight.outboundStopsTotal)
     : getStopsCount({ stopsCount: flight.stopsCount, stopsAirports: flight.stopsAirports, segments: (flight as any).segments });
@@ -410,8 +425,21 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   const outboundStopsAirports = isEnriched(flight) ? flight.outboundStopsAirports : (flight.stopsAirports || []);
   const returnStopsAirports = isEnriched(flight) ? flight.returnStopsAirports : (retData?.stopsAirports || []);
 
-  const outboundStops = getLocalizedStopsLabel(outboundStopsCount, outboundStopsAirports, flight.durationMinutes);
-  const returnStops = retData ? getLocalizedStopsLabel(returnStopsCount, returnStopsAirports, retData.durationMinutes) : "";
+  // Use pre-computed stop labels from enrichment (segment-based, authoritative)
+  // Fallback to local computation only if enrichment not available
+  const outboundStops: string = isEnriched(flight)
+    ? flight.outboundStopLabel
+    : getLocalizedStopsLabel(outboundStopsCount, outboundStopsAirports, flight.durationMinutes);
+
+  const returnStops: string = retData
+    ? (isEnriched(flight)
+        ? flight.returnStopLabel
+        : getLocalizedStopsLabel(returnStopsCount, returnStopsAirports, retData.durationMinutes))
+    : "";
+
+  // Layover minutes from enrichment
+  const outboundLayoverMinutes = isEnriched(flight) ? flight.outboundLayoverMinutes : 0;
+  const returnLayoverMinutes = isEnriched(flight) ? flight.returnLayoverMinutes : 0;
 
   const apiCurrency = flight.price?.currency;
 
@@ -433,10 +461,10 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
               <span className="text-[11px] text-muted-foreground">Departing from: <span className="font-semibold text-foreground">{originSource}</span></span>
             </div>
           )}
-          <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outData.dateLabel} />
+          <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} layoverMinutes={outboundLayoverMinutes} dateLabel={outData.dateLabel} />
           {retData && (
             <div className="pt-2 border-t border-border/40">
-              <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={retData.dateLabel} />
+              <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} layoverMinutes={returnLayoverMinutes} dateLabel={retData.dateLabel} />
             </div>
           )}
           {extraLegs.map((leg, i) => (
@@ -498,10 +526,10 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
                 <span className="text-[11px] text-muted-foreground">Departing from: <span className="font-semibold text-foreground">{originSource}</span></span>
               </div>
             )}
-            <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} dateLabel={outData.dateLabel} arrivalDateLabel={outData.arrivalDateLabel} />
+            <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} layoverMinutes={outboundLayoverMinutes} dateLabel={outData.dateLabel} arrivalDateLabel={outData.arrivalDateLabel} />
             {retData && (
               <div className="pt-2 border-t border-border/40">
-                <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} dateLabel={retData.dateLabel} arrivalDateLabel={retData.arrivalDateLabel} />
+                <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} layoverMinutes={returnLayoverMinutes} dateLabel={retData.dateLabel} arrivalDateLabel={retData.arrivalDateLabel} />
               </div>
             )}
             {extraLegs.map((leg, i) => (

@@ -32,6 +32,14 @@ export interface EnrichedFlight extends Flight {
   outboundStopsAirports: string[];
   /** Stop airports for return only */
   returnStopsAirports: string[];
+  /** Human-readable stop label for outbound ("Direct", "1 stop · LHR", etc.) */
+  outboundStopLabel: string;
+  /** Human-readable stop label for return leg */
+  returnStopLabel: string;
+  /** Total layover minutes on outbound (sum of connection waits between segments) */
+  outboundLayoverMinutes: number;
+  /** Total layover minutes on return */
+  returnLayoverMinutes: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -65,13 +73,39 @@ function extractFlightNumbers(legs: any[]): string[] {
     .filter(Boolean);
 }
 
-/** Try to parse a departure/arrival timestamp from a leg */
+const TIME_KEYS_DEP = [
+  "departure_at", "departureAt", "departure_time", "departure_date",
+  "departure_timestamp", "departureTimestamp",
+  "local_departure", "local_departure_datetime",
+  "dep", "depart",
+];
+const TIME_KEYS_ARR = [
+  "arrival_at", "arrivalAt", "arrival_time", "arrival_date",
+  "arrival_timestamp", "arrivalTimestamp",
+  "local_arrival", "local_arrival_datetime",
+  "arr", "arrive",
+];
+
+/** Try to parse a timestamp from a leg — returns ms epoch or null */
+function extractTimestampMs(leg: any, keys: string[]): number | null {
+  for (const k of keys) {
+    const v = leg?.[k];
+    if (!v) continue;
+    if (typeof v === "number" && v > 1e9) return v * 1000; // Unix seconds
+    if (typeof v === "string") {
+      const d = new Date(v);
+      if (!isNaN(d.getTime())) return d.getTime();
+    }
+  }
+  return null;
+}
+
+/** Try to parse a HH:mm time string from a leg */
 function extractTime(leg: any, keys: string[]): string {
   for (const k of keys) {
     const v = leg?.[k];
     if (!v) continue;
     if (typeof v === "string") {
-      // Match HH:mm pattern in any string (short "07:00" or long ISO "2025-06-15T14:30:00")
       const match = v.match(/(\d{2}:\d{2})/);
       if (match) return match[1];
     }
@@ -85,6 +119,39 @@ function extractTime(leg: any, keys: string[]): string {
     }
   }
   return "";
+}
+
+/**
+ * Compute total layover minutes between consecutive segments.
+ * Layover = arrival of segment[i] → departure of segment[i+1].
+ */
+function computeLayoverMinutes(legs: any[]): number {
+  if (legs.length < 2) return 0;
+  let total = 0;
+  for (let i = 0; i < legs.length - 1; i++) {
+    const arrMs = extractTimestampMs(legs[i], TIME_KEYS_ARR);
+    const depMs = extractTimestampMs(legs[i + 1], TIME_KEYS_DEP);
+    if (arrMs !== null && depMs !== null && depMs > arrMs) {
+      total += Math.round((depMs - arrMs) / 60000);
+    }
+  }
+  return total;
+}
+
+/** Build human-readable stop label from segment count + stop airports */
+function buildStopLabel(stops: number, stopsAirports: string[]): string {
+  const airports = stopsAirports.filter(
+    (s) => s && s !== "UNDEFINED" && s !== "NULL"
+  );
+  if (stops === 0) return "Direct";
+  if (stops === 1) {
+    const via = airports.length > 0 ? ` · ${airports[0]}` : "";
+    return `1 stop${via}`;
+  }
+  const shown = airports.slice(0, 2).join(", ");
+  const overflow = airports.length > 2 ? ` +${airports.length - 2}` : "";
+  const via = shown ? ` · ${shown}${overflow}` : "";
+  return `${stops} stops${via}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -127,6 +194,11 @@ export function enrichFlightStops(
     // Safety: long flights with no segment data should never claim "Direct"
     const isDirect = stops === 0 && (flight.durationMinutes == null || flight.durationMinutes <= 600);
 
+    // Build stop label — "Stops unknown" when we can't determine count
+    const outboundStopLabel = stops === null
+      ? "Stops unknown"
+      : buildStopLabel(stops, flight.stopsAirports || []);
+
     return {
       ...flight,
       outboundStopsTotal: stops ?? -1, // -1 = unknown, handled by card
@@ -137,6 +209,10 @@ export function enrichFlightStops(
       isDirectItinerary: isDirect,
       outboundStopsAirports: flight.stopsAirports || [],
       returnStopsAirports: [],
+      outboundStopLabel,
+      returnStopLabel: "",
+      outboundLayoverMinutes: 0,
+      returnLayoverMinutes: 0,
     };
   }
 
@@ -191,6 +267,16 @@ export function enrichFlightStops(
   const outboundStopsAirports = extractAirports(outboundLegs, true);
   const returnStopsAirports = returnLegs.length > 1 ? extractAirports(returnLegs, true) : [];
 
+  // Compute layover times from segment timestamps
+  const outboundLayoverMinutes = computeLayoverMinutes(outboundLegs);
+  const returnLayoverMinutes = computeLayoverMinutes(returnLegs);
+
+  // Build stop labels from segment data (authoritative source)
+  const outboundStopLabel = buildStopLabel(outboundStops, outboundStopsAirports);
+  const returnStopLabel = returnLegs.length > 0
+    ? buildStopLabel(returnStops, returnStopsAirports)
+    : "";
+
   // Build return leg info if we have return segments
   let returnLegInfo: ReturnLegInfo | undefined;
   if (returnLegs.length > 0) {
@@ -200,31 +286,15 @@ export function enrichFlightStops(
     const retOrigin = pickStr(firstReturn, ["origin", "departure"]) || dest;
     const retDest = pickStr(lastReturn, ["destination", "arrival"]) || origin;
 
-    const retDepTime = extractTime(firstReturn, [
-      "departure_at", "departureAt", "departure_time", "departure_date",
-      "departure_timestamp", "departureTimestamp",
-      "local_departure", "local_departure_datetime",
-      "dep", "depart",
-    ]);
-    const retArrTime = extractTime(lastReturn, [
-      "arrival_at", "arrivalAt", "arrival_time", "arrival_date",
-      "arrival_timestamp", "arrivalTimestamp",
-      "local_arrival", "local_arrival_datetime",
-      "arr", "arrive",
-    ]);
+    const retDepTime = extractTime(firstReturn, TIME_KEYS_DEP);
+    const retArrTime = extractTime(lastReturn, TIME_KEYS_ARR);
 
     // Duration: try to compute from timestamps, else use 0
     let retDuration = 0;
-    const retDepRaw = firstReturn?.departure_at || firstReturn?.departureAt || firstReturn?.departure_time || firstReturn?.departure_date || firstReturn?.departure_timestamp || firstReturn?.local_departure;
-    const retArrRaw = lastReturn?.arrival_at || lastReturn?.arrivalAt || lastReturn?.arrival_time || lastReturn?.arrival_date || lastReturn?.arrival_timestamp || lastReturn?.local_arrival;
-    if (retDepRaw && retArrRaw) {
-      try {
-        const d1 = typeof retDepRaw === "number" ? retDepRaw * 1000 : new Date(retDepRaw).getTime();
-        const d2 = typeof retArrRaw === "number" ? retArrRaw * 1000 : new Date(retArrRaw).getTime();
-        if (!isNaN(d1) && !isNaN(d2) && d2 > d1) {
-          retDuration = Math.round((d2 - d1) / 60000);
-        }
-      } catch { /* ignore */ }
+    const retDepMs = extractTimestampMs(firstReturn, TIME_KEYS_DEP);
+    const retArrMs = extractTimestampMs(lastReturn, TIME_KEYS_ARR);
+    if (retDepMs !== null && retArrMs !== null && retArrMs > retDepMs) {
+      retDuration = Math.round((retArrMs - retDepMs) / 60000);
     }
 
     returnLegInfo = {
@@ -241,32 +311,15 @@ export function enrichFlightStops(
   }
 
   // Compute outbound departure/arrival from the outbound legs
-  const outboundDepTime = extractTime(outboundLegs[0], [
-    "departure_at", "departureAt", "departure_time", "departure_date",
-    "departure_timestamp", "departureTimestamp",
-    "local_departure", "local_departure_datetime",
-    "dep", "depart",
-  ]) || flight.departureTime;
+  const outboundDepTime = extractTime(outboundLegs[0], TIME_KEYS_DEP) || flight.departureTime;
+  const outboundArrTime = extractTime(outboundLegs[outboundLegs.length - 1], TIME_KEYS_ARR) || flight.arrivalTime;
 
-  const outboundArrTime = extractTime(outboundLegs[outboundLegs.length - 1], [
-    "arrival_at", "arrivalAt", "arrival_time", "arrival_date",
-    "arrival_timestamp", "arrivalTimestamp",
-    "local_arrival", "local_arrival_datetime",
-    "arr", "arrive",
-  ]) || flight.arrivalTime;
-
-  // Compute outbound duration
+  // Compute outbound duration from timestamps
   let outboundDuration = flight.durationMinutes;
-  const obDepRaw = outboundLegs[0]?.departure_at || outboundLegs[0]?.departureAt || outboundLegs[0]?.departure_time || outboundLegs[0]?.departure_date || outboundLegs[0]?.departure_timestamp || outboundLegs[0]?.local_departure;
-  const obArrRaw = outboundLegs[outboundLegs.length - 1]?.arrival_at || outboundLegs[outboundLegs.length - 1]?.arrivalAt || outboundLegs[outboundLegs.length - 1]?.arrival_time || outboundLegs[outboundLegs.length - 1]?.arrival_date || outboundLegs[outboundLegs.length - 1]?.arrival_timestamp || outboundLegs[outboundLegs.length - 1]?.local_arrival;
-  if (obDepRaw && obArrRaw) {
-    try {
-      const d1 = typeof obDepRaw === "number" ? obDepRaw * 1000 : new Date(obDepRaw).getTime();
-      const d2 = typeof obArrRaw === "number" ? obArrRaw * 1000 : new Date(obArrRaw).getTime();
-      if (!isNaN(d1) && !isNaN(d2) && d2 > d1) {
-        outboundDuration = Math.round((d2 - d1) / 60000);
-      }
-    } catch { /* ignore */ }
+  const obDepMs = extractTimestampMs(outboundLegs[0], TIME_KEYS_DEP);
+  const obArrMs = extractTimestampMs(outboundLegs[outboundLegs.length - 1], TIME_KEYS_ARR);
+  if (obDepMs !== null && obArrMs !== null && obArrMs > obDepMs) {
+    outboundDuration = Math.round((obArrMs - obDepMs) / 60000);
   }
 
   return {
@@ -290,6 +343,10 @@ export function enrichFlightStops(
     isDirectItinerary: outboundStops === 0 && returnStops === 0,
     outboundStopsAirports,
     returnStopsAirports,
+    outboundStopLabel,
+    returnStopLabel,
+    outboundLayoverMinutes,
+    returnLayoverMinutes,
   };
 }
 
