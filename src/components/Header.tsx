@@ -6,13 +6,13 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import LocaleSelector from "./LocaleSelector";
+import { HOTELS_ENABLED } from "@/lib/featureFlags";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { t } = useTranslation();
   const isHome = location.pathname === "/";
-  const isHotels = location.pathname === "/hotels";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
@@ -44,17 +44,16 @@ const Header = () => {
               {t("nav.flights")}
             </Link>
           )}
-          
-          {isHotels ? (
-            <span className="px-4 py-2 rounded-lg text-sm font-medium text-primary bg-primary/10 cursor-default">
-              {t("nav.hotels")}
-            </span>
-          ) : (
+
+          {/* Hotels nav item — controlled by feature flag */}
+          {HOTELS_ENABLED && (
             <Link
               to="/hotels"
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                location.pathname === "/hotels"
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
               {t("nav.hotels")}
@@ -101,7 +100,8 @@ const Header = () => {
                 <nav className="flex flex-col gap-1 flex-1">
                   {[
                     { path: "/", label: t("nav.flights"), active: isHome },
-                    { path: "/hotels", label: t("nav.hotels"), active: isHotels },
+                    // Hotels nav item controlled by feature flag
+                    ...(HOTELS_ENABLED ? [{ path: "/hotels", label: t("nav.hotels"), active: location.pathname === "/hotels" }] : []),
                     { path: "/explore", label: t("nav.explore"), active: location.pathname === "/explore" },
                   ].map((item) =>
                     item.active ? (
