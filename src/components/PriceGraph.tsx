@@ -191,12 +191,13 @@ const PriceGraph = ({ origin, destination, departDate, returnDate, cabinClass = 
 
                   <defs>
                     <linearGradient id="priceAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(265 90% 65%)" stopOpacity="0.15" />
-                      <stop offset="100%" stopColor="hsl(265 90% 65%)" stopOpacity="0.01" />
+                      <stop offset="0%" stopColor="#2F7AF8" stopOpacity="0.18" />
+                      <stop offset="60%" stopColor="#2F7AF8" stopOpacity="0.05" />
+                      <stop offset="100%" stopColor="#2F7AF8" stopOpacity="0.02" />
                     </linearGradient>
                   </defs>
                   <path d={areaPath} fill="url(#priceAreaGrad)" />
-                  <path d={linePath} fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+                  <path d={linePath} fill="none" stroke="#2F7AF8" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
 
                   {chartPoints.map((p, i) => (
                     <g key={i}>
@@ -211,10 +212,9 @@ const PriceGraph = ({ origin, destination, departDate, returnDate, cabinClass = 
                       />
                       {hoveredIdx === i && (
                         <>
-                          <line x1={p.x} y1={PAD_TOP} x2={p.x} y2={SVG_H - PAD_BOTTOM} stroke="rgba(255,255,255,0.25)" strokeWidth={1} />
-                          <circle cx={p.x} cy={p.y} r={6} fill="hsl(265 90% 65%)" opacity={0.3} />
-                          <circle cx={p.x} cy={p.y} r={4} fill="hsl(265 90% 65%)" />
-                          <circle cx={p.x} cy={p.y} r={2} fill="white" />
+                          <line x1={p.x} y1={PAD_TOP} x2={p.x} y2={SVG_H - PAD_BOTTOM} stroke="rgba(255,255,255,0.15)" strokeWidth={1} strokeDasharray="3 3" />
+                          <circle cx={p.x} cy={p.y} r={5} fill="#2F7AF8" />
+                          <circle cx={p.x} cy={p.y} r={2.5} fill="white" />
                         </>
                       )}
                     </g>
@@ -242,7 +242,7 @@ const PriceGraph = ({ origin, destination, departDate, returnDate, cabinClass = 
 
               {/* Footer stats */}
               <div className="flex items-center gap-3 mt-2.5 text-[11px] text-muted-foreground px-1 flex-wrap">
-                <span>Low: <strong className="text-emerald-400">{formatPrice(minPrice)}</strong></span>
+                <span>Low: <strong className="text-primary">{formatPrice(minPrice)}</strong></span>
                 <span className="text-border">·</span>
                 <span>High: <strong className="text-foreground">{formatPrice(maxPrice)}</strong></span>
                 {data.length > 0 && (
