@@ -21,10 +21,10 @@ const TrustSignals = memo(() => {
   ];
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 pt-6 pb-1 px-4 text-xs md:text-sm text-muted-foreground w-full max-w-full">
+    <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 pt-6 pb-1 px-4 text-xs md:text-sm text-white/55 w-full max-w-full">
       {signals.map(({ icon: Icon, text }, i) => (
         <div key={i} className="flex items-center gap-1.5">
-          <Icon className="w-3.5 h-3.5 text-muted-foreground/70" />
+          <Icon className="w-3.5 h-3.5 text-white/40" />
           <span>{text}</span>
         </div>
       ))}
