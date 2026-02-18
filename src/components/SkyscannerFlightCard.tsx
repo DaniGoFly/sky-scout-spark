@@ -68,34 +68,35 @@ function extractDateLabel(raw: string | undefined | null): string | undefined {
 function getBadgeConfig(label?: string): { bg: string; text: string; border: string; restBorder: string; hoverClass: string } {
   if (!label) return {
     bg: "bg-emerald-500", text: "text-white",
-    border: "border-emerald-400/70 ring-2 ring-emerald-400/25",
-    restBorder: "border-emerald-400/40",
-    hoverClass: "hover:border-emerald-400/80 hover:shadow-[0_0_16px_-4px_rgba(52,211,153,0.45)] hover:-translate-y-0.5",
+    border: "border-[1.5px] border-emerald-400/50",
+    restBorder: "border-emerald-400/30",
+    hoverClass: "hover:border-emerald-400/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
   };
   const lower = label.toLowerCase();
   if (lower.includes("cheapest")) return {
     bg: "bg-emerald-500", text: "text-white",
-    border: "border-emerald-400/70 ring-2 ring-emerald-400/25",
-    restBorder: "border-emerald-400/40",
-    hoverClass: "hover:border-emerald-400/90 hover:shadow-[0_0_20px_-4px_rgba(52,211,153,0.5)] hover:-translate-y-0.5",
+    border: "border-[1.5px] border-emerald-400/50",
+    restBorder: "border-emerald-400/30",
+    hoverClass: "hover:border-emerald-400/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
   };
   if (lower.includes("best")) return {
-    bg: "bg-violet-500", text: "text-white",
-    border: "border-violet-400/70 ring-2 ring-violet-400/25",
-    restBorder: "border-violet-400/40",
-    hoverClass: "hover:border-violet-400/90 hover:shadow-[0_0_20px_-4px_rgba(139,92,246,0.5)] hover:-translate-y-0.5",
+    bg: "bg-white/10 border border-white/16 text-white/92",
+    text: "text-white/90",
+    border: "border-[1.5px] border-white/22",
+    restBorder: "border-white/14",
+    hoverClass: "hover:border-white/35 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
   };
   if (lower.includes("fastest")) return {
     bg: "bg-sky-500", text: "text-white",
-    border: "border-sky-400/70 ring-2 ring-sky-400/25",
-    restBorder: "border-sky-400/40",
-    hoverClass: "hover:border-sky-400/90 hover:shadow-[0_0_20px_-4px_rgba(56,189,248,0.5)] hover:-translate-y-0.5",
+    border: "border-[1.5px] border-sky-400/50",
+    restBorder: "border-sky-400/30",
+    hoverClass: "hover:border-sky-400/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
   };
   return {
     bg: "bg-emerald-500", text: "text-white",
-    border: "border-emerald-400/70 ring-2 ring-emerald-400/25",
-    restBorder: "border-emerald-400/40",
-    hoverClass: "hover:border-emerald-400/80 hover:shadow-[0_0_16px_-4px_rgba(52,211,153,0.45)] hover:-translate-y-0.5",
+    border: "border-[1.5px] border-emerald-400/50",
+    restBorder: "border-emerald-400/30",
+    hoverClass: "hover:border-emerald-400/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
   };
 }
 
@@ -448,7 +449,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       style={{ contain: "layout style" }}>
       {isBestValue && (
         <div className="absolute -top-3 start-5 z-10">
-          <Badge className={`${badgeColors.bg} ${badgeColors.text} shadow-md px-3 py-0.5 text-[11px] gap-1`}><Flame className="w-3 h-3" />{badgeLabel || t("card.best_price", "Best Price")}</Badge>
+          <Badge className={`${badgeColors.bg} shadow-md px-3 py-0.5 text-[11px] gap-1`} style={{ color: "rgba(255,255,255,0.92)" }}><Flame className="w-3 h-3" />{badgeLabel || t("card.best_price", "Best Price")}</Badge>
         </div>
       )}
       <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />

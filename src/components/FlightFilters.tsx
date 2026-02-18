@@ -30,34 +30,34 @@ const PriceSlider = ({ value, min, max, onChange, step, formatPrice, currency, l
   const maxPct = max > min ? ((value[1] - min) / (max - min)) * 100 : 100;
 
   return (
-    <div className="space-y-1.5">
-      {/* Track row: slider fills available space, value labels pinned right */}
-      <div className="flex items-center gap-3">
-        {/* Min value — fixed left */}
-        <span className="text-xs font-semibold text-foreground w-16 shrink-0 tabular-nums">
+    <div className="space-y-2 select-none">
+      {/* Grid: [min-label] [slider] [max-label] — labels are outside thumb path */}
+      <div className="grid items-center gap-3" style={{ gridTemplateColumns: "68px 1fr 68px" }}>
+        {/* Min value — fixed left column */}
+        <span className="text-xs font-semibold text-foreground tabular-nums text-left">
           {formatPrice(value[0], currency)}
         </span>
 
-        {/* Slider + floating tooltips */}
-        <div className="flex-1 min-w-0 relative py-5" ref={trackRef}>
-          {/* Min tooltip */}
+        {/* Slider track + floating tooltips */}
+        <div className="relative py-5" ref={trackRef}>
+          {/* Min tooltip — appears above thumb while dragging */}
           {dragging === "min" && (
             <div
               className="absolute z-20 pointer-events-none"
               style={{ left: `clamp(0%, ${minPct}%, 100%)`, top: 0, transform: "translate(-50%, 0)" }}
             >
-              <div className="bg-card border border-border/80 text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-lg">
+              <div className="bg-popover border border-border text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-md">
                 {formatPrice(value[0], currency)}
               </div>
             </div>
           )}
-          {/* Max tooltip */}
+          {/* Max tooltip — appears above thumb while dragging */}
           {dragging === "max" && (
             <div
               className="absolute z-20 pointer-events-none"
               style={{ left: `clamp(0%, ${maxPct}%, 100%)`, top: 0, transform: "translate(-50%, 0)" }}
             >
-              <div className="bg-card border border-border/80 text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-lg">
+              <div className="bg-popover border border-border text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-md">
                 {formatPrice(value[1], currency)}
               </div>
             </div>
@@ -78,17 +78,17 @@ const PriceSlider = ({ value, min, max, onChange, step, formatPrice, currency, l
           </div>
         </div>
 
-        {/* Max value — fixed right */}
-        <span className="text-xs font-semibold text-foreground w-16 shrink-0 text-right tabular-nums">
+        {/* Max value — fixed right column */}
+        <span className="text-xs font-semibold text-foreground tabular-nums text-right">
           {formatPrice(value[1], currency)}
         </span>
       </div>
 
-      {/* Min / Max labels below */}
-      <div className="flex justify-between text-[10px] text-muted-foreground px-0">
-        <span className="w-16">{labelMin}</span>
-        <span className="flex-1" />
-        <span className="w-16 text-right">{labelMax}</span>
+      {/* Min / Max labels row */}
+      <div className="grid text-[10px] text-muted-foreground" style={{ gridTemplateColumns: "68px 1fr 68px" }}>
+        <span>{labelMin}</span>
+        <span />
+        <span className="text-right">{labelMax}</span>
       </div>
     </div>
   );
