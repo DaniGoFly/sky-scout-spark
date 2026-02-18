@@ -186,7 +186,70 @@ export function formatDuration(minutes: number): string {
 }
 
 /**
- * Get stops label for display
+ * Robust stop count resolver.
+ * Returns null when stops data is genuinely missing — never defaults to 0 (Direct).
+ *
+ * Priority:
+ *  1. Explicit stopsCount field (number)
+ *  2. stops array length
+ *  3. segments array: segments.length - 1
+ *  4. null → UNKNOWN
+ */
+export function getStopsCount(leg: Record<string, any>): number | null {
+  if (!leg) return null;
+
+  // 1. Explicit numeric field
+  const explicit =
+    leg.stopsCount ?? leg.stops_count ?? leg.transfers ?? leg.numberOfStops;
+  if (typeof explicit === "number" && Number.isFinite(explicit)) {
+    return Math.max(0, explicit);
+  }
+
+  // 2. stops array
+  if (Array.isArray(leg.stops) && leg.stops.length >= 0) {
+    return Math.max(0, leg.stops.length);
+  }
+
+  // 3. segments array: each extra segment is a stop
+  if (Array.isArray(leg.segments) && leg.segments.length > 0) {
+    return Math.max(0, leg.segments.length - 1);
+  }
+
+  return null; // genuinely unknown
+}
+
+/**
+ * Readable label from a nullable stops count.
+ * Never returns "Direct" when stopsCount is null.
+ */
+export function stopsLabel(
+  stopsCount: number | null,
+  durationMinutes?: number,
+  stopsAirports?: string[]
+): string {
+  // Safety rule: very long leg with unknown stops → "Stops unknown"
+  if (stopsCount === null) {
+    if (durationMinutes && durationMinutes > 20 * 60) return "Stops unknown";
+    return "Stops unknown";
+  }
+
+  const airports = (stopsAirports || []).filter(
+    (s) => s && s !== "undefined" && s !== "null" && s.trim() !== ""
+  );
+
+  if (stopsCount === 0) return "Direct";
+  if (stopsCount === 1) {
+    const extra = airports.length > 0 ? ` · ${airports[0]}` : "";
+    return `1 stop${extra}`;
+  }
+  const shown = airports.slice(0, 2).join(", ");
+  const overflow = airports.length > 2 ? ` +${airports.length - 2}` : "";
+  const extra = shown ? ` · ${shown}${overflow}` : "";
+  return `2+ stops${extra}`;
+}
+
+/**
+ * Get stops label for display (legacy — kept for backwards compat)
  */
 export function getStopsLabel(stopsCount: number, stopsAirports: string[]): string {
   if (stopsCount === 0) return "Direct";
