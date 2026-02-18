@@ -9,6 +9,91 @@ import { Filter, RotateCcw } from "lucide-react";
 import { Flight, getAirlineName } from "@/lib/flightNormalizer";
 import { useLocale } from "@/hooks/useLocale";
 
+// ── Price slider with tooltip ──────────────────────────────────────────────
+interface PriceSliderProps {
+  value: [number, number];
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number[]) => void;
+  formatPrice: (v: number, currency?: string) => string;
+  currency?: string;
+  labelMin: string;
+  labelMax: string;
+}
+
+const PriceSlider = ({ value, min, max, onChange, step, formatPrice, currency, labelMin, labelMax }: PriceSliderProps) => {
+  const [dragging, setDragging] = useState<"min" | "max" | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const minPct = max > min ? ((value[0] - min) / (max - min)) * 100 : 0;
+  const maxPct = max > min ? ((value[1] - min) / (max - min)) * 100 : 100;
+
+  return (
+    <div className="space-y-1.5">
+      {/* Track row: slider fills available space, value labels pinned right */}
+      <div className="flex items-center gap-3">
+        {/* Min value — fixed left */}
+        <span className="text-xs font-semibold text-foreground w-16 shrink-0 tabular-nums">
+          {formatPrice(value[0], currency)}
+        </span>
+
+        {/* Slider + floating tooltips */}
+        <div className="flex-1 min-w-0 relative py-5" ref={trackRef}>
+          {/* Min tooltip */}
+          {dragging === "min" && (
+            <div
+              className="absolute z-20 pointer-events-none"
+              style={{ left: `clamp(0%, ${minPct}%, 100%)`, top: 0, transform: "translate(-50%, 0)" }}
+            >
+              <div className="bg-card border border-border/80 text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-lg">
+                {formatPrice(value[0], currency)}
+              </div>
+            </div>
+          )}
+          {/* Max tooltip */}
+          {dragging === "max" && (
+            <div
+              className="absolute z-20 pointer-events-none"
+              style={{ left: `clamp(0%, ${maxPct}%, 100%)`, top: 0, transform: "translate(-50%, 0)" }}
+            >
+              <div className="bg-card border border-border/80 text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-lg">
+                {formatPrice(value[1], currency)}
+              </div>
+            </div>
+          )}
+          <div
+            onPointerDown={(e) => {
+              const target = e.target as HTMLElement;
+              const thumb = target.closest("[role='slider']");
+              if (!thumb) return;
+              const thumbs = trackRef.current?.querySelectorAll("[role='slider']");
+              if (!thumbs) return;
+              setDragging(thumbs[0] === thumb ? "min" : "max");
+            }}
+            onPointerUp={() => setDragging(null)}
+            onPointerCancel={() => setDragging(null)}
+          >
+            <Slider value={value} onValueChange={onChange} min={min} max={max} step={step} className="w-full" />
+          </div>
+        </div>
+
+        {/* Max value — fixed right */}
+        <span className="text-xs font-semibold text-foreground w-16 shrink-0 text-right tabular-nums">
+          {formatPrice(value[1], currency)}
+        </span>
+      </div>
+
+      {/* Min / Max labels below */}
+      <div className="flex justify-between text-[10px] text-muted-foreground px-0">
+        <span className="w-16">{labelMin}</span>
+        <span className="flex-1" />
+        <span className="w-16 text-right">{labelMax}</span>
+      </div>
+    </div>
+  );
+};
+
 export type StopsMode = "any" | "direct" | "1" | "2plus";
 
 export interface FilterState {
@@ -210,20 +295,20 @@ const FlightFilters = memo(({
         </RadioGroup>
       </div>
 
-      {/* Price range — clean layout */}
+      {/* Price range */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-foreground">{t("filters.price_range")}</h3>
-        <div className="flex justify-between text-[11px] text-muted-foreground">
-          <span>{t("filters.min", "Min")}</span>
-          <span>{t("filters.max", "Max")}</span>
-        </div>
-        <div className="px-1">
-          <Slider value={priceRange} onValueChange={handlePriceChange} min={actualPriceRange[0]} max={actualPriceRange[1]} step={25} className="w-full" />
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="font-medium text-foreground">{formatPrice(priceRange[0], flightsCurrency)}</span>
-          <span className="font-medium text-foreground">{formatPrice(priceRange[1], flightsCurrency)}</span>
-        </div>
+        <PriceSlider
+          value={priceRange}
+          min={actualPriceRange[0]}
+          max={actualPriceRange[1]}
+          step={25}
+          onChange={handlePriceChange}
+          formatPrice={formatPrice}
+          currency={flightsCurrency}
+          labelMin={t("filters.min", "Min")}
+          labelMax={t("filters.max", "Max")}
+        />
       </div>
 
       {/* Airlines */}
