@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Flight, getAirlineName, getAirlineLogo, formatDuration } from "@/lib/flightNormalizer";
+import { Flight, getAirlineName, getAirlineLogo, formatDuration, getStopsCount, stopsLabel as resolveStopsLabel } from "@/lib/flightNormalizer";
 import type { EnrichedFlight } from "@/lib/flightEnrichment";
 import type { PriceIntelligence } from "@/lib/priceIntelligence";
 import { resolveDeal } from "@/lib/flightSearchApi";
@@ -141,7 +141,7 @@ const MobileLeg = memo(({
   label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel, arrivalDateLabel,
 }: {
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
-  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string; arrivalDateLabel?: string;
+  durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; dateLabel?: string; arrivalDateLabel?: string;
 }) => (
   <div className="flex flex-col gap-0.5">
     {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>}
@@ -151,7 +151,7 @@ const MobileLeg = memo(({
       </p>
     </div>
     {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
-    <p className={`text-xs font-medium ${stopsCount === 0 ? "text-green-500" : "text-accent"}`}>
+    <p className={`text-xs font-medium ${stopsCount === 0 ? "text-green-500" : stopsCount === null ? "text-muted-foreground" : "text-accent"}`}>
       {stopsLabel} · {formatDuration(durationMinutes)}
     </p>
   </div>
@@ -163,7 +163,7 @@ const DesktopLeg = memo(({
   label, origin, destination, departureTime, arrivalTime, durationMinutes, stopsCount, stopsAirports, stopsLabel, dateLabel, arrivalDateLabel,
 }: {
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
-  durationMinutes: number; stopsCount: number; stopsAirports: string[]; stopsLabel: string; dateLabel?: string; arrivalDateLabel?: string;
+  durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; dateLabel?: string; arrivalDateLabel?: string;
 }) => (
   <div className="flex flex-col gap-1">
     {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{label}</span>}
@@ -180,7 +180,7 @@ const DesktopLeg = memo(({
           <Plane className="absolute start-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary rotate-90 rtl:-rotate-90" />
           <div className="absolute end-0 w-1.5 h-1.5 bg-primary rounded-full -translate-y-[2px]" />
         </div>
-        <span className={`text-[11px] mt-1 font-semibold whitespace-nowrap ${stopsCount === 0 ? "text-green-500" : "text-accent"}`}>
+        <span className={`text-[11px] mt-1 font-semibold whitespace-nowrap ${stopsCount === 0 ? "text-green-500" : stopsCount === null ? "text-muted-foreground" : "text-accent"}`}>
           {stopsLabel}
         </span>
       </div>
@@ -232,7 +232,12 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     };
   }, [flight]);
 
-  const getLocalizedStopsLabel = useCallback((count: number, airports: string[]) => {
+  /**
+   * Null-safe stop label — never shows "Direct" when stop data is absent.
+   * Falls back to resolveStopsLabel which handles null → "Stops unknown".
+   */
+  const getLocalizedStopsLabel = useCallback((count: number | null, airports: string[], durationMinutes?: number): string => {
+    if (count === null) return resolveStopsLabel(null, durationMinutes);
     if (count === 0) return t("card.direct");
     const validStops = (airports || []).filter(s => s && s !== "undefined" && s !== "null" && s.trim() !== "");
     if (count === 1) {
@@ -346,7 +351,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         departureTime: extractHHmm(rawDep),
         arrivalTime: extractHHmm(rawArr),
         durationMinutes: Number(seg.durationMinutes ?? seg.duration ?? 0),
-        stopsCount: Number(seg.stopsCount ?? 0),
+        stopsCount: getStopsCount(seg),
         stopsAirports: seg.stopsAirports || [],
         dateLabel: extractDateLabel(rawDep),
         arrivalDateLabel: extractDateLabel(rawArr),
@@ -365,7 +370,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       const origin = (retSegment.origin ?? retSegment.departure ?? "").toString().toUpperCase().slice(0, 3);
       const dest = (retSegment.destination ?? retSegment.arrival ?? "").toString().toUpperCase().slice(0, 3);
       const duration = Number(retSegment.durationMinutes ?? retSegment.duration ?? 0);
-      const stops = Number(retSegment.stopsCount ?? 0);
+      const stops = getStopsCount(retSegment);
       const stopsAirports: string[] = retSegment.stopsAirports || [];
       const dateLabel = extractDateLabel(rawDep);
       const arrivalDateLabel = extractDateLabel(rawArr);
@@ -380,7 +385,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         departureTime: extractHHmm(rawDep) || flight.return.departureTime,
         arrivalTime: extractHHmm(rawArr) || flight.return.arrivalTime,
         durationMinutes: flight.return.durationMinutes,
-        stopsCount: flight.return.stopsCount,
+        stopsCount: getStopsCount(flight.return as any),
         stopsAirports: flight.return.stopsAirports || [],
         dateLabel: extractDateLabel(rawDep) || (returnDateProp ? (() => { try { return format(parse(returnDateProp, "yyyy-MM-dd", new Date()), "EEE, MMM d"); } catch { return undefined; } })() : undefined),
         arrivalDateLabel: extractDateLabel(rawArr),
@@ -389,16 +394,22 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     return null;
   }, [isMultiCity, retSegment, flight.return, returnDateProp]);
 
-  const outboundStopsCount = isEnriched(flight) ? flight.outboundStopsTotal : Math.max(0, flight.stopsCount ?? 0);
-  const returnStopsCount = isEnriched(flight)
-    ? flight.returnStopsTotal
-    : retData ? Math.max(0, retData.stopsCount ?? 0) : 0;
+  // Use getStopsCount for robust null-safe resolution — never default missing data to 0
+  const outboundStopsCount: number | null = isEnriched(flight)
+    ? flight.outboundStopsTotal
+    : getStopsCount({ stopsCount: flight.stopsCount, stopsAirports: flight.stopsAirports, segments: (flight as any).segments });
 
-  const outboundStopsAirports = isEnriched(flight) ? flight.outboundStopsAirports : flight.stopsAirports;
+  const returnStopsCount: number | null = isEnriched(flight)
+    ? flight.returnStopsTotal
+    : retData
+      ? getStopsCount({ stopsCount: retData.stopsCount, stopsAirports: retData.stopsAirports })
+      : null;
+
+  const outboundStopsAirports = isEnriched(flight) ? flight.outboundStopsAirports : (flight.stopsAirports || []);
   const returnStopsAirports = isEnriched(flight) ? flight.returnStopsAirports : (retData?.stopsAirports || []);
 
-  const outboundStops = getLocalizedStopsLabel(outboundStopsCount, outboundStopsAirports);
-  const returnStops = retData ? getLocalizedStopsLabel(returnStopsCount, returnStopsAirports) : "";
+  const outboundStops = getLocalizedStopsLabel(outboundStopsCount, outboundStopsAirports, flight.durationMinutes);
+  const returnStops = retData ? getLocalizedStopsLabel(returnStopsCount, returnStopsAirports, retData.durationMinutes) : "";
 
   const apiCurrency = flight.price?.currency;
 
@@ -428,7 +439,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
           )}
           {extraLegs.map((leg, i) => (
             <div key={i} className="pt-2 border-t border-border/40">
-              <LegComponent label={leg.label} origin={leg.origin} destination={leg.destination} departureTime={leg.departureTime} arrivalTime={leg.arrivalTime} durationMinutes={leg.durationMinutes} stopsCount={leg.stopsCount} stopsAirports={leg.stopsAirports} stopsLabel={getLocalizedStopsLabel(leg.stopsCount, leg.stopsAirports)} dateLabel={leg.dateLabel} />
+              <LegComponent label={leg.label} origin={leg.origin} destination={leg.destination} departureTime={leg.departureTime} arrivalTime={leg.arrivalTime} durationMinutes={leg.durationMinutes} stopsCount={leg.stopsCount} stopsAirports={leg.stopsAirports} stopsLabel={getLocalizedStopsLabel(leg.stopsCount, leg.stopsAirports, leg.durationMinutes)} dateLabel={leg.dateLabel} />
             </div>
           ))}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
@@ -493,7 +504,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             )}
             {extraLegs.map((leg, i) => (
               <div key={i} className="pt-2 border-t border-border/40">
-                <LegComponent label={leg.label} origin={leg.origin} destination={leg.destination} departureTime={leg.departureTime} arrivalTime={leg.arrivalTime} durationMinutes={leg.durationMinutes} stopsCount={leg.stopsCount} stopsAirports={leg.stopsAirports} stopsLabel={getLocalizedStopsLabel(leg.stopsCount, leg.stopsAirports)} dateLabel={leg.dateLabel} arrivalDateLabel={leg.arrivalDateLabel} />
+                <LegComponent label={leg.label} origin={leg.origin} destination={leg.destination} departureTime={leg.departureTime} arrivalTime={leg.arrivalTime} durationMinutes={leg.durationMinutes} stopsCount={leg.stopsCount} stopsAirports={leg.stopsAirports} stopsLabel={getLocalizedStopsLabel(leg.stopsCount, leg.stopsAirports, leg.durationMinutes)} dateLabel={leg.dateLabel} arrivalDateLabel={leg.arrivalDateLabel} />
               </div>
             ))}
           </div>
