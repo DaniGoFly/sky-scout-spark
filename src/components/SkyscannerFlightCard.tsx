@@ -237,7 +237,8 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
    * Falls back to resolveStopsLabel which handles null → "Stops unknown".
    */
   const getLocalizedStopsLabel = useCallback((count: number | null, airports: string[], durationMinutes?: number): string => {
-    if (count === null) return resolveStopsLabel(null, durationMinutes);
+    // null or -1 (sentinel for unknown from enrichment) → delegate to resolveStopsLabel
+    if (count === null || count < 0) return resolveStopsLabel(count === null ? null : null, durationMinutes);
     if (count === 0) return t("card.direct");
     const validStops = (airports || []).filter(s => s && s !== "undefined" && s !== "null" && s.trim() !== "");
     if (count === 1) {
@@ -395,12 +396,13 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   }, [isMultiCity, retSegment, flight.return, returnDateProp]);
 
   // Use getStopsCount for robust null-safe resolution — never default missing data to 0
+  // outboundStopsTotal === -1 signals "unknown" from the enrichment fallback path
   const outboundStopsCount: number | null = isEnriched(flight)
-    ? flight.outboundStopsTotal
+    ? (flight.outboundStopsTotal < 0 ? null : flight.outboundStopsTotal)
     : getStopsCount({ stopsCount: flight.stopsCount, stopsAirports: flight.stopsAirports, segments: (flight as any).segments });
 
   const returnStopsCount: number | null = isEnriched(flight)
-    ? flight.returnStopsTotal
+    ? (flight.returnStopsTotal < 0 ? null : flight.returnStopsTotal)
     : retData
       ? getStopsCount({ stopsCount: retData.stopsCount, stopsAirports: retData.stopsAirports })
       : null;
