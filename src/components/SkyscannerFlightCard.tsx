@@ -116,11 +116,19 @@ const AirlineHeader = memo(({
       {isBestValue && isMobile && (
         <Badge
           className="text-[10px] px-3 py-0.5 flex-shrink-0 font-semibold rounded-full border-0"
-          style={badgeOverride?.toLowerCase().includes("best") || !badgeOverride ? {
-            background: "#3b82f6",
-            color: "#ffffff",
-            boxShadow: "0 4px 12px rgba(59,130,246,0.35)",
-          } : { background: "", color: "" }}
+          style={(() => {
+            const lower = (badgeOverride || "").toLowerCase();
+            if (lower.includes("cheapest")) return {
+              background: "#22c55e",
+              color: "#ffffff",
+              boxShadow: "0 4px 12px rgba(34,197,94,0.35)",
+            };
+            return {
+              background: "#3b82f6",
+              color: "#ffffff",
+              boxShadow: "0 4px 12px rgba(59,130,246,0.35)",
+            };
+          })()}
         >{badgeOverride || bestLabel}</Badge>
       )}
     </div>
@@ -449,11 +457,20 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         <div className="absolute -top-3 start-5 z-10">
           <Badge
             className="px-3 py-0.5 text-[11px] gap-1 font-semibold rounded-full border-0"
-            style={{
-              background: "#3b82f6",
-              color: "#ffffff",
-              boxShadow: "0 4px 12px rgba(59,130,246,0.35)",
-            }}
+            style={(() => {
+              const lower = (badgeLabel || "").toLowerCase();
+              if (lower.includes("cheapest")) return {
+                background: "#22c55e",
+                color: "#ffffff",
+                boxShadow: "0 4px 12px rgba(34,197,94,0.35)",
+              };
+              // "Best" and default
+              return {
+                background: "#3b82f6",
+                color: "#ffffff",
+                boxShadow: "0 4px 12px rgba(59,130,246,0.35)",
+              };
+            })()}
           ><Flame className="w-3 h-3" />{badgeLabel || t("card.best_price", "Best Price")}</Badge>
         </div>
       )}
