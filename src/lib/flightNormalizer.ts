@@ -29,6 +29,10 @@ export interface ReturnLegInfo {
   stopsAirports: string[];
   airlines: string[];
   flightNumbers: string[];
+  /** Human-readable stop label from backend or enrichment */
+  stopLabel?: string;
+  /** Total layover wait time across all connections (minutes) */
+  totalLayoverMinutes?: number;
 }
 
 /**
@@ -49,6 +53,10 @@ export interface Flight {
     amount: number;
     currency: string;
   };
+  /** Human-readable stop label from backend ("Direct", "1 stop", "2+ stops") */
+  stopLabel?: string;
+  /** Total layover wait time across all connections (minutes) */
+  totalLayoverMinutes?: number;
   /**
    * May be present for backwards compatibility.
    * IMPORTANT: this can be a Travelpayouts click endpoint (JSON), so it must NOT be used as a booking href.

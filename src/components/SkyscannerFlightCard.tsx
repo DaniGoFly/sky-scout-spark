@@ -143,8 +143,9 @@ const MobileLeg = memo(({
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
   durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; layoverMinutes?: number; dateLabel?: string; arrivalDateLabel?: string;
 }) => {
-  const isDirect = stopsLabel === "Direct";
+  const isDirect = stopsCount === 0 || stopsLabel === "Direct";
   const isUnknown = stopsLabel === "Stops unknown";
+  const viaAirports = !isDirect && stopsAirports?.filter(s => s && s !== "undefined" && s !== "null").join(", ");
   return (
     <div className="flex flex-col gap-0.5">
       {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>}
@@ -156,6 +157,7 @@ const MobileLeg = memo(({
       {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
       <p className={`text-xs font-medium ${isDirect ? "text-green-500" : isUnknown ? "text-muted-foreground" : "text-accent"}`}>
         {stopsLabel} · {formatDuration(durationMinutes)}
+        {viaAirports && <span className="text-muted-foreground font-normal"> · via {viaAirports}</span>}
         {layoverMinutes && layoverMinutes > 0 && !isDirect && (
           <span className="text-muted-foreground font-normal"> · Layover: {formatDuration(layoverMinutes)}</span>
         )}
@@ -172,8 +174,9 @@ const DesktopLeg = memo(({
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
   durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; layoverMinutes?: number; dateLabel?: string; arrivalDateLabel?: string;
 }) => {
-  const isDirect = stopsLabel === "Direct";
+  const isDirect = stopsCount === 0 || stopsLabel === "Direct";
   const isUnknown = stopsLabel === "Stops unknown";
+  const viaAirports = !isDirect && stopsAirports?.filter(s => s && s !== "undefined" && s !== "null").join(", ");
   return (
     <div className="flex flex-col gap-1">
       {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{label}</span>}
@@ -193,6 +196,9 @@ const DesktopLeg = memo(({
           <span className={`text-[11px] mt-1 font-semibold whitespace-nowrap ${isDirect ? "text-green-500" : isUnknown ? "text-muted-foreground" : "text-accent"}`}>
             {stopsLabel}
           </span>
+          {viaAirports && (
+            <span className="text-[10px] text-muted-foreground mt-0.5 whitespace-nowrap">via {viaAirports}</span>
+          )}
           {layoverMinutes && layoverMinutes > 0 && !isDirect && (
             <span className="text-[10px] text-muted-foreground mt-0.5 whitespace-nowrap">
               Layover: {formatDuration(layoverMinutes)}
@@ -411,35 +417,53 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     return null;
   }, [isMultiCity, retSegment, flight.return, returnDateProp]);
 
-  // ── Stop labels: prefer enriched stopLabel from segment analysis, fallback to local computation ──
-  const outboundStopsCount: number | null = isEnriched(flight)
-    ? (flight.outboundStopsTotal < 0 ? null : flight.outboundStopsTotal)
-    : getStopsCount({ stopsCount: flight.stopsCount, stopsAirports: flight.stopsAirports, segments: (flight as any).segments });
-
-  const returnStopsCount: number | null = isEnriched(flight)
-    ? (flight.returnStopsTotal < 0 ? null : flight.returnStopsTotal)
-    : retData
-      ? getStopsCount({ stopsCount: retData.stopsCount, stopsAirports: retData.stopsAirports })
-      : null;
-
-  const outboundStopsAirports = isEnriched(flight) ? flight.outboundStopsAirports : (flight.stopsAirports || []);
-  const returnStopsAirports = isEnriched(flight) ? flight.returnStopsAirports : (retData?.stopsAirports || []);
-
-  // Use pre-computed stop labels from enrichment (segment-based, authoritative)
-  // Fallback to local computation only if enrichment not available
-  const outboundStops: string = isEnriched(flight)
-    ? flight.outboundStopLabel
-    : getLocalizedStopsLabel(outboundStopsCount, outboundStopsAirports, flight.durationMinutes);
+  // ── Stop labels: backend field is authoritative, then enrichment, then local fallback ──
+  // Priority: flight.stopLabel (from API) → enriched outboundStopLabel → local computation
+  const outboundStops: string =
+    (flight as any).stopLabel ??
+    (isEnriched(flight) ? flight.outboundStopLabel : null) ??
+    ((() => {
+      const count = isEnriched(flight)
+        ? (flight.outboundStopsTotal < 0 ? null : flight.outboundStopsTotal)
+        : getStopsCount({ stopsCount: flight.stopsCount, stopsAirports: flight.stopsAirports, segments: (flight as any).segments });
+      return getLocalizedStopsLabel(count, flight.stopsAirports || [], flight.durationMinutes);
+    })());
 
   const returnStops: string = retData
-    ? (isEnriched(flight)
-        ? flight.returnStopLabel
-        : getLocalizedStopsLabel(returnStopsCount, returnStopsAirports, retData.durationMinutes))
+    ? ((retData as any).stopLabel ??
+       (isEnriched(flight) ? flight.returnStopLabel : null) ??
+       ((() => {
+         const count = isEnriched(flight)
+           ? (flight.returnStopsTotal < 0 ? null : flight.returnStopsTotal)
+           : getStopsCount({ stopsCount: retData.stopsCount, stopsAirports: retData.stopsAirports });
+         return getLocalizedStopsLabel(count, retData.stopsAirports || [], retData.durationMinutes);
+       })()))
     : "";
 
-  // Layover minutes from enrichment
-  const outboundLayoverMinutes = isEnriched(flight) ? flight.outboundLayoverMinutes : 0;
-  const returnLayoverMinutes = isEnriched(flight) ? flight.returnLayoverMinutes : 0;
+  // Outbound airports & layover — use backend fields first
+  const outboundStopsAirports: string[] =
+    (isEnriched(flight) ? flight.outboundStopsAirports : null) ??
+    flight.stopsAirports ?? [];
+
+  const returnStopsAirports: string[] =
+    (isEnriched(flight) ? flight.returnStopsAirports : null) ??
+    retData?.stopsAirports ?? [];
+
+  // Layover: backend totalLayoverMinutes > enrichment > 0
+  const outboundLayoverMinutes: number =
+    (flight as any).totalLayoverMinutes ??
+    (isEnriched(flight) ? flight.outboundLayoverMinutes : 0) ??
+    0;
+
+  const returnLayoverMinutes: number =
+    (retData as any)?.totalLayoverMinutes ??
+    (isEnriched(flight) ? flight.returnLayoverMinutes : 0) ??
+    0;
+
+  // Resolved stopsCount for conditionals
+  const outboundStopsCount: number | null = isEnriched(flight)
+    ? (flight.outboundStopsTotal < 0 ? null : flight.outboundStopsTotal)
+    : flight.stopsCount;
 
   const apiCurrency = flight.price?.currency;
 
