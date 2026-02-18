@@ -464,7 +464,7 @@ const LiveFlightResults = () => {
               <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={dedupedFlights.length} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </div>
           </div>
-          <div className="hidden sm:block"><CompactSearchBar /></div>
+          <div className="hidden sm:block"><CompactSearchBar isSearching={isSearching} onForceSearch={handleRefreshPrices} /></div>
           <TrustSignals />
         </div>
       </div>

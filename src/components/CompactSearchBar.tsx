@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Calendar, Search } from "lucide-react";
+import { ArrowRightLeft, Calendar, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -9,8 +9,14 @@ import AirportAutocomplete from "./AirportAutocomplete";
 import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import { getDefaultDates } from "@/lib/dateUtils";
+import { toast } from "sonner";
 
-const CompactSearchBar = () => {
+interface CompactSearchBarProps {
+  isSearching?: boolean;
+  onForceSearch?: () => void;
+}
+
+const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchBarProps) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -75,40 +81,57 @@ const CompactSearchBar = () => {
 
   const isValid = origins.length > 0 && to !== null;
 
-  const handleSearchNav = useCallback(() => {
-    if (origins.length === 0 || !to) return;
+  const buildParams = useCallback(() => {
     const totalInfants = travelers.infantsSeat + travelers.infantsLap;
-    const params = new URLSearchParams({
+    return new URLSearchParams({
       from: origins.map(o => o.code).join(","),
-      to: to.code,
+      to: to!.code,
       depart: format(departDate, "yyyy-MM-dd"),
       adults: travelers.adults.toString(),
       children: travelers.children.toString(),
       infants: totalInfants.toString(),
       class: travelers.cabinClass,
       trip: tripType,
+      ...(tripType === "roundtrip" ? { return: format(returnDate, "yyyy-MM-dd") } : {}),
     });
-    if (tripType === "roundtrip") {
-      params.set("return", format(returnDate, "yyyy-MM-dd"));
-    }
+  }, [origins, to, departDate, returnDate, travelers, tripType]);
+
+  const handleSearchNav = useCallback(() => {
+    if (origins.length === 0 || !to) return;
+    const params = buildParams();
     navigate(`/flights/results?${params.toString()}`);
-  }, [origins, to, departDate, returnDate, travelers, tripType, navigate]);
+  }, [origins, to, buildParams, navigate]);
 
-  const originsKey = origins.map(o => o.code).join(",");
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
+  /**
+   * Primary Search button handler.
+   * - Validates fields with inline toast messages.
+   * - If params are identical to current URL → calls onForceSearch() to re-run
+   *   the search without a navigation (avoids no-op).
+   * - If params differ → navigates (which remounts the results page).
+   */
+  const handleSearch = useCallback(() => {
+    if (origins.length === 0) {
+      toast.error("Please enter an origin airport");
       return;
     }
-    if (origins.length === 0 || !to) return;
-    const timer = setTimeout(() => {
-      handleSearchNav();
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [originsKey, to?.code, departDate.getTime(), returnDate.getTime(), travelers.adults, travelers.children, travelers.infantsSeat, travelers.infantsLap, travelers.cabinClass, tripType, handleSearchNav]);
+    if (!to) {
+      toast.error("Please enter a destination airport");
+      return;
+    }
 
-  const handleSearch = () => handleSearchNav();
+    const newParams = buildParams();
+    const currentSearch = searchParams.toString();
+    const newSearch = newParams.toString();
+
+    if (newSearch === currentSearch) {
+      // Same params — force a fresh search without navigation
+      onForceSearch?.();
+    } else {
+      navigate(`/flights/results?${newSearch}`);
+    }
+  }, [origins, to, buildParams, searchParams, navigate, onForceSearch]);
+
+  const originsKey = origins.map(o => o.code).join(",");
 
   return (
     <div className="bg-card border border-border rounded-2xl shadow-card p-4">
@@ -250,9 +273,18 @@ const CompactSearchBar = () => {
         </div>
 
         {/* Search */}
-        <Button onClick={handleSearch} disabled={!isValid} className="h-10 gap-2 shrink-0">
-          <Search className="w-4 h-4" />
-          <span className="hidden sm:inline">Search</span>
+        <Button
+          type="button"
+          onClick={handleSearch}
+          disabled={isSearching}
+          className="h-10 gap-2 shrink-0 min-w-[80px]"
+        >
+          {isSearching ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Search className="w-4 h-4" />
+          )}
+          <span className="hidden sm:inline">{isSearching ? "Searching…" : "Search"}</span>
         </Button>
       </div>
     </div>
