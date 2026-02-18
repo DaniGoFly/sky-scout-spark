@@ -30,65 +30,61 @@ const PriceSlider = ({ value, min, max, onChange, step, formatPrice, currency, l
   const maxPct = max > min ? ((value[1] - min) / (max - min)) * 100 : 100;
 
   return (
-    <div className="space-y-2 select-none">
-      {/* Grid: [min-label] [slider] [max-label] — labels are outside thumb path */}
-      <div className="grid items-center gap-3" style={{ gridTemplateColumns: "68px 1fr 68px" }}>
-        {/* Min value — fixed left column */}
-        <span className="text-xs font-semibold text-foreground tabular-nums text-left">
-          {formatPrice(value[0], currency)}
-        </span>
-
-        {/* Slider track + floating tooltips */}
-        <div className="relative py-5" ref={trackRef}>
-          {/* Min tooltip — appears above thumb while dragging */}
-          {dragging === "min" && (
-            <div
-              className="absolute z-20 pointer-events-none"
-              style={{ left: `clamp(0%, ${minPct}%, 100%)`, top: 0, transform: "translate(-50%, 0)" }}
-            >
-              <div className="bg-popover border border-border text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-md">
-                {formatPrice(value[0], currency)}
-              </div>
-            </div>
-          )}
-          {/* Max tooltip — appears above thumb while dragging */}
-          {dragging === "max" && (
-            <div
-              className="absolute z-20 pointer-events-none"
-              style={{ left: `clamp(0%, ${maxPct}%, 100%)`, top: 0, transform: "translate(-50%, 0)" }}
-            >
-              <div className="bg-popover border border-border text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-md">
-                {formatPrice(value[1], currency)}
-              </div>
-            </div>
-          )}
-          <div
-            onPointerDown={(e) => {
-              const target = e.target as HTMLElement;
-              const thumb = target.closest("[role='slider']");
-              if (!thumb) return;
-              const thumbs = trackRef.current?.querySelectorAll("[role='slider']");
-              if (!thumbs) return;
-              setDragging(thumbs[0] === thumb ? "min" : "max");
-            }}
-            onPointerUp={() => setDragging(null)}
-            onPointerCancel={() => setDragging(null)}
-          >
-            <Slider value={value} onValueChange={onChange} min={min} max={max} step={step} className="w-full" />
-          </div>
+    <div className="space-y-3 select-none w-full">
+      {/* Price values row — min left, max right */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex flex-col items-start gap-0.5">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{labelMin}</span>
+          <span className="text-sm font-bold text-foreground tabular-nums">
+            {formatPrice(value[0], currency)}
+          </span>
         </div>
-
-        {/* Max value — fixed right column */}
-        <span className="text-xs font-semibold text-foreground tabular-nums text-right">
-          {formatPrice(value[1], currency)}
-        </span>
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{labelMax}</span>
+          <span className="text-sm font-bold text-foreground tabular-nums">
+            {formatPrice(value[1], currency)}
+          </span>
+        </div>
       </div>
 
-      {/* Min / Max labels row */}
-      <div className="grid text-[10px] text-muted-foreground" style={{ gridTemplateColumns: "68px 1fr 68px" }}>
-        <span>{labelMin}</span>
-        <span />
-        <span className="text-right">{labelMax}</span>
+      {/* Slider track — full width with floating tooltips */}
+      <div className="relative py-4 px-1" ref={trackRef}>
+        {/* Min tooltip */}
+        {dragging === "min" && (
+          <div
+            className="absolute z-20 pointer-events-none"
+            style={{ left: `clamp(0%, ${minPct}%, 100%)`, top: 0, transform: "translate(-50%, 0)" }}
+          >
+            <div className="bg-popover border border-border text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-md">
+              {formatPrice(value[0], currency)}
+            </div>
+          </div>
+        )}
+        {/* Max tooltip */}
+        {dragging === "max" && (
+          <div
+            className="absolute z-20 pointer-events-none"
+            style={{ left: `clamp(0%, ${maxPct}%, 100%)`, top: 0, transform: "translate(-50%, 0)" }}
+          >
+            <div className="bg-popover border border-border text-foreground text-[11px] font-semibold rounded-lg px-2 py-1 whitespace-nowrap shadow-md">
+              {formatPrice(value[1], currency)}
+            </div>
+          </div>
+        )}
+        <div
+          onPointerDown={(e) => {
+            const target = e.target as HTMLElement;
+            const thumb = target.closest("[role='slider']");
+            if (!thumb) return;
+            const thumbs = trackRef.current?.querySelectorAll("[role='slider']");
+            if (!thumbs) return;
+            setDragging(thumbs[0] === thumb ? "min" : "max");
+          }}
+          onPointerUp={() => setDragging(null)}
+          onPointerCancel={() => setDragging(null)}
+        >
+          <Slider value={value} onValueChange={onChange} min={min} max={max} step={step} className="w-full" />
+        </div>
       </div>
     </div>
   );
