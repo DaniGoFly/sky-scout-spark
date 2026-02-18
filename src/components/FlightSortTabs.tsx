@@ -24,9 +24,9 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
       icon: Wallet,
       description: t("sort.cheapest_desc"),
       sublabel: formatPrice(stats.cheapest.price.amount),
-      activeColor: "text-emerald-400",
-      activeBg: "data-[state=active]:border-emerald-400/60 data-[state=active]:shadow-[0_0_12px_-3px_rgba(52,211,153,0.4)]",
-      iconActiveClass: "text-emerald-400",
+      activeColor: "text-primary",
+      activeBg: "data-[state=active]:border-white/15",
+      iconActiveClass: "text-primary",
     },
     {
       key: "best" as const,
@@ -34,9 +34,9 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
       icon: Star,
       description: t("sort.best_desc"),
       sublabel: formatPrice(stats.best.price.amount),
-      activeColor: "text-violet-400",
-      activeBg: "data-[state=active]:border-violet-400/60 data-[state=active]:shadow-[0_0_12px_-3px_rgba(139,92,246,0.4)]",
-      iconActiveClass: "text-violet-400",
+      activeColor: "text-primary",
+      activeBg: "data-[state=active]:border-white/15",
+      iconActiveClass: "text-primary",
     },
     {
       key: "fastest" as const,
@@ -44,9 +44,9 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
       icon: Zap,
       description: t("sort.fastest_desc"),
       sublabel: formatDuration(stats.fastest.durationMinutes) || "—",
-      activeColor: "text-sky-400",
-      activeBg: "data-[state=active]:border-sky-400/60 data-[state=active]:shadow-[0_0_12px_-3px_rgba(56,189,248,0.4)]",
-      iconActiveClass: "text-sky-400",
+      activeColor: "text-primary",
+      activeBg: "data-[state=active]:border-white/15",
+      iconActiveClass: "text-primary",
     },
   ];
 
@@ -58,7 +58,7 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
             <TabsTrigger
               key={key}
               value={key}
-              className={`flex flex-col gap-0 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-lg min-w-0 transition-all border-2 border-transparent ${activeBg}`}
+              className={`flex flex-col gap-0 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-primary/[0.12] data-[state=active]:shadow-none min-w-0 transition-all border border-white/[0.06] hover:bg-white/[0.04] ${activeBg}`}
             >
               <div className="flex items-center gap-1 min-w-0">
                 <Icon className={`w-3.5 h-3.5 shrink-0 ${sortBy === key ? iconActiveClass : "text-muted-foreground"}`} />
