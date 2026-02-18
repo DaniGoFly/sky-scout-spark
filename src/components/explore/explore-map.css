@@ -1,6 +1,6 @@
 /*
  * explore-map.css — styles for MapLibre-based Explore map.
- * Premium Google Flights-style markers + GoFlyFinder dark/purple theme.
+ * Professional Navy theme — blue accents, no neon/purple.
  */
 
 /* ── Wrapper — absolute fill to guarantee sizing ── */
@@ -55,8 +55,8 @@
 }
 .xpin--pill:hover {
   transform: scale(1.08);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
-  border-color: #8b5cf6;
+  box-shadow: 0 4px 16px rgba(47, 122, 248, 0.3), 0 2px 8px rgba(0, 0, 0, 0.25);
+  border-color: #2F7AF8;
 }
 
 /* Cheapest — green tint */
@@ -74,19 +74,18 @@
   opacity: 0.45;
 }
 
-/* Active / selected — purple glow ring */
+/* Active / selected — blue brand ring */
 .xpin--active {
-  background: #ffffff;
-  color: #1f2937;
+  background: #2F7AF8;
+  color: #ffffff;
   padding: 8px 14px;
   border-radius: 999px;
   font-weight: 700;
   font-size: 14px;
   box-shadow:
-    0 0 0 3px rgba(139, 92, 246, 0.5),
-    0 4px 20px rgba(139, 92, 246, 0.3),
+    0 0 0 3px rgba(255, 255, 255, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.2);
-  border: 2px solid #8b5cf6;
+  border: 2px solid #2F7AF8;
   z-index: 100;
 }
 
@@ -94,17 +93,17 @@
   font-weight: 700;
 }
 .xpin--active .xpin__price {
-  color: #1e293b;
+  color: #ffffff;
 }
 
 /* ── Origin dot ── */
 .xpin-origin {
   width: 14px;
   height: 14px;
-  background: #8b5cf6;
+  background: #2F7AF8;
   border-radius: 50%;
   border: 2.5px solid #fff;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 3px rgba(47, 122, 248, 0.25), 0 2px 8px rgba(0, 0, 0, 0.3);
   pointer-events: none;
 }
 
@@ -130,7 +129,7 @@
   border-bottom: none !important;
 }
 .explore-map-container .maplibregl-ctrl-group button:hover {
-  background: rgba(139, 92, 246, 0.15) !important;
+  background: rgba(47, 122, 248, 0.15) !important;
 }
 .explore-map-container .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
   filter: invert(1) brightness(0.85);
@@ -156,7 +155,7 @@
 }
 .explore-map-container .maplibregl-ctrl-attrib a:hover {
   text-decoration: underline !important;
-  color: #c4b5fd !important;
+  color: #93b8fc !important;
 }
 
 /* ── Sidebar panel — glassy premium ── */
@@ -177,10 +176,10 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Custom scrollbar — thin purple */
+/* Custom scrollbar — thin blue */
 .explore-sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.25) transparent;
+  scrollbar-color: rgba(47, 122, 248, 0.25) transparent;
 }
 .explore-sidebar-scroll::-webkit-scrollbar {
   width: 4px;
@@ -189,11 +188,11 @@
   background: transparent;
 }
 .explore-sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.25);
+  background: rgba(47, 122, 248, 0.25);
   border-radius: 4px;
 }
 .explore-sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.45);
+  background: rgba(47, 122, 248, 0.45);
 }
 
 /* Destination card hover lift */
