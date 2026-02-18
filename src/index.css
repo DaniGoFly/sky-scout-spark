@@ -63,6 +63,17 @@
     --sidebar-accent-foreground: 226 100% 97%;
     --sidebar-border: 222 20% 16%;
     --sidebar-ring: 217 91% 58%;
+
+    /* ── Section theme tokens ────────────────────────────────── */
+    /* Flights: Blue (#3B82F6) — used for all flight-section accents */
+    --flights-primary: 217 91% 60%;          /* hsl → #3B82F6 */
+    --flights-primary-dim: 217 91% 60% / 0.20;
+    --flights-ring: 217 91% 60% / 0.45;
+
+    /* Hotels: Orange — ready for future use, not applied yet */
+    --hotels-primary: 25 95% 53%;            /* hsl → #F97316 */
+    --hotels-primary-dim: 25 95% 53% / 0.20;
+    --hotels-ring: 25 95% 53% / 0.45;
   }
 }
 
