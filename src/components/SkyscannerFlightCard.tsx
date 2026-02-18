@@ -143,7 +143,8 @@ const MobileLeg = memo(({
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
   durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; layoverMinutes?: number; dateLabel?: string; arrivalDateLabel?: string;
 }) => {
-  const isDirect = stopsCount === 0 || stopsLabel === "Direct";
+  // isDirect ONLY from stopsLabel — never from stopsCount===0 (stopsCount can be stale/wrong)
+  const isDirect = stopsLabel === "Direct";
   const isUnknown = stopsLabel === "Stops unknown";
   const viaAirports = !isDirect && stopsAirports?.filter(s => s && s !== "undefined" && s !== "null").join(", ");
   return (
@@ -174,7 +175,8 @@ const DesktopLeg = memo(({
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
   durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; layoverMinutes?: number; dateLabel?: string; arrivalDateLabel?: string;
 }) => {
-  const isDirect = stopsCount === 0 || stopsLabel === "Direct";
+  // isDirect ONLY from stopsLabel — never from stopsCount===0 (stopsCount can be stale/wrong)
+  const isDirect = stopsLabel === "Direct";
   const isUnknown = stopsLabel === "Stops unknown";
   const viaAirports = !isDirect && stopsAirports?.filter(s => s && s !== "undefined" && s !== "null").join(", ");
   return (
