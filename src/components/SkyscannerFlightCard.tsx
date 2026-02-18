@@ -143,10 +143,10 @@ const MobileLeg = memo(({
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
   durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; layoverMinutes?: number; dateLabel?: string; arrivalDateLabel?: string;
 }) => {
-  // isDirect ONLY from stopsLabel — never from stopsCount===0 (stopsCount can be stale/wrong)
-  const isDirect = stopsLabel === "Direct";
+  const isDirect = stopsLabel === "Direct" || stopsCount === 0;
   const isUnknown = stopsLabel === "Stops unknown";
-  const viaAirports = !isDirect && stopsAirports?.filter(s => s && s !== "undefined" && s !== "null").join(", ");
+  const validAirports = isDirect ? [] : (stopsAirports ?? []).filter(s => s && s !== "undefined" && s !== "null");
+  const hasLayover = !isDirect && typeof layoverMinutes === "number" && layoverMinutes > 0;
   return (
     <div className="flex flex-col gap-0.5">
       {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>}
@@ -158,10 +158,8 @@ const MobileLeg = memo(({
       {dateLabel && <p className="text-[10px] text-muted-foreground">{dateLabel}</p>}
       <p className={`text-xs font-medium ${isDirect ? "text-green-500" : isUnknown ? "text-muted-foreground" : "text-accent"}`}>
         {stopsLabel} · {formatDuration(durationMinutes)}
-        {viaAirports && <span className="text-muted-foreground font-normal"> · via {viaAirports}</span>}
-        {layoverMinutes && layoverMinutes > 0 && !isDirect && (
-          <span className="text-muted-foreground font-normal"> · Layover: {formatDuration(layoverMinutes)}</span>
-        )}
+        {validAirports.length > 0 && <span className="text-muted-foreground font-normal"> · via {validAirports.join(", ")}</span>}
+        {hasLayover && <span className="text-muted-foreground font-normal"> · Layover: {formatDuration(layoverMinutes!)}</span>}
       </p>
     </div>
   );
@@ -175,10 +173,12 @@ const DesktopLeg = memo(({
   label: string | null; origin: string; destination: string; departureTime: string; arrivalTime: string;
   durationMinutes: number; stopsCount: number | null; stopsAirports: string[]; stopsLabel: string; layoverMinutes?: number; dateLabel?: string; arrivalDateLabel?: string;
 }) => {
-  // isDirect ONLY from stopsLabel — never from stopsCount===0 (stopsCount can be stale/wrong)
-  const isDirect = stopsLabel === "Direct";
+  // isDirect: label says "Direct" AND stopsCount is 0 (or unknown/null — trust the label)
+  const isDirect = stopsLabel === "Direct" || stopsCount === 0;
   const isUnknown = stopsLabel === "Stops unknown";
-  const viaAirports = !isDirect && stopsAirports?.filter(s => s && s !== "undefined" && s !== "null").join(", ");
+  // Only show via/layover when genuinely not direct
+  const validAirports = isDirect ? [] : (stopsAirports ?? []).filter(s => s && s !== "undefined" && s !== "null");
+  const hasLayover = !isDirect && typeof layoverMinutes === "number" && layoverMinutes > 0;
   return (
     <div className="flex flex-col gap-1">
       {label && <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{label}</span>}
@@ -189,21 +189,26 @@ const DesktopLeg = memo(({
           <p className="text-xs font-semibold text-muted-foreground uppercase">{safeText(origin, "---")}</p>
         </div>
         <div className="flex-1 flex flex-col items-center px-2" style={{ minWidth: "80px" }}>
+          {/* Duration */}
           <span className="text-[11px] text-muted-foreground font-medium mb-1 whitespace-nowrap">{formatDuration(durationMinutes)}</span>
+          {/* Plane line */}
           <div className="w-full h-[2px] bg-border relative">
             <div className="absolute start-0 w-1.5 h-1.5 bg-muted-foreground rounded-full -translate-y-[2px]" />
             <Plane className="absolute start-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary rotate-90 rtl:-rotate-90" />
             <div className="absolute end-0 w-1.5 h-1.5 bg-primary rounded-full -translate-y-[2px]" />
           </div>
+          {/* Stop label — no raw stopsCount ever rendered */}
           <span className={`text-[11px] mt-1 font-semibold whitespace-nowrap ${isDirect ? "text-green-500" : isUnknown ? "text-muted-foreground" : "text-accent"}`}>
             {stopsLabel}
           </span>
-          {viaAirports && (
-            <span className="text-[10px] text-muted-foreground mt-0.5 whitespace-nowrap">via {viaAirports}</span>
+          {/* via airports — only for non-direct */}
+          {validAirports.length > 0 && (
+            <span className="text-[10px] text-muted-foreground mt-0.5 whitespace-nowrap">via {validAirports.join(", ")}</span>
           )}
-          {layoverMinutes && layoverMinutes > 0 && !isDirect && (
+          {/* Layover — only for non-direct */}
+          {hasLayover && (
             <span className="text-[10px] text-muted-foreground mt-0.5 whitespace-nowrap">
-              Layover: {formatDuration(layoverMinutes)}
+              Layover: {formatDuration(layoverMinutes!)}
             </span>
           )}
         </div>
