@@ -1,20 +1,30 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { detectDefaultCurrency, isRtlLanguage } from "@/i18n/config";
+import {
+  detectDefaultCurrency,
+  isRtlLanguage,
+  detectMarketCode,
+  LANGUAGE_TO_CURRENCY,
+  COUNTRY_TO_CURRENCY,
+} from "@/i18n/config";
 
 interface LocaleContextValue {
   currency: string;
   setCurrency: (currency: string) => void;
+  currencyLocked: boolean;
+  setCurrencyAuto: () => void;
   formatPrice: (amount: number, originalCurrency?: string) => string;
   formatDate: (dateStr: string, options?: Intl.DateTimeFormatOptions) => string;
   formatNumber: (num: number) => string;
   isRtl: boolean;
   locale: string;
+  marketCode: string;
 }
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 const CURRENCY_KEY = "gofly.currency";
+const CURRENCY_LOCKED_KEY = "gofly.currency_locked";
 
 function getInitialCurrency(): string {
   // 1. Check URL param
@@ -30,9 +40,29 @@ function getInitialCurrency(): string {
   return detectDefaultCurrency();
 }
 
+function getInitialLocked(): boolean {
+  return localStorage.getItem(CURRENCY_LOCKED_KEY) === "true";
+}
+
+/** Derive best-fit currency from a language code */
+function currencyFromLanguage(lang: string): string {
+  const base = lang.split("-")[0].toLowerCase();
+  // Check full code first (e.g. "en-GB")
+  if (LANGUAGE_TO_CURRENCY[lang]) return LANGUAGE_TO_CURRENCY[lang];
+  if (LANGUAGE_TO_CURRENCY[base]) return LANGUAGE_TO_CURRENCY[base];
+  // Try to infer from country part
+  const parts = lang.split("-");
+  if (parts.length >= 2) {
+    const country = parts[1].toUpperCase();
+    if (COUNTRY_TO_CURRENCY[country]) return COUNTRY_TO_CURRENCY[country];
+  }
+  return detectDefaultCurrency();
+}
+
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation();
   const [currency, setCurrencyState] = useState(getInitialCurrency);
+  const [currencyLocked, setCurrencyLocked] = useState(getInitialLocked);
 
   const locale = i18n.language || "en";
   const isRtl = isRtlLanguage(locale);
@@ -47,21 +77,47 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     };
   }, [locale, isRtl]);
 
+  /**
+   * When language changes, auto-update currency ONLY if user hasn't locked it.
+   * This gives instant feedback: switching to German → EUR, Turkish → TRY, etc.
+   */
+  useEffect(() => {
+    if (currencyLocked) return;
+    const suggested = currencyFromLanguage(locale);
+    setCurrencyState(suggested);
+    localStorage.setItem(CURRENCY_KEY, suggested);
+  }, [locale, currencyLocked]);
+
+  /** Manual currency selection — sets lock */
   const setCurrency = useCallback((newCurrency: string) => {
     const upper = newCurrency.toUpperCase();
     setCurrencyState(upper);
+    setCurrencyLocked(true);
     localStorage.setItem(CURRENCY_KEY, upper);
+    localStorage.setItem(CURRENCY_LOCKED_KEY, "true");
+  }, []);
+
+  /** Reset to auto mode — re-derive from current language */
+  const setCurrencyAuto = useCallback(() => {
+    setCurrencyLocked(false);
+    localStorage.removeItem(CURRENCY_LOCKED_KEY);
+    const suggested = currencyFromLanguage(i18n.language || "en");
+    setCurrencyState(suggested);
+    localStorage.setItem(CURRENCY_KEY, suggested);
+  }, [i18n.language]);
+
+  /** Market code for API requests (country code like "DE", "US", "GB") */
+  const marketCode = useMemo(() => {
+    return detectMarketCode();
   }, []);
 
   // Build full locale string for Intl (e.g., "de-DE", "en-US")
   const fullLocale = useMemo(() => {
-    // If browser has a full locale like "de-DE", use that when base matches
     const browserLocale = navigator.language || "en";
     const browserBase = browserLocale.split("-")[0];
     if (browserBase === locale.split("-")[0] && browserLocale.includes("-")) {
       return browserLocale;
     }
-    // Fallback locale mapping
     const localeMap: Record<string, string> = {
       en: "en-US",
       de: "de-DE",
@@ -83,10 +139,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
    */
   const formatPrice = useCallback(
     (amount: number, apiCurrency?: string) => {
-      // Use apiCurrency if it exists and differs from user-selected currency
-      const effectiveCurrency = apiCurrency && apiCurrency !== currency
-        ? apiCurrency
-        : currency;
+      const effectiveCurrency =
+        apiCurrency && apiCurrency !== currency ? apiCurrency : currency;
       try {
         return new Intl.NumberFormat(fullLocale, {
           style: "currency",
@@ -133,13 +187,16 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     () => ({
       currency,
       setCurrency,
+      currencyLocked,
+      setCurrencyAuto,
       formatPrice,
       formatDate,
       formatNumber,
       isRtl,
       locale: fullLocale,
+      marketCode,
     }),
-    [currency, setCurrency, formatPrice, formatDate, formatNumber, isRtl, fullLocale]
+    [currency, setCurrency, currencyLocked, setCurrencyAuto, formatPrice, formatDate, formatNumber, isRtl, fullLocale, marketCode]
   );
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;

@@ -54,7 +54,7 @@ const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { formatDate, currency, formatPrice } = useLocale();
+  const { formatDate, currency, formatPrice, marketCode } = useLocale();
   const isMobile = useIsMobile();
 
   // Single-origin search hook
@@ -95,6 +95,11 @@ const LiveFlightResults = () => {
   const tripClass = searchParams.get("class") || "economy";
   const exploreFromPrice = searchParams.get("explore_from_price");
   const isRoundtrip = tripType === "roundtrip";
+  // Use currency from URL (set by FlightSearchForm/CompactSearchBar) or fall back to locale
+  const urlCurrency = searchParams.get("currency");
+  const urlMarket = searchParams.get("market");
+  const effectiveCurrency = urlCurrency ? urlCurrency.toUpperCase() : currency;
+  const effectiveMarket = urlMarket ? urlMarket.toUpperCase() : marketCode;
 
   // Choose the right status/error based on mode
   const status = isMultiOrigin ? multiStatus : singleStatus;
@@ -108,8 +113,8 @@ const LiveFlightResults = () => {
   }, [singleCancelSearch, multiCancelSearch]);
 
   const searchKey = useMemo(
-    () => [origins.join(","), to, depart, returnDate, adults, children, infants, tripType, tripClass, currency].join("|"),
-    [origins, to, depart, returnDate, adults, children, infants, tripType, tripClass, currency]
+    () => [origins.join(","), to, depart, returnDate, adults, children, infants, tripType, tripClass, effectiveCurrency, effectiveMarket].join("|"),
+    [origins, to, depart, returnDate, adults, children, infants, tripType, tripClass, effectiveCurrency, effectiveMarket]
   );
 
   useEffect(() => {
@@ -130,7 +135,7 @@ const LiveFlightResults = () => {
         departDate: depart,
         returnDate: isRoundtrip ? returnDate : undefined,
         isRoundtrip,
-        adults, children, infants, currency,
+        adults, children, infants, currency: effectiveCurrency,
         sort: "best", limit: 100, tripClass,
       });
     } else {
@@ -144,11 +149,12 @@ const LiveFlightResults = () => {
         directions.push({ origin: from.toUpperCase(), destination: to.toUpperCase(), date: depart });
       }
       searchFlights({
-        directions, adults, children, infants, currency,
+        directions, adults, children, infants, currency: effectiveCurrency,
         sort: "best" as const, limit: 100, tripClass,
+        market: effectiveMarket,
       });
     }
-  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, currency, isRoundtrip, tripClass, searchFlights, cancelSearch, isMultiOrigin, origins, searchMultiOrigin]);
+  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, effectiveCurrency, effectiveMarket, isRoundtrip, tripClass, searchFlights, cancelSearch, isMultiOrigin, origins, searchMultiOrigin]);
 
   // ── Step 1: Enrich raw flights ──
   const enrichedFlights = useMemo<EnrichedFlight[]>(() => {

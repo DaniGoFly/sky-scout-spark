@@ -100,7 +100,9 @@ export function parseSearchParams(params: URLSearchParams): {
 }
 
 /**
- * Build URL search params from search request
+ * Build URL search params from search request.
+ * Always includes currency and market so the search key includes them,
+ * preventing stale-currency cache hits.
  */
 export function buildSearchParams(request: {
   origin: string;
@@ -112,6 +114,8 @@ export function buildSearchParams(request: {
   adults: number;
   children?: number;
   infants?: number;
+  currency?: string;
+  market?: string;
 }): URLSearchParams {
   const params = new URLSearchParams({
     from: request.origin,
@@ -122,6 +126,8 @@ export function buildSearchParams(request: {
     children: String(request.children || 0),
     infants: String(request.infants || 0),
     class: request.travelClass || "economy",
+    currency: (request.currency || "USD").toUpperCase(),
+    market: (request.market || "US").toUpperCase(),
   });
 
   if (request.tripType === "roundtrip" && request.returnDate) {
