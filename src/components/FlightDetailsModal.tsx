@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plane, Clock, Luggage, Wifi, Coffee, ExternalLink, MapPin, Check } from "lucide-react";
 import { LiveFlight } from "@/hooks/useFlightSearch";
+import { useTranslation } from "react-i18next";
 
 interface FlightDetailsModalProps {
   flight: LiveFlight | null;
@@ -9,15 +10,16 @@ interface FlightDetailsModalProps {
 }
 
 const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps) => {
+  const { t } = useTranslation();
   if (!flight) return null;
 
   // Check if we have a valid booking link
   const hasValidBookingLink = flight.deepLink && flight.deepLink !== "#";
 
   const getStopsLabel = (stops: number): string => {
-    if (stops === 0) return "Direct flight";
-    if (stops === 1) return "1 stop";
-    return `${stops} stops`;
+    if (stops === 0) return t("itinerary.direct_flight");
+    if (stops === 1) return t("itinerary.stop_1");
+    return t("itinerary.stops_n", { count: stops });
   };
 
   return (

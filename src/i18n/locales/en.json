@@ -223,5 +223,34 @@
     "impressum_vat": "VAT Identification Number",
     "impressum_disclaimer": "Disclaimer",
     "impressum_disclaimer_text": "GoFlyFinder is a flight and hotel comparison service. We do not sell tickets directly. All bookings are processed by third-party partners. Prices displayed are estimates and may vary at the time of booking."
+  },
+  "trust": {
+    "airlines": "Prices from 600+ airlines",
+    "no_fees": "No hidden fees",
+    "secure": "Secure booking via verified partners",
+    "updated": "Updated {{seconds}}s ago"
+  },
+  "progress": {
+    "searching_airlines": "Searching airlines…",
+    "checking_availability": "Checking availability…",
+    "finding_prices": "Finding best prices…",
+    "comparing": "Comparing options…",
+    "almost": "Almost there…",
+    "found": "{{count}} found",
+    "live_prices": "Searching live prices"
+  },
+  "summary": {
+    "cheapest": "Cheapest",
+    "best": "Best",
+    "fastest": "Fastest",
+    "recommended": "Recommended",
+    "lowest_price": "Lowest price"
+  },
+  "itinerary": {
+    "direct": "Direct",
+    "stop_1": "1 stop",
+    "stops_n": "{{count}} stops",
+    "direct_flight": "Direct flight",
+    "operated_by": "Operated by {{carrier}}"
   }
 }

@@ -1,6 +1,6 @@
 import { Plane, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface FlightSearchProgressProps {
   progress: number;
@@ -9,12 +9,14 @@ interface FlightSearchProgressProps {
 }
 
 const FlightSearchProgress = ({ progress, status, flightsFound }: FlightSearchProgressProps) => {
+  const { t } = useTranslation();
+
   const messages = [
-    "Searching airlines...",
-    "Checking availability...",
-    "Finding best prices...",
-    "Comparing options...",
-    "Almost there...",
+    t("progress.searching_airlines"),
+    t("progress.checking_availability"),
+    t("progress.finding_prices"),
+    t("progress.comparing"),
+    t("progress.almost"),
   ];
   
   const messageIndex = Math.min(
@@ -37,7 +39,7 @@ const FlightSearchProgress = ({ progress, status, flightsFound }: FlightSearchPr
               <Plane className="w-10 h-10 text-primary animate-bounce" />
               {flightsFound > 0 && (
                 <span className="text-xs font-medium text-primary mt-1">
-                  {flightsFound} found
+                  {t("progress.found", { count: flightsFound })}
                 </span>
               )}
             </div>
@@ -60,7 +62,7 @@ const FlightSearchProgress = ({ progress, status, flightsFound }: FlightSearchPr
         {/* Live indicator */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span>Searching live prices</span>
+          <span>{t("progress.live_prices")}</span>
         </div>
       </div>
     </div>

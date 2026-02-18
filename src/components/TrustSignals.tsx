@@ -14,10 +14,10 @@ const TrustSignals = memo(() => {
   }, []);
 
   const signals = [
-    { icon: Banknote, text: t("trust.airlines", "Prices from 600+ airlines") },
-    { icon: Shield, text: t("trust.no_fees", "No hidden fees") },
-    { icon: Lock, text: t("trust.secure", "Secure booking via verified partners") },
-    { icon: Clock, text: t("trust.updated", "Updated {{seconds}}s ago").replace("{{seconds}}", String(secondsAgo)) },
+    { icon: Banknote, text: t("trust.airlines") },
+    { icon: Shield, text: t("trust.no_fees") },
+    { icon: Lock, text: t("trust.secure") },
+    { icon: Clock, text: t("trust.updated", { seconds: secondsAgo }) },
   ];
 
   return (

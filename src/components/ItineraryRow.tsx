@@ -5,6 +5,7 @@
  */
 
 import { Plane } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ItineraryRowProps {
   departureTime: string;
@@ -24,25 +25,6 @@ const safeText = (value: string | undefined | null, fallback = "—"): string =>
   return value;
 };
 
-const getStopsLabel = (stops: number, stopAirports?: string[]): string => {
-  if (stops === 0) return "Direct";
-  
-  const validStops = (stopAirports || []).filter(
-    (s) => s && s !== "undefined" && s !== "null" && s.trim() !== ""
-  );
-  
-  if (stops === 1) {
-    const stopInfo = validStops.length > 0 ? ` · ${validStops[0]}` : "";
-    return `1 stop${stopInfo}`;
-  }
-  
-  // 2+ stops: show first 2 codes, then +X if more
-  const displayedStops = validStops.slice(0, 2).join(", ");
-  const extraCount = validStops.length > 2 ? ` +${validStops.length - 2}` : "";
-  const stopInfo = displayedStops ? ` · ${displayedStops}${extraCount}` : "";
-  return `${stops} stops${stopInfo}`;
-};
-
 const ItineraryRow = ({
   departureTime,
   arrivalTime,
@@ -54,6 +36,23 @@ const ItineraryRow = ({
   label,
   operatedBy,
 }: ItineraryRowProps) => {
+  const { t } = useTranslation();
+
+  const getStopsLabel = (stops: number, stopAirports?: string[]): string => {
+    if (stops === 0) return t("itinerary.direct");
+    const validStops = (stopAirports || []).filter(
+      (s) => s && s !== "undefined" && s !== "null" && s.trim() !== ""
+    );
+    if (stops === 1) {
+      const stopInfo = validStops.length > 0 ? ` · ${validStops[0]}` : "";
+      return `${t("itinerary.stop_1")}${stopInfo}`;
+    }
+    const displayedStops = validStops.slice(0, 2).join(", ");
+    const extraCount = validStops.length > 2 ? ` +${validStops.length - 2}` : "";
+    const stopInfo = displayedStops ? ` · ${displayedStops}${extraCount}` : "";
+    return `${t("itinerary.stops_n", { count: stops })}${stopInfo}`;
+  };
+
   const departTime = safeText(departureTime);
   const arriveTime = safeText(arrivalTime);
   const originCode = safeText(originIata, "---");
@@ -124,7 +123,7 @@ const ItineraryRow = ({
       {/* Optional "Operated by" text */}
       {operatedBy && (
         <p className="text-[10px] text-muted-foreground/70 mt-1 truncate" style={{ maxWidth: "100%" }}>
-          Operated by {operatedBy}
+          {t("itinerary.operated_by", { carrier: operatedBy })}
         </p>
       )}
     </div>
