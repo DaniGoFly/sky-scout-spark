@@ -19,13 +19,23 @@ const Slider = React.forwardRef<
     {(Array.isArray(props.value) ? props.value : [props.value ?? props.defaultValue ?? 0]).map((_, index) => (
       <SliderPrimitive.Thumb
         key={index}
-        className="block h-5 w-5 rounded-full ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+        className="block rounded-full ring-offset-background transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-110"
         style={{
           width: 20,
           height: 20,
           background: "#0B1224",
-          border: "2px solid rgba(255,255,255,0.85)",
-          boxShadow: "none",
+          border: "2.5px solid rgba(255,255,255,0.90)",
+          boxShadow: "0 0 0 0 rgba(47,122,248,0)",
+          transition: "box-shadow 0.15s ease, transform 0.15s ease",
+        }}
+        onPointerDown={(e) => {
+          (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 6px rgba(47,122,248,0.30), 0 2px 8px rgba(0,0,0,0.4)";
+        }}
+        onPointerUp={(e) => {
+          (e.currentTarget as HTMLElement).style.boxShadow = "none";
+        }}
+        onPointerCancel={(e) => {
+          (e.currentTarget as HTMLElement).style.boxShadow = "none";
         }}
       />
     ))}
