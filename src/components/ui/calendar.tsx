@@ -16,10 +16,13 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         months: "flex flex-col sm:flex-row gap-6",
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center mb-2",
-        caption_label: "text-base font-semibold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent",
+        // Month/year title — Flights Blue, no purple
+        caption_label: "text-base font-semibold text-primary",
         nav: "space-x-1 flex items-center",
+        // Nav chevrons — blue tint, blue on hover
         nav_button: cn(
-          "h-8 w-8 bg-gradient-to-br from-primary/10 to-purple-500/10 p-0 opacity-70 hover:opacity-100 rounded-full transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-primary/20 inline-flex items-center justify-center border border-primary/20 hover:border-primary/40",
+          "h-8 w-8 bg-primary/10 p-0 opacity-70 hover:opacity-100 rounded-full transition-all duration-200",
+          "hover:bg-primary/20 inline-flex items-center justify-center border border-primary/20 hover:border-primary/40",
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
@@ -35,21 +38,26 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
           "first:[&:has([aria-selected])]:rounded-l-full",
           "last:[&:has([aria-selected])]:rounded-r-full"
         ),
+        // Day hover — subtle blue, no purple
         day: cn(
-          "h-10 w-10 sm:h-11 sm:w-11 p-0 font-medium rounded-full transition-all duration-300 hover:scale-110",
-          "hover:bg-gradient-to-br hover:from-primary/20 hover:via-purple-500/20 hover:to-pink-500/20",
-          "hover:shadow-lg hover:shadow-primary/10",
+          "h-10 w-10 sm:h-11 sm:w-11 p-0 font-medium rounded-full transition-all duration-200",
+          "hover:bg-primary/15 hover:text-foreground",
           "aria-selected:opacity-100",
-          "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
+          "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background"
         ),
         day_range_end: "day-range-end",
+        // Selected day — solid blue fill, white text
         day_selected:
-          "bg-gradient-to-br from-primary via-purple-500 to-pink-500 text-white hover:from-primary hover:via-purple-600 hover:to-pink-600 focus:from-primary focus:via-purple-500 focus:to-pink-500 shadow-lg shadow-primary/30 animate-scale-in",
-        day_today: "bg-gradient-to-br from-primary/10 via-purple-500/10 to-pink-500/10 text-foreground font-bold ring-2 ring-primary/30",
+          "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary shadow-md shadow-primary/30",
+        // Today — subtle blue ring, no fill
+        day_today: "bg-primary/10 text-foreground font-bold ring-1 ring-primary/40",
+        // Outside month days — dimmed
         day_outside:
-          "day-outside text-muted-foreground/40 opacity-50 aria-selected:bg-gradient-to-br aria-selected:from-primary/50 aria-selected:via-purple-500/50 aria-selected:to-pink-500/50 aria-selected:text-white/70",
-        day_disabled: "text-muted-foreground/30 opacity-30 cursor-not-allowed hover:scale-100 hover:bg-transparent",
-        day_range_middle: "aria-selected:bg-gradient-to-r aria-selected:from-primary/20 aria-selected:via-purple-500/20 aria-selected:to-pink-500/20 aria-selected:text-foreground rounded-none",
+          "day-outside text-muted-foreground/40 opacity-40 aria-selected:bg-primary/40 aria-selected:text-white/70",
+        day_disabled: "text-muted-foreground/30 opacity-30 cursor-not-allowed hover:bg-transparent",
+        // Range middle — blue strip
+        day_range_middle:
+          "aria-selected:bg-primary/20 aria-selected:text-foreground rounded-none",
         day_hidden: "invisible",
         ...classNames,
       }}
