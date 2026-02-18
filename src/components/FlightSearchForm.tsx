@@ -14,6 +14,7 @@ import MultiCitySearchForm from "./MultiCitySearchForm";
 import { getDefaultDates } from "@/lib/dateUtils";
 import { requestNearestAirport } from "@/lib/nearestAirport";
 import type { AISearchParams } from "./FlightSearchHero";
+import { useLocale } from "@/hooks/useLocale";
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
@@ -25,6 +26,7 @@ type TripType = "roundtrip" | "oneway" | "multicity";
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { currency, marketCode } = useLocale();
   
   const defaultDates = useMemo(() => getDefaultDates(), []);
   
@@ -98,6 +100,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       infants: totalInfants.toString(),
       class: travelers.cabinClass,
       direct: directOnly.toString(),
+      currency: currency.toUpperCase(),
+      market: marketCode.toUpperCase(),
     });
 
     if (tripType === "roundtrip" && returnDate) {
@@ -105,7 +109,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     }
 
     navigate(`/flights/results?${params.toString()}`);
-  }, [validate, tripType, origins, to, departDate, travelers, directOnly, returnDate, navigate]);
+  }, [validate, tripType, origins, to, departDate, travelers, directOnly, returnDate, navigate, currency, marketCode]);
 
   const handleOriginsChange = useCallback((vals: AirportSelection[]) => {
     setOrigins(vals);

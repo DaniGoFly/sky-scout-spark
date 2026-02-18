@@ -36,7 +36,7 @@ export const SUPPORTED_CURRENCIES = [
 ] as const;
 
 /** Map language codes to default currencies */
-const LANGUAGE_TO_CURRENCY: Record<string, string> = {
+export const LANGUAGE_TO_CURRENCY: Record<string, string> = {
   de: "EUR",
   fr: "EUR",
   es: "EUR",
@@ -53,7 +53,7 @@ const LANGUAGE_TO_CURRENCY: Record<string, string> = {
 };
 
 /** Map country codes (ISO 3166-1 alpha-2) to currencies */
-const COUNTRY_TO_CURRENCY: Record<string, string> = {
+export const COUNTRY_TO_CURRENCY: Record<string, string> = {
   US: "USD", GB: "GBP", DE: "EUR", FR: "EUR", ES: "EUR", IT: "EUR",
   PT: "EUR", NL: "EUR", BE: "EUR", AT: "EUR", IE: "EUR", FI: "EUR",
   GR: "EUR", LU: "EUR", SK: "EUR", SI: "EUR", EE: "EUR", LV: "EUR",

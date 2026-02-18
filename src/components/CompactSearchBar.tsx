@@ -10,6 +10,7 @@ import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import { getDefaultDates } from "@/lib/dateUtils";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/useLocale";
 
 interface CompactSearchBarProps {
   isSearching?: boolean;
@@ -19,6 +20,7 @@ interface CompactSearchBarProps {
 const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchBarProps) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { currency, marketCode } = useLocale();
   
   const defaultDates = getDefaultDates();
   
@@ -92,9 +94,11 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
       infants: totalInfants.toString(),
       class: travelers.cabinClass,
       trip: tripType,
+      currency: currency.toUpperCase(),
+      market: marketCode.toUpperCase(),
       ...(tripType === "roundtrip" ? { return: format(returnDate, "yyyy-MM-dd") } : {}),
     });
-  }, [origins, to, departDate, returnDate, travelers, tripType]);
+  }, [origins, to, departDate, returnDate, travelers, tripType, currency, marketCode]);
 
   const handleSearchNav = useCallback(() => {
     if (origins.length === 0 || !to) return;
