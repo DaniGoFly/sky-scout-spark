@@ -76,11 +76,11 @@ function getBadgeConfig(label?: string): { bg: string; text: string; border: str
   const lower = label.toLowerCase();
   if (lower.includes("cheapest")) return cheapest;
   if (lower.includes("best")) return {
-    bg: "bg-white/10 border border-white/20 text-white",
+    bg: "bg-white/20 text-white",
     text: "text-white",
-    border: "border-white/25",
-    restBorder: "border-white/15",
-    hoverClass: "hover:border-white/40 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
+    border: "border-white/50",
+    restBorder: "border-white/30",
+    hoverClass: "hover:border-white/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
   };
   if (lower.includes("fastest")) return {
     bg: "bg-sky-500", text: "text-white",
@@ -394,7 +394,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   /* ═══════ MOBILE LAYOUT ═══════ */
   if (isMobile) {
     return (
-      <div className={`relative bg-card rounded-xl w-full box-border transition-all duration-200 ease-out active:scale-[0.995] focus-within:ring-2 focus-within:ring-primary/60 ${isBestValue ? `border-[1.5px] ${badgeColors.border} active:shadow-[0_0_14px_-3px_rgba(139,92,246,0.4)]` : "border border-border/50 active:shadow-[0_0_12px_-3px_rgba(139,92,246,0.3)]"}`}
+      <div className={`relative bg-card rounded-xl w-full box-border transition-all duration-200 ease-out active:scale-[0.995] focus-within:ring-2 focus-within:ring-primary/60 ${isBestValue ? `border-[1.5px] ${badgeColors.border}` : "border border-border/50"}`}
         style={{ contain: "layout style" }}>
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
         <div className="p-4 flex flex-col gap-3">
@@ -436,7 +436,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   /* ═══════ DESKTOP LAYOUT ═══════ */
   return (
-    <div className={`relative bg-card rounded-xl group transition-all duration-200 ease-out focus-within:ring-2 focus-within:ring-primary/60 focus-within:ring-offset-0 ${isBestValue ? `border-[1.5px] ${badgeColors.border} ${badgeColors.hoverClass}` : "border border-border/50 hover:border-primary/50 hover:shadow-[0_0_20px_-4px_rgba(139,92,246,0.4)] hover:-translate-y-0.5 active:-translate-y-0"}`}
+    <div className={`relative bg-card rounded-xl group transition-all duration-200 ease-out focus-within:ring-2 focus-within:ring-primary/60 focus-within:ring-offset-0 ${isBestValue ? `border-[1.5px] ${badgeColors.border} ${badgeColors.hoverClass}` : "border border-border/50 hover:border-primary/50 hover:shadow-[0_10px_28px_rgba(0,0,0,0.18)] hover:-translate-y-0.5 active:-translate-y-0"}`}
       style={{ contain: "layout style" }}>
       {isBestValue && (
         <div className="absolute -top-3 start-5 z-10">
