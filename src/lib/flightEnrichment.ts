@@ -182,37 +182,70 @@ export function enrichFlightStops(
     anyFlight.segments_outbound /* rarely present */ ||
     [];
 
-  // No segment data — fall back to top-level stopsCount, but NEVER default to 0
-  // stopsCount=0 is only safe when explicitly provided; null=unknown
+  // No segment data — use API-provided fields as the source of truth.
+  // Priority: API stopLabel > derive from stopsCount > "Stops unknown"
   if (segments.length === 0) {
-    const rawStops = flight.stopsCount;
-    // If stopsCount is explicitly 0, honour it; otherwise treat as unknown
-    const stops = typeof rawStops === "number" && Number.isFinite(rawStops) && rawStops >= 0
-      ? rawStops
-      : null;
+    // Prefer stopsCount from API over anything else
+    const rawStops = anyFlight.stopsCount ?? anyFlight.stops_count;
+    const stops: number | null =
+      typeof rawStops === "number" && Number.isFinite(rawStops) && rawStops >= 0
+        ? rawStops
+        : null;
 
     // Safety: long flights with no segment data should never claim "Direct"
     const isDirect = stops === 0 && (flight.durationMinutes == null || flight.durationMinutes <= 600);
 
-    // Build stop label — "Stops unknown" when we can't determine count
-    const outboundStopLabel = stops === null
-      ? "Stops unknown"
-      : buildStopLabel(stops, flight.stopsAirports || []);
+    // API stopLabel is the highest-priority source — use it verbatim if present
+    const apiStopLabel: string | undefined = anyFlight.stopLabel ?? anyFlight.stop_label;
+    const outboundStopLabel: string = apiStopLabel
+      ? apiStopLabel
+      : stops === null
+        ? "Stops unknown"
+        : buildStopLabel(stops, flight.stopsAirports || []);
+
+    // Return leg: check API return object
+    const apiReturn = anyFlight.return;
+    const retStops: number | null =
+      typeof apiReturn?.stopsCount === "number" && apiReturn.stopsCount >= 0
+        ? apiReturn.stopsCount
+        : null;
+    const returnStopLabel: string = apiReturn?.stopLabel
+      ? apiReturn.stopLabel
+      : retStops !== null
+        ? buildStopLabel(retStops, apiReturn?.stopsAirports || [])
+        : "";
+
+    const outboundLayover = Number(anyFlight.totalLayoverMinutes ?? 0);
+    const returnLayover = Number(apiReturn?.totalLayoverMinutes ?? 0);
 
     return {
       ...flight,
+      // Preserve API stopLabel on top-level so card's (flight as any).stopLabel pick-up works
+      stopLabel: outboundStopLabel,
+      stopsCount: stops ?? (isDirect ? 0 : flight.stopsCount),
+      stopsAirports: flight.stopsAirports || [],
+      totalLayoverMinutes: outboundLayover || undefined,
+      return: apiReturn
+        ? {
+            ...apiReturn,
+            stopLabel: returnStopLabel,
+            stopsCount: retStops ?? apiReturn.stopsCount,
+            stopsAirports: apiReturn.stopsAirports || [],
+            totalLayoverMinutes: returnLayover || undefined,
+          }
+        : flight.return,
       outboundStopsTotal: stops ?? -1, // -1 = unknown, handled by card
-      returnStopsTotal: 0,
-      stopsTotal: stops ?? 0,
+      returnStopsTotal: retStops ?? 0,
+      stopsTotal: (stops ?? 0) + (retStops ?? 0),
       isDirectOutbound: isDirect,
-      isDirectReturn: true,
-      isDirectItinerary: isDirect,
+      isDirectReturn: retStops === 0,
+      isDirectItinerary: isDirect && (retStops === null || retStops === 0),
       outboundStopsAirports: flight.stopsAirports || [],
-      returnStopsAirports: [],
+      returnStopsAirports: apiReturn?.stopsAirports || [],
       outboundStopLabel,
-      returnStopLabel: "",
-      outboundLayoverMinutes: 0,
-      returnLayoverMinutes: 0,
+      returnStopLabel,
+      outboundLayoverMinutes: outboundLayover,
+      returnLayoverMinutes: returnLayover,
     };
   }
 
@@ -324,6 +357,35 @@ export function enrichFlightStops(
     outboundDuration = Math.round((obArrMs - obDepMs) / 60000);
   }
 
+  // API stopLabel always wins over segment-derived label (API has ground truth)
+  const finalOutboundStopLabel = anyFlight.stopLabel ?? outboundStopLabel;
+  const finalReturnStopLabel = anyFlight.return?.stopLabel ?? returnStopLabel;
+
+  // If API provides stopsCount directly, use it as truth; else use segment-derived
+  const finalOutboundStops =
+    typeof anyFlight.stopsCount === "number" && anyFlight.stopsCount >= 0
+      ? anyFlight.stopsCount
+      : outboundStops;
+  const finalReturnStops =
+    typeof anyFlight.return?.stopsCount === "number" && anyFlight.return.stopsCount >= 0
+      ? anyFlight.return.stopsCount
+      : returnStops;
+
+  // Merge layovers: prefer API-provided values over computed ones
+  const finalOutboundLayover = Number(anyFlight.totalLayoverMinutes ?? outboundLayoverMinutes);
+  const finalReturnLayover = Number(anyFlight.return?.totalLayoverMinutes ?? returnLayoverMinutes);
+
+  // Merge return leg with API return data if available
+  const finalReturnLeg = returnLegInfo
+    ? {
+        ...returnLegInfo,
+        stopLabel: finalReturnStopLabel,
+        stopsCount: finalReturnStops,
+        stopsAirports: anyFlight.return?.stopsAirports ?? returnStopsAirports,
+        totalLayoverMinutes: finalReturnLayover || undefined,
+      }
+    : (anyFlight.return ?? undefined);
+
   return {
     ...flight,
     // Override top-level fields with outbound-only values
@@ -332,26 +394,26 @@ export function enrichFlightStops(
     departureTime: outboundDepTime,
     arrivalTime: outboundArrTime,
     durationMinutes: outboundDuration || flight.durationMinutes,
-    stopsCount: outboundStops,
-    stopsAirports: outboundStopsAirports,
+    stopsCount: finalOutboundStops,
+    stopsAirports: anyFlight.stopsAirports ?? outboundStopsAirports,
     // Top-level stop label and layover for direct card consumption
-    stopLabel: outboundStopLabel,
-    totalLayoverMinutes: outboundLayoverMinutes || undefined,
+    stopLabel: finalOutboundStopLabel,
+    totalLayoverMinutes: finalOutboundLayover || undefined,
     // Return leg
-    return: returnLegInfo,
+    return: finalReturnLeg,
     // Enriched stop fields
-    outboundStopsTotal: outboundStops,
-    returnStopsTotal: returnStops,
-    stopsTotal: outboundStops + returnStops,
-    isDirectOutbound: outboundStops === 0,
-    isDirectReturn: returnStops === 0,
-    isDirectItinerary: outboundStops === 0 && returnStops === 0,
-    outboundStopsAirports,
-    returnStopsAirports,
-    outboundStopLabel,
-    returnStopLabel,
-    outboundLayoverMinutes,
-    returnLayoverMinutes,
+    outboundStopsTotal: finalOutboundStops,
+    returnStopsTotal: finalReturnStops,
+    stopsTotal: finalOutboundStops + finalReturnStops,
+    isDirectOutbound: finalOutboundStops === 0,
+    isDirectReturn: finalReturnStops === 0,
+    isDirectItinerary: finalOutboundStops === 0 && finalReturnStops === 0,
+    outboundStopsAirports: anyFlight.stopsAirports ?? outboundStopsAirports,
+    returnStopsAirports: anyFlight.return?.stopsAirports ?? returnStopsAirports,
+    outboundStopLabel: finalOutboundStopLabel,
+    returnStopLabel: finalReturnStopLabel,
+    outboundLayoverMinutes: finalOutboundLayover,
+    returnLayoverMinutes: finalReturnLayover,
   };
 }
 
