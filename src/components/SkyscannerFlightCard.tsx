@@ -419,27 +419,46 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     return null;
   }, [isMultiCity, retSegment, flight.return, returnDateProp]);
 
-  // ── Stop labels: backend field is authoritative, then enrichment, then local fallback ──
-  // Priority: flight.stopLabel (from API) → enriched outboundStopLabel → local computation
-  const outboundStops: string =
-    (flight as any).stopLabel ??
-    (isEnriched(flight) ? flight.outboundStopLabel : null) ??
-    ((() => {
-      const count = isEnriched(flight)
-        ? (flight.outboundStopsTotal < 0 ? null : flight.outboundStopsTotal)
-        : getStopsCount({ stopsCount: flight.stopsCount, stopsAirports: flight.stopsAirports, segments: (flight as any).segments });
-      return getLocalizedStopsLabel(count, flight.stopsAirports || [], flight.durationMinutes);
-    })());
+  // ── Stop labels: backend field is the ONLY source of truth ──
+  // Use flight.stopLabel (set by enrichment from API) directly.
+  // Never render raw stopsCount as a fallback.
+  const resolveStopLabel = (
+    apiStopLabel: unknown,
+    enrichedLabel: string | undefined,
+    count: number | null,
+    airports: string[],
+    duration?: number,
+  ): string => {
+    // Only accept non-empty string values — reject numbers, null, undefined, "0"
+    if (typeof apiStopLabel === "string" && apiStopLabel.trim() && apiStopLabel !== "0") {
+      return apiStopLabel.trim();
+    }
+    if (typeof enrichedLabel === "string" && enrichedLabel.trim() && enrichedLabel !== "0") {
+      return enrichedLabel.trim();
+    }
+    return getLocalizedStopsLabel(count, airports, duration);
+  };
+
+  const outboundStops: string = resolveStopLabel(
+    (flight as any).stopLabel,
+    isEnriched(flight) ? flight.outboundStopLabel : undefined,
+    isEnriched(flight)
+      ? (flight.outboundStopsTotal < 0 ? null : flight.outboundStopsTotal)
+      : getStopsCount({ stopsCount: flight.stopsCount, stopsAirports: flight.stopsAirports, segments: (flight as any).segments }),
+    flight.stopsAirports || [],
+    flight.durationMinutes,
+  );
 
   const returnStops: string = retData
-    ? ((retData as any).stopLabel ??
-       (isEnriched(flight) ? flight.returnStopLabel : null) ??
-       ((() => {
-         const count = isEnriched(flight)
-           ? (flight.returnStopsTotal < 0 ? null : flight.returnStopsTotal)
-           : getStopsCount({ stopsCount: retData.stopsCount, stopsAirports: retData.stopsAirports });
-         return getLocalizedStopsLabel(count, retData.stopsAirports || [], retData.durationMinutes);
-       })()))
+    ? resolveStopLabel(
+        (retData as any).stopLabel ?? (flight as any).return?.stopLabel,
+        isEnriched(flight) ? flight.returnStopLabel : undefined,
+        isEnriched(flight)
+          ? (flight.returnStopsTotal < 0 ? null : flight.returnStopsTotal)
+          : getStopsCount({ stopsCount: retData.stopsCount, stopsAirports: retData.stopsAirports }),
+        retData.stopsAirports || [],
+        retData.durationMinutes,
+      )
     : "";
 
   // Outbound airports & layover — use backend fields first
@@ -462,7 +481,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     (isEnriched(flight) ? flight.returnLayoverMinutes : 0) ??
     0;
 
-  // Resolved stopsCount for conditionals
+  // outboundStopsCount only used for filtering, never rendered directly
   const outboundStopsCount: number | null = isEnriched(flight)
     ? (flight.outboundStopsTotal < 0 ? null : flight.outboundStopsTotal)
     : flight.stopsCount;
