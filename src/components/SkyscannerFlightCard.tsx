@@ -66,38 +66,29 @@ function extractDateLabel(raw: string | undefined | null): string | undefined {
 
 /** Get badge color config based on label */
 function getBadgeConfig(label?: string): { bg: string; text: string; border: string; restBorder: string; hoverClass: string } {
-  if (!label) return {
+  const cheapest = {
     bg: "bg-emerald-500", text: "text-white",
-    border: "border-[1.5px] border-emerald-400/50",
+    border: "border-emerald-400/50",
     restBorder: "border-emerald-400/30",
     hoverClass: "hover:border-emerald-400/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
   };
+  if (!label) return cheapest;
   const lower = label.toLowerCase();
-  if (lower.includes("cheapest")) return {
-    bg: "bg-emerald-500", text: "text-white",
-    border: "border-[1.5px] border-emerald-400/50",
-    restBorder: "border-emerald-400/30",
-    hoverClass: "hover:border-emerald-400/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
-  };
+  if (lower.includes("cheapest")) return cheapest;
   if (lower.includes("best")) return {
-    bg: "bg-white/10 border border-white/16 text-white/92",
-    text: "text-white/90",
-    border: "border-[1.5px] border-white/22",
-    restBorder: "border-white/14",
-    hoverClass: "hover:border-white/35 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
+    bg: "bg-white/10 border border-white/20 text-white",
+    text: "text-white",
+    border: "border-white/25",
+    restBorder: "border-white/15",
+    hoverClass: "hover:border-white/40 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
   };
   if (lower.includes("fastest")) return {
     bg: "bg-sky-500", text: "text-white",
-    border: "border-[1.5px] border-sky-400/50",
+    border: "border-sky-400/50",
     restBorder: "border-sky-400/30",
     hoverClass: "hover:border-sky-400/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
   };
-  return {
-    bg: "bg-emerald-500", text: "text-white",
-    border: "border-[1.5px] border-emerald-400/50",
-    restBorder: "border-emerald-400/30",
-    hoverClass: "hover:border-emerald-400/70 hover:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5",
-  };
+  return cheapest;
 }
 
 /* ─── Sub-components ─── */
