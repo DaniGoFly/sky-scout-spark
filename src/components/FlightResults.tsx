@@ -455,7 +455,7 @@ const FlightResults = () => {
           /* Main Results View with Independent Scrolling */
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Filters Sidebar - Sticky & Independently Scrollable */}
-            <div className="hidden lg:block lg:w-72 shrink-0">
+            <div className="hidden lg:block lg:w-72 shrink-0 sticky top-24 h-fit self-start">
               <FlightFilters
                 onFiltersChange={setFilters}
                 flights={normalizedFlights}

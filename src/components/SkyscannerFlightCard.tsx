@@ -76,7 +76,7 @@ function getBadgeConfig(label?: string): { bg: string; text: string; border: str
   const lower = label.toLowerCase();
   if (lower.includes("cheapest")) return cheapest;
   if (lower.includes("best")) return {
-    bg: "bg-white/20 text-white",
+    bg: "text-white",
     text: "text-white",
     border: "border-white/50",
     restBorder: "border-white/30",
@@ -114,7 +114,14 @@ const AirlineHeader = memo(({
         {flightNumber && <p className="text-[11px] text-muted-foreground truncate">{flightNumber}</p>}
       </div>
       {isBestValue && isMobile && (
-        <Badge className={`${badgeColors.bg} ${badgeColors.text} text-[10px] px-2 py-0.5 flex-shrink-0`}>{badgeOverride || bestLabel}</Badge>
+        <Badge
+          className={`text-[10px] px-3 py-0.5 flex-shrink-0 font-semibold rounded-full border-0 ${badgeOverride?.toLowerCase().includes("best") ? "" : `${badgeColors.bg} ${badgeColors.text}`}`}
+          style={badgeOverride?.toLowerCase().includes("best") ? {
+            background: "linear-gradient(135deg, #22c55e, #16a34a)",
+            color: "#ffffff",
+            boxShadow: "0 4px 14px rgba(34,197,94,0.35)",
+          } : undefined}
+        >{badgeOverride || bestLabel}</Badge>
       )}
     </div>
   );
@@ -440,7 +447,14 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       style={{ contain: "layout style" }}>
       {isBestValue && (
         <div className="absolute -top-3 start-5 z-10">
-          <Badge className={`${badgeColors.bg} shadow-md px-3 py-0.5 text-[11px] gap-1`} style={{ color: "rgba(255,255,255,0.92)" }}><Flame className="w-3 h-3" />{badgeLabel || t("card.best_price", "Best Price")}</Badge>
+          <Badge
+            className={`px-3 py-0.5 text-[11px] gap-1 font-semibold rounded-full border-0 ${badgeLabel?.toLowerCase().includes("best") || !badgeLabel ? "" : `${badgeColors.bg}`}`}
+            style={badgeLabel?.toLowerCase().includes("best") || !badgeLabel ? {
+              background: "linear-gradient(135deg, #22c55e, #16a34a)",
+              color: "#ffffff",
+              boxShadow: "0 4px 14px rgba(34,197,94,0.35)",
+            } : { color: "rgba(255,255,255,0.92)" }}
+          ><Flame className="w-3 h-3" />{badgeLabel || t("card.best_price", "Best Price")}</Badge>
         </div>
       )}
       <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
