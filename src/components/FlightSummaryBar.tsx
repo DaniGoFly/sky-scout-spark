@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Zap, Wallet, Star, TrendingDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { LiveFlight } from "@/hooks/useFlightSearch";
 
 interface FlightSummaryBarProps {
@@ -9,22 +10,17 @@ interface FlightSummaryBarProps {
 }
 
 const FlightSummaryBar = ({ flights, sortBy, onSortChange }: FlightSummaryBarProps) => {
+  const { t } = useTranslation();
+
   const stats = useMemo(() => {
     if (flights.length === 0) return null;
-    
-    // Find cheapest flight
     const cheapest = flights.reduce((min, f) => f.price < min.price ? f : min, flights[0]);
-    
-    // Find fastest flight
     const fastest = flights.reduce((min, f) => f.durationMinutes < min.durationMinutes ? f : min, flights[0]);
-    
-    // Find best value (lowest price * duration score)
     const best = flights.reduce((best, f) => {
       const score = f.price + f.stops * 50 + f.durationMinutes * 0.5;
       const bestScore = best.price + best.stops * 50 + best.durationMinutes * 0.5;
       return score < bestScore ? f : best;
     }, flights[0]);
-    
     return { cheapest, fastest, best };
   }, [flights]);
 
@@ -33,21 +29,21 @@ const FlightSummaryBar = ({ flights, sortBy, onSortChange }: FlightSummaryBarPro
   const options = [
     {
       key: "cheapest" as const,
-      label: "Cheapest",
+      label: t("summary.cheapest"),
       icon: Wallet,
       flight: stats.cheapest,
-      description: "Lowest price",
+      description: t("summary.lowest_price"),
     },
     {
       key: "best" as const,
-      label: "Best",
+      label: t("summary.best"),
       icon: Star,
       flight: stats.best,
-      description: "Recommended",
+      description: t("summary.recommended"),
     },
     {
       key: "fastest" as const,
-      label: "Fastest",
+      label: t("summary.fastest"),
       icon: Zap,
       flight: stats.fastest,
       description: stats.fastest.duration,
@@ -71,7 +67,7 @@ const FlightSummaryBar = ({ flights, sortBy, onSortChange }: FlightSummaryBarPro
             {key === "best" && (
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                 <TrendingDown className="w-3 h-3" />
-                RECOMMENDED
+                {t("summary.recommended").toUpperCase()}
               </div>
             )}
             <div className="flex items-center gap-2 mb-1">
