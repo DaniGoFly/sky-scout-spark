@@ -25,23 +25,23 @@
 @layer base {
   :root {
     /* Professional Navy palette */
-    --background: 222 47% 6%;
+    --background: 222 40% 10%;
     --foreground: 226 100% 97%;
 
-    --card: 222 40% 10%;
+    --card: 222 35% 14%;
     --card-foreground: 226 100% 97%;
 
-    --popover: 222 40% 10%;
+    --popover: 222 35% 14%;
     --popover-foreground: 226 100% 97%;
 
     --primary: 217 91% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 30% 14%;
+    --secondary: 222 28% 18%;
     --secondary-foreground: 226 100% 97%;
 
-    --muted: 222 25% 17%;
-    --muted-foreground: 220 15% 55%;
+    --muted: 222 22% 21%;
+    --muted-foreground: 220 15% 65%;
 
     --accent: 217 91% 58%;
     --accent-foreground: 0 0% 100%;
@@ -49,19 +49,19 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 20% 16%;
-    --input: 222 20% 16%;
+    --border: 222 20% 22%;
+    --input: 222 20% 22%;
     --ring: 217 91% 58%;
 
     --radius: 0.625rem;
 
-    --sidebar-background: 222 40% 8%;
+    --sidebar-background: 222 38% 12%;
     --sidebar-foreground: 226 100% 97%;
     --sidebar-primary: 217 91% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent: 222 28% 18%;
     --sidebar-accent-foreground: 226 100% 97%;
-    --sidebar-border: 222 20% 16%;
+    --sidebar-border: 222 20% 22%;
     --sidebar-ring: 217 91% 58%;
 
     /* ── Section theme tokens ────────────────────────────────── */
