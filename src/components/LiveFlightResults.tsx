@@ -77,6 +77,7 @@ const LiveFlightResults = () => {
   const [selectedOrigin, setSelectedOrigin] = useState<string | null>(null);
   const [originViewMode, setOriginViewMode] = useState<OriginViewMode>("all");
   const [nearbyAlertDismissed, setNearbyAlertDismissed] = useState(false);
+  const [hideLongLayovers, setHideLongLayovers] = useState(true);
   const prevSearchKeyRef = useRef<string>("");
   const prevSortRef = useRef<string>("best");
   const prevResultsRef = useRef<EnrichedFlight[]>([]);
@@ -195,6 +196,8 @@ const LiveFlightResults = () => {
   }, [displayFlights]);
 
   // ── Step 2: Filter (including origin filter) ──
+  const LONG_LAYOVER_THRESHOLD = 300; // 5 hours in minutes
+
   const filteredFlights = useMemo(() => {
     let result = displayFlights;
 
@@ -202,6 +205,15 @@ const LiveFlightResults = () => {
       result = result.filter((f) => {
         const src = ((f as any).origin_source || f.origin || "").toUpperCase();
         return src === selectedOrigin.toUpperCase();
+      });
+    }
+
+    // Long layover filter — on by default
+    if (hideLongLayovers) {
+      result = result.filter((f) => {
+        const outLayover = f.totalLayoverMinutes ?? 0;
+        const retLayover = (f as any).return?.totalLayoverMinutes ?? 0;
+        return outLayover <= LONG_LAYOVER_THRESHOLD && retLayover <= LONG_LAYOVER_THRESHOLD;
       });
     }
 
@@ -241,7 +253,7 @@ const LiveFlightResults = () => {
     }
 
     return result;
-  }, [displayFlights, filters, actualPriceRange, selectedOrigin]);
+  }, [displayFlights, filters, actualPriceRange, selectedOrigin, hideLongLayovers]);
 
   // ── Dedup ──
   const dedupedFlights = useMemo(() => {
@@ -600,6 +612,19 @@ const LiveFlightResults = () => {
                     </Button>
                   </>
                 )}
+              </div>
+              {/* Long layover toggle */}
+              <div className="flex items-center gap-2 px-1">
+                <button
+                  onClick={() => setHideLongLayovers((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors select-none"
+                  aria-pressed={hideLongLayovers}
+                >
+                  <span className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-sm border text-[10px] transition-colors ${hideLongLayovers ? "bg-primary border-primary text-primary-foreground" : "border-border bg-transparent"}`}>
+                    {hideLongLayovers && "✓"}
+                  </span>
+                  Hide long layovers (5h+)
+                </button>
               </div>
               <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} flightsCurrency={flightsCurrency} />
               <div className="text-xs md:text-sm text-muted-foreground px-1">
