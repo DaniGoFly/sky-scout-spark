@@ -15,6 +15,7 @@ import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import PriceInsight from "./PriceInsight";
 import PriceGraph from "./PriceGraph";
 import TrustSignals from "./TrustSignals";
+import NearbyAirportAlert from "./NearbyAirportAlert";
 
 import OriginComparePanel, { type OriginViewMode } from "./OriginComparePanel";
 import { useLiveFlightSearch } from "@/hooks/useLiveFlightSearch";
@@ -75,6 +76,7 @@ const LiveFlightResults = () => {
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
   const [selectedOrigin, setSelectedOrigin] = useState<string | null>(null);
   const [originViewMode, setOriginViewMode] = useState<OriginViewMode>("all");
+  const [nearbyAlertDismissed, setNearbyAlertDismissed] = useState(false);
   const prevSearchKeyRef = useRef<string>("");
   const prevSortRef = useRef<string>("best");
   const prevResultsRef = useRef<EnrichedFlight[]>([]);
@@ -127,6 +129,7 @@ const LiveFlightResults = () => {
     setSortBy("best");
     setSelectedOrigin(null);
     setOriginViewMode("all");
+    setNearbyAlertDismissed(false);
 
     if (isMultiOrigin) {
       searchMultiOrigin({
@@ -445,10 +448,11 @@ const LiveFlightResults = () => {
           returnDate={returnDate}
           priceIntel={intel}
           originSource={isMultiOrigin ? originSource : undefined}
+          totalPassengers={totalPassengers}
         />
       </div>
     );
-  }, [pinnedLabels, dedupedFlights, depart, returnDate, isMultiOrigin]);
+  }, [pinnedLabels, dedupedFlights, depart, returnDate, isMultiOrigin, totalPassengers]);
 
   return (
     <div className="min-h-screen bg-background pt-16" style={{ paddingTop: "calc(4rem + env(safe-area-inset-top))" }}>
@@ -611,6 +615,22 @@ const LiveFlightResults = () => {
               <p className="text-[11px] text-muted-foreground/60 px-1 italic">
                 Prices may differ from other platforms depending on agency availability and fare rules.
               </p>
+              {/* Nearby airport savings suggestion — only in single-origin mode */}
+              {!isMultiOrigin && !nearbyAlertDismissed && enrichedFlights.length > 0 && (
+                <NearbyAirportAlert
+                  currentOrigin={from}
+                  destination={to}
+                  currentFlights={enrichedFlights}
+                  allFlights={enrichedFlights}
+                  onDismiss={() => setNearbyAlertDismissed(true)}
+                  onViewAlternate={(altOrigin) => {
+                    const params = new URLSearchParams(searchParams);
+                    params.set("from", altOrigin);
+                    navigate(`/results?${params.toString()}`);
+                  }}
+                  flightsCurrency={flightsCurrency}
+                />
+              )}
               <FlightResultsErrorBoundary>
                 <div className="space-y-3">
                   {sortedFlights.length === 0 ? (
