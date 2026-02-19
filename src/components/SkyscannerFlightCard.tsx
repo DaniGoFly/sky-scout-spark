@@ -539,11 +539,6 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             </div>
             {saveButton}
           </div>
-          {/* Luggage indicator */}
-          <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-            <span>🧳</span>
-            <span>{t("card.cabin_included", "Cabin bag included")}</span>
-          </div>
           {ctaButton}
           <p className="text-[10px] text-muted-foreground/60 text-center leading-tight">{t("card.opens_partner", "Opens partner booking – price may change")}</p>
         </div>
@@ -612,11 +607,6 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
               {showScarcity && (
                 <p className="text-[10px] text-amber-500 font-medium mt-1">{t("card.scarcity", "Only a few seats left at this price")}</p>
               )}
-              {/* Luggage indicator */}
-              <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground justify-end">
-                <span>🧳</span>
-                <span>{t("card.cabin_included", "Cabin bag included")}</span>
-              </div>
             </div>
             <div className="flex flex-col items-end gap-2 mt-3">
               <div className="flex items-center gap-2">{saveButton}{ctaButton}</div>
