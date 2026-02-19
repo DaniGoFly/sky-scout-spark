@@ -30,6 +30,7 @@ interface FlightCardProps {
   returnDate?: string;
   priceIntel?: PriceIntelligence | null;
   originSource?: string;
+  totalPassengers?: number;
 }
 
 /** Type guard to check if flight has enriched stop data */
@@ -237,7 +238,7 @@ PriceIntelBadge.displayName = "PriceIntelBadge";
 
 /* ─── Main card ─── */
 
-const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel, originSource }: FlightCardProps) => {
+const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel, originSource, totalPassengers = 1 }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
@@ -526,12 +527,22 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             <div>
               <p className={`text-2xl font-bold text-foreground leading-tight ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
               <p className="text-[11px] text-muted-foreground">{t("card.per_person")}</p>
+              {totalPassengers > 1 && (
+                <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+                  {formatPrice(flight.price.amount * totalPassengers, apiCurrency)} {t("card.total_for", { count: totalPassengers })}
+                </p>
+              )}
               {priceIntel && <div className="mt-1"><PriceIntelBadge intel={priceIntel} /></div>}
               {showScarcity && (
                 <p className="text-[10px] text-amber-500 font-medium mt-0.5">{t("card.scarcity", "Only a few seats left at this price")}</p>
               )}
             </div>
             {saveButton}
+          </div>
+          {/* Luggage indicator */}
+          <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+            <span>🧳</span>
+            <span>{t("card.cabin_included", "Cabin bag included")}</span>
           </div>
           {ctaButton}
           <p className="text-[10px] text-muted-foreground/60 text-center leading-tight">{t("card.opens_partner", "Opens partner booking – price may change")}</p>
@@ -592,14 +603,24 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             <div className="flex flex-col items-end text-end">
               <p className={`text-2xl font-bold text-foreground whitespace-nowrap ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{t("card.per_person")}</p>
+              {totalPassengers > 1 && (
+                <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+                  {formatPrice(flight.price.amount * totalPassengers, apiCurrency)} {t("card.total_for", { count: totalPassengers })}
+                </p>
+              )}
               {priceIntel && <div className="mt-1"><PriceIntelBadge intel={priceIntel} /></div>}
               {showScarcity && (
                 <p className="text-[10px] text-amber-500 font-medium mt-1">{t("card.scarcity", "Only a few seats left at this price")}</p>
               )}
+              {/* Luggage indicator */}
+              <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground justify-end">
+                <span>🧳</span>
+                <span>{t("card.cabin_included", "Cabin bag included")}</span>
+              </div>
             </div>
             <div className="flex flex-col items-end gap-2 mt-3">
               <div className="flex items-center gap-2">{saveButton}{ctaButton}</div>
-              <p className="text-[10px] text-muted-foreground/50 text-end leading-tight">Opens partner booking – price may change</p>
+              <p className="text-[10px] text-muted-foreground/50 text-end leading-tight">{t("card.opens_partner_short", "Opens partner booking · Price may change")}</p>
             </div>
           </div>
         </div>
