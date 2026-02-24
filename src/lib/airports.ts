@@ -228,3 +228,12 @@ export function getNearbyAirports(airportCode: string): string[] {
   // Fall back to distance calculation
   return findNearbyAirports(code, 120); // 120km radius for safety
 }
+
+/**
+ * Find airports within radius from arbitrary coordinates (lat/lon)
+ */
+export function getAirportsInRadius(lat: number, lon: number, radiusKm: number): AirportData[] {
+  return AIRPORTS
+    .filter(a => calculateDistance(lat, lon, a.lat, a.lon) <= radiusKm)
+    .sort((a, b) => calculateDistance(lat, lon, a.lat, a.lon) - calculateDistance(lat, lon, b.lat, b.lon));
+}

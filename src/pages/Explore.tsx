@@ -62,14 +62,27 @@ const Explore = () => {
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const isMobile = useIsMobile();
   // Auto-detect origin from geo — only once on mount
+  // Parse origin from URL params (Anywhere mode from SearchForm) or geo-detect
   useEffect(() => {
     if (geoInitDone) return;
     setGeoInitDone(true);
+
+    // Check URL params first (from SearchForm Anywhere mode)
+    const params = new URLSearchParams(window.location.search);
+    const fromCode = params.get("from");
+    if (fromCode) {
+      const code = fromCode.split(",")[0].toUpperCase();
+      const airport = AIRPORTS.find(a => a.code === code);
+      if (airport) {
+        setOrigin({ code: airport.code, display: `${airport.city} (${airport.code})` });
+        return;
+      }
+    }
+
     detectGeo().then(geo => {
       if (!geo) return;
-      // Only set if user hasn't already picked something
       setOrigin(prev => {
-        if (prev) return prev; // user already selected
+        if (prev) return prev;
         const airport = getDefaultAirportByCountry(geo.country);
         if (airport) return { code: airport.code, display: `${airport.city} (${airport.code})` };
         return prev;
