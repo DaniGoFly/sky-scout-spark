@@ -29,6 +29,7 @@ interface MultiOriginInputProps {
   placeholder?: string;
   maxAirports?: number;
   compact?: boolean;
+  multiLabel?: string;
 }
 
 const MAX_DEFAULT = 6;
@@ -74,6 +75,7 @@ const MultiOriginInput = ({
   placeholder = "Where from?",
   maxAirports = MAX_DEFAULT,
   compact = false,
+  multiLabel,
 }: MultiOriginInputProps) => {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Place[]>([]);
@@ -234,7 +236,7 @@ const MultiOriginInput = ({
 
         {values.length > 1 && (
           <div className="mt-1 flex items-center gap-1.5 px-0.5">
-            <span className="text-[10px] text-primary/80 font-semibold uppercase tracking-wider">Multi-Origin</span>
+            <span className="text-[10px] text-primary/80 font-semibold uppercase tracking-wider">{multiLabel || "Multi-Origin"}</span>
             <span className="text-[10px] text-muted-foreground">· {values.length} airports</span>
           </div>
         )}
