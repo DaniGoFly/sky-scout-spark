@@ -254,7 +254,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
 
   const displayText = useMemo(() => {
     if (!departDate) {
-      return tripType === "oneway" ? "Select date" : "Select dates";
+      return tripType === "roundtrip" ? "Any day • Any length" : "Any day";
     }
     if (tripType === "oneway") {
       return format(departDate, "MMM d, yyyy");
