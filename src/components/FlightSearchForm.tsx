@@ -1,18 +1,22 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Search, Plane, Navigation } from "lucide-react";
+import { ArrowRightLeft, Search, Plane, Navigation, Globe } from "lucide-react";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import AirportAutocomplete from "./AirportAutocomplete";
+import { Switch } from "@/components/ui/switch";
 import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
 import FlightDateRangePicker from "./FlightDateRangePicker";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import MultiCitySearchForm from "./MultiCitySearchForm";
+import NearbyToggle from "./search/NearbyToggle";
+import FlexDateControls from "./search/FlexDateControls";
 import { getDefaultDates } from "@/lib/dateUtils";
 import { requestNearestAirport } from "@/lib/nearestAirport";
+import { AIRPORTS, getAirportsInRadius } from "@/lib/airports";
+import { toast } from "sonner";
 import type { AISearchParams } from "./FlightSearchHero";
 import { useLocale } from "@/hooks/useLocale";
 
@@ -32,7 +36,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   
   const [tripType, setTripType] = useState<TripType>("roundtrip");
   const [origins, setOrigins] = useState<AirportSelection[]>([]);
-  const [to, setTo] = useState<AirportSelection | null>(null);
+  const [destinations, setDestinations] = useState<AirportSelection[]>([]);
+  const [anywhere, setAnywhere] = useState(false);
   const [departDate, setDepartDate] = useState<Date | null>(defaultDates.depart);
   const [returnDate, setReturnDate] = useState<Date | null>(defaultDates.return);
   const [travelers, setTravelers] = useState<TravelersData>({
@@ -44,34 +49,133 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   });
   const [directOnly, setDirectOnly] = useState(false);
   const [errors, setErrors] = useState<{ from?: string; to?: string; dates?: string }>({});
+
+  // Nearby airports state
+  const [fromNearby, setFromNearby] = useState(false);
+  const [fromRadius, setFromRadius] = useState(150);
+  const [toNearby, setToNearby] = useState(false);
+  const [toRadius, setToRadius] = useState(150);
+  const userCoordsRef = useRef<{ lat: number; lon: number } | null>(null);
+  const toCenterRef = useRef<AirportSelection[]>([]);
+
+  // Flex dates state
+  const [departFlexBefore, setDepartFlexBefore] = useState(0);
+  const [departFlexAfter, setDepartFlexAfter] = useState(0);
+  const [returnFlexBefore, setReturnFlexBefore] = useState(0);
+  const [returnFlexAfter, setReturnFlexAfter] = useState(0);
   
 
   // Handle AI search params
   useEffect(() => {
     if (aiSearchParams) {
-      setTo({
+      setDestinations([{
         code: aiSearchParams.destinationCode,
         display: aiSearchParams.destinationName,
-      });
+      }]);
       setErrors(e => ({ ...e, to: undefined }));
-      onParamsConsumed?.();
       onParamsConsumed?.();
     }
   }, [aiSearchParams, onParamsConsumed]);
 
-  const swapLocations = useCallback(() => {
-    if (origins.length === 1 && to) {
-      const temp = origins[0];
-      setOrigins([to]);
-      setTo(temp);
+  // Nearby: From
+  const fillNearbyOrigins = useCallback(
+    (lat: number, lon: number, radius: number) => {
+      const nearby = getAirportsInRadius(lat, lon, radius);
+      setOrigins(nearby.slice(0, 6).map((a) => ({ code: a.code, display: `${a.city} (${a.code})` })));
+    },
+    []
+  );
+
+  const handleFromNearbyToggle = useCallback(
+    async (enabled: boolean) => {
+      setFromNearby(enabled);
+      if (!enabled) return;
+      if (userCoordsRef.current) {
+        fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius);
+        return;
+      }
+      if (!navigator.geolocation) {
+        toast.error("Geolocation not supported by your browser.");
+        setFromNearby(false);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userCoordsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          fillNearbyOrigins(pos.coords.latitude, pos.coords.longitude, fromRadius);
+        },
+        () => {
+          toast.error("Location permission denied — please type an airport.");
+          setFromNearby(false);
+        },
+        { enableHighAccuracy: false, timeout: 8000 }
+      );
+    },
+    [fromRadius, fillNearbyOrigins]
+  );
+
+  useEffect(() => {
+    if (fromNearby && userCoordsRef.current) {
+      fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius);
     }
-  }, [origins, to]);
+  }, [fromRadius, fromNearby, fillNearbyOrigins]);
+
+  // Nearby: To
+  const expandToNearby = useCallback(
+    (centers: AirportSelection[], radius: number) => {
+      const expanded: AirportSelection[] = [];
+      const seen = new Set<string>();
+      for (const dest of centers) {
+        if (!seen.has(dest.code)) { expanded.push(dest); seen.add(dest.code); }
+        const airport = AIRPORTS.find((a) => a.code.toUpperCase() === dest.code.toUpperCase());
+        if (airport) {
+          for (const a of getAirportsInRadius(airport.lat, airport.lon, radius)) {
+            if (!seen.has(a.code)) {
+              expanded.push({ code: a.code, display: `${a.city} (${a.code})` });
+              seen.add(a.code);
+            }
+          }
+        }
+      }
+      setDestinations(expanded.slice(0, 6));
+    },
+    []
+  );
+
+  const handleToNearbyToggle = useCallback(
+    (enabled: boolean) => {
+      setToNearby(enabled);
+      if (!enabled) return;
+      if (destinations.length === 0) {
+        toast.info("Select a destination first, then enable nearby airports.");
+        setToNearby(false);
+        return;
+      }
+      toCenterRef.current = [...destinations];
+      expandToNearby(destinations, toRadius);
+    },
+    [destinations, toRadius, expandToNearby]
+  );
+
+  useEffect(() => {
+    if (toNearby && toCenterRef.current.length > 0) {
+      expandToNearby(toCenterRef.current, toRadius);
+    }
+  }, [toRadius, toNearby, expandToNearby]);
+
+  const swapLocations = useCallback(() => {
+    if (origins.length === 1 && destinations.length === 1) {
+      const temp = origins[0];
+      setOrigins([destinations[0]]);
+      setDestinations([temp]);
+    }
+  }, [origins, destinations]);
 
   const validate = useCallback((): boolean => {
     const newErrors: { from?: string; to?: string; dates?: string } = {};
     
     if (origins.length === 0) newErrors.from = "Please select origin";
-    if (!to) newErrors.to = "Please select destination";
+    if (!anywhere && destinations.length === 0) newErrors.to = "Please select destination";
     if (!departDate) newErrors.dates = "Please select departure date";
     if (tripType === "roundtrip" && !returnDate) newErrors.dates = "Please select return date";
     if (tripType === "roundtrip" && departDate && returnDate && returnDate <= departDate) {
@@ -82,18 +186,24 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [origins, to, tripType, returnDate, departDate, travelers]);
+  }, [origins, destinations, anywhere, tripType, returnDate, departDate, travelers]);
 
   const handleSearch = useCallback(() => {
     if (!validate()) return;
 
+    if (anywhere) {
+      navigate(`/explore?from=${origins.map((o) => o.code).join(",")}`);
+      return;
+    }
+
     const totalInfants = travelers.infantsSeat + travelers.infantsLap;
     const originCodes = origins.map(o => o.code).join(",");
+    const destCodes = destinations.map(d => d.code).join(",");
 
     const params = new URLSearchParams({
       trip: tripType,
       from: originCodes,
-      to: to!.code,
+      to: destCodes,
       depart: format(departDate!, "yyyy-MM-dd"),
       adults: travelers.adults.toString(),
       children: travelers.children.toString(),
@@ -107,19 +217,27 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     if (tripType === "roundtrip" && returnDate) {
       params.set("return", format(returnDate, "yyyy-MM-dd"));
     }
+    if (departFlexBefore > 0) params.set("dfb", departFlexBefore.toString());
+    if (departFlexAfter > 0) params.set("dfa", departFlexAfter.toString());
+    if (tripType === "roundtrip") {
+      if (returnFlexBefore > 0) params.set("rfb", returnFlexBefore.toString());
+      if (returnFlexAfter > 0) params.set("rfa", returnFlexAfter.toString());
+    }
 
     navigate(`/flights/results?${params.toString()}`);
-  }, [validate, tripType, origins, to, departDate, travelers, directOnly, returnDate, navigate, currency, marketCode]);
+  }, [validate, tripType, origins, destinations, anywhere, departDate, travelers, directOnly, returnDate, navigate, currency, marketCode, departFlexBefore, departFlexAfter, returnFlexBefore, returnFlexAfter]);
 
   const handleOriginsChange = useCallback((vals: AirportSelection[]) => {
     setOrigins(vals);
+    if (fromNearby) setFromNearby(false);
     setErrors(e => ({ ...e, from: undefined }));
-  }, []);
+  }, [fromNearby]);
 
-  const handleToChange = useCallback((val: AirportSelection | null) => {
-    setTo(val);
+  const handleDestinationsChange = useCallback((vals: AirportSelection[]) => {
+    setDestinations(vals);
+    if (toNearby) toCenterRef.current = vals;
     setErrors(e => ({ ...e, to: undefined }));
-  }, []);
+  }, [toNearby]);
 
   const handleDepartChange = useCallback((date: Date | null) => {
     setDepartDate(date);
@@ -231,14 +349,17 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             placeholder="Where from?"
           />
           {errors.from && <p className="text-destructive text-xs mt-1 truncate">{errors.from}</p>}
-          {origins.length > 1 && (
-            <p className="text-xs text-accent mt-1">Compare multiple departure airports at once</p>
-          )}
+          <NearbyToggle
+            enabled={fromNearby}
+            onToggle={handleFromNearbyToggle}
+            radius={fromRadius}
+            onRadiusChange={setFromRadius}
+          />
         </div>
 
         {/* Swap Button */}
         <div className="hidden lg:flex lg:col-span-1 justify-center">
-          {origins.length > 1 ? (
+          {origins.length > 1 || anywhere ? (
             <div className="rounded-full h-10 w-10 border-2 border-dashed border-border/30 flex items-center justify-center shrink-0 opacity-30 cursor-not-allowed" title="Swap isn't available in multi-origin mode">
               <ArrowRightLeft className="w-4 h-4 text-muted-foreground" />
             </div>
@@ -256,14 +377,43 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* To */}
         <div className="lg:col-span-3 min-w-0">
-          <label className="block text-xs font-medium text-muted-foreground mb-2">{t("search.to")}</label>
-          <AirportAutocomplete
-            value={to}
-            onChange={handleToChange}
-            placeholder="Where to?"
-            icon="to"
-            hasError={!!errors.to}
-          />
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-medium text-muted-foreground">{t("search.to")}</label>
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <Switch
+                checked={anywhere}
+                onCheckedChange={(v) => {
+                  setAnywhere(v);
+                  if (v) setDestinations([]);
+                }}
+                className="scale-[0.6] origin-right"
+              />
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <Globe className="w-3 h-3" /> Anywhere
+              </span>
+            </label>
+          </div>
+          {anywhere ? (
+            <div className="min-h-[52px] px-3 py-3 bg-secondary/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center gap-2 text-sm text-primary/70">
+              <Globe className="w-4 h-4" />
+              Searching everywhere
+            </div>
+          ) : (
+            <>
+              <MultiOriginInput
+                values={destinations}
+                onChange={handleDestinationsChange}
+                placeholder="Where to?"
+                multiLabel="Multi-Destination"
+              />
+              <NearbyToggle
+                enabled={toNearby}
+                onToggle={handleToNearbyToggle}
+                radius={toRadius}
+                onRadiusChange={setToRadius}
+              />
+            </>
+          )}
           {errors.to && <p className="text-destructive text-xs mt-1 truncate">{errors.to}</p>}
         </div>
 
@@ -278,6 +428,23 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             onTripTypeChange={handleTripTypeChange}
             hasError={!!errors.dates}
           />
+          <FlexDateControls
+            before={departFlexBefore}
+            after={departFlexAfter}
+            onBeforeChange={setDepartFlexBefore}
+            onAfterChange={setDepartFlexAfter}
+          />
+          {tripType === "roundtrip" && (
+            <div className="mt-1">
+              <span className="text-[10px] text-muted-foreground">Return flex:</span>
+              <FlexDateControls
+                before={returnFlexBefore}
+                after={returnFlexAfter}
+                onBeforeChange={setReturnFlexBefore}
+                onAfterChange={setReturnFlexAfter}
+              />
+            </div>
+          )}
           {errors.dates && <p className="text-destructive text-xs mt-1 truncate">{errors.dates}</p>}
         </div>
 
@@ -328,7 +495,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             className="gap-2 min-h-[44px] h-[52px] sm:h-12 px-6 sm:px-8 rounded-lg font-semibold text-sm sm:text-base min-w-[180px] w-full sm:w-auto bg-primary hover:bg-[hsl(217,91%,63%)] transition-all active:scale-[0.98] shadow-lg shadow-primary/15"
           >
             <Search className="w-4 h-4" />
-            {t("search.search_flights")}
+            {anywhere ? "Explore Destinations" : t("search.search_flights")}
           </Button>
         </div>
       </div>
