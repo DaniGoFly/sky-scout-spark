@@ -1,4 +1,4 @@
-import { Plane, Menu } from "lucide-react";
+import { Plane, Menu, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -72,6 +72,19 @@ const Header = () => {
             {t("nav.explore")}
           </Link>
 
+          <Link
+            to="/saved"
+            className={cn(
+              "px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5",
+              location.pathname === "/saved"
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            )}
+          >
+            <Heart className="w-3.5 h-3.5" />
+            Saved
+          </Link>
+
           <LocaleSelector />
         </nav>
 
@@ -103,6 +116,7 @@ const Header = () => {
                     // Hotels nav item controlled by feature flag
                     ...(HOTELS_ENABLED ? [{ path: "/hotels", label: t("nav.hotels"), active: location.pathname === "/hotels" }] : []),
                     { path: "/explore", label: t("nav.explore"), active: location.pathname === "/explore" },
+                    { path: "/saved", label: "Saved", active: location.pathname === "/saved" },
                   ].map((item) =>
                     item.active ? (
                       <span key={item.path} className="px-4 py-3 rounded-xl font-medium text-primary bg-primary/10 cursor-default text-[15px]">

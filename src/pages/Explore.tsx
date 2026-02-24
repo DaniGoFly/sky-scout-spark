@@ -49,6 +49,7 @@ const Explore = () => {
   const navigate = useNavigate();
   const { currency, formatPrice } = useLocale();
   const [origin, setOrigin] = useState<AirportSelection | null>(null);
+  const [geoInitDone, setGeoInitDone] = useState(false);
   const [destinations, setDestinations] = useState<ExploreResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [tripLength, setTripLength] = useState<[number, number]>([3, 14]);
@@ -60,15 +61,21 @@ const Explore = () => {
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const isMobile = useIsMobile();
-  // Auto-detect origin from geo
+  // Auto-detect origin from geo — only once on mount
   useEffect(() => {
-    if (origin) return;
+    if (geoInitDone) return;
+    setGeoInitDone(true);
     detectGeo().then(geo => {
       if (!geo) return;
-      const airport = getDefaultAirportByCountry(geo.country);
-      if (airport) setOrigin({ code: airport.code, display: `${airport.city} (${airport.code})` });
+      // Only set if user hasn't already picked something
+      setOrigin(prev => {
+        if (prev) return prev; // user already selected
+        const airport = getDefaultAirportByCountry(geo.country);
+        if (airport) return { code: airport.code, display: `${airport.city} (${airport.code})` };
+        return prev;
+      });
     });
-  }, [origin]);
+  }, [geoInitDone]);
 
   // Fetch explore data
   useEffect(() => {
@@ -172,13 +179,22 @@ const Explore = () => {
                   From
                 </label>
                 <div className="flex gap-2 items-end">
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 relative">
                     <AirportAutocomplete
                       value={origin}
                       onChange={setOrigin}
                       placeholder="Select origin"
                       icon="from"
                     />
+                    {origin && (
+                      <button
+                        onClick={() => setOrigin(null)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted hover:bg-muted-foreground/20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-xs"
+                        aria-label="Clear origin"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                   <Button variant="ghost" size="icon" onClick={handleUseMyLocation} className="h-10 w-10 shrink-0 text-muted-foreground hover:text-primary" title="Use my location">
                     <Navigation className="w-4 h-4" />
