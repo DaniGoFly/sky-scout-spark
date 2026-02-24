@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LocaleProvider } from "@/hooks/useLocale";
 import Index from "./pages/Index";
+import SavedFlights from "./pages/SavedFlights";
 import Results from "./pages/Results";
 import Flights from "./pages/Flights";
 import LiveFlightsResults from "./pages/LiveFlightsResults";
@@ -56,6 +57,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/saved" element={<SavedFlights />} />
           <Route path="/results" element={<Results />} />
           <Route path="/search" element={<FlightResultsWithBoundary />} />
           <Route path="/flights" element={<FlightsWithBoundary />} />

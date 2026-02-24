@@ -6,7 +6,7 @@
  */
 
 import { memo, useState, useRef, useCallback, useMemo } from "react";
-import { Heart, Plane, Loader2, ExternalLink, Flame, TrendingDown, Minus, TrendingUp } from "lucide-react";
+import { Heart, Plane, Loader2, ExternalLink, Flame, TrendingDown, Minus, TrendingUp, Copy } from "lucide-react";
 import { format, parse } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ import type { PriceIntelligence } from "@/lib/priceIntelligence";
 import { resolveDeal } from "@/lib/flightSearchApi";
 import { trackFlightClick } from "@/lib/clickTracking";
 import { shouldShowScarcity } from "@/lib/scarcityIndicator";
+import { sanitizeDealUrl } from "@/lib/urlSanitizer";
+import { isFlightSaved, toggleSavedFlight } from "@/lib/savedFlights";
 import { useLocale } from "@/hooks/useLocale";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -239,7 +241,7 @@ PriceIntelBadge.displayName = "PriceIntelBadge";
 /* ─── Main card ─── */
 
 const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel, originSource, totalPassengers = 1 }: FlightCardProps) => {
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(() => isFlightSaved(flight.id));
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
   const isMobile = useIsMobile();
@@ -284,14 +286,9 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   const handleSave = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsSaved((prev) => {
-      const saved = JSON.parse(localStorage.getItem("savedFlights") || "[]");
-      if (!prev) saved.push(flight.id);
-      else { const idx = saved.indexOf(flight.id); if (idx > -1) saved.splice(idx, 1); }
-      localStorage.setItem("savedFlights", JSON.stringify(saved));
-      return !prev;
-    });
-  }, [flight.id]);
+    const nowSaved = toggleSavedFlight(flight);
+    setIsSaved(nowSaved);
+  }, [flight]);
 
   const handleViewDeal = useCallback(async () => {
     if (!canResolve || isResolving) return;
@@ -311,8 +308,18 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     try {
       const result = await resolveDeal({ search_id: searchId, proposal_id: proposalId, results_base: resultsBase });
       if (result.ok && result.deal_url) {
-        if (newTab && !newTab.closed) { newTab.location.href = result.deal_url; }
-        else { const a = document.createElement("a"); a.href = result.deal_url; a.target = "_blank"; a.rel = "noopener noreferrer"; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+        const safeUrl = sanitizeDealUrl(result.deal_url);
+        if (safeUrl) {
+          if (newTab && !newTab.closed) { newTab.location.href = safeUrl; }
+          else { const a = document.createElement("a"); a.href = safeUrl; a.target = "_blank"; a.rel = "noopener noreferrer"; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+        } else {
+          // Malformed URL — offer to copy
+          if (newTab && !newTab.closed) newTab.close();
+          toast.error("Link may not be secure", {
+            description: "The booking link could not be verified. You can copy it manually.",
+            action: { label: "Copy link", onClick: () => { navigator.clipboard.writeText(result.deal_url || ""); toast.success("Link copied"); } },
+          });
+        }
       } else {
         if (newTab && !newTab.closed) newTab.close();
         toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
