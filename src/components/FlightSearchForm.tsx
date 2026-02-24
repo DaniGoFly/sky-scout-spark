@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Search, Plane, Navigation, Globe } from "lucide-react";
-import { format } from "date-fns";
+import { ArrowRightLeft, Search, Plane, Navigation, Globe, CalendarOff, CalendarDays } from "lucide-react";
+import { format, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +13,7 @@ import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import MultiCitySearchForm from "./MultiCitySearchForm";
 import NearbyToggle from "./search/NearbyToggle";
 import FlexDateControls from "./search/FlexDateControls";
+import TripLengthSlider from "./search/TripLengthSlider";
 import { getDefaultDates } from "@/lib/dateUtils";
 import { requestNearestAirport } from "@/lib/nearestAirport";
 import { AIRPORTS, getAirportsInRadius } from "@/lib/airports";
@@ -38,8 +39,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [origins, setOrigins] = useState<AirportSelection[]>([]);
   const [destinations, setDestinations] = useState<AirportSelection[]>([]);
   const [anywhere, setAnywhere] = useState(false);
-  const [departDate, setDepartDate] = useState<Date | null>(defaultDates.depart);
-  const [returnDate, setReturnDate] = useState<Date | null>(defaultDates.return);
+  const [departDate, setDepartDate] = useState<Date | null>(null);
+  const [returnDate, setReturnDate] = useState<Date | null>(null);
+  const [isAnyDay, setIsAnyDay] = useState(true);
+  const [tripLength, setTripLength] = useState<[number, number]>([7, 7]);
   const [travelers, setTravelers] = useState<TravelersData>({
     adults: 1,
     children: 0,
@@ -176,9 +179,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     
     if (origins.length === 0) newErrors.from = "Please select origin";
     if (!anywhere && destinations.length === 0) newErrors.to = "Please select destination";
-    if (!departDate) newErrors.dates = "Please select departure date";
-    if (tripType === "roundtrip" && !returnDate) newErrors.dates = "Please select return date";
-    if (tripType === "roundtrip" && departDate && returnDate && returnDate <= departDate) {
+    if (!isAnyDay && !departDate) newErrors.dates = "Please select departure date";
+    if (!isAnyDay && tripType === "roundtrip" && !returnDate) newErrors.dates = "Please select return date";
+    if (!isAnyDay && tripType === "roundtrip" && departDate && returnDate && returnDate <= departDate) {
       newErrors.dates = "Return date must be after departure";
     }
     const totalInfants = travelers.infantsSeat + travelers.infantsLap;
@@ -186,7 +189,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [origins, destinations, anywhere, tripType, returnDate, departDate, travelers]);
+  }, [origins, destinations, anywhere, isAnyDay, tripType, returnDate, departDate, travelers]);
 
   const handleSearch = useCallback(() => {
     if (!validate()) return;
@@ -204,7 +207,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       trip: tripType,
       from: originCodes,
       to: destCodes,
-      depart: format(departDate!, "yyyy-MM-dd"),
       adults: travelers.adults.toString(),
       children: travelers.children.toString(),
       infants: totalInfants.toString(),
@@ -214,18 +216,34 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       market: marketCode.toUpperCase(),
     });
 
-    if (tripType === "roundtrip" && returnDate) {
-      params.set("return", format(returnDate, "yyyy-MM-dd"));
-    }
-    if (departFlexBefore > 0) params.set("dfb", departFlexBefore.toString());
-    if (departFlexAfter > 0) params.set("dfa", departFlexAfter.toString());
-    if (tripType === "roundtrip") {
-      if (returnFlexBefore > 0) params.set("rfb", returnFlexBefore.toString());
-      if (returnFlexAfter > 0) params.set("rfa", returnFlexAfter.toString());
+    if (isAnyDay) {
+      // Any day mode: generate a depart date ~14 days out and pass trip length
+      const defaultDepart = addDays(new Date(), 14);
+      params.set("depart", format(defaultDepart, "yyyy-MM-dd"));
+      params.set("anyday", "true");
+      params.set("tripmin", tripLength[0].toString());
+      params.set("tripmax", tripLength[1].toString());
+      if (tripType === "roundtrip") {
+        params.set("return", format(addDays(defaultDepart, tripLength[1]), "yyyy-MM-dd"));
+      }
+      // Large flex window to cover next 6 months worth of dates
+      params.set("dfa", "180");
+      params.set("dfb", "0");
+    } else {
+      params.set("depart", format(departDate!, "yyyy-MM-dd"));
+      if (tripType === "roundtrip" && returnDate) {
+        params.set("return", format(returnDate, "yyyy-MM-dd"));
+      }
+      if (departFlexBefore > 0) params.set("dfb", departFlexBefore.toString());
+      if (departFlexAfter > 0) params.set("dfa", departFlexAfter.toString());
+      if (tripType === "roundtrip") {
+        if (returnFlexBefore > 0) params.set("rfb", returnFlexBefore.toString());
+        if (returnFlexAfter > 0) params.set("rfa", returnFlexAfter.toString());
+      }
     }
 
     navigate(`/flights/results?${params.toString()}`);
-  }, [validate, tripType, origins, destinations, anywhere, departDate, travelers, directOnly, returnDate, navigate, currency, marketCode, departFlexBefore, departFlexAfter, returnFlexBefore, returnFlexAfter]);
+  }, [validate, tripType, origins, destinations, anywhere, isAnyDay, departDate, tripLength, travelers, directOnly, returnDate, navigate, currency, marketCode, departFlexBefore, departFlexAfter, returnFlexBefore, returnFlexAfter]);
 
   const handleOriginsChange = useCallback((vals: AirportSelection[]) => {
     setOrigins(vals);
@@ -419,31 +437,83 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* Date Range Picker */}
         <div className="lg:col-span-3 min-w-0">
-          <FlightDateRangePicker
-            departDate={departDate}
-            returnDate={returnDate}
-            onDepartChange={handleDepartChange}
-            onReturnChange={handleReturnChange}
-            tripType={tripType as "roundtrip" | "oneway"}
-            onTripTypeChange={handleTripTypeChange}
-            hasError={!!errors.dates}
-          />
-          <FlexDateControls
-            before={departFlexBefore}
-            after={departFlexAfter}
-            onBeforeChange={setDepartFlexBefore}
-            onAfterChange={setDepartFlexAfter}
-          />
-          {tripType === "roundtrip" && (
-            <div className="mt-1">
-              <span className="text-[10px] text-muted-foreground">Return flex:</span>
-              <FlexDateControls
-                before={returnFlexBefore}
-                after={returnFlexAfter}
-                onBeforeChange={setReturnFlexBefore}
-                onAfterChange={setReturnFlexAfter}
-              />
+          {/* Any Day / Pick Dates toggle */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <button
+              type="button"
+              onClick={() => { setIsAnyDay(true); setDepartDate(null); setReturnDate(null); }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                isAnyDay
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CalendarOff className="w-3 h-3" />
+              Any day
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAnyDay(false);
+                if (!departDate) {
+                  const defaults = getDefaultDates();
+                  setDepartDate(defaults.depart);
+                  setReturnDate(defaults.return);
+                }
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                !isAnyDay
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CalendarDays className="w-3 h-3" />
+              Pick dates
+            </button>
+          </div>
+
+          {isAnyDay ? (
+            <div className="space-y-2">
+              <div className="min-h-[56px] px-3 py-3 bg-secondary/50 rounded-xl border-2 border-dashed border-primary/20 flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarOff className="w-4 h-4 text-primary/50 shrink-0" />
+                <span>Any day • Next 6 months</span>
+              </div>
+              {tripType === "roundtrip" && (
+                <TripLengthSlider
+                  value={tripLength}
+                  onChange={setTripLength}
+                />
+              )}
             </div>
+          ) : (
+            <>
+              <FlightDateRangePicker
+                departDate={departDate}
+                returnDate={returnDate}
+                onDepartChange={handleDepartChange}
+                onReturnChange={handleReturnChange}
+                tripType={tripType as "roundtrip" | "oneway"}
+                onTripTypeChange={handleTripTypeChange}
+                hasError={!!errors.dates}
+              />
+              <FlexDateControls
+                before={departFlexBefore}
+                after={departFlexAfter}
+                onBeforeChange={setDepartFlexBefore}
+                onAfterChange={setDepartFlexAfter}
+              />
+              {tripType === "roundtrip" && (
+                <div className="mt-1">
+                  <span className="text-[10px] text-muted-foreground">Return flex:</span>
+                  <FlexDateControls
+                    before={returnFlexBefore}
+                    after={returnFlexAfter}
+                    onBeforeChange={setReturnFlexBefore}
+                    onAfterChange={setReturnFlexAfter}
+                  />
+                </div>
+              )}
+            </>
           )}
           {errors.dates && <p className="text-destructive text-xs mt-1 truncate">{errors.dates}</p>}
         </div>
