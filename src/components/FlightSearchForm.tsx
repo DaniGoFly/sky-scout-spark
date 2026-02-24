@@ -366,6 +366,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             placeholder="Where from?"
           />
           {errors.from && <p className="text-destructive text-xs mt-1 truncate">{errors.from}</p>}
+          <NearbyToggle
+            enabled={fromNearby}
+            onToggle={handleFromNearbyToggle}
+            radius={fromRadius}
+            onRadiusChange={setFromRadius}
+          />
         </div>
 
         {/* Swap Button */}
@@ -388,19 +394,42 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* To */}
         <div className="lg:col-span-3 min-w-0">
-          <label className="block text-xs font-medium text-muted-foreground mb-2">{t("search.to")}</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-medium text-muted-foreground">{t("search.to")}</label>
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <Switch
+                checked={anywhere}
+                onCheckedChange={(v) => {
+                  setAnywhere(v);
+                  if (v) setDestinations([]);
+                }}
+                className="scale-[0.6] origin-right"
+              />
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <Globe className="w-3 h-3" /> Anywhere
+              </span>
+            </label>
+          </div>
           {anywhere ? (
             <div className="min-h-[52px] px-3 py-3 bg-secondary/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center gap-2 text-sm text-primary/70">
               <Globe className="w-4 h-4" />
               Searching everywhere
             </div>
           ) : (
-            <MultiOriginInput
-              values={destinations}
-              onChange={handleDestinationsChange}
-              placeholder="Where to?"
-              multiLabel="Multi-Destination"
-            />
+            <>
+              <MultiOriginInput
+                values={destinations}
+                onChange={handleDestinationsChange}
+                placeholder="Where to?"
+                multiLabel="Multi-Destination"
+              />
+              <NearbyToggle
+                enabled={toNearby}
+                onToggle={handleToNearbyToggle}
+                radius={toRadius}
+                onRadiusChange={setToRadius}
+              />
+            </>
           )}
           {errors.to && <p className="text-destructive text-xs mt-1 truncate">{errors.to}</p>}
         </div>
@@ -488,47 +517,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             value={travelers}
             onChange={setTravelers}
           />
-        </div>
-      </div>
-
-      {/* Toggles Row: Anywhere + Nearby airports */}
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-x-5 gap-y-2 items-start">
-        {/* From: Nearby */}
-        <div className="lg:col-span-3">
-          <NearbyToggle
-            enabled={fromNearby}
-            onToggle={handleFromNearbyToggle}
-            radius={fromRadius}
-            onRadiusChange={setFromRadius}
-          />
-        </div>
-
-        {/* Spacer for swap column */}
-        <div className="hidden lg:block lg:col-span-1" />
-
-        {/* To: Anywhere + Nearby */}
-        <div className="lg:col-span-3 space-y-1.5">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <Switch
-              checked={anywhere}
-              onCheckedChange={(v) => {
-                setAnywhere(v);
-                if (v) setDestinations([]);
-              }}
-              className="scale-[0.65] origin-left"
-            />
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <Globe className="w-3 h-3" /> Anywhere
-            </span>
-          </label>
-          {!anywhere && (
-            <NearbyToggle
-              enabled={toNearby}
-              onToggle={handleToNearbyToggle}
-              radius={toRadius}
-              onRadiusChange={setToRadius}
-            />
-          )}
         </div>
       </div>
 
