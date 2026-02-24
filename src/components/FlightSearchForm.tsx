@@ -40,7 +40,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [anywhere, setAnywhere] = useState(false);
   const [departDate, setDepartDate] = useState<Date | null>(null);
   const [returnDate, setReturnDate] = useState<Date | null>(null);
-  const [isAnyDay, setIsAnyDay] = useState(true);
+  const [isAnyDay, setIsAnyDay] = useState(false);
   const [tripLength, setTripLength] = useState<[number, number]>([7, 7]);
   const [travelers, setTravelers] = useState<TravelersData>({
     adults: 1,
@@ -410,25 +410,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <div className="flex items-center gap-1.5 mb-2">
             <button
               type="button"
-              onClick={() => { setIsAnyDay(true); setDepartDate(null); setReturnDate(null); }}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
-                isAnyDay
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <CalendarOff className="w-3 h-3" />
-              Any day
-            </button>
-            <button
-              type="button"
               onClick={() => {
                 setIsAnyDay(false);
-                if (!departDate) {
-                  const defaults = getDefaultDates();
-                  setDepartDate(defaults.depart);
-                  setReturnDate(defaults.return);
-                }
               }}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
                 !isAnyDay
@@ -438,6 +421,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             >
               <CalendarDays className="w-3 h-3" />
               Pick dates
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsAnyDay(true); setDepartDate(null); setReturnDate(null); }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                isAnyDay
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CalendarOff className="w-3 h-3" />
+              Any day
             </button>
           </div>
 
