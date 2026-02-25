@@ -30,6 +30,7 @@ interface MultiOriginInputProps {
   maxAirports?: number;
   compact?: boolean;
   multiLabel?: string;
+  bare?: boolean;
 }
 
 const MAX_DEFAULT = 6;
@@ -76,6 +77,7 @@ const MultiOriginInput = ({
   maxAirports = MAX_DEFAULT,
   compact = false,
   multiLabel,
+  bare = false,
 }: MultiOriginInputProps) => {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Place[]>([]);
@@ -185,12 +187,16 @@ const MultiOriginInput = ({
     <TooltipProvider delayDuration={300}>
       <div ref={wrapperRef} className="relative min-w-0">
         <div
-          className={`flex flex-wrap items-center gap-1 bg-secondary/50 rounded-xl transition-all cursor-text ${
-            compact ? "min-h-[40px] px-2 py-1" : "min-h-[52px] px-3 py-1.5"
-          } border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card`}
+          className={`flex flex-wrap items-center gap-1 transition-all cursor-text ${
+            bare
+              ? "min-h-[36px] px-2 py-1 bg-transparent rounded-none"
+              : compact
+                ? "min-h-[40px] px-2 py-1 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
+                : "min-h-[52px] px-3 py-1.5 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
+          }`}
           onClick={() => inputRef.current?.focus()}
         >
-          <Plane className={`text-muted-foreground shrink-0 ${compact ? "w-3.5 h-3.5" : "w-4 h-4"}`} />
+          {!bare && <Plane className={`text-muted-foreground shrink-0 ${compact ? "w-3.5 h-3.5" : "w-4 h-4"}`} />}
           {values.map((v) => (
             <Tooltip key={v.code}>
               <TooltipTrigger asChild>
