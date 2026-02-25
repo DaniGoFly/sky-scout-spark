@@ -270,10 +270,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   return (
     <div className="relative" data-date-picker>
       {/* Trigger Button */}
-      <div className="lg:col-span-4">
-        <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
-          {tripType === "roundtrip" ? "Dates" : "Depart"}
-        </label>
+      <div>
         <Button
           type="button"
           variant="outline"

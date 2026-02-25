@@ -264,13 +264,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* Row 2: From | Swap | To */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_40px_1fr] gap-3 lg:gap-0 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_32px_1fr] gap-4 lg:gap-0 items-start">
         {/* From */}
-        <div className="min-w-0">
+        <div className="min-w-0 lg:pr-2">
           <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t("search.from")}</label>
           <MultiOriginInput values={origins} onChange={handleOriginsChange} placeholder="Where from?" />
           {origins.length > 1 && (
-            <p className="text-[10px] text-muted-foreground mt-0.5 px-1">{origins.length} airports selected</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5 px-1">{origins.length} airports selected</p>
           )}
           {errors.from && <p className="text-destructive text-xs mt-1">{errors.from}</p>}
         </div>
@@ -278,24 +278,24 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         {/* Swap */}
         <div className="hidden lg:flex justify-center pt-7">
           {origins.length > 1 || anywhere ? (
-            <div className="rounded-full h-9 w-9 border-2 border-dashed border-border/30 flex items-center justify-center opacity-30 cursor-not-allowed">
-              <ArrowRightLeft className="w-3.5 h-3.5 text-muted-foreground" />
+            <div className="rounded-full h-8 w-8 border border-border/30 flex items-center justify-center opacity-30 cursor-not-allowed">
+              <ArrowRightLeft className="w-3 h-3 text-muted-foreground" />
             </div>
           ) : (
-            <Button variant="outline" size="icon" onClick={swapLocations}
-              className="rounded-full h-9 w-9 border-2 border-dashed border-border hover:border-primary hover:text-primary transition-all bg-background">
-              <ArrowRightLeft className="w-3.5 h-3.5" />
+            <Button variant="ghost" size="icon" onClick={swapLocations}
+              className="rounded-full h-8 w-8 hover:text-primary transition-all">
+              <ArrowRightLeft className="w-3 h-3" />
             </Button>
           )}
         </div>
 
         {/* To */}
-        <div className="min-w-0">
+        <div className="min-w-0 lg:pl-2">
           <div className="flex items-center justify-between mb-1.5">
             <label className="block text-xs font-medium text-muted-foreground">{t("search.to")}</label>
             <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <Switch checked={anywhere} onCheckedChange={v => { setAnywhere(v); if (v) setDestinations([]); }} className="scale-[0.6] origin-right" />
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Globe className="w-3 h-3" /> Anywhere</span>
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Globe className="w-3 h-3" /> Anywhere</span>
             </label>
           </div>
           {anywhere ? (
@@ -310,12 +310,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* Row 3: Nearby toggles (aligned to From/To columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_40px_1fr] gap-3 lg:gap-0 mt-1.5">
-        <div>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_32px_1fr] gap-4 lg:gap-0 mt-2">
+        <div className="lg:pr-2">
           <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         </div>
         <div className="hidden lg:block" />
-        <div>
+        <div className="lg:pl-2">
           {!anywhere && (
             <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />
           )}
