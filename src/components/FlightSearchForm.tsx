@@ -236,7 +236,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       <div className="flex items-center gap-2 mb-3">
         <div className="relative">
           <button onClick={() => setTripTypeOpen(!tripTypeOpen)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/60 bg-card/80 text-sm font-medium text-foreground hover:bg-card transition-all">
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 text-sm font-medium text-foreground hover:bg-white/10 transition-all">
             {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
           {tripTypeOpen && (
@@ -255,11 +255,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* Unified search bar */}
       <div className="flex flex-col lg:flex-row lg:items-stretch">
         {/* White bar container */}
-        <div className="flex-1 flex flex-col lg:flex-row bg-card rounded-xl lg:rounded-r-none border border-border/60 overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row bg-white rounded-xl lg:rounded-r-none overflow-hidden shadow-lg search-bar-light">
           {/* From segment */}
           <div className="flex-1 min-w-0 relative">
             <div className="px-3 pt-2 pb-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">From</span>
+              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">From</span>
             </div>
             <div className="px-1 pb-2">
               <MultiOriginInput values={origins} onChange={handleOriginsChange} placeholder="Country, city or airport" bare />
@@ -269,23 +269,23 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             <div className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
               <button onClick={swapLocations}
                 disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-                className="h-8 w-8 rounded-full border border-border/60 bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 disabled:opacity-30 transition-all">
+                className="h-8 w-8 rounded-full border border-gray-300 bg-white flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary/40 disabled:opacity-30 transition-all">
                 <ArrowRightLeft className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="hidden lg:block w-px bg-border/60 shrink-0" />
-          <div className="lg:hidden h-px bg-border/60" />
+          <div className="hidden lg:block w-px bg-gray-200 shrink-0" />
+          <div className="lg:hidden h-px bg-gray-200" />
 
           {/* To segment */}
           <div className="flex-1 min-w-0">
             <div className="px-3 pt-2 pb-0.5 flex items-center justify-between">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">To</span>
+              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">To</span>
               <label className="flex items-center gap-1 cursor-pointer select-none">
-                <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) setDestinations([]); }} className="h-3 w-3 rounded-[2px]" />
-                <span className="text-[10px] text-muted-foreground">Anywhere</span>
+                <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) setDestinations([]); }} className="h-3 w-3 rounded-[2px] border-gray-400 data-[state=checked]:bg-primary" />
+                <span className="text-[10px] text-gray-500">Anywhere</span>
               </label>
             </div>
             <div className="px-1 pb-2">
@@ -301,17 +301,17 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
 
           {/* Divider */}
-          <div className="hidden lg:block w-px bg-border/60 shrink-0" />
-          <div className="lg:hidden h-px bg-border/60" />
+          <div className="hidden lg:block w-px bg-gray-200 shrink-0" />
+          <div className="lg:hidden h-px bg-gray-200" />
 
           {/* Depart segment */}
           <div className="lg:w-[160px] shrink-0">
             <div className="px-3 pt-2 pb-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Depart</span>
+              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Depart</span>
             </div>
             <div className="px-1 pb-2">
               {isAnyDay ? (
-                <div className="h-[36px] px-2 flex items-center text-xs text-muted-foreground">Any day</div>
+                <div className="h-[36px] px-2 flex items-center text-xs text-gray-400">Any day</div>
               ) : (
                 <FlightDateRangePicker
                   departDate={departDate} returnDate={returnDate}
@@ -326,18 +326,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           {/* Return segment (roundtrip only) */}
           {tripType === "roundtrip" && (
             <>
-              <div className="hidden lg:block w-px bg-border/60 shrink-0" />
-              <div className="lg:hidden h-px bg-border/60" />
+              <div className="hidden lg:block w-px bg-gray-200 shrink-0" />
+              <div className="lg:hidden h-px bg-gray-200" />
               <div className="lg:w-[160px] shrink-0">
                 <div className="px-3 pt-2 pb-0.5">
-                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Return</span>
+                  <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Return</span>
                 </div>
                 <div className="px-2 pb-2">
                   {isAnyDay ? (
-                    <div className="h-[36px] flex items-center text-xs text-muted-foreground">Any day</div>
+                    <div className="h-[36px] flex items-center text-xs text-gray-400">Any day</div>
                   ) : (
-                    <div className="h-[36px] flex items-center text-sm text-foreground">
-                      {returnDate ? format(returnDate, "dd MMM yy") : <span className="text-muted-foreground text-xs">Select date</span>}
+                    <div className="h-[36px] flex items-center text-sm text-gray-800">
+                      {returnDate ? format(returnDate, "dd MMM yy") : <span className="text-gray-400 text-xs">Select date</span>}
                     </div>
                   )}
                 </div>
@@ -346,13 +346,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           )}
 
           {/* Divider */}
-          <div className="hidden lg:block w-px bg-border/60 shrink-0" />
-          <div className="lg:hidden h-px bg-border/60" />
+          <div className="hidden lg:block w-px bg-gray-200 shrink-0" />
+          <div className="lg:hidden h-px bg-gray-200" />
 
           {/* Travelers segment */}
           <div className="lg:w-[200px] shrink-0">
             <div className="px-3 pt-2 pb-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Travelers & Class</span>
+              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Travelers & Class</span>
             </div>
             <div className="px-1 pb-2">
               <TravelersPicker value={travelers} onChange={setTravelers} compact bare />
