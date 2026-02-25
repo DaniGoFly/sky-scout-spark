@@ -310,7 +310,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* Row 3: Nearby toggles (aligned to From/To columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_40px_1fr] gap-3 lg:gap-0 mt-2">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_40px_1fr] gap-3 lg:gap-0 mt-1.5">
         <div>
           <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         </div>
@@ -322,50 +322,61 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      {/* Row 4: Date mode pills */}
-      <div className="flex items-center gap-1.5 mt-5">
-        <button type="button" onClick={() => setIsAnyDay(false)}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${!isAnyDay ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
-          <CalendarDays className="w-3 h-3" /> Pick dates
-        </button>
-        <button type="button" onClick={() => { setIsAnyDay(true); setDepartDate(null); setReturnDate(null); }}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isAnyDay ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
-          <CalendarOff className="w-3 h-3" /> Any day
-        </button>
-      </div>
-
-      {/* Row 5: Dates + Travelers */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 mt-3 items-start">
-        <div className="min-w-0">
-          {isAnyDay ? (
-            <div className="space-y-2">
-              <div className="h-[52px] px-3 bg-secondary/50 rounded-xl border-2 border-dashed border-primary/20 flex items-center gap-2 text-sm text-muted-foreground">
-                <CalendarOff className="w-4 h-4 text-primary/50 shrink-0" />
-                <span>Any day · Next 6 months</span>
-              </div>
-              {tripType === "roundtrip" && <TripLengthSlider value={tripLength} onChange={setTripLength} />}
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <FlightDateRangePicker
-                departDate={departDate} returnDate={returnDate}
-                onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-              />
-              <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
-              {tripType === "roundtrip" && (
-                <div>
-                  <span className="text-[10px] text-muted-foreground">Return flex:</span>
-                  <FlexDateControls before={returnFlexBefore} after={returnFlexAfter} onBeforeChange={setReturnFlexBefore} onAfterChange={setReturnFlexAfter} />
-                </div>
-              )}
-            </div>
-          )}
-          {errors.dates && <p className="text-destructive text-xs mt-1">{errors.dates}</p>}
+      {/* Dates section */}
+      <div className="mt-5 pt-4 border-t border-border/40">
+        {/* DATES label + mode pills on same row */}
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Dates</label>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setIsAnyDay(false)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${!isAnyDay ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+              <CalendarDays className="w-3 h-3" /> Pick dates
+            </button>
+            <button type="button" onClick={() => { setIsAnyDay(true); setDepartDate(null); setReturnDate(null); }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isAnyDay ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+              <CalendarOff className="w-3 h-3" /> Any day
+            </button>
+          </div>
         </div>
 
-        <div className="min-w-[200px] lg:min-w-[220px]">
-          <TravelersPicker value={travelers} onChange={setTravelers} />
+        {/* Date content + Travelers side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
+          <div className="min-w-0">
+            {isAnyDay ? (
+              <div className="space-y-3">
+                <div className="h-[52px] px-4 bg-secondary/50 rounded-xl border border-border/60 flex items-center gap-2 text-sm text-muted-foreground">
+                  <CalendarOff className="w-4 h-4 text-primary/50 shrink-0" />
+                  <span>Any day · Next 6 months</span>
+                </div>
+                {tripType === "roundtrip" && <TripLengthSlider value={tripLength} onChange={setTripLength} />}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <FlightDateRangePicker
+                  departDate={departDate} returnDate={returnDate}
+                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                />
+                {!departDate && !returnDate && (
+                  <p className="text-[11px] text-muted-foreground/60 px-1">
+                    {tripType === "roundtrip" ? "Choose departure and return" : "Choose departure date"}
+                  </p>
+                )}
+                <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
+                {tripType === "roundtrip" && (departDate || returnFlexBefore > 0 || returnFlexAfter > 0) && (
+                  <div>
+                    <span className="text-[10px] text-muted-foreground">Return flex:</span>
+                    <FlexDateControls before={returnFlexBefore} after={returnFlexAfter} onBeforeChange={setReturnFlexBefore} onAfterChange={setReturnFlexAfter} />
+                  </div>
+                )}
+              </div>
+            )}
+            {errors.dates && <p className="text-destructive text-xs mt-1">{errors.dates}</p>}
+          </div>
+
+          <div className="min-w-[200px] lg:min-w-[220px]">
+            <TravelersPicker value={travelers} onChange={setTravelers} />
+          </div>
         </div>
       </div>
 
