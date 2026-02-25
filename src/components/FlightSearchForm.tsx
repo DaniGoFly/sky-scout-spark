@@ -291,16 +291,16 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══ SEGMENTED SEARCH BAR ═══ */}
-      <div className="bg-white rounded-[14px] p-2.5 flex flex-col lg:flex-row lg:items-start gap-2.5 overflow-visible max-w-[1100px] mx-auto shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
+      <div className="bg-white rounded-[14px] p-2 flex flex-col lg:flex-row lg:items-start gap-2 overflow-visible max-w-[1100px] mx-auto shadow-[0_1px_3px_rgba(0,0,0,0.06)] border border-border/30">
 
         {/* ── FROM column ── */}
         <div className="flex-1 min-w-0 flex flex-col">
           <button
             type="button"
             onClick={() => setFromModalOpen(true)}
-            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg border transition-all flex items-center gap-2
-              ${errors.from ? "border-destructive ring-2 ring-destructive/20" : "border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20"}
-              bg-secondary/30 hover:bg-secondary/50`}
+            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg transition-all flex items-center gap-2
+              ${errors.from ? "ring-2 ring-destructive/30" : "hover:bg-secondary/40 focus:ring-2 focus:ring-primary/30"}
+              bg-secondary/20`}
           >
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">From</span>
@@ -308,23 +308,17 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 {origins.length > 0 ? (
                   <>
                     <span className="text-sm font-medium text-foreground truncate">{origins.map(o => o.code).join(", ")}</span>
-                    <span className="shrink-0 text-[11px] text-primary font-medium flex items-center gap-0.5 opacity-70 hover:opacity-100">
+                    <span className="shrink-0 text-[11px] text-primary/70 font-medium flex items-center gap-0.5">
                       <Plus className="w-3 h-3" /> Add
                     </span>
                   </>
                 ) : (
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    Select origin
-                    <span className="text-[11px] text-primary font-medium flex items-center gap-0.5">
-                      <Plus className="w-3 h-3" /> Add
-                    </span>
-                  </span>
+                  <span className="text-sm text-muted-foreground">Select origin</span>
                 )}
               </div>
             </div>
           </button>
-          {/* Nearby checkbox under FROM */}
-          <label className="flex items-center gap-1.5 mt-1.5 ml-1 cursor-pointer select-none">
+          <label className="flex items-center gap-1.5 mt-1.5 ml-3.5 cursor-pointer select-none">
             <Checkbox checked={fromNearby} onCheckedChange={checked => handleFromNearbyToggle(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
             <span className="text-[12px] text-muted-foreground/80">Add nearby airports</span>
           </label>
@@ -345,9 +339,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button
             type="button"
             onClick={() => !anywhere && setToModalOpen(true)}
-            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg border transition-all flex items-center gap-2
-              ${errors.to ? "border-destructive ring-2 ring-destructive/20" : "border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20"}
-              bg-secondary/30 hover:bg-secondary/50 ${anywhere ? "cursor-default" : ""}`}
+            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg transition-all flex items-center gap-2
+              ${errors.to ? "ring-2 ring-destructive/30" : "hover:bg-secondary/40 focus:ring-2 focus:ring-primary/30"}
+              bg-secondary/20 ${anywhere ? "cursor-default" : ""}`}
           >
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">To</span>
@@ -359,24 +353,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 ) : destinations.length > 0 ? (
                   <>
                     <span className="text-sm font-medium text-foreground truncate">{destinations.map(d => d.code).join(", ")}</span>
-                    <span className="shrink-0 text-[11px] text-primary font-medium flex items-center gap-0.5 opacity-70 hover:opacity-100">
+                    <span className="shrink-0 text-[11px] text-primary/70 font-medium flex items-center gap-0.5">
                       <Plus className="w-3 h-3" /> Add
                     </span>
                   </>
                 ) : (
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    Select destination
-                    <span className="text-[11px] text-primary font-medium flex items-center gap-0.5">
-                      <Plus className="w-3 h-3" /> Add
-                    </span>
-                  </span>
+                  <span className="text-sm text-muted-foreground">Select destination</span>
                 )}
               </div>
             </div>
           </button>
-          {/* Nearby checkbox under TO */}
           {!anywhere && (
-            <label className="flex items-center gap-1.5 mt-1.5 ml-1 cursor-pointer select-none">
+            <label className="flex items-center gap-1.5 mt-1.5 ml-3.5 cursor-pointer select-none">
               <Checkbox checked={toNearby} onCheckedChange={checked => handleToNearbyToggle(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
               <span className="text-[12px] text-muted-foreground/80">Add nearby airports</span>
             </label>
@@ -385,8 +373,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* ── DEPART segment ── */}
         <div className="flex flex-col">
-          <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg border transition-all bg-secondary/30 hover:bg-secondary/50 overflow-hidden
-            border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20`}>
+          <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg transition-all bg-secondary/20 hover:bg-secondary/40 focus-within:ring-2 focus-within:ring-primary/30 overflow-hidden`}>
             {isAnyDay ? (
               <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3.5 flex flex-col justify-center">
                 <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">Depart</span>
@@ -406,8 +393,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         {/* Return segment (roundtrip only) */}
         {tripType === "roundtrip" && (
           <div className="flex flex-col">
-            <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg border transition-all bg-secondary/30 hover:bg-secondary/50 overflow-hidden
-              border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20`}>
+            <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg transition-all bg-secondary/20 hover:bg-secondary/40 focus-within:ring-2 focus-within:ring-primary/30 overflow-hidden`}>
               {isAnyDay ? (
                 <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3.5 flex flex-col justify-center">
                   <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">Return</span>
@@ -427,8 +413,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* ── TRAVELERS segment ── */}
         <div className="flex flex-col">
-          <div className={`lg:w-[220px] shrink-0 h-14 rounded-lg border transition-all bg-secondary/30 hover:bg-secondary/50 overflow-hidden
-            border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20`}>
+          <div className={`lg:w-[220px] shrink-0 h-14 rounded-lg transition-all bg-secondary/20 hover:bg-secondary/40 focus-within:ring-2 focus-within:ring-primary/30 overflow-hidden`}>
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
         </div>

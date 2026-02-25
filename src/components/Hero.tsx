@@ -44,7 +44,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-background">
+    <section className="relative bg-background">
       {/* Subtle ambient glow — very understated */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
 
@@ -52,7 +52,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
         <div className="container mx-auto max-w-5xl">
 
           {/* ── A) Mode pills ── */}
-          <div className="flex items-center gap-1.5 mb-6 overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex items-center gap-1.5 mb-6 overflow-x-auto pb-1 pl-1 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
             {MODE_PILLS.map((pill) => {
               const Icon = pill.icon;
               return (
