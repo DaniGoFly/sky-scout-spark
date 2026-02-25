@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Search, Plane, Navigation, Globe, CalendarOff, CalendarDays, ChevronDown, MapPin, Users } from "lucide-react";
+import { ArrowRightLeft, Search, Plane, Navigation, Globe, CalendarOff, CalendarDays, ChevronDown, MapPin, Users, Plus } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -291,134 +291,161 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══ SEGMENTED SEARCH BAR ═══ */}
-      <div className="search-bar-light bg-white rounded-[14px] p-2 flex flex-col lg:flex-row lg:items-center gap-2 overflow-visible max-w-[1100px] mx-auto shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
+      <div className="bg-white rounded-[14px] p-2.5 flex flex-col lg:flex-row lg:items-start gap-2.5 overflow-visible max-w-[1100px] mx-auto shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
 
-        {/* ── FROM segment ── */}
-        <button
-          type="button"
-          onClick={() => setFromModalOpen(true)}
-          className={`flex-1 min-w-0 text-left px-3 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors flex flex-col justify-center ${errors.from ? "ring-1 ring-red-400" : ""}`}
-        >
-          <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-0.5">From</span>
-          <span className={`block text-sm font-medium truncate leading-tight ${origins.length > 0 ? "text-gray-900" : "text-gray-400"}`}>
-            {fromDisplay}
-          </span>
-        </button>
+        {/* ── FROM column ── */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          <button
+            type="button"
+            onClick={() => setFromModalOpen(true)}
+            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg border transition-all flex items-center gap-2
+              ${errors.from ? "border-destructive ring-2 ring-destructive/20" : "border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20"}
+              bg-secondary/30 hover:bg-secondary/50`}
+          >
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">From</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                {origins.length > 0 ? (
+                  <>
+                    <span className="text-sm font-medium text-foreground truncate">{origins.map(o => o.code).join(", ")}</span>
+                    <span className="shrink-0 text-[11px] text-primary font-medium flex items-center gap-0.5 opacity-70 hover:opacity-100">
+                      <Plus className="w-3 h-3" /> Add
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    Select origin
+                    <span className="text-[11px] text-primary font-medium flex items-center gap-0.5">
+                      <Plus className="w-3 h-3" /> Add
+                    </span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </button>
+          {/* Nearby checkbox under FROM */}
+          <label className="flex items-center gap-1.5 mt-1.5 ml-1 cursor-pointer select-none">
+            <Checkbox checked={fromNearby} onCheckedChange={checked => handleFromNearbyToggle(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
+            <span className="text-[12px] text-muted-foreground/80">Add nearby airports</span>
+          </label>
+        </div>
 
         {/* Swap button */}
         <button
           type="button"
           onClick={swapLocations}
           disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-          className="hidden lg:flex shrink-0 h-7 w-7 rounded-full border border-gray-300 bg-white items-center justify-center text-gray-400 hover:text-primary hover:border-primary/40 disabled:opacity-30 transition-all -mx-1 z-10"
+          className="hidden lg:flex shrink-0 h-14 w-7 items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all z-10 -mx-0.5 self-start"
         >
-          <ArrowRightLeft className="w-3 h-3" />
+          <ArrowRightLeft className="w-3.5 h-3.5" />
         </button>
 
-        {/* ── TO segment ── */}
-        <button
-          type="button"
-          onClick={() => !anywhere && setToModalOpen(true)}
-          className={`flex-1 min-w-0 text-left px-3 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors flex flex-col justify-center ${errors.to ? "ring-1 ring-red-400" : ""} ${anywhere ? "cursor-default" : ""}`}
-        >
-          <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-0.5">To</span>
-          <span className={`block text-sm font-medium truncate leading-tight ${destinations.length > 0 || anywhere ? "text-gray-900" : "text-gray-400"}`}>
-            {anywhere && <Globe className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />}
-            {toDisplay}
-          </span>
-        </button>
-
-        {/* ── DEPART segment ── */}
-        <div className="lg:w-[130px] shrink-0 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors overflow-hidden">
-          {isAnyDay ? (
-            <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3 flex flex-col justify-center">
-              <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-0.5">Depart</span>
-              <span className="block text-sm font-medium text-gray-400 leading-tight">Any day</span>
-            </button>
-          ) : (
-            <FlightDateRangePicker
-              departDate={departDate} returnDate={returnDate}
-              onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-              tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-              bare
-              segmentMode
-              segmentLabel="Depart"
-              segmentDisplay={departDisplay}
-            />
+        {/* ── TO column ── */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          <button
+            type="button"
+            onClick={() => !anywhere && setToModalOpen(true)}
+            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg border transition-all flex items-center gap-2
+              ${errors.to ? "border-destructive ring-2 ring-destructive/20" : "border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20"}
+              bg-secondary/30 hover:bg-secondary/50 ${anywhere ? "cursor-default" : ""}`}
+          >
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">To</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                {anywhere ? (
+                  <span className="text-sm font-medium text-foreground flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5" /> Everywhere
+                  </span>
+                ) : destinations.length > 0 ? (
+                  <>
+                    <span className="text-sm font-medium text-foreground truncate">{destinations.map(d => d.code).join(", ")}</span>
+                    <span className="shrink-0 text-[11px] text-primary font-medium flex items-center gap-0.5 opacity-70 hover:opacity-100">
+                      <Plus className="w-3 h-3" /> Add
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    Select destination
+                    <span className="text-[11px] text-primary font-medium flex items-center gap-0.5">
+                      <Plus className="w-3 h-3" /> Add
+                    </span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </button>
+          {/* Nearby checkbox under TO */}
+          {!anywhere && (
+            <label className="flex items-center gap-1.5 mt-1.5 ml-1 cursor-pointer select-none">
+              <Checkbox checked={toNearby} onCheckedChange={checked => handleToNearbyToggle(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
+              <span className="text-[12px] text-muted-foreground/80">Add nearby airports</span>
+            </label>
           )}
         </div>
 
-        {/* Return segment (roundtrip only) */}
-        {tripType === "roundtrip" && (
-          <div className="lg:w-[130px] shrink-0 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors overflow-hidden">
+        {/* ── DEPART segment ── */}
+        <div className="flex flex-col">
+          <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg border transition-all bg-secondary/30 hover:bg-secondary/50 overflow-hidden
+            border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20`}>
             {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3 flex flex-col justify-center">
-                <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-0.5">Return</span>
-                <span className="block text-sm font-medium text-gray-400 leading-tight">Any day</span>
+              <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3.5 flex flex-col justify-center">
+                <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">Depart</span>
+                <span className="block text-sm font-medium text-muted-foreground leading-tight">Any day</span>
               </button>
             ) : (
               <FlightDateRangePicker
                 departDate={departDate} returnDate={returnDate}
                 onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
                 tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                bare
-                segmentMode
-                segmentLabel="Return"
-                segmentDisplay={returnDisplay}
+                bare segmentMode segmentLabel="Depart" segmentDisplay={departDisplay}
               />
             )}
+          </div>
+        </div>
+
+        {/* Return segment (roundtrip only) */}
+        {tripType === "roundtrip" && (
+          <div className="flex flex-col">
+            <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg border transition-all bg-secondary/30 hover:bg-secondary/50 overflow-hidden
+              border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20`}>
+              {isAnyDay ? (
+                <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3.5 flex flex-col justify-center">
+                  <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">Return</span>
+                  <span className="block text-sm font-medium text-muted-foreground leading-tight">Any day</span>
+                </button>
+              ) : (
+                <FlightDateRangePicker
+                  departDate={departDate} returnDate={returnDate}
+                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                  bare segmentMode segmentLabel="Return" segmentDisplay={returnDisplay}
+                />
+              )}
+            </div>
           </div>
         )}
 
         {/* ── TRAVELERS segment ── */}
-        <div className="lg:w-[200px] shrink-0 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors overflow-hidden">
-          <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+        <div className="flex flex-col">
+          <div className={`lg:w-[220px] shrink-0 h-14 rounded-lg border transition-all bg-secondary/30 hover:bg-secondary/50 overflow-hidden
+            border-border/40 hover:border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20`}>
+            <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+          </div>
         </div>
 
         {/* Search button */}
         <Button onClick={handleSearch}
-          className="shrink-0 h-12 rounded-[10px] px-7 ml-1 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-none">
+          className="shrink-0 h-14 rounded-[10px] px-7 ml-0.5 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-none self-start">
           <Search className="w-5 h-5 lg:mr-0 mr-2" />
           <span className="lg:hidden">Search</span>
         </Button>
       </div>
 
-      {/* ── FROM modal ── */}
-      <Dialog open={fromModalOpen} onOpenChange={setFromModalOpen}>
-        <DialogContent className="sm:max-w-md p-4">
-          <h3 className="font-semibold text-foreground mb-3">Select origin</h3>
-          <MultiOriginInput values={origins} onChange={(v) => { handleOriginsChange(v); }} placeholder="Country, city or airport" />
-          <div className="mt-3 flex justify-end">
-            <Button size="sm" onClick={() => setFromModalOpen(false)}>Done</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── TO modal ── */}
-      <Dialog open={toModalOpen} onOpenChange={setToModalOpen}>
-        <DialogContent className="sm:max-w-md p-4">
-          <h3 className="font-semibold text-foreground mb-3">Select destination</h3>
-          <MultiOriginInput values={destinations} onChange={(v) => { handleDestinationsChange(v); }} placeholder="Country, city or airport" multiLabel="Multi-Destination" />
-          <div className="mt-2 flex items-center gap-2">
-            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); setToModalOpen(false); } }} className="h-3.5 w-3.5" />
-            <span className="text-xs text-muted-foreground">Search everywhere</span>
-          </div>
-          <div className="mt-3 flex justify-end">
-            <Button size="sm" onClick={() => setToModalOpen(false)}>Done</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* ── Options row below bar ── */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 px-1 max-w-[1100px] mx-auto">
-        <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
-        {!anywhere && (
-          <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />
-        )}
-
-        <label className="flex items-center gap-1.5 cursor-pointer select-none opacity-80">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 px-1 max-w-[1100px] mx-auto">
+        <label className="flex items-center gap-1.5 cursor-pointer select-none">
           <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
-          <span className="text-[13px] text-muted-foreground">Direct flights</span>
+          <span className="text-[13px] text-muted-foreground/80">Direct flights only</span>
         </label>
 
         {isAnyDay && tripType === "roundtrip" && (
@@ -433,7 +460,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
         )}
 
-        <div className="flex items-center gap-3 lg:ml-auto mt-1.5">
+        <div className="flex items-center gap-3 lg:ml-auto mt-0.5">
           <button onClick={async () => {
             const result = await requestNearestAirport();
             if (result) {
