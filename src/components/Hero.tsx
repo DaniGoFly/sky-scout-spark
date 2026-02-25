@@ -101,8 +101,8 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
             />
           </div>
 
-          {/* ── AI Travel Assistant ── */}
-          <div className="mt-8 animate-fade-in" style={{ animationDelay: "0.15s" }}>
+          {/* ── AI Travel Assistant (secondary) ── */}
+          <div className="mt-6 animate-fade-in mx-auto w-full lg:w-3/4" style={{ animationDelay: "0.15s" }}>
             <TravelAssistant onDestinationSelect={handleDestinationSelect} initialPrompt={travelPrompt} />
           </div>
         </div>

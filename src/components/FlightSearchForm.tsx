@@ -291,115 +291,93 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══ SEGMENTED SEARCH BAR ═══ */}
-      <div className="flex flex-col lg:flex-row">
-        <div className="flex-1 flex flex-col lg:flex-row search-bar-light bg-white rounded-2xl lg:rounded-r-none border border-white/20 overflow-hidden">
+      <div className="search-bar-light bg-white rounded-[14px] p-2 flex flex-col lg:flex-row lg:items-center gap-2 overflow-visible max-w-[1100px] mx-auto shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
 
-          {/* ── FROM segment ── */}
-          <button
-            type="button"
-            onClick={() => setFromModalOpen(true)}
-            className={`flex-1 min-w-0 text-left px-4 py-3 lg:py-4 hover:bg-gray-50 transition-colors group ${errors.from ? "bg-red-50" : ""}`}
-          >
-            <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">From</span>
-            <span className={`block text-sm font-medium truncate ${origins.length > 0 ? "text-gray-900" : "text-gray-400"}`}>
-              {fromDisplay}
-            </span>
-          </button>
+        {/* ── FROM segment ── */}
+        <button
+          type="button"
+          onClick={() => setFromModalOpen(true)}
+          className={`flex-1 min-w-0 text-left px-3 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors flex flex-col justify-center ${errors.from ? "ring-1 ring-red-400" : ""}`}
+        >
+          <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-0.5">From</span>
+          <span className={`block text-sm font-medium truncate leading-tight ${origins.length > 0 ? "text-gray-900" : "text-gray-400"}`}>
+            {fromDisplay}
+          </span>
+        </button>
 
-          {/* Swap button overlapping FROM|TO divider */}
-          <div className="relative shrink-0">
-            <div className="hidden lg:block w-px h-full bg-gray-200" />
-            <div className="lg:hidden h-px bg-gray-200" />
-            <button
-              type="button"
-              onClick={swapLocations}
-              disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-7 w-7 rounded-full border border-gray-300 bg-white flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary/40 disabled:opacity-30 transition-all"
-            >
-              <ArrowRightLeft className="w-3 h-3" />
+        {/* Swap button */}
+        <button
+          type="button"
+          onClick={swapLocations}
+          disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+          className="hidden lg:flex shrink-0 h-7 w-7 rounded-full border border-gray-300 bg-white items-center justify-center text-gray-400 hover:text-primary hover:border-primary/40 disabled:opacity-30 transition-all -mx-1 z-10"
+        >
+          <ArrowRightLeft className="w-3 h-3" />
+        </button>
+
+        {/* ── TO segment ── */}
+        <button
+          type="button"
+          onClick={() => !anywhere && setToModalOpen(true)}
+          className={`flex-1 min-w-0 text-left px-3 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors flex flex-col justify-center ${errors.to ? "ring-1 ring-red-400" : ""} ${anywhere ? "cursor-default" : ""}`}
+        >
+          <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-0.5">To</span>
+          <span className={`block text-sm font-medium truncate leading-tight ${destinations.length > 0 || anywhere ? "text-gray-900" : "text-gray-400"}`}>
+            {anywhere && <Globe className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />}
+            {toDisplay}
+          </span>
+        </button>
+
+        {/* ── DEPART segment ── */}
+        <div className="lg:w-[130px] shrink-0 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors overflow-hidden">
+          {isAnyDay ? (
+            <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3 flex flex-col justify-center">
+              <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-0.5">Depart</span>
+              <span className="block text-sm font-medium text-gray-400 leading-tight">Any day</span>
             </button>
-          </div>
-
-          {/* ── TO segment ── */}
-          <button
-            type="button"
-            onClick={() => !anywhere && setToModalOpen(true)}
-            className={`flex-1 min-w-0 text-left px-4 py-3 lg:py-4 hover:bg-gray-50 transition-colors ${errors.to ? "bg-red-50" : ""} ${anywhere ? "cursor-default" : ""}`}
-          >
-            <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">To</span>
-            <span className={`block text-sm font-medium truncate ${destinations.length > 0 || anywhere ? "text-gray-900" : "text-gray-400"}`}>
-              {anywhere && <Globe className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />}
-              {toDisplay}
-            </span>
-          </button>
-
-          {/* Divider */}
-          <div className="hidden lg:block w-px bg-gray-200 shrink-0" />
-          <div className="lg:hidden h-px bg-gray-200" />
-
-          {/* ── DEPART segment ── */}
-          <div className="lg:w-[130px] shrink-0">
-            <div className="h-full">
-              {isAnyDay ? (
-                <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-4 py-3 lg:py-4 hover:bg-gray-50 transition-colors">
-                  <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Depart</span>
-                  <span className="block text-sm font-medium text-gray-400">Any day</span>
-                </button>
-              ) : (
-                <FlightDateRangePicker
-                  departDate={departDate} returnDate={returnDate}
-                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                  bare
-                  segmentMode
-                  segmentLabel="Depart"
-                  segmentDisplay={departDisplay}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Return segment (roundtrip only) */}
-          {tripType === "roundtrip" && (
-            <>
-              <div className="hidden lg:block w-px bg-gray-200 shrink-0" />
-              <div className="lg:hidden h-px bg-gray-200" />
-              <div className="lg:w-[130px] shrink-0">
-                <div className="h-full">
-                  {isAnyDay ? (
-                    <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-4 py-3 lg:py-4 hover:bg-gray-50 transition-colors">
-                      <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Return</span>
-                      <span className="block text-sm font-medium text-gray-400">Any day</span>
-                    </button>
-                  ) : (
-                    <FlightDateRangePicker
-                      departDate={departDate} returnDate={returnDate}
-                      onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                      tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                      bare
-                      segmentMode
-                      segmentLabel="Return"
-                      segmentDisplay={returnDisplay}
-                    />
-                  )}
-                </div>
-              </div>
-            </>
+          ) : (
+            <FlightDateRangePicker
+              departDate={departDate} returnDate={returnDate}
+              onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+              tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+              bare
+              segmentMode
+              segmentLabel="Depart"
+              segmentDisplay={departDisplay}
+            />
           )}
-
-          {/* Divider */}
-          <div className="hidden lg:block w-px bg-gray-200 shrink-0" />
-          <div className="lg:hidden h-px bg-gray-200" />
-
-          {/* ── TRAVELERS segment ── */}
-          <div className="lg:w-[200px] shrink-0">
-            <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
-          </div>
         </div>
 
-        {/* Search button — flush right */}
+        {/* Return segment (roundtrip only) */}
+        {tripType === "roundtrip" && (
+          <div className="lg:w-[130px] shrink-0 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors overflow-hidden">
+            {isAnyDay ? (
+              <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3 flex flex-col justify-center">
+                <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-0.5">Return</span>
+                <span className="block text-sm font-medium text-gray-400 leading-tight">Any day</span>
+              </button>
+            ) : (
+              <FlightDateRangePicker
+                departDate={departDate} returnDate={returnDate}
+                onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                bare
+                segmentMode
+                segmentLabel="Return"
+                segmentDisplay={returnDisplay}
+              />
+            )}
+          </div>
+        )}
+
+        {/* ── TRAVELERS segment ── */}
+        <div className="lg:w-[200px] shrink-0 h-12 rounded-lg bg-[#F7F9FC] hover:bg-[#EEF1F6] transition-colors overflow-hidden">
+          <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+        </div>
+
+        {/* Search button */}
         <Button onClick={handleSearch}
-          className="h-auto lg:rounded-l-none rounded-2xl lg:rounded-r-2xl px-7 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] min-h-[56px] lg:min-h-0 mt-2 lg:mt-0 shadow-none">
+          className="shrink-0 h-12 rounded-[10px] px-7 ml-1 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-none">
           <Search className="w-5 h-5 lg:mr-0 mr-2" />
           <span className="lg:hidden">Search</span>
         </Button>
@@ -432,15 +410,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </Dialog>
 
       {/* ── Options row below bar ── */}
-      <div className="flex flex-wrap items-start gap-x-5 gap-y-1.5 mt-3 px-1">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 px-1 max-w-[1100px] mx-auto">
         <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         {!anywhere && (
           <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />
         )}
 
-        <label className="flex items-center gap-1.5 cursor-pointer select-none mt-1.5">
+        <label className="flex items-center gap-1.5 cursor-pointer select-none opacity-80">
           <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
-          <span className="text-[11px] text-muted-foreground">Direct flights</span>
+          <span className="text-[13px] text-muted-foreground">Direct flights</span>
         </label>
 
         {isAnyDay && tripType === "roundtrip" && (
