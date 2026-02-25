@@ -36,7 +36,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   };
 
   return (
-    <section className="relative min-h-[70svh] flex flex-col overflow-hidden">
+    <section className="relative min-h-[55svh] flex flex-col overflow-hidden">
       {/* Base gradient background - Blue/Cyan theme for Flights */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-sky-500/10" />
       
@@ -64,21 +64,20 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       />
 
       {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col pt-20 sm:pt-24 pb-12 px-4">
+      <div className="relative z-10 flex-1 flex flex-col pt-16 sm:pt-20 pb-8 px-4">
         <div className="container mx-auto max-w-5xl">
           {/* Compact hero text — search-first */}
-          <div className="text-center mb-5 sm:mb-6 animate-fade-in">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1.5 leading-tight tracking-tight">
-              <span className="text-foreground">Search flights.</span>{" "}
-              <span className="bg-gradient-to-r from-sky-400 to-cyan-400 bg-clip-text text-transparent">Compare prices.</span>
+          <div className="text-center mb-3 sm:mb-4 animate-fade-in">
+            <h1 className="text-base sm:text-lg md:text-xl font-semibold mb-0.5 leading-tight tracking-tight text-foreground/90">
+              Search flights. <span className="bg-gradient-to-r from-sky-400 to-cyan-400 bg-clip-text text-transparent">Compare prices.</span>
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
+            <p className="text-xs sm:text-sm text-muted-foreground/70">
               Hundreds of airlines, one search.
             </p>
           </div>
 
-          {/* Flight Search Form — primary focus */}
-          <div ref={searchRef} className="animate-fade-in glow-primary rounded-2xl" style={{ animationDelay: '0.05s' }}>
+          {/* Flight Search Form — inline, no card wrapper */}
+          <div ref={searchRef} className="animate-fade-in" style={{ animationDelay: '0.05s' }}>
             <FlightSearchForm 
               aiSearchParams={aiSearchParams}
               onParamsConsumed={handleParamsConsumed}

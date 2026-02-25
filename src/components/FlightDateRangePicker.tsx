@@ -276,13 +276,13 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
           variant="outline"
           onClick={toggleOpen}
           className={cn(
-            "w-full h-14 justify-start text-left font-medium bg-secondary/50 border-2 rounded-xl hover:bg-card hover:border-primary/50 transition-all",
-            hasError ? "border-destructive" : "border-transparent",
-            isOpen && "border-primary bg-card"
+            "w-full h-[42px] justify-start text-left font-medium bg-secondary/40 border rounded-lg hover:bg-secondary/60 hover:border-primary/50 transition-all text-sm",
+            hasError ? "border-destructive" : "border-border/60",
+            isOpen && "border-primary bg-secondary/60"
           )}
         >
-          <Calendar className="mr-3 h-5 w-5 text-muted-foreground" />
-          <span className={cn("truncate", !departDate && "text-muted-foreground")}>{displayText}</span>
+          <Calendar className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+          <span className={cn("truncate text-xs", !departDate && "text-muted-foreground")}>{displayText}</span>
         </Button>
       </div>
 
