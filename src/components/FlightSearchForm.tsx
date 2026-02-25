@@ -1,12 +1,11 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Search, Plane, Navigation, Globe, CalendarOff, CalendarDays } from "lucide-react";
+import { ArrowRightLeft, Search, Plane, Navigation, Globe, CalendarOff, CalendarDays, MapPin } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
 import FlightDateRangePicker from "./FlightDateRangePicker";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
@@ -218,19 +217,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   /* ── Multi-city tab ── */
   if (tripType === "multicity") {
     return (
-      <div className="gradient-border bg-card rounded-xl p-6 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4 pb-4 border-b border-border/50">
-          <Plane className="w-3.5 h-3.5 text-primary" />
-          <span className="font-semibold text-foreground/80">Flights</span>
-          <span className="text-muted-foreground/50">•</span>
-          <span>Compare airline & agency prices</span>
-          <span className="text-muted-foreground/50 hidden sm:inline">•</span>
-          <span className="hidden sm:inline">Secure booking via verified partners</span>
-        </div>
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-5 sm:mb-6">
+      <div className="w-full max-w-6xl mx-auto">
+        <div className="flex items-center gap-1 mb-4">
           {(["roundtrip", "oneway", "multicity"] as const).map(type => (
             <button key={type} onClick={() => setTripType(type)}
-              className={`min-w-0 px-2 sm:px-4 py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all truncate ${tripType === type ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+              className={`px-3 py-1.5 rounded-full font-medium text-xs transition-all ${tripType === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"}`}>
               {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
             </button>
           ))}
@@ -240,170 +231,156 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     );
   }
 
-  /* ── Main search form ── */
+  /* ── Main inline search form ── */
   return (
-    <div className="gradient-border bg-card rounded-xl p-6 sm:p-7 md:p-8 w-full max-w-5xl mx-auto">
-      {/* Context row */}
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4 pb-4 border-b border-border/50">
-        <Plane className="w-3.5 h-3.5 text-primary" />
-        <span className="font-semibold text-foreground/80">Flights</span>
-        <span className="text-muted-foreground/50">•</span>
-        <span>Compare airline & agency prices</span>
-        <span className="text-muted-foreground/50 hidden sm:inline">•</span>
-        <span className="hidden sm:inline">Secure booking via verified partners</span>
-      </div>
-
-      {/* Row 1: Trip type */}
-      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-5 sm:mb-6">
+    <div className="w-full max-w-6xl mx-auto">
+      {/* Row 1: Trip type pills */}
+      <div className="flex items-center gap-1 mb-3">
         {(["roundtrip", "oneway", "multicity"] as const).map(type => (
           <button key={type} onClick={() => setTripType(type)}
-            className={`min-w-0 px-2 sm:px-4 py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all truncate ${tripType === type ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+            className={`px-3 py-1.5 rounded-full font-medium text-xs transition-all ${tripType === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"}`}>
             {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
           </button>
         ))}
+
+        {/* Date mode pills */}
+        <div className="ml-auto flex items-center gap-1">
+          <button type="button" onClick={() => setIsAnyDay(false)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all ${!isAnyDay ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+            <CalendarDays className="w-3 h-3" /> Pick dates
+          </button>
+          <button type="button" onClick={() => { setIsAnyDay(true); setDepartDate(null); setReturnDate(null); }}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all ${isAnyDay ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+            <CalendarOff className="w-3 h-3" /> Any day
+          </button>
+        </div>
       </div>
 
-      {/* Row 2: From | Swap | To */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_32px_1fr] gap-4 lg:gap-0 items-start">
+      {/* Row 2: Main search bar — all inputs in one line */}
+      <div className="flex flex-col lg:flex-row lg:items-end gap-2">
         {/* From */}
-        <div className="min-w-0 lg:pr-2">
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t("search.from")}</label>
+        <div className="flex-1 min-w-0">
+          <label className="block text-[11px] font-medium text-muted-foreground mb-1 pl-1">From</label>
           <MultiOriginInput values={origins} onChange={handleOriginsChange} placeholder="Where from?" />
-          {origins.length > 1 && (
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5 px-1">{origins.length} airports selected</p>
-          )}
-          {errors.from && <p className="text-destructive text-xs mt-1">{errors.from}</p>}
+          {errors.from && <p className="text-destructive text-[10px] mt-0.5 pl-1">{errors.from}</p>}
         </div>
 
         {/* Swap */}
-        <div className="hidden lg:flex justify-center pt-7">
-          {origins.length > 1 || anywhere ? (
-            <div className="rounded-full h-8 w-8 border border-border/30 flex items-center justify-center opacity-30 cursor-not-allowed">
-              <ArrowRightLeft className="w-3 h-3 text-muted-foreground" />
-            </div>
-          ) : (
-            <Button variant="ghost" size="icon" onClick={swapLocations}
-              className="rounded-full h-8 w-8 hover:text-primary transition-all">
-              <ArrowRightLeft className="w-3 h-3" />
-            </Button>
-          )}
+        <div className="hidden lg:flex items-center pb-0.5">
+          <Button variant="ghost" size="icon" onClick={swapLocations}
+            disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+            className="rounded-full h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30">
+            <ArrowRightLeft className="w-3.5 h-3.5" />
+          </Button>
         </div>
 
         {/* To */}
-        <div className="min-w-0 lg:pl-2">
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-medium text-muted-foreground">{t("search.to")}</label>
-            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-              <Switch checked={anywhere} onCheckedChange={v => { setAnywhere(v); if (v) setDestinations([]); }} className="scale-[0.6] origin-right" />
-              <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Globe className="w-3 h-3" /> Anywhere</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1 pl-1">
+            <label className="text-[11px] font-medium text-muted-foreground">To</label>
+            <label className="flex items-center gap-1 cursor-pointer select-none">
+              <Checkbox
+                checked={anywhere}
+                onCheckedChange={(v) => { setAnywhere(v === true); if (v) setDestinations([]); }}
+                className="h-3 w-3 rounded-[2px]"
+              />
+              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                <Globe className="w-2.5 h-2.5" /> Anywhere
+              </span>
             </label>
           </div>
           {anywhere ? (
-            <div className="min-h-[52px] px-3 py-3 bg-secondary/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center gap-2 text-sm text-primary/70">
-              <Globe className="w-4 h-4" /> Searching everywhere
+            <div className="h-[42px] px-3 bg-secondary/40 rounded-lg border border-dashed border-primary/30 flex items-center gap-2 text-xs text-primary/70">
+              <Globe className="w-3.5 h-3.5" /> Everywhere
             </div>
           ) : (
             <MultiOriginInput values={destinations} onChange={handleDestinationsChange} placeholder="Where to?" multiLabel="Multi-Destination" />
           )}
-          {errors.to && <p className="text-destructive text-xs mt-1">{errors.to}</p>}
+          {errors.to && <p className="text-destructive text-[10px] mt-0.5 pl-1">{errors.to}</p>}
         </div>
+
+        {/* Dates */}
+        <div className="lg:w-[220px] min-w-0">
+          <label className="block text-[11px] font-medium text-muted-foreground mb-1 pl-1">Dates</label>
+          {isAnyDay ? (
+            <div className="h-[42px] px-3 bg-secondary/40 rounded-lg border border-border/60 flex items-center gap-2 text-xs text-muted-foreground">
+              <CalendarOff className="w-3.5 h-3.5 text-primary/50 shrink-0" />
+              <span className="truncate">Any day · 6 months</span>
+            </div>
+          ) : (
+            <FlightDateRangePicker
+              departDate={departDate} returnDate={returnDate}
+              onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+              tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+            />
+          )}
+          {errors.dates && <p className="text-destructive text-[10px] mt-0.5 pl-1">{errors.dates}</p>}
+        </div>
+
+        {/* Travelers */}
+        <div className="lg:w-[180px] min-w-0">
+          <TravelersPicker value={travelers} onChange={setTravelers} compact />
+        </div>
+
+        {/* Search Button */}
+        <Button onClick={handleSearch}
+          className="h-[42px] px-6 rounded-lg font-semibold text-sm whitespace-nowrap bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg shadow-primary/20">
+          <Search className="w-4 h-4 mr-1.5" />
+          {anywhere ? "Explore" : t("search.search_flights")}
+        </Button>
       </div>
 
-      {/* Row 3: Nearby toggles (aligned to From/To columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_32px_1fr] gap-4 lg:gap-0 mt-2">
-        <div className="lg:pr-2">
+      {/* Row 3: Options row — nearby checkboxes, direct flights, location */}
+      <div className="flex flex-col lg:flex-row lg:items-start gap-x-6 gap-y-1 mt-2">
+        {/* From nearby */}
+        <div className="flex-1 min-w-0">
           <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         </div>
-        <div className="hidden lg:block" />
-        <div className="lg:pl-2">
+
+        {/* Spacer for swap button area */}
+        <div className="hidden lg:block w-8 shrink-0" />
+
+        {/* To nearby */}
+        <div className="flex-1 min-w-0">
           {!anywhere && (
             <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />
           )}
         </div>
-      </div>
 
-      {/* Dates section */}
-      <div className="mt-5 pt-4 border-t border-border/40">
-        {/* DATES label + mode pills on same row */}
-        <div className="flex items-center justify-between mb-3">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Dates</label>
-          <div className="flex items-center gap-1">
-            <button type="button" onClick={() => setIsAnyDay(false)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${!isAnyDay ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
-              <CalendarDays className="w-3 h-3" /> Pick dates
-            </button>
-            <button type="button" onClick={() => { setIsAnyDay(true); setDepartDate(null); setReturnDate(null); }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isAnyDay ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
-              <CalendarOff className="w-3 h-3" /> Any day
-            </button>
+        {/* Any day trip length */}
+        {isAnyDay && tripType === "roundtrip" && (
+          <div className="lg:w-[220px]">
+            <TripLengthSlider value={tripLength} onChange={setTripLength} />
           </div>
-        </div>
+        )}
 
-        {/* Date content + Travelers side by side */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
-          <div className="min-w-0">
-            {isAnyDay ? (
-              <div className="space-y-3">
-                <div className="h-[52px] px-4 bg-secondary/50 rounded-xl border border-border/60 flex items-center gap-2 text-sm text-muted-foreground">
-                  <CalendarOff className="w-4 h-4 text-primary/50 shrink-0" />
-                  <span>Any day · Next 6 months</span>
-                </div>
-                {tripType === "roundtrip" && <TripLengthSlider value={tripLength} onChange={setTripLength} />}
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <FlightDateRangePicker
-                  departDate={departDate} returnDate={returnDate}
-                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                />
-                {!departDate && !returnDate && (
-                  <p className="text-[11px] text-muted-foreground/60 px-1">
-                    {tripType === "roundtrip" ? "Choose departure and return" : "Choose departure date"}
-                  </p>
-                )}
-                <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
-                {tripType === "roundtrip" && (departDate || returnFlexBefore > 0 || returnFlexAfter > 0) && (
-                  <div>
-                    <span className="text-[10px] text-muted-foreground">Return flex:</span>
-                    <FlexDateControls before={returnFlexBefore} after={returnFlexAfter} onBeforeChange={setReturnFlexBefore} onAfterChange={setReturnFlexAfter} />
-                  </div>
-                )}
-              </div>
-            )}
-            {errors.dates && <p className="text-destructive text-xs mt-1">{errors.dates}</p>}
+        {/* Flex dates */}
+        {!isAnyDay && departDate && (
+          <div className="lg:w-[220px]">
+            <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
           </div>
+        )}
 
-          <div className="min-w-[200px] lg:min-w-[220px]">
-            <TravelersPicker value={travelers} onChange={setTravelers} />
-          </div>
-        </div>
-      </div>
+        {/* Right-side utilities */}
+        <div className="flex items-center gap-3 mt-1 lg:mt-0 lg:ml-auto shrink-0">
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <Checkbox id="direct-only" checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)}
+              className="h-3.5 w-3.5 rounded-[3px]" />
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Plane className="w-3 h-3" /> Direct only
+            </span>
+          </label>
 
-      {/* Row 6: Actions */}
-      <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Checkbox id="direct-only" checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)}
-            className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
-          <Label htmlFor="direct-only" className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1">
-            <Plane className="w-3 h-3" /> {t("search.direct_flights_only")}
-          </Label>
-        </div>
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-          <Button variant="outline" onClick={async () => {
+          <button onClick={async () => {
             const result = await requestNearestAirport();
             if (result) {
               userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
               setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
               setErrors(e => ({ ...e, from: undefined }));
             }
-          }} className="gap-2 h-11 px-5 rounded-lg font-semibold text-sm w-full sm:w-auto whitespace-nowrap border-border hover:border-primary/40 hover:bg-secondary/80 transition-all">
-            <Navigation className="w-4 h-4" /> {t("search.use_location", "Use my location")}
-          </Button>
-          <Button onClick={handleSearch}
-            className="gap-2 h-11 px-6 sm:px-8 rounded-lg font-semibold text-sm sm:text-base min-w-[180px] w-full sm:w-auto bg-primary hover:bg-[hsl(217,91%,63%)] transition-all active:scale-[0.98] shadow-lg shadow-primary/15">
-            <Search className="w-4 h-4" /> {anywhere ? "Explore Destinations" : t("search.search_flights")}
-          </Button>
+          }} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+            <Navigation className="w-3 h-3" /> My location
+          </button>
         </div>
       </div>
     </div>

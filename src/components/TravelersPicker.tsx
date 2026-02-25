@@ -281,11 +281,11 @@ const TravelersPicker = ({ value, onChange, compact = false }: TravelersPickerPr
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm shrink-0 min-w-0"
+            className="h-[42px] w-full justify-start text-left font-medium bg-secondary/40 border border-border/60 rounded-lg text-sm shrink-0 min-w-0 hover:bg-secondary/60 hover:border-primary/50 transition-all"
           >
             <Users className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="truncate">{getDisplayText()}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
+            <span className="truncate text-xs">{getDisplayText()}</span>
+            <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0 ml-auto" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-4 bg-card z-50" align="start">
