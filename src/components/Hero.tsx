@@ -48,7 +48,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       {/* Subtle ambient glow — very understated */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
 
-      <div className="relative z-10 pt-14 sm:pt-16 pb-8 px-4 sm:px-6">
+      <div className="relative z-10 pt-20 sm:pt-20 pb-8 px-4 sm:px-6">
         <div className="container mx-auto max-w-5xl">
 
           {/* ── A) Mode pills ── */}
