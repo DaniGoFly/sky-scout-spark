@@ -15,6 +15,9 @@ interface FlightDateRangePickerProps {
   onTripTypeChange: (type: "roundtrip" | "oneway") => void;
   hasError?: boolean;
   bare?: boolean;
+  segmentMode?: boolean;
+  segmentLabel?: string;
+  segmentDisplay?: string;
 }
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -151,6 +154,9 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   onTripTypeChange,
   hasError,
   bare = false,
+  segmentMode = false,
+  segmentLabel,
+  segmentDisplay,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
@@ -272,7 +278,18 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   return (
     <div className="relative" data-date-picker>
       {/* Trigger Button */}
-      <div>
+      {segmentMode ? (
+        <button
+          type="button"
+          onClick={toggleOpen}
+          className="w-full h-full text-left px-4 py-3 lg:py-4 hover:bg-gray-50 transition-colors"
+        >
+          <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{segmentLabel}</span>
+          <span className={cn("block text-sm font-medium truncate", departDate ? "text-gray-900" : "text-gray-400")}>
+            {segmentDisplay}
+          </span>
+        </button>
+      ) : (
         <Button
           type="button"
           variant="outline"
@@ -288,7 +305,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
           {!bare && <Calendar className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />}
           <span className={cn("truncate text-xs", !departDate && "text-muted-foreground")}>{displayText}</span>
         </Button>
-      </div>
+      )}
 
       {/* Calendar Portal — rendered to document.body for viewport safety */}
       {isOpen && createPortal(
