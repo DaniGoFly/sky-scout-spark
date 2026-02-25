@@ -482,8 +482,8 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
     DESTINATION_VIBES[iataCode] || { emoji: "✈️", tags: ["Travel", "Explore"] };
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-8">
-      <div className="travelguide-shell bg-card/80 backdrop-blur-md rounded-2xl border border-border overflow-hidden shadow-2xl flex flex-col" style={{ height: "min(70vh, 640px)" }}>
+    <div className="w-full mx-auto">
+      <div className="travelguide-shell bg-card/85 backdrop-blur-md rounded-xl border border-border overflow-hidden shadow-lg flex flex-col p-4" style={{ height: "min(65vh, 580px)" }}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-border flex items-center gap-3 bg-gradient-to-r from-primary/20 to-transparent shrink-0">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shadow-lg">
@@ -510,7 +510,7 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
                     key={chip.label}
                     type="button"
                     onClick={() => { setInput(chip.prompt); }}
-                    className="text-sm px-4 py-2 rounded-full bg-secondary/50 border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
+                    className="text-[14px] px-2.5 py-1.5 rounded-full bg-secondary/50 border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
                   >
                     {chip.label}
                   </button>
