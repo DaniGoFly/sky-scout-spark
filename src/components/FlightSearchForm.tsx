@@ -302,7 +302,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               ${errors.from ? "border-destructive ring-2 ring-destructive/20" : "border-primary/30 hover:border-primary/50 focus:ring-2 focus:ring-primary/25"}
               bg-white`}
           >
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <div className="flex-1 min-w-0 flex flex-col justify-center pointer-events-none">
               <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">From</span>
               <div className="flex items-center gap-1.5 min-w-0">
                 {origins.length > 0 ? (
@@ -343,7 +343,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               ${errors.to ? "border-destructive ring-2 ring-destructive/20" : "border-primary/30 hover:border-primary/50 focus:ring-2 focus:ring-primary/25"}
               bg-white ${anywhere ? "cursor-default" : ""}`}
           >
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <div className="flex-1 min-w-0 flex flex-col justify-center pointer-events-none">
               <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">To</span>
               <div className="flex items-center gap-1.5 min-w-0">
                 {anywhere ? (
