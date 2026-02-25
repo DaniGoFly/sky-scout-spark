@@ -75,6 +75,19 @@
     --hotels-primary-dim: 25 95% 53% / 0.20;
     --hotels-ring: 25 95% 53% / 0.45;
   }
+
+  /* Light theme override for search bar on dark background */
+  .search-bar-light {
+    --foreground: 222 40% 10%;
+    --muted-foreground: 220 10% 45%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 40% 10%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 40% 10%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    color: hsl(222 40% 10%);
+  }
 }
 
 @layer base {
