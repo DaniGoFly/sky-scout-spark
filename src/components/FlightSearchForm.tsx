@@ -298,9 +298,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button
             type="button"
             onClick={() => setFromModalOpen(true)}
-            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg transition-all flex items-center gap-2
-              ${errors.from ? "ring-2 ring-destructive/30" : "hover:bg-secondary/40 focus:ring-2 focus:ring-primary/30"}
-              bg-secondary/20`}
+            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg border transition-all flex items-center gap-2
+              ${errors.from ? "border-destructive ring-2 ring-destructive/20" : "border-primary/30 hover:border-primary/50 focus:ring-2 focus:ring-primary/25"}
+              bg-white`}
           >
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">From</span>
@@ -339,9 +339,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button
             type="button"
             onClick={() => !anywhere && setToModalOpen(true)}
-            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg transition-all flex items-center gap-2
-              ${errors.to ? "ring-2 ring-destructive/30" : "hover:bg-secondary/40 focus:ring-2 focus:ring-primary/30"}
-              bg-secondary/20 ${anywhere ? "cursor-default" : ""}`}
+            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg border transition-all flex items-center gap-2
+              ${errors.to ? "border-destructive ring-2 ring-destructive/20" : "border-primary/30 hover:border-primary/50 focus:ring-2 focus:ring-primary/25"}
+              bg-white ${anywhere ? "cursor-default" : ""}`}
           >
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">To</span>
@@ -373,7 +373,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* ── DEPART segment ── */}
         <div className="flex flex-col">
-          <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg transition-all bg-secondary/20 hover:bg-secondary/40 focus-within:ring-2 focus-within:ring-primary/30 overflow-hidden`}>
+          <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg border border-primary/30 hover:border-primary/50 transition-all bg-white focus-within:ring-2 focus-within:ring-primary/25 overflow-hidden`}>
             {isAnyDay ? (
               <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3.5 flex flex-col justify-center">
                 <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">Depart</span>
@@ -393,7 +393,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         {/* Return segment (roundtrip only) */}
         {tripType === "roundtrip" && (
           <div className="flex flex-col">
-            <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg transition-all bg-secondary/20 hover:bg-secondary/40 focus-within:ring-2 focus-within:ring-primary/30 overflow-hidden`}>
+            <div className={`lg:w-[130px] shrink-0 h-14 rounded-lg border border-primary/30 hover:border-primary/50 transition-all bg-white focus-within:ring-2 focus-within:ring-primary/25 overflow-hidden`}>
               {isAnyDay ? (
                 <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3.5 flex flex-col justify-center">
                   <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">Return</span>
@@ -413,7 +413,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* ── TRAVELERS segment ── */}
         <div className="flex flex-col">
-          <div className={`lg:w-[220px] shrink-0 h-14 rounded-lg transition-all bg-secondary/20 hover:bg-secondary/40 focus-within:ring-2 focus-within:ring-primary/30 overflow-hidden`}>
+          <div className={`lg:w-[220px] shrink-0 h-14 rounded-lg border border-primary/30 hover:border-primary/50 transition-all bg-white focus-within:ring-2 focus-within:ring-primary/25 overflow-hidden`}>
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
         </div>
