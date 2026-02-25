@@ -291,7 +291,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══ SEGMENTED SEARCH BAR ═══ */}
-      <div className="bg-white rounded-[14px] p-2 flex flex-col lg:flex-row lg:items-start gap-2 overflow-visible max-w-[1100px] mx-auto shadow-[0_1px_3px_rgba(0,0,0,0.06)] border border-border/30">
+      <div className="search-bar-light bg-white rounded-2xl p-2.5 flex flex-col lg:flex-row lg:items-start gap-2.5 overflow-visible max-w-[1100px] mx-auto shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)]">
 
         {/* ── FROM column ── */}
         <div className="flex-1 min-w-0 flex flex-col">

@@ -25,27 +25,30 @@ const features = [
 
 const WhyUseSection = () => {
   return (
-    <section className="py-20 px-4 bg-background">
-      <div className="container mx-auto">
+    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-card/30">
+      <div className="mx-auto max-w-[1100px]">
         <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <span className="text-primary text-xs font-semibold uppercase tracking-[0.15em] mb-3 block">
+            Why GoFlyFinder
+          </span>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground leading-tight">
             Why travelers choose us
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-[15px] max-w-xl mx-auto mt-3 leading-relaxed">
             We make finding cheap flights simple and stress-free
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map((feature, index) => (
             <div 
               key={index}
-              className="text-center p-6 rounded-2xl bg-card hover:shadow-lg transition-all duration-300 border border-border/50"
+              className="text-center p-7 rounded-2xl bg-card/60 hover:bg-card transition-all duration-300 border border-border/30 hover:border-border/50 group"
             >
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
-                <feature.icon className="w-7 h-7 text-primary" />
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-5 group-hover:bg-primary/15 transition-colors">
+                <feature.icon className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">
+              <h3 className="text-base font-semibold text-foreground mb-2.5">
                 {feature.title}
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
