@@ -14,6 +14,7 @@ interface FlightDateRangePickerProps {
   tripType: "roundtrip" | "oneway";
   onTripTypeChange: (type: "roundtrip" | "oneway") => void;
   hasError?: boolean;
+  bare?: boolean;
 }
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -148,7 +149,8 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   onReturnChange,
   tripType,
   onTripTypeChange,
-  hasError
+  hasError,
+  bare = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
@@ -276,12 +278,14 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
           variant="outline"
           onClick={toggleOpen}
           className={cn(
-            "w-full h-[42px] justify-start text-left font-medium bg-secondary/40 border rounded-lg hover:bg-secondary/60 hover:border-primary/50 transition-all text-sm",
-            hasError ? "border-destructive" : "border-border/60",
-            isOpen && "border-primary bg-secondary/60"
+            bare
+              ? "w-full h-[36px] justify-start text-left font-medium bg-transparent border-0 rounded-none hover:bg-secondary/30 transition-all text-sm p-0 px-2"
+              : "w-full h-[42px] justify-start text-left font-medium bg-secondary/40 border rounded-lg hover:bg-secondary/60 hover:border-primary/50 transition-all text-sm",
+            hasError && !bare ? "border-destructive" : !bare ? "border-border/60" : "",
+            isOpen && !bare && "border-primary bg-secondary/60"
           )}
         >
-          <Calendar className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+          {!bare && <Calendar className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />}
           <span className={cn("truncate text-xs", !departDate && "text-muted-foreground")}>{displayText}</span>
         </Button>
       </div>

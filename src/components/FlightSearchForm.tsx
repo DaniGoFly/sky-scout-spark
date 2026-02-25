@@ -1,11 +1,10 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Search, Plane, Navigation, Globe, CalendarOff, CalendarDays, MapPin } from "lucide-react";
+import { ArrowRightLeft, Search, Plane, Navigation, Globe, CalendarOff, CalendarDays, ChevronDown } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
 import FlightDateRangePicker from "./FlightDateRangePicker";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
@@ -46,7 +45,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [directOnly, setDirectOnly] = useState(false);
   const [errors, setErrors] = useState<{ from?: string; to?: string; dates?: string }>({});
 
-  // Nearby airports state
   const [fromNearby, setFromNearby] = useState(false);
   const [fromRadius, setFromRadius] = useState(150);
   const [toNearby, setToNearby] = useState(false);
@@ -54,13 +52,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const userCoordsRef = useRef<{ lat: number; lon: number } | null>(null);
   const toCenterRef = useRef<AirportSelection[]>([]);
 
-  // Flex dates state
   const [departFlexBefore, setDepartFlexBefore] = useState(0);
   const [departFlexAfter, setDepartFlexAfter] = useState(0);
   const [returnFlexBefore, setReturnFlexBefore] = useState(0);
   const [returnFlexAfter, setReturnFlexAfter] = useState(0);
 
-  // Handle AI search params
+  const [tripTypeOpen, setTripTypeOpen] = useState(false);
+
   useEffect(() => {
     if (aiSearchParams) {
       setDestinations([{ code: aiSearchParams.destinationCode, display: aiSearchParams.destinationName }]);
@@ -69,27 +67,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     }
   }, [aiSearchParams, onParamsConsumed]);
 
-  /* ── Nearby: From ── */
-  const fillNearbyOrigins = useCallback(
-    (lat: number, lon: number, radius: number) => {
-      const nearby = getAirportsInRadius(lat, lon, radius);
-      setOrigins(nearby.slice(0, 6).map(a => ({ code: a.code, display: `${a.city} (${a.code})` })));
-    }, []
-  );
+  const fillNearbyOrigins = useCallback((lat: number, lon: number, radius: number) => {
+    const nearby = getAirportsInRadius(lat, lon, radius);
+    setOrigins(nearby.slice(0, 6).map(a => ({ code: a.code, display: `${a.city} (${a.code})` })));
+  }, []);
 
   const handleFromNearbyToggle = useCallback(async (enabled: boolean) => {
     setFromNearby(enabled);
     if (!enabled) return;
-    if (userCoordsRef.current) {
-      fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius);
-      return;
-    }
+    if (userCoordsRef.current) { fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius); return; }
     if (!navigator.geolocation) { toast.error("Geolocation not supported."); setFromNearby(false); return; }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        userCoordsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        fillNearbyOrigins(pos.coords.latitude, pos.coords.longitude, fromRadius);
-      },
+      (pos) => { userCoordsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude }; fillNearbyOrigins(pos.coords.latitude, pos.coords.longitude, fromRadius); },
       () => { toast.error("Location permission denied."); setFromNearby(false); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -99,7 +88,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     if (fromNearby && userCoordsRef.current) fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius);
   }, [fromRadius, fromNearby, fillNearbyOrigins]);
 
-  /* ── Nearby: To ── */
   const expandToNearby = useCallback((centers: AirportSelection[], radius: number) => {
     const expanded: AirportSelection[] = [];
     const seen = new Set<string>();
@@ -214,163 +202,196 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     navigate(`/flights/multicity?${params.toString()}`);
   }, [navigate]);
 
-  /* ── Multi-city tab ── */
+  const tripTypeLabel = tripType === "roundtrip" ? t("search.roundtrip") : tripType === "oneway" ? t("search.oneway") : t("search.multicity");
+
   if (tripType === "multicity") {
     return (
-      <div className="w-full max-w-6xl mx-auto">
-        <div className="flex items-center gap-1 mb-4">
-          {(["roundtrip", "oneway", "multicity"] as const).map(type => (
-            <button key={type} onClick={() => setTripType(type)}
-              className={`px-3 py-1.5 rounded-full font-medium text-xs transition-all ${tripType === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"}`}>
-              {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="relative">
+            <button onClick={() => setTripTypeOpen(!tripTypeOpen)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/60 bg-card/80 text-sm font-medium text-foreground hover:bg-card transition-all">
+              {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
-          ))}
+            {tripTypeOpen && (
+              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
+                {(["roundtrip", "oneway", "multicity"] as const).map(type => (
+                  <button key={type} onClick={() => { setTripType(type); setTripTypeOpen(false); }}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-secondary/60"}`}>
+                    {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <MultiCitySearchForm onSearch={handleMultiCitySearch} />
       </div>
     );
   }
 
-  /* ── Main inline search form ── */
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      {/* Row 1: Trip type pills */}
-      <div className="flex items-center gap-1 mb-3">
-        {(["roundtrip", "oneway", "multicity"] as const).map(type => (
-          <button key={type} onClick={() => setTripType(type)}
-            className={`px-3 py-1.5 rounded-full font-medium text-xs transition-all ${tripType === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"}`}>
-            {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
+    <div className="w-full max-w-5xl mx-auto">
+      {/* Trip type dropdown */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="relative">
+          <button onClick={() => setTripTypeOpen(!tripTypeOpen)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/60 bg-card/80 text-sm font-medium text-foreground hover:bg-card transition-all">
+            {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
-        ))}
-
-        {/* Date mode pills */}
-        <div className="ml-auto flex items-center gap-1">
-          <button type="button" onClick={() => setIsAnyDay(false)}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all ${!isAnyDay ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-            <CalendarDays className="w-3 h-3" /> Pick dates
-          </button>
-          <button type="button" onClick={() => { setIsAnyDay(true); setDepartDate(null); setReturnDate(null); }}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all ${isAnyDay ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-            <CalendarOff className="w-3 h-3" /> Any day
-          </button>
+          {tripTypeOpen && (
+            <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
+              {(["roundtrip", "oneway", "multicity"] as const).map(type => (
+                <button key={type} onClick={() => { setTripType(type); setTripTypeOpen(false); }}
+                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-secondary/60"}`}>
+                  {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Row 2: Main search bar — all inputs in one line */}
-      <div className="flex flex-col lg:flex-row lg:items-end gap-2">
-        {/* From */}
-        <div className="flex-1 min-w-0">
-          <label className="block text-[11px] font-medium text-muted-foreground mb-1 pl-1">From</label>
-          <MultiOriginInput values={origins} onChange={handleOriginsChange} placeholder="Where from?" />
-          {errors.from && <p className="text-destructive text-[10px] mt-0.5 pl-1">{errors.from}</p>}
-        </div>
-
-        {/* Swap */}
-        <div className="hidden lg:flex items-center pb-0.5">
-          <Button variant="ghost" size="icon" onClick={swapLocations}
-            disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-            className="rounded-full h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30">
-            <ArrowRightLeft className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-
-        {/* To */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1 pl-1">
-            <label className="text-[11px] font-medium text-muted-foreground">To</label>
-            <label className="flex items-center gap-1 cursor-pointer select-none">
-              <Checkbox
-                checked={anywhere}
-                onCheckedChange={(v) => { setAnywhere(v === true); if (v) setDestinations([]); }}
-                className="h-3 w-3 rounded-[2px]"
-              />
-              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                <Globe className="w-2.5 h-2.5" /> Anywhere
-              </span>
-            </label>
+      {/* Unified search bar */}
+      <div className="flex flex-col lg:flex-row lg:items-stretch">
+        {/* White bar container */}
+        <div className="flex-1 flex flex-col lg:flex-row bg-card rounded-xl lg:rounded-r-none border border-border/60 overflow-hidden">
+          {/* From segment */}
+          <div className="flex-1 min-w-0 relative">
+            <div className="px-3 pt-2 pb-0.5">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">From</span>
+            </div>
+            <div className="px-1 pb-2">
+              <MultiOriginInput values={origins} onChange={handleOriginsChange} placeholder="Country, city or airport" bare />
+            </div>
+            {errors.from && <p className="text-destructive text-[10px] px-3 pb-1">{errors.from}</p>}
+            {/* Swap button overlapping divider */}
+            <div className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
+              <button onClick={swapLocations}
+                disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+                className="h-8 w-8 rounded-full border border-border/60 bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 disabled:opacity-30 transition-all">
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-          {anywhere ? (
-            <div className="h-[42px] px-3 bg-secondary/40 rounded-lg border border-dashed border-primary/30 flex items-center gap-2 text-xs text-primary/70">
-              <Globe className="w-3.5 h-3.5" /> Everywhere
+
+          {/* Divider */}
+          <div className="hidden lg:block w-px bg-border/60 shrink-0" />
+          <div className="lg:hidden h-px bg-border/60" />
+
+          {/* To segment */}
+          <div className="flex-1 min-w-0">
+            <div className="px-3 pt-2 pb-0.5 flex items-center justify-between">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">To</span>
+              <label className="flex items-center gap-1 cursor-pointer select-none">
+                <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) setDestinations([]); }} className="h-3 w-3 rounded-[2px]" />
+                <span className="text-[10px] text-muted-foreground">Anywhere</span>
+              </label>
             </div>
-          ) : (
-            <MultiOriginInput values={destinations} onChange={handleDestinationsChange} placeholder="Where to?" multiLabel="Multi-Destination" />
-          )}
-          {errors.to && <p className="text-destructive text-[10px] mt-0.5 pl-1">{errors.to}</p>}
-        </div>
-
-        {/* Dates */}
-        <div className="lg:w-[220px] min-w-0">
-          <label className="block text-[11px] font-medium text-muted-foreground mb-1 pl-1">Dates</label>
-          {isAnyDay ? (
-            <div className="h-[42px] px-3 bg-secondary/40 rounded-lg border border-border/60 flex items-center gap-2 text-xs text-muted-foreground">
-              <CalendarOff className="w-3.5 h-3.5 text-primary/50 shrink-0" />
-              <span className="truncate">Any day · 6 months</span>
+            <div className="px-1 pb-2">
+              {anywhere ? (
+                <div className="h-[36px] px-2 flex items-center gap-1.5 text-xs text-primary/70">
+                  <Globe className="w-3.5 h-3.5" /> Everywhere
+                </div>
+              ) : (
+                <MultiOriginInput values={destinations} onChange={handleDestinationsChange} placeholder="Country, city or airport" multiLabel="Multi-Destination" bare />
+              )}
             </div>
-          ) : (
-            <FlightDateRangePicker
-              departDate={departDate} returnDate={returnDate}
-              onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-              tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-            />
+            {errors.to && <p className="text-destructive text-[10px] px-3 pb-1">{errors.to}</p>}
+          </div>
+
+          {/* Divider */}
+          <div className="hidden lg:block w-px bg-border/60 shrink-0" />
+          <div className="lg:hidden h-px bg-border/60" />
+
+          {/* Depart segment */}
+          <div className="lg:w-[160px] shrink-0">
+            <div className="px-3 pt-2 pb-0.5">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Depart</span>
+            </div>
+            <div className="px-1 pb-2">
+              {isAnyDay ? (
+                <div className="h-[36px] px-2 flex items-center text-xs text-muted-foreground">Any day</div>
+              ) : (
+                <FlightDateRangePicker
+                  departDate={departDate} returnDate={returnDate}
+                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                  bare
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Return segment (roundtrip only) */}
+          {tripType === "roundtrip" && (
+            <>
+              <div className="hidden lg:block w-px bg-border/60 shrink-0" />
+              <div className="lg:hidden h-px bg-border/60" />
+              <div className="lg:w-[160px] shrink-0">
+                <div className="px-3 pt-2 pb-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Return</span>
+                </div>
+                <div className="px-2 pb-2">
+                  {isAnyDay ? (
+                    <div className="h-[36px] flex items-center text-xs text-muted-foreground">Any day</div>
+                  ) : (
+                    <div className="h-[36px] flex items-center text-sm text-foreground">
+                      {returnDate ? format(returnDate, "dd MMM yy") : <span className="text-muted-foreground text-xs">Select date</span>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
-          {errors.dates && <p className="text-destructive text-[10px] mt-0.5 pl-1">{errors.dates}</p>}
+
+          {/* Divider */}
+          <div className="hidden lg:block w-px bg-border/60 shrink-0" />
+          <div className="lg:hidden h-px bg-border/60" />
+
+          {/* Travelers segment */}
+          <div className="lg:w-[200px] shrink-0">
+            <div className="px-3 pt-2 pb-0.5">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Travelers & Class</span>
+            </div>
+            <div className="px-1 pb-2">
+              <TravelersPicker value={travelers} onChange={setTravelers} compact bare />
+            </div>
+          </div>
         </div>
 
-        {/* Travelers */}
-        <div className="lg:w-[180px] min-w-0">
-          <TravelersPicker value={travelers} onChange={setTravelers} compact />
-        </div>
-
-        {/* Search Button */}
+        {/* Search button — attached to bar */}
         <Button onClick={handleSearch}
-          className="h-[42px] px-6 rounded-lg font-semibold text-sm whitespace-nowrap bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg shadow-primary/20">
-          <Search className="w-4 h-4 mr-1.5" />
-          {anywhere ? "Explore" : t("search.search_flights")}
+          className="h-auto lg:rounded-l-none rounded-xl lg:rounded-r-xl px-6 font-semibold text-sm bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] min-h-[56px] lg:min-h-0 mt-2 lg:mt-0">
+          <Search className="w-5 h-5" />
         </Button>
       </div>
 
-      {/* Row 3: Options row — nearby checkboxes, direct flights, location */}
-      <div className="flex flex-col lg:flex-row lg:items-start gap-x-6 gap-y-1 mt-2">
-        {/* From nearby */}
-        <div className="flex-1 min-w-0">
-          <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
-        </div>
+      {/* Row below: checkboxes */}
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-1.5 mt-3 px-1">
+        <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
+        {!anywhere && (
+          <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />
+        )}
 
-        {/* Spacer for swap button area */}
-        <div className="hidden lg:block w-8 shrink-0" />
+        <label className="flex items-center gap-1.5 cursor-pointer select-none mt-1.5">
+          <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
+          <span className="text-[11px] text-muted-foreground">Direct flights</span>
+        </label>
 
-        {/* To nearby */}
-        <div className="flex-1 min-w-0">
-          {!anywhere && (
-            <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />
-          )}
-        </div>
-
-        {/* Any day trip length */}
         {isAnyDay && tripType === "roundtrip" && (
-          <div className="lg:w-[220px]">
+          <div className="w-full lg:w-auto mt-1">
             <TripLengthSlider value={tripLength} onChange={setTripLength} />
           </div>
         )}
 
-        {/* Flex dates */}
         {!isAnyDay && departDate && (
-          <div className="lg:w-[220px]">
+          <div className="mt-1">
             <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
           </div>
         )}
 
-        {/* Right-side utilities */}
-        <div className="flex items-center gap-3 mt-1 lg:mt-0 lg:ml-auto shrink-0">
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <Checkbox id="direct-only" checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)}
-              className="h-3.5 w-3.5 rounded-[3px]" />
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <Plane className="w-3 h-3" /> Direct only
-            </span>
-          </label>
-
+        <div className="flex items-center gap-3 lg:ml-auto mt-1.5">
           <button onClick={async () => {
             const result = await requestNearestAirport();
             if (result) {
@@ -380,6 +401,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             }
           }} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer">
             <Navigation className="w-3 h-3" /> My location
+          </button>
+
+          <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
+            className={`flex items-center gap-1 text-[11px] transition-colors cursor-pointer ${isAnyDay ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+            {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
+            {isAnyDay ? "Any day ✓" : "Any day"}
           </button>
         </div>
       </div>

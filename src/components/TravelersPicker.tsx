@@ -18,6 +18,7 @@ interface TravelersPickerProps {
   value: TravelersData;
   onChange: (value: TravelersData) => void;
   compact?: boolean;
+  bare?: boolean;
 }
 
 const CABIN_CLASSES = [
@@ -29,7 +30,7 @@ const CABIN_CLASSES = [
 
 const MAX_TRAVELERS = 9;
 
-const TravelersPicker = ({ value, onChange, compact = false }: TravelersPickerProps) => {
+const TravelersPicker = ({ value, onChange, compact = false, bare = false }: TravelersPickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -281,11 +282,16 @@ const TravelersPicker = ({ value, onChange, compact = false }: TravelersPickerPr
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="h-[42px] w-full justify-start text-left font-medium bg-secondary/40 border border-border/60 rounded-lg text-sm shrink-0 min-w-0 hover:bg-secondary/60 hover:border-primary/50 transition-all"
+            className={cn(
+              "w-full justify-start text-left font-medium shrink-0 min-w-0 transition-all",
+              bare
+                ? "h-[36px] bg-transparent border-0 rounded-none hover:bg-secondary/30 p-0 px-2"
+                : "h-[42px] bg-secondary/40 border border-border/60 rounded-lg hover:bg-secondary/60 hover:border-primary/50"
+            )}
           >
-            <Users className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+            {!bare && <Users className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />}
             <span className="truncate text-xs">{getDisplayText()}</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0 ml-auto" />
+            {!bare && <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0 ml-auto" />}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-4 bg-card z-50" align="start">
