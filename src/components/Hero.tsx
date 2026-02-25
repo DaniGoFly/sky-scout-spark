@@ -97,7 +97,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           </div>
 
           {/* ── Search bar ── */}
-          <div ref={searchRef} className="animate-fade-in" style={{ animationDelay: "0.05s" }}>
+          <div ref={searchRef} className="animate-fade-in relative z-10" style={{ animationDelay: "0.05s" }}>
             <FlightSearchForm
               aiSearchParams={aiSearchParams}
               onParamsConsumed={handleParamsConsumed}
