@@ -2,6 +2,8 @@ import { useRef, useCallback } from "react";
 import Header from "@/components/Header";
 import Hero, { type HeroHandle } from "@/components/Hero";
 import PopularDestinations from "@/components/PopularDestinations";
+import WhyUseSection from "@/components/WhyUseSection";
+import TrustSignals from "@/components/TrustSignals";
 import Footer from "@/components/Footer";
 import type { AISearchParams } from "@/components/FlightSearchHero";
 
@@ -10,14 +12,11 @@ const Index = () => {
   const searchRef = useRef<HTMLDivElement>(null);
 
   const handleDestinationClick = useCallback((dest: { city: string; code: string }) => {
-    // Scroll to search
     searchRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    // Autofill destination
     heroRef.current?.setDestination({
       destinationCode: dest.code,
       destinationName: `${dest.city} (${dest.code})`,
     });
-    // Prefill AI Travel Guide
     heroRef.current?.setTravelPrompt(
       `Plan me a trip to ${dest.city}. Suggest best dates, cheapest airports near me, and a 3-day itinerary.`
     );
@@ -27,7 +26,9 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       <Hero ref={heroRef} searchRef={searchRef} />
+      <TrustSignals />
       <PopularDestinations onDestinationClick={handleDestinationClick} />
+      <WhyUseSection />
       <Footer />
     </div>
   );
