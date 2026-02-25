@@ -36,7 +36,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   };
 
   return (
-    <section className="relative min-h-[100svh] flex flex-col overflow-hidden">
+    <section className="relative min-h-[70svh] flex flex-col overflow-hidden">
       {/* Base gradient background - Blue/Cyan theme for Flights */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-sky-500/10" />
       
@@ -64,22 +64,21 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       />
 
       {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col justify-center pt-24 pb-16 px-4">
+      <div className="relative z-10 flex-1 flex flex-col pt-20 sm:pt-24 pb-12 px-4">
         <div className="container mx-auto max-w-5xl">
-          {/* Hero Text */}
-          <div className="text-center mb-8 sm:mb-12 animate-fade-in">
-            <h1 className="text-[32px] sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 leading-[1.1] tracking-tight">
-              <span className="text-foreground">Find your next</span>
-              <br />
-              <span className="bg-gradient-to-r from-sky-400 to-cyan-400 bg-clip-text text-transparent">adventure</span>
+          {/* Compact hero text — search-first */}
+          <div className="text-center mb-5 sm:mb-6 animate-fade-in">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1.5 leading-tight tracking-tight">
+              <span className="text-foreground">Search flights.</span>{" "}
+              <span className="bg-gradient-to-r from-sky-400 to-cyan-400 bg-clip-text text-transparent">Compare prices.</span>
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed px-2">
-              Compare prices from hundreds of airlines and book your dream trip in seconds
+            <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
+              Hundreds of airlines, one search.
             </p>
           </div>
 
-          {/* Flight Search Form */}
-          <div ref={searchRef} className="animate-fade-in glow-primary rounded-2xl" style={{ animationDelay: '0.1s' }}>
+          {/* Flight Search Form — primary focus */}
+          <div ref={searchRef} className="animate-fade-in glow-primary rounded-2xl" style={{ animationDelay: '0.05s' }}>
             <FlightSearchForm 
               aiSearchParams={aiSearchParams}
               onParamsConsumed={handleParamsConsumed}
@@ -87,7 +86,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           </div>
 
           {/* AI Travel Assistant */}
-          <div className="mt-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="mt-6 animate-fade-in" style={{ animationDelay: '0.15s' }}>
             <TravelAssistant onDestinationSelect={handleDestinationSelect} initialPrompt={travelPrompt} />
           </div>
         </div>
