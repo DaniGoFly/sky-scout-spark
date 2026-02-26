@@ -282,10 +282,10 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
         <button
           type="button"
           onClick={toggleOpen}
-          className="w-full h-full text-left px-4 py-3 lg:py-4 hover:bg-gray-50 transition-colors"
+          className="w-full h-full text-left px-4 flex flex-col justify-center cursor-pointer focus:outline-none"
         >
-          <span className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{segmentLabel}</span>
-          <span className={cn("block text-sm font-medium truncate", departDate ? "text-gray-900" : "text-gray-400")}>
+          <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-[14px] h-[14px] mb-1">{segmentLabel}</span>
+          <span className={cn("block text-[15px] leading-[20px] font-medium truncate", departDate ? "text-foreground" : "text-muted-foreground")}>
             {segmentDisplay}
           </span>
         </button>
