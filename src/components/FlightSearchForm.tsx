@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Search, Plane, Navigation, Globe, CalendarOff, CalendarDays, ChevronDown, MapPin, Users, Plus } from "lucide-react";
+import { ArrowRightLeft, Search, Globe, CalendarOff, CalendarDays, ChevronDown, Navigation, Plus } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,11 @@ const CABIN_LABELS: Record<string, string> = {
   first: "First",
 };
 
+/* Shared segment box classes — ensures perfect alignment */
+const SEGMENT_BOX = "w-full text-left px-4 py-2.5 h-14 rounded-lg border transition-all bg-white cursor-pointer focus:outline-none";
+const SEGMENT_LABEL = "block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-[14px] h-[14px] mb-0.5";
+const SEGMENT_VALUE = "flex items-center gap-1.5 min-w-0 min-h-[24px]";
+
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -54,9 +59,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [errors, setErrors] = useState<{ from?: string; to?: string; dates?: string }>({});
 
   const [fromNearby, setFromNearby] = useState(false);
-  const [fromRadius, setFromRadius] = useState(150);
+  const [fromRadius, setFromRadius] = useState(200);
   const [toNearby, setToNearby] = useState(false);
-  const [toRadius, setToRadius] = useState(150);
+  const [toRadius, setToRadius] = useState(200);
   const userCoordsRef = useRef<{ lat: number; lon: number } | null>(null);
   const toCenterRef = useRef<AirportSelection[]>([]);
 
@@ -66,11 +71,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [returnFlexAfter, setReturnFlexAfter] = useState(0);
 
   const [tripTypeOpen, setTripTypeOpen] = useState(false);
-
-  // Modal states for segments
   const [fromModalOpen, setFromModalOpen] = useState(false);
   const [toModalOpen, setToModalOpen] = useState(false);
 
+  // ── AI params ──
   useEffect(() => {
     if (aiSearchParams) {
       setDestinations([{ code: aiSearchParams.destinationCode, display: aiSearchParams.destinationName }]);
@@ -79,6 +83,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     }
   }, [aiSearchParams, onParamsConsumed]);
 
+  // ── Nearby: From ──
   const fillNearbyOrigins = useCallback((lat: number, lon: number, radius: number) => {
     const nearby = getAirportsInRadius(lat, lon, radius);
     setOrigins(nearby.slice(0, 6).map(a => ({ code: a.code, display: `${a.city} (${a.code})` })));
@@ -100,6 +105,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     if (fromNearby && userCoordsRef.current) fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius);
   }, [fromRadius, fromNearby, fillNearbyOrigins]);
 
+  // ── Nearby: To ──
   const expandToNearby = useCallback((centers: AirportSelection[], radius: number) => {
     const expanded: AirportSelection[] = [];
     const seen = new Set<string>();
@@ -127,6 +133,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     if (toNearby && toCenterRef.current.length > 0) expandToNearby(toCenterRef.current, toRadius);
   }, [toRadius, toNearby, expandToNearby]);
 
+  // ── Swap ──
   const swapLocations = useCallback(() => {
     if (origins.length === 1 && destinations.length === 1) {
       const temp = origins[0];
@@ -135,6 +142,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     }
   }, [origins, destinations]);
 
+  // ── Validation ──
   const validate = useCallback((): boolean => {
     const newErrors: { from?: string; to?: string; dates?: string } = {};
     if (origins.length === 0) newErrors.from = "Please select origin";
@@ -148,6 +156,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     return Object.keys(newErrors).length === 0;
   }, [origins, destinations, anywhere, isAnyDay, tripType, returnDate, departDate, travelers]);
 
+  // ── Search ──
   const handleSearch = useCallback(() => {
     if (!validate()) return;
     if (anywhere) { navigate(`/explore?from=${origins.map(o => o.code).join(",")}`); return; }
@@ -216,32 +225,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
   const tripTypeLabel = tripType === "roundtrip" ? t("search.roundtrip") : tripType === "oneway" ? t("search.oneway") : t("search.multicity");
 
-  // Display values for segments
-  const fromDisplay = origins.length > 0
-    ? origins.map(o => o.code).join(", ")
-    : "Select origin";
-
-  const toDisplay = anywhere
-    ? "Everywhere"
-    : destinations.length > 0
-      ? destinations.map(d => d.code).join(", ")
-      : "Select destination";
-
-  const departDisplay = isAnyDay
-    ? "Any day"
-    : departDate
-      ? format(departDate, "d MMM")
-      : "Select date";
-
-  const returnDisplay = isAnyDay
-    ? "Any day"
-    : returnDate
-      ? format(returnDate, "d MMM")
-      : "Select date";
-
+  // Display values
+  const departDisplay = isAnyDay ? "Any day" : departDate ? format(departDate, "d MMM") : "Select date";
+  const returnDisplay = isAnyDay ? "Any day" : returnDate ? format(returnDate, "d MMM") : "Select date";
   const totalPax = travelers.adults + travelers.children + travelers.infantsSeat;
-  const travelersDisplay = `${totalPax} traveller${totalPax !== 1 ? "s" : ""}, ${CABIN_LABELS[travelers.cabinClass] || "Economy"}`;
+  const travelersDisplay = `${totalPax} traveller${totalPax !== 1 ? "s" : ""}`;
 
+  // ── Multi-city mode ──
   if (tripType === "multicity") {
     return (
       <div className="w-full max-w-5xl mx-auto">
@@ -268,6 +258,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     );
   }
 
+  const segmentBorder = (hasError?: boolean) =>
+    hasError
+      ? "border-destructive ring-2 ring-destructive/20"
+      : "border-border/60 hover:border-primary/40 focus:ring-2 focus:ring-primary/25";
+
   return (
     <div className="w-full max-w-5xl mx-auto">
       {/* Trip type dropdown */}
@@ -291,19 +286,17 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══ SEGMENTED SEARCH BAR ═══ */}
-      <div className="search-bar-light bg-white rounded-2xl p-2.5 flex flex-col lg:flex-row lg:items-start gap-2.5 overflow-visible max-w-[1100px] mx-auto shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] relative z-10 pointer-events-auto">
+      <div className="bg-white rounded-2xl p-2.5 flex flex-col lg:flex-row lg:items-start gap-2 overflow-visible max-w-[1100px] mx-auto shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] relative z-10 pointer-events-auto">
 
-        {/* ── FROM column ── */}
+        {/* ── FROM ── */}
         <div className="flex-1 min-w-0 flex flex-col">
           <button
             type="button"
             onClick={() => setFromModalOpen(true)}
-            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg border transition-all cursor-pointer
-              ${errors.from ? "border-destructive ring-2 ring-destructive/20" : "border-primary/30 hover:border-primary/50 focus:ring-2 focus:ring-primary/25 focus:outline-none"}
-              bg-white`}
+            className={`${SEGMENT_BOX} ${segmentBorder(!!errors.from)}`}
           >
-            <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5 pointer-events-none">From</span>
-            <div className="flex items-center gap-1.5 min-w-0 pointer-events-none">
+            <span className={`${SEGMENT_LABEL} pointer-events-none`}>From</span>
+            <div className={`${SEGMENT_VALUE} pointer-events-none`}>
               {origins.length > 0 ? (
                 <>
                   <span className="text-sm font-medium text-foreground truncate">{origins.map(o => o.code).join(", ")}</span>
@@ -316,13 +309,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               )}
             </div>
           </button>
-          <label className="flex items-center gap-1.5 mt-1.5 ml-3.5 cursor-pointer select-none">
-            <Checkbox checked={fromNearby} onCheckedChange={checked => handleFromNearbyToggle(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
-            <span className="text-[12px] text-muted-foreground/80">Add nearby airports</span>
-          </label>
+          <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         </div>
 
-        {/* Swap button */}
+        {/* Swap */}
         <button
           type="button"
           onClick={swapLocations}
@@ -332,17 +322,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <ArrowRightLeft className="w-3.5 h-3.5 pointer-events-none" />
         </button>
 
-        {/* ── TO column ── */}
+        {/* ── TO ── */}
         <div className="flex-1 min-w-0 flex flex-col">
           <button
             type="button"
             onClick={() => !anywhere && setToModalOpen(true)}
-            className={`w-full min-w-0 text-left px-3.5 h-14 rounded-lg border transition-all cursor-pointer
-              ${errors.to ? "border-destructive ring-2 ring-destructive/20" : "border-primary/30 hover:border-primary/50 focus:ring-2 focus:ring-primary/25 focus:outline-none"}
-              bg-white ${anywhere ? "cursor-default" : ""}`}
+            className={`${SEGMENT_BOX} ${segmentBorder(!!errors.to)} ${anywhere ? "cursor-default" : ""}`}
           >
-            <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5 pointer-events-none">To</span>
-            <div className="flex items-center gap-1.5 min-w-0 pointer-events-none">
+            <span className={`${SEGMENT_LABEL} pointer-events-none`}>To</span>
+            <div className={`${SEGMENT_VALUE} pointer-events-none`}>
               {anywhere ? (
                 <span className="text-sm font-medium text-foreground flex items-center gap-1">
                   <Globe className="w-3.5 h-3.5" /> Everywhere
@@ -360,20 +348,19 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             </div>
           </button>
           {!anywhere && (
-            <label className="flex items-center gap-1.5 mt-1.5 ml-3.5 cursor-pointer select-none">
-              <Checkbox checked={toNearby} onCheckedChange={checked => handleToNearbyToggle(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
-              <span className="text-[12px] text-muted-foreground/80">Add nearby airports</span>
-            </label>
+            <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />
           )}
         </div>
 
-        {/* ── DEPART segment ── */}
-        <div className="flex flex-col">
-          <div className="lg:w-[130px] shrink-0 h-14 rounded-lg border border-primary/30 hover:border-primary/50 transition-all bg-white focus-within:ring-2 focus-within:ring-primary/25">
+        {/* ── DEPART ── */}
+        <div className="flex flex-col lg:w-[130px] shrink-0">
+          <div className={`${SEGMENT_BOX} ${segmentBorder(!!errors.dates)} lg:w-[130px]`}>
             {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3.5 flex flex-col justify-center cursor-pointer focus:outline-none">
-                <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">Depart</span>
-                <span className="block text-sm font-medium text-muted-foreground leading-tight">Any day</span>
+              <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
+                <span className={`${SEGMENT_LABEL}`}>Depart</span>
+                <div className={SEGMENT_VALUE}>
+                  <span className="text-sm font-medium text-muted-foreground">Any day</span>
+                </div>
               </button>
             ) : (
               <FlightDateRangePicker
@@ -386,14 +373,16 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
         </div>
 
-        {/* Return segment (roundtrip only) */}
+        {/* ── RETURN ── */}
         {tripType === "roundtrip" && (
-          <div className="flex flex-col">
-            <div className="lg:w-[130px] shrink-0 h-14 rounded-lg border border-primary/30 hover:border-primary/50 transition-all bg-white focus-within:ring-2 focus-within:ring-primary/25">
+          <div className="flex flex-col lg:w-[130px] shrink-0">
+            <div className={`${SEGMENT_BOX} ${segmentBorder(!!errors.dates)} lg:w-[130px]`}>
               {isAnyDay ? (
-                <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full text-left px-3.5 flex flex-col justify-center cursor-pointer focus:outline-none">
-                  <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">Return</span>
-                  <span className="block text-sm font-medium text-muted-foreground leading-tight">Any day</span>
+                <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
+                  <span className={`${SEGMENT_LABEL}`}>Return</span>
+                  <div className={SEGMENT_VALUE}>
+                    <span className="text-sm font-medium text-muted-foreground">Any day</span>
+                  </div>
                 </button>
               ) : (
                 <FlightDateRangePicker
@@ -407,9 +396,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
         )}
 
-        {/* ── TRAVELERS segment ── */}
-        <div className="flex flex-col">
-          <div className="lg:w-[220px] shrink-0 h-14 rounded-lg border border-primary/30 hover:border-primary/50 transition-all bg-white focus-within:ring-2 focus-within:ring-primary/25">
+        {/* ── TRAVELERS ── */}
+        <div className="flex flex-col lg:w-[200px] shrink-0">
+          <div className={`h-14 rounded-lg border ${segmentBorder()} bg-white transition-all`}>
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
         </div>
@@ -424,8 +413,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
       {/* ── Options row below bar ── */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 px-1 max-w-[1100px] mx-auto">
-        <label className="flex items-center gap-1.5 cursor-pointer select-none">
-          <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-3.5 w-3.5 rounded-[3px]" />
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
           <span className="text-[13px] text-muted-foreground/80">Direct flights only</span>
         </label>
 
@@ -478,7 +467,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <h3 className="font-semibold text-foreground mb-3">Select destination</h3>
           <MultiOriginInput values={destinations} onChange={(v) => { handleDestinationsChange(v); }} placeholder="Country, city or airport" multiLabel="Multi-Destination" />
           <div className="mt-2 flex items-center gap-2">
-            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); setToModalOpen(false); } }} className="h-3.5 w-3.5" />
+            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); setToModalOpen(false); } }} className="h-4 w-4" />
             <span className="text-xs text-muted-foreground">Search everywhere</span>
           </div>
           <div className="mt-3 flex justify-end">
