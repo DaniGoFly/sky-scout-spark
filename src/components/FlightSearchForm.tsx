@@ -34,10 +34,10 @@ const CABIN_LABELS: Record<string, string> = {
   first: "First",
 };
 
-/* Shared segment box classes — ensures perfect alignment */
-const SEGMENT_BOX = "w-full text-left px-4 py-2.5 h-14 rounded-lg border transition-all bg-white cursor-pointer focus:outline-none";
-const SEGMENT_LABEL = "block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-[14px] h-[14px] mb-0.5";
-const SEGMENT_VALUE = "flex items-center gap-1.5 min-w-0 min-h-[24px]";
+/* Shared segment box classes — ensures perfect alignment across all 5 fields */
+const SEGMENT_BOX = "w-full text-left px-4 h-16 rounded-lg border transition-all bg-white cursor-pointer focus:outline-none flex flex-col justify-center";
+const SEGMENT_LABEL = "block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-[14px] h-[14px] mb-1";
+const SEGMENT_VALUE = "flex items-center gap-1.5 min-w-0 h-[24px]";
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
@@ -286,7 +286,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══ SEGMENTED SEARCH BAR ═══ */}
-      <div className="bg-white rounded-2xl p-2.5 flex flex-col lg:flex-row lg:items-start gap-2 overflow-visible max-w-[1100px] mx-auto shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] relative z-10 pointer-events-auto">
+      <div className="bg-white rounded-2xl p-2.5 flex flex-col lg:flex-row lg:items-stretch gap-2 overflow-visible max-w-[1100px] mx-auto shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] relative z-10 pointer-events-auto">
 
         {/* ── FROM ── */}
         <div className="flex-1 min-w-0 flex flex-col">
@@ -299,13 +299,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             <div className={`${SEGMENT_VALUE} pointer-events-none`}>
               {origins.length > 0 ? (
                 <>
-                  <span className="text-sm font-medium text-foreground truncate">{origins.map(o => o.code).join(", ")}</span>
+                  <span className="text-[15px] leading-[20px] font-medium text-foreground truncate">{origins.map(o => o.code).join(", ")}</span>
                   <span className="shrink-0 text-[11px] text-primary/70 font-medium flex items-center gap-0.5">
                     <Plus className="w-3 h-3" /> Add
                   </span>
                 </>
               ) : (
-                <span className="text-sm text-muted-foreground">Select origin</span>
+                <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Select origin</span>
               )}
             </div>
           </button>
@@ -317,7 +317,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           type="button"
           onClick={swapLocations}
           disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-          className="hidden lg:flex shrink-0 h-14 w-7 items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all z-10 -mx-0.5 self-start cursor-pointer"
+          className="hidden lg:flex shrink-0 h-16 w-7 items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all z-10 -mx-0.5 self-start cursor-pointer"
         >
           <ArrowRightLeft className="w-3.5 h-3.5 pointer-events-none" />
         </button>
@@ -332,18 +332,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             <span className={`${SEGMENT_LABEL} pointer-events-none`}>To</span>
             <div className={`${SEGMENT_VALUE} pointer-events-none`}>
               {anywhere ? (
-                <span className="text-sm font-medium text-foreground flex items-center gap-1">
+                <span className="text-[15px] leading-[20px] font-medium text-foreground flex items-center gap-1">
                   <Globe className="w-3.5 h-3.5" /> Everywhere
                 </span>
               ) : destinations.length > 0 ? (
                 <>
-                  <span className="text-sm font-medium text-foreground truncate">{destinations.map(d => d.code).join(", ")}</span>
+                  <span className="text-[15px] leading-[20px] font-medium text-foreground truncate">{destinations.map(d => d.code).join(", ")}</span>
                   <span className="shrink-0 text-[11px] text-primary/70 font-medium flex items-center gap-0.5">
                     <Plus className="w-3 h-3" /> Add
                   </span>
                 </>
               ) : (
-                <span className="text-sm text-muted-foreground">Select destination</span>
+                <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Select destination</span>
               )}
             </div>
           </button>
@@ -359,7 +359,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
                 <span className={`${SEGMENT_LABEL}`}>Depart</span>
                 <div className={SEGMENT_VALUE}>
-                  <span className="text-sm font-medium text-muted-foreground">Any day</span>
+                  <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Any day</span>
                 </div>
               </button>
             ) : (
@@ -381,7 +381,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
                   <span className={`${SEGMENT_LABEL}`}>Return</span>
                   <div className={SEGMENT_VALUE}>
-                    <span className="text-sm font-medium text-muted-foreground">Any day</span>
+                    <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Any day</span>
                   </div>
                 </button>
               ) : (
@@ -398,14 +398,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* ── TRAVELERS ── */}
         <div className="flex flex-col lg:w-[200px] shrink-0">
-          <div className={`h-14 rounded-lg border ${segmentBorder()} bg-white transition-all`}>
+          <div className={`h-16 rounded-lg border ${segmentBorder()} bg-white transition-all`}>
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
         </div>
 
         {/* Search button */}
         <Button onClick={handleSearch}
-          className="shrink-0 h-14 rounded-[10px] px-7 ml-0.5 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-none self-start cursor-pointer">
+          className="shrink-0 h-16 rounded-[10px] px-7 ml-0.5 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-none self-start cursor-pointer">
           <Search className="w-5 h-5 lg:mr-0 mr-2" />
           <span className="lg:hidden">Search</span>
         </Button>
