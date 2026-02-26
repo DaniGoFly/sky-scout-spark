@@ -10,32 +10,38 @@ interface NearbyToggleProps {
 }
 
 const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange }: NearbyToggleProps) => (
-  <div className="mt-1.5 space-y-1.5">
-    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+  <div className="mt-1.5 space-y-0">
+    <label className="flex items-center gap-2 cursor-pointer select-none">
       <Checkbox
         checked={enabled}
         onCheckedChange={(checked) => onToggle(checked === true)}
-        className="h-3.5 w-3.5 rounded-[3px]"
+        className="h-4 w-4 rounded-[4px]"
       />
-      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+      <span className="text-[12px] text-muted-foreground flex items-center gap-1 leading-none">
         <MapPin className="w-3 h-3" /> Add nearby airports
       </span>
     </label>
-    {enabled && (
-      <div className="flex items-center gap-2 pl-5">
+    <div
+      className="overflow-hidden transition-all duration-300 ease-in-out"
+      style={{
+        maxHeight: enabled ? "60px" : "0px",
+        opacity: enabled ? 1 : 0,
+      }}
+    >
+      <div className="flex items-center gap-2.5 pl-6 pt-1.5">
         <Slider
           value={[radius]}
           onValueChange={(v) => onRadiusChange(v[0])}
-          min={50}
+          min={0}
           max={400}
           step={25}
-          className="flex-1 max-w-[160px]"
+          className="flex-1 max-w-[140px]"
         />
-        <span className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">
+        <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap font-medium">
           {radius} km
         </span>
       </div>
-    )}
+    </div>
   </div>
 );
 
