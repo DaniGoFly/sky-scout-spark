@@ -7,7 +7,13 @@
   "hero": {
     "title_search": "Search ",
     "title_flights": "flights",
-    "subtitle": "Compare prices from hundreds of airlines and find the best deals"
+    "subtitle": "Compare prices from hundreds of airlines and find the best deals",
+    "headline_1": "Millions of cheap flights.",
+    "headline_2": "One simple search.",
+    "tagline": "Compare airlines & agencies. Book via verified partners.",
+    "car_rental": "Car rental",
+    "packages": "Packages",
+    "coming_soon": "Coming soon — we're working on this feature right now."
   },
   "search": {
     "roundtrip": "Round trip",

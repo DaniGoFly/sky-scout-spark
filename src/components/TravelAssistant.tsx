@@ -294,7 +294,6 @@ function MarkdownLite({ text }: { text: string }) {
           return <p key={i} className="text-foreground/80 text-sm pl-2">{line}</p>;
         }
         if (line.trim() === "") return <div key={i} className="h-1" />;
-        // bold inline
         const parts = line.split(/(\*\*.*?\*\*)/g);
         return (
           <p key={i} className="text-foreground/80 text-sm leading-relaxed">
@@ -324,20 +323,15 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("Generating your guide…");
-  const [isExpanded, setIsExpanded] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved).length > 0 : false;
-    } catch {
-      return false;
-    }
-  });
+  
+  // ── DEFAULT COLLAPSED ──
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
   const [lastRequest, setLastRequest] = useState<{ body: unknown; status?: number; error?: string } | null>(null);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const [travelCtx, setTravelCtx] = useState<TravelContext>(loadContext);
 
-  // Refs for internal scroll only
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -346,7 +340,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
     }
   }, [messages]);
 
-  // Scroll messages container internally — never scroll the page
   const scrollMessagesDown = () => {
     const el = messagesContainerRef.current;
     if (el) {
@@ -365,7 +358,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
     }
   }, [initialPrompt]);
 
-  // Loading text animation
   useEffect(() => {
     if (!isLoading) return;
     const texts = ["Generating your guide…", "Checking best deals…", "Planning your itinerary…", "Almost there…"];
@@ -387,7 +379,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);
 
-    // Phase 3: Local brain — try local intelligence first
     const intent = detectIntent(userMessage);
     const updatedCtx = extractContext(userMessage, travelCtx);
     setTravelCtx(updatedCtx);
@@ -395,7 +386,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
 
     const clarifying = generateClarifyingQuestions(intent, updatedCtx);
 
-    // If we can generate a useful local reply, use it (no API needed)
     if (intent !== "general" || updatedCtx.destination) {
       let reply = generateReply(intent, updatedCtx);
       if (clarifying.length > 0) {
@@ -406,7 +396,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
       return;
     }
 
-    // Fallback: try remote travel-assistant API
     const requestBody = { message: userMessage };
     setLastRequest({ body: requestBody });
 
@@ -424,7 +413,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
         },
       ]);
     } catch (err) {
-      // If API fails, generate a local fallback
       const localReply = generateReply("general", updatedCtx);
       setMessages((prev) => [...prev, { role: "assistant", content: localReply }]);
       setLastRequest((prev) => (prev ? { ...prev, status: 0, error: humanError(err) } : null));
@@ -447,7 +435,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
       });
       setSelectedDestination(suggestion.iataCode);
       toast.success(`${suggestion.city} added to search! Now select your dates and search.`, { duration: 4000 });
-      // Phase 2: Do NOT scroll the page — only scroll chat internally
       setTimeout(() => setSelectedDestination(null), 3000);
     }
   };
@@ -481,21 +468,49 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
   const getDestinationVibes = (iataCode: string) =>
     DESTINATION_VIBES[iataCode] || { emoji: "✈️", tags: ["Travel", "Explore"] };
 
+  /* ───── COLLAPSED STATE ───── */
+  if (!isExpanded) {
+    return (
+      <div className="w-full mx-auto">
+        <button
+          onClick={() => setIsExpanded(true)}
+          className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm hover:bg-card hover:border-primary/30 transition-all group"
+        >
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/80 to-primary/40 flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <div className="flex-1 text-left">
+            <span className="text-sm font-semibold text-foreground">AI Travel Guide</span>
+            <span className="text-xs text-muted-foreground ml-2">Ask me anything about your trip ✨</span>
+          </div>
+          <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full mx-auto">
       <div className="travelguide-shell bg-card/85 backdrop-blur-md rounded-xl border border-border overflow-hidden shadow-lg flex flex-col p-4" style={{ height: "min(65vh, 580px)" }}>
-        {/* Header */}
+        {/* Header with collapse button */}
         <div className="px-6 py-4 border-b border-border flex items-center gap-3 bg-gradient-to-r from-primary/20 to-transparent shrink-0">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shadow-lg">
             <Sparkles className="w-6 h-6 text-primary-foreground" />
           </div>
-          <div>
+          <div className="flex-1">
             <h3 className="text-foreground font-bold text-lg">AI Travel Guide</h3>
             <p className="text-muted-foreground text-sm">Tell me your dream trip — I'll help you plan ✨</p>
           </div>
+          <button
+            onClick={() => setIsExpanded(false)}
+            className="p-2 rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+            aria-label="Collapse"
+          >
+            <ChevronUp className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Messages Area — internal scroll only */}
+        {/* Messages Area */}
         <div
           ref={messagesContainerRef}
           className="travelguide-messages flex-1 overflow-y-auto p-4 space-y-4"
@@ -522,7 +537,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-[90%] ${msg.role === "user" ? "order-2" : ""}`}>
-                {/* Error State */}
                 {msg.error && (
                   <div className="bg-destructive/10 border border-destructive/30 rounded-2xl px-4 py-3 space-y-3">
                     <div className="flex items-center gap-2 text-destructive text-sm">
@@ -537,7 +551,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
                   </div>
                 )}
 
-                {/* Normal Message */}
                 {!msg.error && msg.content && (
                   <div className={`rounded-2xl px-4 py-3 ${
                     msg.role === "user"
@@ -548,10 +561,8 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
                   </div>
                 )}
 
-                {/* Travel Guide */}
                 {msg.guide && <GuideDisplay guide={msg.guide} />}
 
-                {/* Destination Cards */}
                 {msg.suggestions && msg.suggestions.length > 0 && (
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -621,7 +632,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
                   </div>
                 )}
 
-                {/* Travel Tip */}
                 {msg.travelTip && (
                   <div className="mt-4 bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 rounded-xl px-4 py-3 backdrop-blur-sm">
                     <p className="text-sm text-foreground flex items-start gap-3">
@@ -634,7 +644,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
             </div>
           ))}
 
-          {/* Loading State */}
           {isLoading && (
             <div className="flex justify-start">
               <div className="bg-secondary/50 backdrop-blur-sm rounded-2xl px-5 py-4 flex items-center gap-3 border border-border">
@@ -648,7 +657,7 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
           )}
         </div>
 
-        {/* Input Area — sticky bottom */}
+        {/* Input Area */}
         <form onSubmit={handleSubmit} className="travelguide-inputbar p-4 border-t border-border bg-card/80 shrink-0">
           <div className="flex gap-3">
             <Input
@@ -667,7 +676,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
             </Button>
           </div>
 
-          {/* Suggestion Chips */}
           {messages.length > 0 && !isLoading && (
             <div className="mt-3 flex flex-wrap gap-2">
               {SUGGESTION_CHIPS.slice(0, 4).map((chip) => (
@@ -684,7 +692,6 @@ const TravelAssistant = ({ onDestinationSelect, initialPrompt }: TravelAssistant
           )}
         </form>
 
-        {/* Dev Debug Panel */}
         {isDev && lastRequest && (
           <div className="border-t border-yellow-500/30 bg-yellow-500/5 p-3 text-xs font-mono shrink-0">
             <p className="text-yellow-400 font-bold mb-1">🔧 Debug (dev only)</p>
