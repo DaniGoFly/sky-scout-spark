@@ -7,7 +7,13 @@
   "hero": {
     "title_search": "Suche ",
     "title_flights": "Flüge",
-    "subtitle": "Preise von hunderten Fluggesellschaften vergleichen und die besten Angebote finden"
+    "subtitle": "Preise von hunderten Fluggesellschaften vergleichen und die besten Angebote finden",
+    "headline_1": "Millionen günstiger Flüge.",
+    "headline_2": "Eine einfache Suche.",
+    "tagline": "Fluggesellschaften & Agenturen vergleichen. Über verifizierte Partner buchen.",
+    "car_rental": "Mietwagen",
+    "packages": "Pakete",
+    "coming_soon": "Kommt bald — wir arbeiten gerade an diesem Feature."
   },
   "search": {
     "roundtrip": "Hin & Rück",
