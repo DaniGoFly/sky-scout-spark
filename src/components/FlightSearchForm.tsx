@@ -452,7 +452,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
       {/* ── FROM modal ── */}
       <Dialog open={fromModalOpen} onOpenChange={setFromModalOpen}>
-        <DialogContent className="sm:max-w-md p-4">
+        <DialogContent className="sm:max-w-md p-4" onPointerDownOutside={(e) => e.preventDefault()}>
           <h3 className="font-semibold text-foreground mb-3">Select origin</h3>
           <MultiOriginInput values={origins} onChange={(v) => { handleOriginsChange(v); }} placeholder="Country, city or airport" />
           <div className="mt-3 flex justify-end">
@@ -463,7 +463,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
       {/* ── TO modal ── */}
       <Dialog open={toModalOpen} onOpenChange={setToModalOpen}>
-        <DialogContent className="sm:max-w-md p-4">
+        <DialogContent className="sm:max-w-md p-4" onPointerDownOutside={(e) => e.preventDefault()}>
           <h3 className="font-semibold text-foreground mb-3">Select destination</h3>
           <MultiOriginInput values={destinations} onChange={(v) => { handleDestinationsChange(v); }} placeholder="Country, city or airport" multiLabel="Multi-Destination" />
           <div className="mt-2 flex items-center gap-2">
