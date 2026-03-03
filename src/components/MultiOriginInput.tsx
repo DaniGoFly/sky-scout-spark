@@ -259,20 +259,22 @@ const MultiOriginInput = ({
               style={{ maxHeight: "inherit" }}
             >
               {suggestions.map((place, index) => (
-                <div
+                <button
                   key={`${place.code}-${index}`}
+                  type="button"
                   role="option"
                   aria-selected={index === highlightedIndex}
-                  onMouseDown={(e) => {
+                  onPointerDown={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     selectingRef.current = true;
                     handleSelect(place);
-                    // Reset after a tick so click-outside doesn't interfere
-                    requestAnimationFrame(() => { selectingRef.current = false; });
+                    requestAnimationFrame(() => {
+                      selectingRef.current = false;
+                    });
                   }}
-                  className={`w-full px-3 py-2.5 text-left flex items-center gap-3 transition-colors cursor-pointer ${
-                    index === highlightedIndex ? "bg-primary/10" : "hover:bg-secondary/50"
+                  className={`w-full px-3 py-2.5 text-left flex items-center gap-3 transition-colors cursor-pointer pointer-events-auto active:scale-[0.995] ${
+                    index === highlightedIndex ? "bg-primary/10" : "hover:bg-secondary/50 active:bg-secondary/70"
                   }`}
                 >
                   <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
@@ -290,7 +292,7 @@ const MultiOriginInput = ({
                     </div>
                   </div>
                   <Plus className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                </div>
+                </button>
               ))}
             </div>
           </PortalDropdown>
