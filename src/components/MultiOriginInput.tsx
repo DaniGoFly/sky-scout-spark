@@ -90,8 +90,12 @@ const MultiOriginInput = ({
 
   const canAdd = values.length < maxAirports;
 
+  // Track if a selection is in progress to prevent blur/click-outside from closing
+  const selectingRef = useRef(false);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (selectingRef.current) return; // Don't close during selection
       const target = event.target as Node;
       if (!wrapperRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
         setIsOpen(false);
@@ -255,11 +259,19 @@ const MultiOriginInput = ({
               style={{ maxHeight: "inherit" }}
             >
               {suggestions.map((place, index) => (
-                <button
+                <div
                   key={`${place.code}-${index}`}
-                  type="button"
-                  onClick={() => handleSelect(place)}
-                  className={`w-full px-3 py-2.5 text-left flex items-center gap-3 transition-colors ${
+                  role="option"
+                  aria-selected={index === highlightedIndex}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectingRef.current = true;
+                    handleSelect(place);
+                    // Reset after a tick so click-outside doesn't interfere
+                    requestAnimationFrame(() => { selectingRef.current = false; });
+                  }}
+                  className={`w-full px-3 py-2.5 text-left flex items-center gap-3 transition-colors cursor-pointer ${
                     index === highlightedIndex ? "bg-primary/10" : "hover:bg-secondary/50"
                   }`}
                 >
@@ -278,7 +290,7 @@ const MultiOriginInput = ({
                     </div>
                   </div>
                   <Plus className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                </button>
+                </div>
               ))}
             </div>
           </PortalDropdown>
