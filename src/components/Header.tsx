@@ -15,7 +15,7 @@ const Header = () => {
   const isHome = location.pathname === "/";
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+    <header className="fixed top-0 left-0 right-0 z-[100] bg-background/60 backdrop-blur-xl border-b border-border/50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       <div className="container mx-auto px-4 min-h-[56px] h-16 flex items-center justify-between max-w-full box-border overflow-hidden">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">

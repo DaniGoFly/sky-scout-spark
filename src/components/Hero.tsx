@@ -58,7 +58,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   return (
     <section className="relative bg-background">
       {/* Ambient gradient — pointer-events-none so it never blocks clicks */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/[0.04] rounded-full blur-[180px] pointer-events-none z-0" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/[0.04] rounded-full blur-[180px] pointer-events-none z-0" aria-hidden="true" />
 
       <div className="relative z-10 pt-24 sm:pt-28 pb-10 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1100px]">
@@ -108,7 +108,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           </div>
 
           {/* ── Search bar — high z-index, pointer-events guaranteed ── */}
-          <div ref={searchRef} className="animate-fade-in relative z-20 pointer-events-auto" style={{ animationDelay: "0.05s" }}>
+          <div ref={searchRef} className="animate-fade-in relative z-30 pointer-events-auto" style={{ animationDelay: "0.05s" }}>
             <FlightSearchForm
               aiSearchParams={aiSearchParams}
               onParamsConsumed={handleParamsConsumed}
@@ -116,7 +116,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           </div>
 
           {/* ── AI Travel Guide (collapsible, secondary) ── */}
-          <div className="mt-8 animate-fade-in mx-auto w-full max-w-3xl relative z-0" style={{ animationDelay: "0.15s" }}>
+          <div className="mt-8 animate-fade-in mx-auto w-full max-w-3xl relative z-0 pointer-events-auto" style={{ animationDelay: "0.15s" }}>
             <TravelAssistant onDestinationSelect={handleDestinationSelect} initialPrompt={travelPrompt} />
           </div>
         </div>
