@@ -34,10 +34,11 @@ const CABIN_LABELS: Record<string, string> = {
   first: "First",
 };
 
-/* Shared segment box classes — ensures perfect alignment across all 5 fields */
-const SEGMENT_BOX = "w-full text-left px-4 h-16 rounded-lg border transition-all bg-white cursor-pointer focus:outline-none flex flex-col justify-center";
-const SEGMENT_LABEL = "block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-[14px] h-[14px] mb-1";
+/* Shared segment box classes — unified bar, no individual borders */
+const SEGMENT_BOX = "w-full text-left px-4 h-16 cursor-pointer focus:outline-none flex flex-col justify-center transition-colors hover:bg-[hsl(220_20%_96%)]";
+const SEGMENT_LABEL = "block text-[11px] font-semibold text-foreground/50 leading-[14px] h-[14px] mb-0.5";
 const SEGMENT_VALUE = "flex items-center gap-1.5 min-w-0 h-[24px]";
+const SEGMENT_DIVIDER = "hidden lg:block w-px h-10 bg-border/40 shrink-0 self-center";
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
@@ -258,10 +259,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     );
   }
 
-  const segmentBorder = (hasError?: boolean) =>
-    hasError
-      ? "border-destructive ring-2 ring-destructive/20"
-      : "border-border/60 hover:border-primary/40 focus:ring-2 focus:ring-primary/25";
+  const segmentError = (hasError?: boolean) =>
+    hasError ? "ring-2 ring-destructive/20 bg-destructive/5" : "";
 
   return (
     <div className="w-full max-w-5xl mx-auto">
@@ -285,27 +284,27 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      {/* ═══ SEGMENTED SEARCH BAR ═══ */}
-      <div className="bg-white rounded-2xl p-2.5 flex flex-col lg:flex-row lg:items-stretch gap-2 overflow-visible max-w-[1100px] mx-auto shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] relative z-20 pointer-events-auto">
+      {/* ═══ UNIFIED SEGMENTED SEARCH BAR ═══ */}
+      <div className="bg-[hsl(30_25%_95%)] rounded-2xl flex flex-col lg:flex-row lg:items-stretch overflow-visible max-w-[1100px] mx-auto border border-[hsl(220_15%_88%)] relative z-20 pointer-events-auto">
 
         {/* ── FROM ── */}
         <div className="flex-1 min-w-0 flex flex-col">
           <button
             type="button"
             onClick={() => setFromModalOpen(true)}
-            className={`${SEGMENT_BOX} ${segmentBorder(!!errors.from)}`}
+            className={`${SEGMENT_BOX} lg:rounded-l-2xl ${segmentError(!!errors.from)}`}
           >
-            <span className={`${SEGMENT_LABEL} pointer-events-none`}>From</span>
+            <span className={`${SEGMENT_LABEL} pointer-events-none`}>{t("search.from")}</span>
             <div className={`${SEGMENT_VALUE} pointer-events-none`}>
               {origins.length > 0 ? (
                 <>
-                  <span className="text-[15px] leading-[20px] font-medium text-foreground truncate">{origins.map(o => o.code).join(", ")}</span>
+                  <span className="text-[15px] leading-[20px] font-medium text-foreground truncate">{origins.map(o => o.display || o.code).join(", ")}</span>
                   <span className="shrink-0 text-[11px] text-primary/70 font-medium flex items-center gap-0.5">
                     <Plus className="w-3 h-3" /> Add
                   </span>
                 </>
               ) : (
-                <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Select origin</span>
+                <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">{t("search.where_from")}</span>
               )}
             </div>
           </button>
@@ -313,23 +312,25 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
 
         {/* Swap */}
-        <button
-          type="button"
-          onClick={swapLocations}
-          disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-          className="hidden lg:flex shrink-0 h-16 w-7 items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all z-10 -mx-0.5 self-start cursor-pointer"
-        >
-          <ArrowRightLeft className="w-3.5 h-3.5 pointer-events-none" />
-        </button>
+        <div className="hidden lg:flex items-center shrink-0 -mx-3 z-10">
+          <button
+            type="button"
+            onClick={swapLocations}
+            disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+            className="w-8 h-8 rounded-full border border-[hsl(220_15%_85%)] bg-[hsl(30_25%_95%)] flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all cursor-pointer"
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5 pointer-events-none" />
+          </button>
+        </div>
 
         {/* ── TO ── */}
         <div className="flex-1 min-w-0 flex flex-col">
           <button
             type="button"
             onClick={() => !anywhere && setToModalOpen(true)}
-            className={`${SEGMENT_BOX} ${segmentBorder(!!errors.to)} ${anywhere ? "cursor-default" : ""}`}
+            className={`${SEGMENT_BOX} ${segmentError(!!errors.to)} ${anywhere ? "cursor-default" : ""}`}
           >
-            <span className={`${SEGMENT_LABEL} pointer-events-none`}>To</span>
+            <span className={`${SEGMENT_LABEL} pointer-events-none`}>{t("search.to")}</span>
             <div className={`${SEGMENT_VALUE} pointer-events-none`}>
               {anywhere ? (
                 <span className="text-[15px] leading-[20px] font-medium text-foreground flex items-center gap-1">
@@ -337,13 +338,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 </span>
               ) : destinations.length > 0 ? (
                 <>
-                  <span className="text-[15px] leading-[20px] font-medium text-foreground truncate">{destinations.map(d => d.code).join(", ")}</span>
+                  <span className="text-[15px] leading-[20px] font-medium text-foreground truncate">{destinations.map(d => d.display || d.code).join(", ")}</span>
                   <span className="shrink-0 text-[11px] text-primary/70 font-medium flex items-center gap-0.5">
                     <Plus className="w-3 h-3" /> Add
                   </span>
                 </>
               ) : (
-                <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Select destination</span>
+                <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">{t("search.where_to")}</span>
               )}
             </div>
           </button>
@@ -352,12 +353,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           )}
         </div>
 
+        <div className={SEGMENT_DIVIDER} />
+
         {/* ── DEPART ── */}
         <div className="flex flex-col lg:w-[130px] shrink-0">
-          <div className={`${SEGMENT_BOX} ${segmentBorder(!!errors.dates)} lg:w-[130px]`}>
+          <div className={`${SEGMENT_BOX} lg:w-[130px] ${segmentError(!!errors.dates)}`}>
             {isAnyDay ? (
               <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
-                <span className={`${SEGMENT_LABEL}`}>Depart</span>
+                <span className={SEGMENT_LABEL}>{t("calendar.depart")}</span>
                 <div className={SEGMENT_VALUE}>
                   <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Any day</span>
                 </div>
@@ -367,47 +370,52 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 departDate={departDate} returnDate={returnDate}
                 onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
                 tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                bare segmentMode segmentLabel="Depart" segmentDisplay={departDisplay}
+                bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
               />
             )}
           </div>
         </div>
 
+        <div className={SEGMENT_DIVIDER} />
+
         {/* ── RETURN ── */}
         {tripType === "roundtrip" && (
-          <div className="flex flex-col lg:w-[130px] shrink-0">
-            <div className={`${SEGMENT_BOX} ${segmentBorder(!!errors.dates)} lg:w-[130px]`}>
-              {isAnyDay ? (
-                <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
-                  <span className={`${SEGMENT_LABEL}`}>Return</span>
-                  <div className={SEGMENT_VALUE}>
-                    <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Any day</span>
-                  </div>
-                </button>
-              ) : (
-                <FlightDateRangePicker
-                  departDate={departDate} returnDate={returnDate}
-                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                  bare segmentMode segmentLabel="Return" segmentDisplay={returnDisplay}
-                />
-              )}
+          <>
+            <div className="flex flex-col lg:w-[130px] shrink-0">
+              <div className={`${SEGMENT_BOX} lg:w-[130px] ${segmentError(!!errors.dates)}`}>
+                {isAnyDay ? (
+                  <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
+                    <span className={SEGMENT_LABEL}>Return</span>
+                    <div className={SEGMENT_VALUE}>
+                      <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Any day</span>
+                    </div>
+                  </button>
+                ) : (
+                  <FlightDateRangePicker
+                    departDate={departDate} returnDate={returnDate}
+                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                    tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                    bare segmentMode segmentLabel="Return" segmentDisplay={returnDisplay}
+                  />
+                )}
+              </div>
             </div>
-          </div>
+            <div className={SEGMENT_DIVIDER} />
+          </>
         )}
 
         {/* ── TRAVELERS ── */}
         <div className="flex flex-col lg:w-[200px] shrink-0">
-          <div className={`h-16 rounded-lg border ${segmentBorder()} bg-white transition-all`}>
+          <div className={`h-16 transition-all ${tripType === "roundtrip" ? "" : "lg:rounded-r-none"}`}>
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
         </div>
 
         {/* Search button */}
         <Button onClick={handleSearch}
-          className="shrink-0 h-16 rounded-[10px] px-7 ml-0.5 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-none self-start cursor-pointer">
-          <Search className="w-5 h-5 lg:mr-0 mr-2" />
-          <span className="lg:hidden">Search</span>
+          className="shrink-0 h-16 lg:rounded-l-none rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none px-7 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-none cursor-pointer">
+          <Search className="w-5 h-5 lg:mr-2 mr-2" />
+          <span>{t("search.search")}</span>
         </Button>
       </div>
 
