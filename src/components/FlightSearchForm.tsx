@@ -265,7 +265,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
   return (
     <div className="w-full max-w-[1100px] mx-auto">
-      {/* Trip type dropdown */}
+      {/* ── Trip type pill ── */}
       <div className="flex items-center gap-3 mb-3">
         <div className="relative">
           <button onClick={() => setTripTypeOpen(!tripTypeOpen)}
@@ -285,13 +285,16 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      {/* ═══ SEARCH BAR — flat flex row, independent boxes, 16px gaps ═══ */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-4 relative z-20 pointer-events-auto overflow-visible">
+      {/* ══════════════════════════════════════════════════════════
+          ROW 1 — Main search boxes (perfect horizontal alignment)
+          All boxes: h-[60px], same baseline, no sub-elements affecting height
+          ══════════════════════════════════════════════════════════ */}
+      <div className="relative z-20 pointer-events-auto">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
 
-        {/* ── FROM ── */}
-        <div className="flex-1 min-w-0 relative overflow-visible">
+          {/* FROM */}
           <button type="button" onClick={() => setFromModalOpen(true)}
-            className={`${BOX} ${errRing(!!errors.from)} w-full`}>
+            className={`${BOX} ${errRing(!!errors.from)} flex-1 min-w-0 w-full`}>
             <div className={BOX_INNER}>
               <span className={`${LABEL} pointer-events-none`}>{t("search.from")}</span>
               <div className={`${VALUE} pointer-events-none`}>
@@ -301,20 +304,19 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               </div>
             </div>
           </button>
-          <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
 
-          {/* ── SWAP — floating circle between FROM and TO ── */}
-          <button type="button" onClick={swapLocations}
-            disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-            className="hidden lg:flex absolute right-0 top-[30px] -translate-y-1/2 translate-x-1/2 z-10 w-[32px] h-[32px] rounded-full border border-[hsl(220_15%_28%)] bg-background items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all cursor-pointer shadow-sm">
-            <ArrowRightLeft className="w-3.5 h-3.5 pointer-events-none" />
-          </button>
-        </div>
+          {/* SWAP — zero-width flex item, overlaps via negative margins */}
+          <div className="hidden lg:flex items-center shrink-0 w-0 -mx-[23px] z-30 justify-center">
+            <button type="button" onClick={swapLocations}
+              disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+              className="w-[34px] h-[34px] rounded-full border-2 border-[hsl(220_15%_25%)] bg-background flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 disabled:opacity-30 transition-all cursor-pointer shadow-md">
+              <ArrowRightLeft className="w-4 h-4 pointer-events-none" />
+            </button>
+          </div>
 
-        {/* ── TO ── */}
-        <div className="flex-1 min-w-0">
+          {/* TO */}
           <button type="button" onClick={() => !anywhere && setToModalOpen(true)}
-            className={`${BOX} ${errRing(!!errors.to)} w-full ${anywhere ? "cursor-default" : ""}`}>
+            className={`${BOX} ${errRing(!!errors.to)} flex-1 min-w-0 w-full ${anywhere ? "cursor-default" : ""}`}>
             <div className={BOX_INNER}>
               <span className={`${LABEL} pointer-events-none`}>{t("search.to")}</span>
               <div className={`${VALUE} pointer-events-none`}>
@@ -326,12 +328,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               </div>
             </div>
           </button>
-          {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
-        </div>
 
-        {/* ── DEPART ── */}
-        <div className="lg:w-[140px] shrink-0">
-          <div className={`${BOX} ${errRing(!!errors.dates)} w-full`}>
+          {/* DEPART */}
+          <div className={`${BOX} ${errRing(!!errors.dates)} lg:w-[140px] shrink-0`}>
             {isAnyDay ? (
               <button type="button" onClick={() => setIsAnyDay(false)} className={BOX_INNER}>
                 <span className={LABEL}>{t("calendar.depart")}</span>
@@ -346,12 +345,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               />
             )}
           </div>
-        </div>
 
-        {/* ── RETURN ── */}
-        {tripType === "roundtrip" && (
-          <div className="lg:w-[140px] shrink-0">
-            <div className={`${BOX} ${errRing(!!errors.dates)} w-full`}>
+          {/* RETURN */}
+          {tripType === "roundtrip" && (
+            <div className={`${BOX} ${errRing(!!errors.dates)} lg:w-[140px] shrink-0`}>
               {isAnyDay ? (
                 <button type="button" onClick={() => setIsAnyDay(false)} className={BOX_INNER}>
                   <span className={LABEL}>Return</span>
@@ -366,44 +363,46 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 />
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ── TRAVELERS ── */}
-        <div className="lg:w-[220px] shrink-0">
-          <div className={`${BOX} w-full`}>
+          {/* TRAVELERS */}
+          <div className={`${BOX} lg:w-[220px] shrink-0`}>
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
+
+          {/* SEARCH */}
+          <Button onClick={handleSearch}
+            className="shrink-0 h-[60px] rounded-[14px] px-8 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-[0_2px_8px_hsl(var(--primary)/0.35)] cursor-pointer">
+            <Search className="w-5 h-5 mr-2" />
+            <span>{t("search.search")}</span>
+          </Button>
         </div>
 
-        {/* ── SEARCH BUTTON ── */}
-        <Button onClick={handleSearch}
-          className="shrink-0 h-[60px] rounded-[14px] px-8 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-[0_2px_8px_hsl(var(--primary)/0.35)] cursor-pointer">
-          <Search className="w-5 h-5 mr-2" />
-          <span>{t("search.search")}</span>
-        </Button>
       </div>
 
-      {/* ── Options row below bar ── */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 px-1 max-w-[1100px] mx-auto">
+      {/* ══════════════════════════════════════════════════════════
+          ROW 2 — Options (separate from input row)
+          ══════════════════════════════════════════════════════════ */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 px-0.5">
+        <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
+        {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
+
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
           <span className="text-[13px] text-muted-foreground/80">Direct flights only</span>
         </label>
 
         {isAnyDay && tripType === "roundtrip" && (
-          <div className="w-full lg:w-auto mt-1">
+          <div className="w-full lg:w-auto">
             <TripLengthSlider value={tripLength} onChange={setTripLength} />
           </div>
         )}
 
         {!isAnyDay && departDate && (
-          <div className="mt-1">
-            <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
-          </div>
+          <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
         )}
 
-        <div className="flex items-center gap-3 lg:ml-auto mt-0.5">
+        <div className="flex items-center gap-3 lg:ml-auto">
           <button onClick={async () => {
             const result = await requestNearestAirport();
             if (result) {
