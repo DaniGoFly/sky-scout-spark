@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Search, Globe, CalendarOff, CalendarDays, ChevronDown, Navigation, Plus } from "lucide-react";
+import { ArrowRightLeft, Search, Globe, CalendarOff, CalendarDays, ChevronDown, Navigation, MapPin, Zap } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -33,15 +33,6 @@ const CABIN_LABELS: Record<string, string> = {
   business: "Business",
   first: "First",
 };
-
-/* ── Design tokens for the card-based layout ── */
-const INPUT_BOX =
-  "h-[52px] rounded-xl border border-primary/15 bg-white text-[hsl(222_40%_10%)] cursor-pointer focus:outline-none transition-all hover:border-primary/30 flex flex-col justify-center";
-const INPUT_INNER = "w-full text-left px-4 flex flex-col justify-center";
-const LABEL = "text-[11px] font-semibold text-[hsl(220_8%_50%)] leading-none uppercase tracking-wide";
-const VALUE_ROW = "flex items-center gap-1.5 min-w-0 mt-0.5";
-const VAL_TEXT = "text-[14px] leading-[18px] font-medium text-[hsl(222_40%_15%)] truncate";
-const PLACEHOLDER_TEXT = "text-[14px] leading-[18px] font-medium text-[hsl(220_10%_62%)]";
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
@@ -242,14 +233,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         <div className="flex items-center gap-2 mb-4">
           <div className="relative">
             <button onClick={() => setTripTypeOpen(!tripTypeOpen)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-primary/20 bg-white text-sm font-medium text-[hsl(222_40%_15%)] hover:border-primary/40 transition-all">
-              {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-[hsl(220_10%_55%)]" />
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/60 bg-secondary/60 text-sm font-medium text-foreground hover:border-primary/40 transition-all">
+              {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
             {tripTypeOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-[hsl(220_13%_91%)] rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
+              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
                 {(["roundtrip", "oneway", "multicity"] as const).map(type => (
                   <button key={type} onClick={() => { setTripType(type); setTripTypeOpen(false); }}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/10 text-primary font-medium" : "text-[hsl(222_40%_15%)] hover:bg-[hsl(220_14%_96%)]"}`}>
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/15 text-primary font-medium" : "text-foreground hover:bg-secondary"}`}>
                     {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
                   </button>
                 ))}
@@ -262,7 +253,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     );
   }
 
-  const errRing = (has?: boolean) => has ? "ring-2 ring-destructive/30" : "";
+  const errRing = (has?: boolean) => has ? "ring-2 ring-destructive/40" : "";
+
+  /* ── Segment style tokens ── */
+  const SEG = "flex flex-col justify-center px-4 sm:px-5 py-3 min-h-[64px] cursor-pointer transition-colors hover:bg-[hsl(222_30%_18%)] group relative";
+  const SEG_LABEL = "text-[11px] font-medium text-muted-foreground uppercase tracking-wider leading-none mb-1";
+  const SEG_VALUE = "text-[15px] font-semibold text-foreground leading-snug truncate";
+  const SEG_PLACEHOLDER = "text-[15px] font-medium text-muted-foreground/60 leading-snug";
+  const DIVIDER = "hidden lg:block w-px self-stretch bg-border/40";
 
   return (
     <div className="w-full">
@@ -270,14 +268,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       <div className="flex items-center gap-3 mb-3">
         <div className="relative">
           <button onClick={() => setTripTypeOpen(!tripTypeOpen)}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-primary/20 text-sm font-medium text-[hsl(222_40%_15%)] hover:border-primary/40 transition-all bg-white/90">
-            {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-[hsl(220_10%_55%)]" />
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-border/60 text-sm font-medium text-foreground hover:border-primary/40 transition-all bg-secondary/50 backdrop-blur-sm">
+            {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
           {tripTypeOpen && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-[hsl(220_13%_91%)] rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
+            <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
               {(["roundtrip", "oneway", "multicity"] as const).map(type => (
                 <button key={type} onClick={() => { setTripType(type); setTripTypeOpen(false); }}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/10 text-primary font-medium" : "text-[hsl(222_40%_15%)] hover:bg-[hsl(220_14%_96%)]"}`}>
+                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/15 text-primary font-medium" : "text-foreground hover:bg-secondary"}`}>
                   {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
                 </button>
               ))}
@@ -287,68 +285,49 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══════════════════════════════════════════
-          SEARCH CARD — 3-row structured layout
+          SEGMENTED SEARCH BAR — dark glass style
           ═══════════════════════════════════════════ */}
-      <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.12)] p-5 sm:p-6 relative z-20">
-
-        {/* ROW 1 — From / Swap / To */}
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 items-center">
+      <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-visible relative z-20">
+        {/* Desktop: single horizontal row */}
+        <div className="hidden lg:flex items-stretch">
           {/* FROM */}
           <button type="button" onClick={() => setFromModalOpen(true)}
-            className={`${INPUT_BOX} ${errRing(!!errors.from)} w-full`}>
-            <div className={INPUT_INNER}>
-              <span className={LABEL}>{t("search.from")}</span>
-              <div className={VALUE_ROW}>
-                {origins.length > 0
-                  ? <span className={VAL_TEXT}>{origins.map(o => o.display || o.code).join(", ")}</span>
-                  : <span className={PLACEHOLDER_TEXT}>{t("search.where_from")}</span>}
-              </div>
-            </div>
+            className={`${SEG} flex-1 rounded-l-2xl ${errRing(!!errors.from)}`}>
+            <span className={SEG_LABEL}>{t("search.from")}</span>
+            {origins.length > 0
+              ? <span className={SEG_VALUE}>{origins.map(o => o.display || o.code).join(", ")}</span>
+              : <span className={SEG_PLACEHOLDER}>{t("search.where_from")}</span>}
           </button>
 
-          {/* SWAP — centered in gap */}
-          <div className="hidden sm:flex items-center justify-center">
+          {/* SWAP — sits between From and To */}
+          <div className="flex items-center justify-center px-0 relative z-30 shrink-0" style={{ width: '40px', margin: '0 -20px' }}>
             <button type="button" onClick={swapLocations}
               disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-              className="w-9 h-9 rounded-full border border-primary/20 bg-white flex items-center justify-center text-[hsl(220_10%_55%)] hover:text-primary hover:border-primary/40 hover:shadow-md disabled:opacity-30 transition-all cursor-pointer"
+              className="w-8 h-8 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:scale-110 disabled:opacity-30 transition-all cursor-pointer shadow-lg"
             >
-              <ArrowRightLeft className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Mobile swap */}
-          <div className="flex sm:hidden justify-center -my-1">
-            <button type="button" onClick={swapLocations}
-              disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-              className="w-8 h-8 rounded-full border border-primary/20 bg-white flex items-center justify-center text-[hsl(220_10%_55%)] hover:text-primary disabled:opacity-30 transition-all">
-              <ArrowRightLeft className="w-3.5 h-3.5 rotate-90" />
+              <ArrowRightLeft className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* TO */}
           <button type="button" onClick={() => !anywhere && setToModalOpen(true)}
-            className={`${INPUT_BOX} ${errRing(!!errors.to)} w-full ${anywhere ? "cursor-default" : ""}`}>
-            <div className={INPUT_INNER}>
-              <span className={LABEL}>{t("search.to")}</span>
-              <div className={VALUE_ROW}>
-                {anywhere
-                  ? <span className={`${VAL_TEXT} flex items-center gap-1`}><Globe className="w-3.5 h-3.5" /> Everywhere</span>
-                  : destinations.length > 0
-                    ? <span className={VAL_TEXT}>{destinations.map(d => d.display || d.code).join(", ")}</span>
-                    : <span className={PLACEHOLDER_TEXT}>{t("search.where_to")}</span>}
-              </div>
-            </div>
+            className={`${SEG} flex-1 ${errRing(!!errors.to)} ${anywhere ? "cursor-default" : ""}`}>
+            <span className={SEG_LABEL}>{t("search.to")}</span>
+            {anywhere
+              ? <span className={`${SEG_VALUE} flex items-center gap-1.5`}><Globe className="w-4 h-4 text-primary" /> Everywhere</span>
+              : destinations.length > 0
+                ? <span className={SEG_VALUE}>{destinations.map(d => d.display || d.code).join(", ")}</span>
+                : <span className={SEG_PLACEHOLDER}>{t("search.where_to")}</span>}
           </button>
-        </div>
 
-        {/* ROW 2 — Depart / Return / Travelers */}
-        <div className={`grid gap-3 mt-3 ${tripType === "roundtrip" ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}>
+          <div className={DIVIDER} />
+
           {/* DEPART */}
-          <div className={`${INPUT_BOX} ${errRing(!!errors.dates)}`}>
+          <div className={`${SEG} min-w-[130px] ${errRing(!!errors.dates)}`}>
             {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className={INPUT_INNER}>
-                <span className={LABEL}>{t("calendar.depart")}</span>
-                <div className={VALUE_ROW}><span className={PLACEHOLDER_TEXT}>Any day</span></div>
+              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
+                <span className={SEG_LABEL}>{t("calendar.depart")}</span>
+                <span className={SEG_PLACEHOLDER}>Any day</span>
               </button>
             ) : (
               <FlightDateRangePicker
@@ -362,11 +341,96 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
           {/* RETURN */}
           {tripType === "roundtrip" && (
-            <div className={`${INPUT_BOX} ${errRing(!!errors.dates)}`}>
+            <>
+              <div className={DIVIDER} />
+              <div className={`${SEG} min-w-[130px] ${errRing(!!errors.dates)}`}>
+                {isAnyDay ? (
+                  <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
+                    <span className={SEG_LABEL}>Return</span>
+                    <span className={SEG_PLACEHOLDER}>Any day</span>
+                  </button>
+                ) : (
+                  <FlightDateRangePicker
+                    departDate={departDate} returnDate={returnDate}
+                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                    tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                    bare segmentMode segmentLabel="Return" segmentDisplay={returnDisplay}
+                  />
+                )}
+              </div>
+            </>
+          )}
+
+          <div className={DIVIDER} />
+
+          {/* TRAVELERS */}
+          <div className={`${SEG} min-w-[120px]`}>
+            <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+          </div>
+
+          {/* SEARCH BUTTON — integrated into the bar */}
+          <button type="button" onClick={handleSearch}
+            className="flex items-center justify-center gap-2 px-7 min-w-[160px] rounded-r-2xl bg-gradient-to-br from-primary to-[hsl(220_85%_48%)] text-primary-foreground font-semibold text-[15px] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+            <Search className="w-5 h-5" />
+            <span>Search</span>
+          </button>
+        </div>
+
+        {/* Mobile: stacked layout */}
+        <div className="lg:hidden flex flex-col divide-y divide-border/30">
+          {/* FROM */}
+          <button type="button" onClick={() => setFromModalOpen(true)}
+            className={`${SEG} rounded-t-2xl ${errRing(!!errors.from)}`}>
+            <span className={SEG_LABEL}>{t("search.from")}</span>
+            {origins.length > 0
+              ? <span className={SEG_VALUE}>{origins.map(o => o.display || o.code).join(", ")}</span>
+              : <span className={SEG_PLACEHOLDER}>{t("search.where_from")}</span>}
+          </button>
+
+          {/* Mobile swap */}
+          <div className="flex justify-center -my-4 relative z-30">
+            <button type="button" onClick={swapLocations}
+              disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+              className="w-8 h-8 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all shadow-lg">
+              <ArrowRightLeft className="w-3.5 h-3.5 rotate-90" />
+            </button>
+          </div>
+
+          {/* TO */}
+          <button type="button" onClick={() => !anywhere && setToModalOpen(true)}
+            className={`${SEG} ${errRing(!!errors.to)} ${anywhere ? "cursor-default" : ""}`}>
+            <span className={SEG_LABEL}>{t("search.to")}</span>
+            {anywhere
+              ? <span className={`${SEG_VALUE} flex items-center gap-1.5`}><Globe className="w-4 h-4 text-primary" /> Everywhere</span>
+              : destinations.length > 0
+                ? <span className={SEG_VALUE}>{destinations.map(d => d.display || d.code).join(", ")}</span>
+                : <span className={SEG_PLACEHOLDER}>{t("search.where_to")}</span>}
+          </button>
+
+          {/* DEPART */}
+          <div className={`${SEG} ${errRing(!!errors.dates)}`}>
+            {isAnyDay ? (
+              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
+                <span className={SEG_LABEL}>{t("calendar.depart")}</span>
+                <span className={SEG_PLACEHOLDER}>Any day</span>
+              </button>
+            ) : (
+              <FlightDateRangePicker
+                departDate={departDate} returnDate={returnDate}
+                onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
+              />
+            )}
+          </div>
+
+          {/* RETURN */}
+          {tripType === "roundtrip" && (
+            <div className={`${SEG} ${errRing(!!errors.dates)}`}>
               {isAnyDay ? (
-                <button type="button" onClick={() => setIsAnyDay(false)} className={INPUT_INNER}>
-                  <span className={LABEL}>Return</span>
-                  <div className={VALUE_ROW}><span className={PLACEHOLDER_TEXT}>Any day</span></div>
+                <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
+                  <span className={SEG_LABEL}>Return</span>
+                  <span className={SEG_PLACEHOLDER}>Any day</span>
                 </button>
               ) : (
                 <FlightDateRangePicker
@@ -380,23 +444,21 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           )}
 
           {/* TRAVELERS */}
-          <div className={INPUT_BOX}>
+          <div className={SEG}>
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
-        </div>
 
-        {/* ROW 3 — Search button */}
-        <div className="mt-4 flex justify-center">
-          <Button onClick={handleSearch}
-            className="h-[52px] w-full sm:w-[260px] rounded-xl px-8 font-semibold text-base bg-gradient-to-r from-primary to-[hsl(220_85%_52%)] hover:from-primary/90 hover:to-[hsl(220_85%_48%)] text-white transition-all active:scale-[0.98] shadow-[0_4px_16px_hsl(var(--primary)/0.35)] hover:shadow-[0_6px_20px_hsl(var(--primary)/0.45)] cursor-pointer">
-            <Search className="w-5 h-5 mr-2" />
+          {/* SEARCH BUTTON — full width mobile */}
+          <button type="button" onClick={handleSearch}
+            className="flex items-center justify-center gap-2 px-6 py-4 rounded-b-2xl bg-gradient-to-r from-primary to-[hsl(220_85%_48%)] text-primary-foreground font-semibold text-base active:scale-[0.98] transition-all cursor-pointer">
+            <Search className="w-5 h-5" />
             <span>Search Flights</span>
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════
-          OPTIONS ROW — below the card
+          OPTIONS ROW — slim row below search bar
           ═══════════════════════════════════════════ */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 px-1">
         <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
