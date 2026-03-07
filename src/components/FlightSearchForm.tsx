@@ -378,19 +378,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </Button>
         </div>
 
-        {/* ── SWAP BUTTON — absolute, floats on top between FROM and TO ── */}
-        {/* On desktop: positioned between the 1st and 2nd flex children */}
-        <button type="button" onClick={swapLocations}
-          disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-          className="hidden lg:flex absolute z-30 w-[34px] h-[34px] rounded-full border-2 border-[hsl(220_15%_25%)] bg-background items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 disabled:opacity-30 transition-all cursor-pointer shadow-md"
-          style={{
-            /* Center vertically on the 60px row, sit on the gap between FROM and TO */
-            top: '13px', /* (60 - 34) / 2 = 13 */
-            left: 'calc(25% + (25% - 17px))', /* approximate center of gap between child 1 and child 2 */
-          }}
-        >
-          <ArrowRightLeft className="w-4 h-4 pointer-events-none" />
-        </button>
       </div>
 
       {/* ══════════════════════════════════════════════════════════
