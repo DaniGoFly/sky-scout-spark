@@ -285,11 +285,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      {/* ═══ SEARCH BAR — flat flex row, independent boxes, 14px gaps ═══ */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-[14px] relative z-20 pointer-events-auto">
+      {/* ═══ SEARCH BAR — flat flex row, independent boxes, 16px gaps ═══ */}
+      <div className="flex flex-col lg:flex-row lg:items-start gap-4 relative z-20 pointer-events-auto">
 
         {/* ── FROM ── */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 relative">
           <button type="button" onClick={() => setFromModalOpen(true)}
             className={`${BOX} ${errRing(!!errors.from)} w-full`}>
             <div className={BOX_INNER}>
@@ -302,13 +302,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             </div>
           </button>
           <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
-        </div>
 
-        {/* ── SWAP (overlaps the gap) ── */}
-        <div className="hidden lg:flex items-center shrink-0 -mx-[22px] z-10">
+          {/* ── SWAP — absolute, centered on the right edge ── */}
           <button type="button" onClick={swapLocations}
             disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-            className="w-[30px] h-[30px] rounded-full border border-[hsl(220_15%_30%)] bg-background flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all cursor-pointer">
+            className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 w-[32px] h-[32px] rounded-full border border-[hsl(220_15%_28%)] bg-background items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all cursor-pointer shadow-sm">
             <ArrowRightLeft className="w-3.5 h-3.5 pointer-events-none" />
           </button>
         </div>
