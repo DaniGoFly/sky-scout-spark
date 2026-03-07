@@ -283,80 +283,71 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      {/* ═══ UNIFIED SEGMENTED SEARCH BAR ═══ */}
-      <div className="bg-[hsl(30_25%_95%)] rounded-2xl flex flex-col lg:flex-row lg:items-stretch overflow-visible max-w-[1100px] mx-auto border border-[hsl(220_15%_88%)] relative z-20 pointer-events-auto">
+      {/* ═══ SEGMENTED SEARCH BAR — separate boxes with gaps ═══ */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-2 overflow-visible max-w-[1100px] mx-auto relative z-20 pointer-events-auto">
 
-        {/* ── FROM ── */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          <button
-            type="button"
-            onClick={() => setFromModalOpen(true)}
-            className={`${SEGMENT_BOX} lg:rounded-l-2xl ${segmentError(!!errors.from)}`}
-          >
-            <span className={`${SEGMENT_LABEL} pointer-events-none`}>{t("search.from")}</span>
-            <div className={`${SEGMENT_VALUE} pointer-events-none`}>
-              {origins.length > 0 ? (
-                <>
+        {/* ── FROM + SWAP + TO (grouped) ── */}
+        <div className="flex-1 min-w-0 flex flex-col lg:flex-row lg:items-center gap-2 relative">
+          {/* FROM */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            <button
+              type="button"
+              onClick={() => setFromModalOpen(true)}
+              className={`${SEGMENT_BOX} ${segmentError(!!errors.from)}`}
+            >
+              <span className={`${SEGMENT_LABEL} pointer-events-none`}>{t("search.from")}</span>
+              <div className={`${SEGMENT_VALUE} pointer-events-none`}>
+                {origins.length > 0 ? (
                   <span className="text-[15px] leading-[20px] font-medium text-foreground truncate">{origins.map(o => o.display || o.code).join(", ")}</span>
-                  <span className="shrink-0 text-[11px] text-primary/70 font-medium flex items-center gap-0.5">
-                    <Plus className="w-3 h-3" /> Add
+                ) : (
+                  <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">{t("search.where_from")}</span>
+                )}
+              </div>
+            </button>
+            <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
+          </div>
+
+          {/* Swap — overlapping circle */}
+          <div className="hidden lg:flex items-center shrink-0 -mx-3 z-10">
+            <button
+              type="button"
+              onClick={swapLocations}
+              disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+              className="w-8 h-8 rounded-full border border-border/40 bg-background flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all cursor-pointer shadow-sm"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5 pointer-events-none" />
+            </button>
+          </div>
+
+          {/* TO */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            <button
+              type="button"
+              onClick={() => !anywhere && setToModalOpen(true)}
+              className={`${SEGMENT_BOX} ${segmentError(!!errors.to)} ${anywhere ? "cursor-default" : ""}`}
+            >
+              <span className={`${SEGMENT_LABEL} pointer-events-none`}>{t("search.to")}</span>
+              <div className={`${SEGMENT_VALUE} pointer-events-none`}>
+                {anywhere ? (
+                  <span className="text-[15px] leading-[20px] font-medium text-foreground flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5" /> Everywhere
                   </span>
-                </>
-              ) : (
-                <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">{t("search.where_from")}</span>
-              )}
-            </div>
-          </button>
-          <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
-        </div>
-
-        {/* Swap */}
-        <div className="hidden lg:flex items-center shrink-0 -mx-3 z-10">
-          <button
-            type="button"
-            onClick={swapLocations}
-            disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-            className="w-8 h-8 rounded-full border border-[hsl(220_15%_85%)] bg-[hsl(30_25%_95%)] flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all cursor-pointer"
-          >
-            <ArrowRightLeft className="w-3.5 h-3.5 pointer-events-none" />
-          </button>
-        </div>
-
-        {/* ── TO ── */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          <button
-            type="button"
-            onClick={() => !anywhere && setToModalOpen(true)}
-            className={`${SEGMENT_BOX} ${segmentError(!!errors.to)} ${anywhere ? "cursor-default" : ""}`}
-          >
-            <span className={`${SEGMENT_LABEL} pointer-events-none`}>{t("search.to")}</span>
-            <div className={`${SEGMENT_VALUE} pointer-events-none`}>
-              {anywhere ? (
-                <span className="text-[15px] leading-[20px] font-medium text-foreground flex items-center gap-1">
-                  <Globe className="w-3.5 h-3.5" /> Everywhere
-                </span>
-              ) : destinations.length > 0 ? (
-                <>
+                ) : destinations.length > 0 ? (
                   <span className="text-[15px] leading-[20px] font-medium text-foreground truncate">{destinations.map(d => d.display || d.code).join(", ")}</span>
-                  <span className="shrink-0 text-[11px] text-primary/70 font-medium flex items-center gap-0.5">
-                    <Plus className="w-3 h-3" /> Add
-                  </span>
-                </>
-              ) : (
-                <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">{t("search.where_to")}</span>
-              )}
-            </div>
-          </button>
-          {!anywhere && (
-            <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />
-          )}
+                ) : (
+                  <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">{t("search.where_to")}</span>
+                )}
+              </div>
+            </button>
+            {!anywhere && (
+              <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />
+            )}
+          </div>
         </div>
-
-        <div className={SEGMENT_DIVIDER} />
 
         {/* ── DEPART ── */}
-        <div className="flex flex-col lg:w-[130px] shrink-0">
-          <div className={`${SEGMENT_BOX} lg:w-[130px] ${segmentError(!!errors.dates)}`}>
+        <div className="lg:w-[140px] shrink-0">
+          <div className={`${SEGMENT_BOX} ${segmentError(!!errors.dates)}`}>
             {isAnyDay ? (
               <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
                 <span className={SEGMENT_LABEL}>{t("calendar.depart")}</span>
@@ -375,44 +366,39 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
         </div>
 
-        <div className={SEGMENT_DIVIDER} />
-
         {/* ── RETURN ── */}
         {tripType === "roundtrip" && (
-          <>
-            <div className="flex flex-col lg:w-[130px] shrink-0">
-              <div className={`${SEGMENT_BOX} lg:w-[130px] ${segmentError(!!errors.dates)}`}>
-                {isAnyDay ? (
-                  <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
-                    <span className={SEGMENT_LABEL}>Return</span>
-                    <div className={SEGMENT_VALUE}>
-                      <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Any day</span>
-                    </div>
-                  </button>
-                ) : (
-                  <FlightDateRangePicker
-                    departDate={departDate} returnDate={returnDate}
-                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                    tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                    bare segmentMode segmentLabel="Return" segmentDisplay={returnDisplay}
-                  />
-                )}
-              </div>
+          <div className="lg:w-[140px] shrink-0">
+            <div className={`${SEGMENT_BOX} ${segmentError(!!errors.dates)}`}>
+              {isAnyDay ? (
+                <button type="button" onClick={() => setIsAnyDay(false)} className="w-full h-full flex flex-col justify-center cursor-pointer focus:outline-none">
+                  <span className={SEGMENT_LABEL}>Return</span>
+                  <div className={SEGMENT_VALUE}>
+                    <span className="text-[15px] leading-[20px] font-medium text-muted-foreground">Any day</span>
+                  </div>
+                </button>
+              ) : (
+                <FlightDateRangePicker
+                  departDate={departDate} returnDate={returnDate}
+                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                  bare segmentMode segmentLabel="Return" segmentDisplay={returnDisplay}
+                />
+              )}
             </div>
-            <div className={SEGMENT_DIVIDER} />
-          </>
+          </div>
         )}
 
         {/* ── TRAVELERS ── */}
-        <div className="flex flex-col lg:w-[200px] shrink-0">
-          <div className={`h-16 transition-all ${tripType === "roundtrip" ? "" : "lg:rounded-r-none"}`}>
+        <div className="lg:w-[210px] shrink-0">
+          <div className="h-16 rounded-xl bg-[hsl(30_20%_94%)] hover:bg-[hsl(30_18%_91%)] transition-colors">
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
         </div>
 
         {/* Search button */}
         <Button onClick={handleSearch}
-          className="shrink-0 h-16 lg:rounded-l-none rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none px-7 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-none cursor-pointer">
+          className="shrink-0 h-16 rounded-xl px-8 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-none cursor-pointer">
           <Search className="w-5 h-5 lg:mr-2 mr-2" />
           <span>{t("search.search")}</span>
         </Button>
