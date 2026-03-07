@@ -144,7 +144,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                       </div>
                     </div>
                     <div className="mt-2">
-                      <TravelAssistant onDestinationSelect={handleDestinationSelect} initialPrompt={travelPrompt} compact />
+                      <TravelAssistant onDestinationSelect={handleDestinationSelect} initialPrompt={travelPrompt} />
                     </div>
                   </div>
                 </div>
