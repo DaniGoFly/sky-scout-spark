@@ -3,7 +3,7 @@ import Header from "@/components/Header";
 import Hero, { type HeroHandle } from "@/components/Hero";
 import PopularDestinations from "@/components/PopularDestinations";
 import WhyUseSection from "@/components/WhyUseSection";
-import TrustSignals from "@/components/TrustSignals";
+
 import Footer from "@/components/Footer";
 import type { AISearchParams } from "@/components/FlightSearchHero";
 
@@ -26,7 +26,6 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       <Hero ref={heroRef} searchRef={searchRef} />
-      <TrustSignals />
       <PopularDestinations onDestinationClick={handleDestinationClick} />
       <WhyUseSection />
       <Footer />
