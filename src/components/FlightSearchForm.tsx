@@ -286,10 +286,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══ SEARCH BAR — flat flex row, independent boxes, 16px gaps ═══ */}
-      <div className="flex flex-col lg:flex-row lg:items-start gap-4 relative z-20 pointer-events-auto">
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4 relative z-20 pointer-events-auto overflow-visible">
 
         {/* ── FROM ── */}
-        <div className="flex-1 min-w-0 relative">
+        <div className="flex-1 min-w-0 relative overflow-visible">
           <button type="button" onClick={() => setFromModalOpen(true)}
             className={`${BOX} ${errRing(!!errors.from)} w-full`}>
             <div className={BOX_INNER}>
