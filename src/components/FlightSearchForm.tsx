@@ -34,11 +34,14 @@ const CABIN_LABELS: Record<string, string> = {
   first: "First",
 };
 
-/* ── Individual box tokens ── */
-const BOX = "h-[60px] rounded-[14px] bg-[#F5F6F7] shadow-[0_1px_3px_rgba(0,0,0,0.08)] cursor-pointer focus:outline-none transition-colors hover:bg-[#ECEDEF] flex flex-col justify-center";
-const BOX_INNER = "w-full text-left px-4 flex flex-col justify-center";
-const LABEL = "text-[11px] font-semibold text-[hsl(220_8%_42%)] leading-none";
-const VALUE = "flex items-center gap-1.5 min-w-0 mt-1";
+/* ── Design tokens for the card-based layout ── */
+const INPUT_BOX =
+  "h-[52px] rounded-xl border border-primary/15 bg-white text-[hsl(222_40%_10%)] cursor-pointer focus:outline-none transition-all hover:border-primary/30 flex flex-col justify-center";
+const INPUT_INNER = "w-full text-left px-4 flex flex-col justify-center";
+const LABEL = "text-[11px] font-semibold text-[hsl(220_8%_50%)] leading-none uppercase tracking-wide";
+const VALUE_ROW = "flex items-center gap-1.5 min-w-0 mt-0.5";
+const VAL_TEXT = "text-[14px] leading-[18px] font-medium text-[hsl(222_40%_15%)] truncate";
+const PLACEHOLDER_TEXT = "text-[14px] leading-[18px] font-medium text-[hsl(220_10%_62%)]";
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
@@ -235,18 +238,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   // ── Multi-city mode ──
   if (tripType === "multicity") {
     return (
-      <div className="w-full max-w-5xl mx-auto">
+      <div className="w-full">
         <div className="flex items-center gap-2 mb-4">
           <div className="relative">
             <button onClick={() => setTripTypeOpen(!tripTypeOpen)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/60 bg-card/80 text-sm font-medium text-foreground hover:bg-card transition-all">
-              {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-primary/20 bg-white text-sm font-medium text-[hsl(222_40%_15%)] hover:border-primary/40 transition-all">
+              {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-[hsl(220_10%_55%)]" />
             </button>
             {tripTypeOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-[hsl(220_13%_91%)] rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
                 {(["roundtrip", "oneway", "multicity"] as const).map(type => (
                   <button key={type} onClick={() => { setTripType(type); setTripTypeOpen(false); }}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-secondary/60"}`}>
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/10 text-primary font-medium" : "text-[hsl(222_40%_15%)] hover:bg-[hsl(220_14%_96%)]"}`}>
                     {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
                   </button>
                 ))}
@@ -260,23 +263,21 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   }
 
   const errRing = (has?: boolean) => has ? "ring-2 ring-destructive/30" : "";
-  const valText = "text-[15px] leading-[20px] font-medium text-foreground truncate";
-  const placeholderText = "text-[15px] leading-[20px] font-medium text-muted-foreground";
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto">
+    <div className="w-full">
       {/* ── Trip type pill ── */}
       <div className="flex items-center gap-3 mb-3">
         <div className="relative">
           <button onClick={() => setTripTypeOpen(!tripTypeOpen)}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-foreground/20 text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-white/5 transition-all">
-            {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-primary/20 text-sm font-medium text-[hsl(222_40%_15%)] hover:border-primary/40 transition-all bg-white/90">
+            {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-[hsl(220_10%_55%)]" />
           </button>
           {tripTypeOpen && (
-            <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
+            <div className="absolute top-full left-0 mt-1 bg-white border border-[hsl(220_13%_91%)] rounded-xl shadow-xl z-50 overflow-hidden min-w-[140px]">
               {(["roundtrip", "oneway", "multicity"] as const).map(type => (
                 <button key={type} onClick={() => { setTripType(type); setTripTypeOpen(false); }}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-secondary/60"}`}>
+                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${tripType === type ? "bg-primary/10 text-primary font-medium" : "text-[hsl(222_40%_15%)] hover:bg-[hsl(220_14%_96%)]"}`}>
                   {type === "roundtrip" ? t("search.roundtrip") : type === "oneway" ? t("search.oneway") : t("search.multicity")}
                 </button>
               ))}
@@ -285,56 +286,69 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════
-          ROW 1 — Main search boxes (perfect horizontal alignment)
-          All boxes: h-[60px], same baseline, no sub-elements affecting height
-          ══════════════════════════════════════════════════════════ */}
-      <div className="relative z-20 pointer-events-auto">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+      {/* ═══════════════════════════════════════════
+          SEARCH CARD — 3-row structured layout
+          ═══════════════════════════════════════════ */}
+      <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.12)] p-5 sm:p-6 relative z-20">
 
+        {/* ROW 1 — From / Swap / To */}
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 items-center">
           {/* FROM */}
           <button type="button" onClick={() => setFromModalOpen(true)}
-            className={`${BOX} ${errRing(!!errors.from)} flex-1 min-w-0 w-full`}>
-            <div className={BOX_INNER}>
-              <span className={`${LABEL} pointer-events-none`}>{t("search.from")}</span>
-              <div className={`${VALUE} pointer-events-none`}>
+            className={`${INPUT_BOX} ${errRing(!!errors.from)} w-full`}>
+            <div className={INPUT_INNER}>
+              <span className={LABEL}>{t("search.from")}</span>
+              <div className={VALUE_ROW}>
                 {origins.length > 0
-                  ? <span className={valText}>{origins.map(o => o.display || o.code).join(", ")}</span>
-                  : <span className={placeholderText}>{t("search.where_from")}</span>}
+                  ? <span className={VAL_TEXT}>{origins.map(o => o.display || o.code).join(", ")}</span>
+                  : <span className={PLACEHOLDER_TEXT}>{t("search.where_from")}</span>}
               </div>
             </div>
           </button>
 
-          {/* SWAP — real flex item, occupies its own space in the gap */}
-          <div className="hidden lg:flex items-center justify-center shrink-0 w-[34px]">
+          {/* SWAP — centered in gap */}
+          <div className="hidden sm:flex items-center justify-center">
             <button type="button" onClick={swapLocations}
               disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-              className="w-[34px] h-[34px] rounded-full border-2 border-[hsl(220_15%_25%)] bg-background flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 disabled:opacity-30 transition-all cursor-pointer shadow-md">
-              <ArrowRightLeft className="w-4 h-4 pointer-events-none" />
+              className="w-9 h-9 rounded-full border border-primary/20 bg-white flex items-center justify-center text-[hsl(220_10%_55%)] hover:text-primary hover:border-primary/40 hover:shadow-md disabled:opacity-30 transition-all cursor-pointer"
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Mobile swap */}
+          <div className="flex sm:hidden justify-center -my-1">
+            <button type="button" onClick={swapLocations}
+              disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+              className="w-8 h-8 rounded-full border border-primary/20 bg-white flex items-center justify-center text-[hsl(220_10%_55%)] hover:text-primary disabled:opacity-30 transition-all">
+              <ArrowRightLeft className="w-3.5 h-3.5 rotate-90" />
             </button>
           </div>
 
           {/* TO */}
           <button type="button" onClick={() => !anywhere && setToModalOpen(true)}
-            className={`${BOX} ${errRing(!!errors.to)} flex-1 min-w-0 w-full ${anywhere ? "cursor-default" : ""}`}>
-            <div className={BOX_INNER}>
-              <span className={`${LABEL} pointer-events-none`}>{t("search.to")}</span>
-              <div className={`${VALUE} pointer-events-none`}>
+            className={`${INPUT_BOX} ${errRing(!!errors.to)} w-full ${anywhere ? "cursor-default" : ""}`}>
+            <div className={INPUT_INNER}>
+              <span className={LABEL}>{t("search.to")}</span>
+              <div className={VALUE_ROW}>
                 {anywhere
-                  ? <span className={`${valText} flex items-center gap-1`}><Globe className="w-3.5 h-3.5" /> Everywhere</span>
+                  ? <span className={`${VAL_TEXT} flex items-center gap-1`}><Globe className="w-3.5 h-3.5" /> Everywhere</span>
                   : destinations.length > 0
-                    ? <span className={valText}>{destinations.map(d => d.display || d.code).join(", ")}</span>
-                    : <span className={placeholderText}>{t("search.where_to")}</span>}
+                    ? <span className={VAL_TEXT}>{destinations.map(d => d.display || d.code).join(", ")}</span>
+                    : <span className={PLACEHOLDER_TEXT}>{t("search.where_to")}</span>}
               </div>
             </div>
           </button>
+        </div>
 
+        {/* ROW 2 — Depart / Return / Travelers */}
+        <div className={`grid gap-3 mt-3 ${tripType === "roundtrip" ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}>
           {/* DEPART */}
-          <div className={`${BOX} ${errRing(!!errors.dates)} lg:w-[140px] shrink-0`}>
+          <div className={`${INPUT_BOX} ${errRing(!!errors.dates)}`}>
             {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className={BOX_INNER}>
+              <button type="button" onClick={() => setIsAnyDay(false)} className={INPUT_INNER}>
                 <span className={LABEL}>{t("calendar.depart")}</span>
-                <div className={VALUE}><span className={placeholderText}>Any day</span></div>
+                <div className={VALUE_ROW}><span className={PLACEHOLDER_TEXT}>Any day</span></div>
               </button>
             ) : (
               <FlightDateRangePicker
@@ -348,11 +362,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
           {/* RETURN */}
           {tripType === "roundtrip" && (
-            <div className={`${BOX} ${errRing(!!errors.dates)} lg:w-[140px] shrink-0`}>
+            <div className={`${INPUT_BOX} ${errRing(!!errors.dates)}`}>
               {isAnyDay ? (
-                <button type="button" onClick={() => setIsAnyDay(false)} className={BOX_INNER}>
+                <button type="button" onClick={() => setIsAnyDay(false)} className={INPUT_INNER}>
                   <span className={LABEL}>Return</span>
-                  <div className={VALUE}><span className={placeholderText}>Any day</span></div>
+                  <div className={VALUE_ROW}><span className={PLACEHOLDER_TEXT}>Any day</span></div>
                 </button>
               ) : (
                 <FlightDateRangePicker
@@ -366,24 +380,25 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           )}
 
           {/* TRAVELERS */}
-          <div className={`${BOX} lg:w-[220px] shrink-0`}>
+          <div className={INPUT_BOX}>
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
-
-          {/* SEARCH */}
-          <Button onClick={handleSearch}
-            className="shrink-0 h-[60px] rounded-[14px] px-8 font-semibold text-base bg-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-[0_2px_8px_hsl(var(--primary)/0.35)] cursor-pointer">
-            <Search className="w-5 h-5 mr-2" />
-            <span>{t("search.search")}</span>
-          </Button>
         </div>
 
+        {/* ROW 3 — Search button */}
+        <div className="mt-4 flex justify-center">
+          <Button onClick={handleSearch}
+            className="h-[52px] w-full sm:w-[260px] rounded-xl px-8 font-semibold text-base bg-gradient-to-r from-primary to-[hsl(220_85%_52%)] hover:from-primary/90 hover:to-[hsl(220_85%_48%)] text-white transition-all active:scale-[0.98] shadow-[0_4px_16px_hsl(var(--primary)/0.35)] hover:shadow-[0_6px_20px_hsl(var(--primary)/0.45)] cursor-pointer">
+            <Search className="w-5 h-5 mr-2" />
+            <span>Search Flights</span>
+          </Button>
+        </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════
-          ROW 2 — Options (separate from input row)
-          ══════════════════════════════════════════════════════════ */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 px-0.5">
+      {/* ═══════════════════════════════════════════
+          OPTIONS ROW — below the card
+          ═══════════════════════════════════════════ */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 px-1">
         <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
 
