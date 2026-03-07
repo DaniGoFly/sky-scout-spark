@@ -35,10 +35,10 @@ const CABIN_LABELS: Record<string, string> = {
 };
 
 /* ── Individual box tokens ── */
-const BOX = "h-[60px] rounded-[14px] bg-[hsl(35_22%_93%)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] cursor-pointer focus:outline-none transition-colors hover:bg-[hsl(35_20%_90%)]";
-const BOX_INNER = "w-full h-full text-left px-4 flex flex-col justify-center";
-const LABEL = "block text-[11px] font-semibold text-[hsl(220_8%_42%)] leading-none mb-1";
-const VALUE = "flex items-center gap-1.5 min-w-0";
+const BOX = "h-[60px] rounded-[14px] bg-[hsl(35_22%_93%)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] cursor-pointer focus:outline-none transition-colors hover:bg-[hsl(35_20%_90%)] flex flex-col justify-center";
+const BOX_INNER = "w-full text-left px-4 flex flex-col justify-center";
+const LABEL = "text-[11px] font-semibold text-[hsl(220_8%_42%)] leading-none";
+const VALUE = "flex items-center gap-1.5 min-w-0 mt-1";
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
