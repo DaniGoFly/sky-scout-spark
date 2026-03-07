@@ -35,7 +35,7 @@ const CABIN_LABELS: Record<string, string> = {
 };
 
 /* ── Individual box tokens ── */
-const BOX = "h-[60px] rounded-[14px] bg-[hsl(35_22%_93%)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] cursor-pointer focus:outline-none transition-colors hover:bg-[hsl(35_20%_90%)] flex flex-col justify-center";
+const BOX = "h-[60px] rounded-[14px] bg-[#F5F6F7] shadow-[0_1px_3px_rgba(0,0,0,0.08)] cursor-pointer focus:outline-none transition-colors hover:bg-[#ECEDEF] flex flex-col justify-center";
 const BOX_INNER = "w-full text-left px-4 flex flex-col justify-center";
 const LABEL = "text-[11px] font-semibold text-[hsl(220_8%_42%)] leading-none";
 const VALUE = "flex items-center gap-1.5 min-w-0 mt-1";
