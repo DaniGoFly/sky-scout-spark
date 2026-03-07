@@ -281,10 +281,10 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
     const triggerContent = segmentMode ? (
       <button
         type="button"
-        className="w-full h-full text-left px-4 flex flex-col justify-center cursor-pointer focus:outline-none hover:bg-[hsl(220_20%_96%)] transition-colors"
+        className="w-full h-full text-left px-4 flex flex-col justify-center cursor-pointer focus:outline-none"
         onClick={() => setIsOpen(true)}
       >
-        <span className="block text-[11px] font-semibold text-foreground/50 leading-[14px] h-[14px] mb-0.5">Travellers</span>
+        <span className="block text-[11px] font-semibold text-[hsl(220_10%_40%)] leading-[14px] h-[14px] mb-0.5">Travellers</span>
         <span className="block text-[15px] leading-[20px] font-medium text-foreground truncate">{getDisplayText()}</span>
       </button>
     ) : null;
