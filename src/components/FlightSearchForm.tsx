@@ -35,10 +35,10 @@ const CABIN_LABELS: Record<string, string> = {
 };
 
 /* ── Individual box tokens ── */
-const BOX = "h-[60px] rounded-[14px] bg-[hsl(35_22%_93%)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] cursor-pointer focus:outline-none transition-colors hover:bg-[hsl(35_20%_90%)]";
-const BOX_INNER = "w-full h-full text-left px-4 flex flex-col justify-center";
-const LABEL = "block text-[11px] font-semibold text-[hsl(220_8%_42%)] leading-none mb-1";
-const VALUE = "flex items-center gap-1.5 min-w-0";
+const BOX = "h-[60px] rounded-[14px] bg-[hsl(35_22%_93%)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] cursor-pointer focus:outline-none transition-colors hover:bg-[hsl(35_20%_90%)] flex flex-col justify-center";
+const BOX_INNER = "w-full text-left px-4 flex flex-col justify-center";
+const LABEL = "text-[11px] font-semibold text-[hsl(220_8%_42%)] leading-none";
+const VALUE = "flex items-center gap-1.5 min-w-0 mt-1";
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
@@ -286,10 +286,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══ SEARCH BAR — flat flex row, independent boxes, 16px gaps ═══ */}
-      <div className="flex flex-col lg:flex-row lg:items-start gap-4 relative z-20 pointer-events-auto">
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4 relative z-20 pointer-events-auto overflow-visible">
 
         {/* ── FROM ── */}
-        <div className="flex-1 min-w-0 relative">
+        <div className="flex-1 min-w-0 relative overflow-visible">
           <button type="button" onClick={() => setFromModalOpen(true)}
             className={`${BOX} ${errRing(!!errors.from)} w-full`}>
             <div className={BOX_INNER}>
@@ -303,10 +303,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </button>
           <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
 
-          {/* ── SWAP — absolute, centered on the right edge ── */}
+          {/* ── SWAP — floating circle between FROM and TO ── */}
           <button type="button" onClick={swapLocations}
             disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-            className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 w-[32px] h-[32px] rounded-full border border-[hsl(220_15%_28%)] bg-background items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all cursor-pointer shadow-sm">
+            className="hidden lg:flex absolute right-0 top-[30px] -translate-y-1/2 translate-x-1/2 z-10 w-[32px] h-[32px] rounded-full border border-[hsl(220_15%_28%)] bg-background items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-30 transition-all cursor-pointer shadow-sm">
             <ArrowRightLeft className="w-3.5 h-3.5 pointer-events-none" />
           </button>
         </div>
