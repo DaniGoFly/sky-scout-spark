@@ -34,10 +34,11 @@ const CABIN_LABELS: Record<string, string> = {
   first: "First",
 };
 
-/* Shared segment box classes — individual rounded boxes with gaps */
-const SEGMENT_BOX = "w-full text-left px-4 h-16 rounded-xl bg-[hsl(30_20%_94%)] cursor-pointer focus:outline-none flex flex-col justify-center transition-colors hover:bg-[hsl(30_18%_91%)]";
-const SEGMENT_LABEL = "block text-[11px] font-semibold text-[hsl(220_10%_40%)] leading-[14px] h-[14px] mb-0.5";
-const SEGMENT_VALUE = "flex items-center gap-1.5 min-w-0 h-[24px]";
+/* ── Individual box tokens ── */
+const BOX = "h-[60px] rounded-[14px] bg-[hsl(35_22%_93%)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] cursor-pointer focus:outline-none transition-colors hover:bg-[hsl(35_20%_90%)]";
+const BOX_INNER = "w-full h-full text-left px-4 flex flex-col justify-center";
+const LABEL = "block text-[11px] font-semibold text-[hsl(220_8%_42%)] leading-none mb-1";
+const VALUE = "flex items-center gap-1.5 min-w-0";
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
