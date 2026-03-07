@@ -305,6 +305,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             </div>
           </button>
 
+          {/* SWAP — zero-width flex item, overlaps via negative margins */}
+          <div className="hidden lg:flex items-center shrink-0 w-0 -mx-[23px] z-30 justify-center">
+            <button type="button" onClick={swapLocations}
+              disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+              className="w-[34px] h-[34px] rounded-full border-2 border-[hsl(220_15%_25%)] bg-background flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 disabled:opacity-30 transition-all cursor-pointer shadow-md">
+              <ArrowRightLeft className="w-4 h-4 pointer-events-none" />
+            </button>
+          </div>
+
           {/* TO */}
           <button type="button" onClick={() => !anywhere && setToModalOpen(true)}
             className={`${BOX} ${errRing(!!errors.to)} flex-1 min-w-0 w-full ${anywhere ? "cursor-default" : ""}`}>
