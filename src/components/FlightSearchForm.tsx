@@ -34,10 +34,11 @@ const CABIN_LABELS: Record<string, string> = {
   first: "First",
 };
 
-/* Shared segment box classes — ensures perfect alignment across all 5 fields */
-const SEGMENT_BOX = "w-full text-left px-4 h-16 rounded-lg border transition-all bg-white cursor-pointer focus:outline-none flex flex-col justify-center";
-const SEGMENT_LABEL = "block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider leading-[14px] h-[14px] mb-1";
+/* Shared segment box classes — unified bar, no individual borders */
+const SEGMENT_BOX = "w-full text-left px-4 h-16 cursor-pointer focus:outline-none flex flex-col justify-center transition-colors hover:bg-[hsl(220_20%_96%)]";
+const SEGMENT_LABEL = "block text-[11px] font-semibold text-foreground/50 leading-[14px] h-[14px] mb-0.5";
 const SEGMENT_VALUE = "flex items-center gap-1.5 min-w-0 h-[24px]";
+const SEGMENT_DIVIDER = "hidden lg:block w-px h-10 bg-border/40 shrink-0 self-center";
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
   const navigate = useNavigate();
