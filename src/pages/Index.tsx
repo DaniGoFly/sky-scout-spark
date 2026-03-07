@@ -26,7 +26,6 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       <Hero ref={heroRef} searchRef={searchRef} />
-      <TrustSignals />
       <PopularDestinations onDestinationClick={handleDestinationClick} />
       <WhyUseSection />
       <Footer />
