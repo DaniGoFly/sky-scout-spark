@@ -251,7 +251,7 @@ const MultiOriginInput = ({
       <div
         className={`cursor-text overflow-hidden ${
           bare
-            ? "bg-transparent"
+            ? "h-[30px] px-0 bg-transparent"
             : compact
               ? "h-[44px] px-3 py-2 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
               : "h-[52px] px-4 py-3 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
