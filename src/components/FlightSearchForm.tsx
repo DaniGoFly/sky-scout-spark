@@ -290,9 +290,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* ═══════════════════════════════════════════
           SIGNATURE SEARCH BAR
           ═══════════════════════════════════════════ */}
-      <div className="w-full min-w-0 max-w-full rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] overflow-hidden relative z-20 backdrop-blur-sm [contain:layout]">
+      <div className="w-full min-w-0 max-w-full rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] overflow-hidden relative z-20 backdrop-blur-sm [contain:layout] lg:h-[94px]">
         {/* Desktop: fixed slot grid */}
-        <div className="hidden lg:grid items-stretch grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)_320px_220px_170px]">
+        <div className="hidden lg:grid h-full items-stretch grid-cols-[minmax(180px,205px)_40px_minmax(180px,205px)_minmax(280px,320px)_minmax(190px,220px)_minmax(150px,170px)]">
           {/* FROM */}
           <div className={`min-w-0 px-6 py-4 rounded-l-2xl transition-colors hover:bg-secondary/60 ${errRing(!!errors.from)}`}>
             <span className={SEG_LABEL}>{t("search.from")}</span>
