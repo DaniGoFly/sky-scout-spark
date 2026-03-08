@@ -79,7 +79,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
     const passengerCount = value.adults + value.children + value.infantsSeat;
     const travelerText = `${passengerCount} traveler${passengerCount !== 1 ? "s" : ""}`;
     const classLabel = CABIN_CLASSES.find(c => c.value === value.cabinClass)?.label || "Economy";
-    return `${travelerText}, ${classLabel}`;
+    return segmentMode ? `${travelerText} • ${classLabel}` : `${travelerText}, ${classLabel}`;
   };
 
   const helperText = totalTravelers >= MAX_TRAVELERS 
