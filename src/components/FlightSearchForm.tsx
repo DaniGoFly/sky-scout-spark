@@ -289,7 +289,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* ═══════════════════════════════════════════
           SIGNATURE SEARCH BAR
           ═══════════════════════════════════════════ */}
-      <div className="rounded-2xl border border-border/30 bg-secondary/40 shadow-[0_4px_24px_rgba(0,0,0,0.15)] overflow-visible relative z-20">
+      <div className="rounded-2xl border border-border/15 bg-secondary/25 shadow-[0_2px_16px_rgba(0,0,0,0.10)] overflow-visible relative z-20">
         {/* Desktop: single horizontal row */}
         <div className="hidden lg:flex items-stretch">
           {/* FROM */}
