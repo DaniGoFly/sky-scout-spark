@@ -607,37 +607,22 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* RIGHT GROUP */}
         <div className="flex items-start gap-4 shrink-0 pt-[2px]">
-          {/* Flex dates with separate departure/return popover */}
+          {/* Flex dates — dropdown trigger only, no checkbox */}
           <Popover>
-            <div className={`flex h-5 items-center gap-2 shrink-0 whitespace-nowrap ${isAnyDay ? "opacity-40 pointer-events-none" : ""}`}>
-              <Checkbox
-                checked={!isAnyDay && (departFlexBefore > 0 || departFlexAfter > 0 || returnFlexBefore > 0 || returnFlexAfter > 0)}
-                onCheckedChange={checked => {
-                  if (checked) {
-                    setDepartFlexBefore(3); setDepartFlexAfter(3);
-                    if (tripType === "roundtrip") { setReturnFlexBefore(3); setReturnFlexAfter(3); }
-                  } else {
-                    setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0);
-                  }
-                }}
-                disabled={isAnyDay}
-                className="h-4 w-4 rounded-[4px]"
-              />
-              <PopoverTrigger asChild>
-                <button type="button" disabled={isAnyDay}
-                  className="flex items-center gap-1 text-[12px] text-muted-foreground/60 font-medium hover:text-primary transition-colors cursor-pointer">
-                  <CalendarDays className="w-3 h-3" />
-                  <span>Flex</span>
-                  {!isAnyDay && (departFlexBefore > 0 || departFlexAfter > 0) && (() => {
-                    const dLabel = (departFlexBefore > 0 || departFlexAfter > 0) ? `${departFlexBefore > 0 ? `-${departFlexBefore}` : ""}${departFlexAfter > 0 ? `+${departFlexAfter}` : ""}` : "";
-                    const rLabel = tripType === "roundtrip" && (returnFlexBefore > 0 || returnFlexAfter > 0) ? ` R${returnFlexBefore > 0 ? `-${returnFlexBefore}` : ""}${returnFlexAfter > 0 ? `+${returnFlexAfter}` : ""}` : "";
-                    return <span className="text-primary font-semibold ml-0.5">{dLabel}{rLabel}</span>;
-                  })()}
-                  <ChevronDown className="w-3 h-3 opacity-50" />
-                </button>
-              </PopoverTrigger>
-            </div>
-            <PopoverContent className="w-[260px] p-4" align="start" side="bottom" sideOffset={8}>
+            <PopoverTrigger asChild>
+              <button type="button" disabled={isAnyDay}
+                className={`flex h-5 items-center gap-1 text-[12px] font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap ${isAnyDay ? "opacity-40 pointer-events-none text-muted-foreground/60" : "text-muted-foreground/60 hover:text-primary"}`}>
+                <CalendarDays className="w-3 h-3" />
+                <span>Flex</span>
+                {!isAnyDay && (departFlexBefore > 0 || departFlexAfter > 0) && (() => {
+                  const dLabel = `${departFlexBefore > 0 ? `-${departFlexBefore}` : ""}${departFlexAfter > 0 ? `+${departFlexAfter}` : ""}`;
+                  const rLabel = tripType === "roundtrip" && (returnFlexBefore > 0 || returnFlexAfter > 0) ? ` R${returnFlexBefore > 0 ? `-${returnFlexBefore}` : ""}${returnFlexAfter > 0 ? `+${returnFlexAfter}` : ""}` : "";
+                  return <span className="text-primary font-semibold ml-0.5">{dLabel}{rLabel}</span>;
+                })()}
+                <ChevronDown className="w-3 h-3 opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[260px] p-4" align="start" side="bottom" sideOffset={8} avoidCollisions={false}>
               <p className="text-xs font-semibold text-foreground mb-3">Departure flexibility</p>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-muted-foreground">Days before</span>
