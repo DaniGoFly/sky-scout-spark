@@ -335,7 +335,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
             <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
           </Button>
         </PopoverTrigger>
-        <Popo side="bottom" sideOffset={8} avoidCollisions={false}verContent className="w-80 p-4 bg-card" align="start">
+        <PopoverContent className="w-80 p-4 bg-card" align="start" side="bottom" sideOffset={8} avoidCollisions={false}>
           <PickerContent />
         </PopoverContent>
       </Popover>
