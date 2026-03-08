@@ -79,7 +79,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
     const passengerCount = value.adults + value.children + value.infantsSeat;
     const travelerText = `${passengerCount} traveler${passengerCount !== 1 ? "s" : ""}`;
     const classLabel = CABIN_CLASSES.find(c => c.value === value.cabinClass)?.label || "Economy";
-    return `${travelerText}, ${classLabel}`;
+    return segmentMode ? `${travelerText} • ${classLabel}` : `${travelerText}, ${classLabel}`;
   };
 
   const helperText = totalTravelers >= MAX_TRAVELERS 
@@ -284,8 +284,8 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
         className="w-full h-full text-left px-4 flex flex-col justify-center cursor-pointer focus:outline-none"
         onClick={() => setIsOpen(true)}
       >
-        <span className="block text-[11px] font-semibold text-[hsl(220_8%_42%)] leading-none mb-1">Travellers</span>
-        <span className="block text-[15px] leading-[20px] font-medium text-foreground truncate">{getDisplayText()}</span>
+        <span className="block text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none mb-1.5">Travellers</span>
+        <span className="block text-[15px] leading-[20px] font-medium text-foreground whitespace-nowrap">{getDisplayText()}</span>
       </button>
     ) : null;
 

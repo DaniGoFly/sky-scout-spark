@@ -35,6 +35,7 @@ interface MultiOriginInputProps {
 const MAX_DEFAULT = 6;
 const MAX_VISIBLE_CHIPS = 1;
 const MIN_INPUT_WIDTH_PX = 112;
+const COMPACT_ADD_THRESHOLD_PX = 106;
 
 /* ── Portal dropdown anchored to the field ── */
 const PortalDropdown = ({
@@ -112,6 +113,7 @@ const MultiOriginInput = ({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [isInputActive, setIsInputActive] = useState(false);
+  const [isCompactAddAction, setIsCompactAddAction] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null!);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null!);
@@ -124,6 +126,8 @@ const MultiOriginInput = ({
   const visibleChips = values.slice(0, maxVisibleChips);
   const overflowChips = values.slice(maxVisibleChips);
   const hasOverflow = overflowChips.length > 0;
+  const addActionText = isCompactAddAction ? "Add +" : "Add airport";
+  const reservedInputWidth = values.length > 0 ? (isCompactAddAction ? 64 : 96) : MIN_INPUT_WIDTH_PX;
 
   /* Close on outside click */
   useEffect(() => {
@@ -139,6 +143,23 @@ const MultiOriginInput = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!inputAreaRef.current) return;
+
+    const updateCompactAction = () => {
+      const width = inputAreaRef.current?.clientWidth ?? 0;
+      setIsCompactAddAction(width > 0 && width < COMPACT_ADD_THRESHOLD_PX);
+    };
+
+    updateCompactAction();
+    const observer = new ResizeObserver(updateCompactAction);
+    observer.observe(inputAreaRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [values.length, hasOverflow]);
 
   /* Fetch suggestions */
   useEffect(() => {
@@ -230,7 +251,7 @@ const MultiOriginInput = ({
       <div
         className={`cursor-text overflow-hidden ${
           bare
-            ? "bg-transparent"
+            ? "h-[30px] px-0 bg-transparent"
             : compact
               ? "h-[44px] px-3 py-2 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
               : "h-[52px] px-4 py-3 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
@@ -313,34 +334,49 @@ const MultiOriginInput = ({
           <div
             ref={inputAreaRef}
             className="flex flex-[1_1_0%] min-w-0 items-center overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            style={{ minWidth: MIN_INPUT_WIDTH_PX }}
+            style={{ minWidth: reservedInputWidth }}
           >
             {canAdd ? (
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setIsOpen(true);
-                  setIsInputActive(true);
-                }}
-                onFocus={() => {
-                  setIsOpen(true);
-                  setIsInputActive(true);
-                }}
-                onBlur={() => {
-                  if (selectingRef.current) return;
-                  if (!query) {
-                    setIsInputActive(false);
-                    setIsOpen(false);
-                  }
-                }}
-                onKeyDown={handleKeyDown}
-                className="w-full min-w-0 bg-transparent text-[13px] font-medium leading-none text-foreground outline-none overflow-x-auto whitespace-nowrap placeholder:text-[10px] placeholder:font-medium placeholder:text-muted-foreground/65"
-                placeholder={values.length === 0 ? placeholder : "Add airport"}
-                autoComplete="off"
-                style={{ textOverflow: "clip" }}
-              />
+              !isInputActive && query.length === 0 && values.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsInputActive(true);
+                    setIsOpen(true);
+                    requestAnimationFrame(() => inputRef.current?.focus());
+                  }}
+                  className="h-full shrink-0 text-[11px] font-medium text-muted-foreground/80 whitespace-nowrap"
+                >
+                  {addActionText}
+                </button>
+              ) : (
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setIsOpen(true);
+                    setIsInputActive(true);
+                  }}
+                  onFocus={() => {
+                    setIsOpen(true);
+                    setIsInputActive(true);
+                  }}
+                  onBlur={() => {
+                    if (selectingRef.current) return;
+                    if (!query) {
+                      setIsInputActive(false);
+                      setIsOpen(false);
+                    }
+                  }}
+                  onKeyDown={handleKeyDown}
+                  className="w-full min-w-0 bg-transparent text-[13px] font-medium leading-none text-foreground outline-none overflow-x-auto whitespace-nowrap placeholder:text-[10px] placeholder:font-medium placeholder:text-muted-foreground/65"
+                  placeholder={values.length === 0 ? placeholder : addActionText}
+                  autoComplete="off"
+                  style={{ textOverflow: "clip" }}
+                />
+              )
             ) : (
               <span className="shrink-0 text-[10px] italic text-muted-foreground whitespace-nowrap">
                 Max {maxAirports}

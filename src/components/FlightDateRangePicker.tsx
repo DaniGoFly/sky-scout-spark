@@ -230,7 +230,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
           className="w-full h-full text-left flex flex-col justify-center cursor-pointer focus:outline-none relative z-30 pointer-events-auto"
         >
           <span className="block text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none mb-1.5">{segmentLabel}</span>
-          <span className={cn("block text-[15px] leading-[20px] font-semibold truncate", departDate ? "text-foreground" : "text-muted-foreground/40")}>
+          <span className={cn("block text-[15px] leading-[20px] font-semibold whitespace-nowrap", departDate ? "text-foreground" : "text-muted-foreground/40")}>
             {segmentDisplay}
           </span>
         </button>
