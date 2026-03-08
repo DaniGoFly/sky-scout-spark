@@ -7,11 +7,10 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import MultiOriginInput, { type AirportSelection } from "./MultiOriginInput";
-import FlightDateRangePicker from "./FlightDateRangePicker";
+import FlightDateRangePicker, { CalendarPanel } from "./FlightDateRangePicker";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import MultiCitySearchForm from "./MultiCitySearchForm";
 import NearbyToggle from "./search/NearbyToggle";
-import FlexDateControls from "./search/FlexDateControls";
 import TripLengthSlider from "./search/TripLengthSlider";
 import { getDefaultDates } from "@/lib/dateUtils";
 import { requestNearestAirport } from "@/lib/nearestAirport";
@@ -19,6 +18,7 @@ import { AIRPORTS, getAirportsInRadius } from "@/lib/airports";
 import { toast } from "sonner";
 import type { AISearchParams } from "./FlightSearchHero";
 import { useLocale } from "@/hooks/useLocale";
+import { cn } from "@/lib/utils";
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
@@ -73,6 +73,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [returnFlexAfter, setReturnFlexAfter] = useState(0);
 
   const [tripTypeOpen, setTripTypeOpen] = useState(false);
+
+  /* ── Calendar panel open state (lifted) ── */
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // ── AI params ──
   useEffect(() => {
@@ -205,6 +208,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const handleReturnChange = useCallback((date: Date | null) => { setReturnDate(date); setErrors(e => ({ ...e, dates: undefined })); }, []);
   const handleTripTypeChange = useCallback((type: "roundtrip" | "oneway") => { setTripType(type); }, []);
 
+  const handleOpenCalendar = useCallback(() => {
+    if (!calendarOpen) setCalendarOpen(true);
+  }, [calendarOpen]);
+
+  const handleCloseCalendar = useCallback(() => {
+    setCalendarOpen(false);
+  }, []);
+
   const handleMultiCitySearch = useCallback((segments: any[], travelersData: TravelersData) => {
     const validSegments = segments.filter(seg => seg.from?.code && seg.to?.code && seg.date);
     if (validSegments.length < 2) return;
@@ -230,6 +241,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const returnDisplay = isAnyDay ? "Any day" : returnDate ? format(returnDate, "d MMM") : "Select date";
   const totalPax = travelers.adults + travelers.children + travelers.infantsSeat;
   const travelersDisplay = `${totalPax} traveller${totalPax !== 1 ? "s" : ""}`;
+
+  // Flex badge
+  const hasFlexValues = departFlexBefore > 0 || departFlexAfter > 0 || returnFlexBefore > 0 || returnFlexAfter > 0;
+  const flexBadge = hasFlexValues ? (() => {
+    const dLabel = `${departFlexBefore > 0 ? `-${departFlexBefore}` : ""}${departFlexAfter > 0 ? `+${departFlexAfter}` : ""}`;
+    const rLabel = tripType === "roundtrip" && (returnFlexBefore > 0 || returnFlexAfter > 0) ? ` R${returnFlexBefore > 0 ? `-${returnFlexBefore}` : ""}${returnFlexAfter > 0 ? `+${returnFlexAfter}` : ""}` : "";
+    return dLabel + rLabel;
+  })() : null;
 
   // ── Multi-city mode ──
   if (tripType === "multicity") {
@@ -288,84 +307,72 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══════════════════════════════════════════
-          SIGNATURE SEARCH BAR
+          SIGNATURE SEARCH BAR + CALENDAR
           ═══════════════════════════════════════════ */}
-      <div className="w-full min-w-0 max-w-full rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm lg:h-[94px]">
-        {/* Desktop: fixed slot grid */}
-        <div className="hidden lg:grid h-full items-stretch grid-cols-[minmax(180px,205px)_40px_minmax(180px,205px)_minmax(280px,320px)_minmax(190px,220px)_minmax(150px,170px)]">
-          {/* FROM */}
-          <div className={`min-w-0 px-5 py-3 rounded-l-2xl transition-colors hover:bg-secondary/60 flex flex-col justify-center ${errRing(!!errors.from)}`}>
-            <span className={SEG_LABEL}>{t("search.from")}</span>
-            <div className="mt-1.5"><MultiOriginInput
-              values={origins}
-              onChange={handleOriginsChange}
-              placeholder="Country, city or airport"
-              bare
-            /></div>
-          </div>
+      <div className="relative">
+        {/* Search bar */}
+        <div className={cn(
+          "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm lg:h-[94px]",
+          calendarOpen ? "rounded-t-2xl" : "rounded-2xl"
+        )}>
+          {/* Desktop: fixed slot grid */}
+          <div className="hidden lg:grid h-full items-stretch grid-cols-[minmax(180px,205px)_40px_minmax(180px,205px)_minmax(280px,320px)_minmax(190px,220px)_minmax(150px,170px)]">
+            {/* FROM */}
+            <div className={`min-w-0 px-5 py-3 rounded-l-2xl transition-colors hover:bg-secondary/60 flex flex-col justify-center ${errRing(!!errors.from)}`}>
+              <span className={SEG_LABEL}>{t("search.from")}</span>
+              <div className="mt-1.5"><MultiOriginInput
+                values={origins}
+                onChange={handleOriginsChange}
+                placeholder="Country, city or airport"
+                bare
+              /></div>
+            </div>
 
-          {/* SWAP */}
-          <div className="flex items-center justify-center relative z-30">
-            <button
-              type="button"
-              onClick={swapLocations}
-              disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-              className="w-[32px] h-[32px] rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 hover:scale-105 disabled:opacity-20 transition-all cursor-pointer shadow-sm"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
-            </button>
-          </div>
+            {/* SWAP */}
+            <div className="flex items-center justify-center relative z-30">
+              <button
+                type="button"
+                onClick={swapLocations}
+                disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+                className="w-[32px] h-[32px] rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 hover:scale-105 disabled:opacity-20 transition-all cursor-pointer shadow-sm"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-          {/* TO */}
-          <div className={`min-w-0 px-5 py-3 transition-colors hover:bg-secondary/60 flex flex-col justify-center ${errRing(!!errors.to)}`}>
-            <span className={SEG_LABEL}>{t("search.to")}</span>
-            <div className="mt-1.5">{anywhere ? (
-              <div className="flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-primary shrink-0" />
-                <span className={SEG_VALUE}>Everywhere</span>
+            {/* TO */}
+            <div className={`min-w-0 px-5 py-3 transition-colors hover:bg-secondary/60 flex flex-col justify-center ${errRing(!!errors.to)}`}>
+              <span className={SEG_LABEL}>{t("search.to")}</span>
+              <div className="mt-1.5">{anywhere ? (
+                <div className="flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-primary shrink-0" />
+                  <span className={SEG_VALUE}>Everywhere</span>
+                </div>
+              ) : (
+                <MultiOriginInput
+                  values={destinations}
+                  onChange={handleDestinationsChange}
+                  placeholder="Country, city or airport"
+                  multiLabel="Multi-Destination"
+                  bare
+                />
+              )}</div>
+            </div>
+
+            {/* DATES SLOT (fixed width) */}
+            {isAnyDay ? (
+              <div className={`h-full w-full px-5 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
+                <span className={SEG_LABEL}>Trip length</span>
+                {tripType === "roundtrip" ? (
+                  <TripLengthSlider value={tripLength} onChange={setTripLength} />
+                ) : (
+                  <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+                )}
               </div>
             ) : (
-              <MultiOriginInput
-                values={destinations}
-                onChange={handleDestinationsChange}
-                placeholder="Country, city or airport"
-                multiLabel="Multi-Destination"
-                bare
-              />
-            )}</div>
-          </div>
-
-          {/* DATES SLOT (fixed width) */}
-          {isAnyDay ? (
-            <div className={`h-full w-full px-5 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
-              <span className={SEG_LABEL}>Trip length</span>
-              {tripType === "roundtrip" ? (
-                <TripLengthSlider value={tripLength} onChange={setTripLength} />
-              ) : (
-                <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
-              )}
-            </div>
-          ) : (
-            <div className={`h-full w-full transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
-            <div className="grid h-full grid-cols-2 items-stretch">
-                <div className="px-5 py-3 relative z-30 border-r border-border/20 flex flex-col justify-center">
-                  <FlightDateRangePicker
-                    departDate={departDate}
-                    returnDate={returnDate}
-                    onDepartChange={handleDepartChange}
-                    onReturnChange={handleReturnChange}
-                    tripType={tripType as "roundtrip" | "oneway"}
-                    onTripTypeChange={handleTripTypeChange}
-                    hasError={!!errors.dates}
-                    bare
-                    segmentMode
-                    segmentLabel={t("calendar.depart")}
-                    segmentDisplay={departDisplay}
-                  />
-                </div>
-
-                <div className="px-5 py-3 relative z-30 flex flex-col justify-center">
-                  {tripType === "roundtrip" ? (
+              <div className={`h-full w-full transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
+              <div className="grid h-full grid-cols-2 items-stretch">
+                  <div className="px-5 py-3 relative z-30 border-r border-border/20 flex flex-col justify-center">
                     <FlightDateRangePicker
                       departDate={departDate}
                       returnDate={returnDate}
@@ -376,135 +383,188 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                       hasError={!!errors.dates}
                       bare
                       segmentMode
-                      segmentLabel={t("calendar.return", "Return")}
-                      segmentDisplay={returnDisplay}
+                      segmentLabel={t("calendar.depart")}
+                      segmentDisplay={departDisplay}
+                      onOpenCalendar={handleOpenCalendar}
                     />
-                  ) : (
-                    <div className="flex h-full flex-col justify-center">
-                      <span className={SEG_LABEL}>{t("calendar.return", "Return")}</span>
-                      <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible</span>
-                    </div>
-                  )}
+                  </div>
+
+                  <div className="px-5 py-3 relative z-30 flex flex-col justify-center">
+                    {tripType === "roundtrip" ? (
+                      <FlightDateRangePicker
+                        departDate={departDate}
+                        returnDate={returnDate}
+                        onDepartChange={handleDepartChange}
+                        onReturnChange={handleReturnChange}
+                        tripType={tripType as "roundtrip" | "oneway"}
+                        onTripTypeChange={handleTripTypeChange}
+                        hasError={!!errors.dates}
+                        bare
+                        segmentMode
+                        segmentLabel={t("calendar.return", "Return")}
+                        segmentDisplay={returnDisplay}
+                        onOpenCalendar={handleOpenCalendar}
+                      />
+                    ) : (
+                      <div className="flex h-full flex-col justify-center">
+                        <span className={SEG_LABEL}>{t("calendar.return", "Return")}</span>
+                        <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+            )}
+
+            {/* TRAVELERS */}
+            <div className="w-full px-5 py-3 transition-colors hover:bg-secondary/60 border-l border-border/20 cursor-pointer flex flex-col justify-center">
+              <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
             </div>
-          )}
 
-          {/* TRAVELERS */}
-          <div className="w-full px-5 py-3 transition-colors hover:bg-secondary/60 border-l border-border/20 cursor-pointer flex flex-col justify-center">
-            <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
-          </div>
-
-          {/* SEARCH BUTTON */}
-          <button
-            type="button"
-            onClick={handleSearch}
-            className="w-full flex items-center justify-center gap-2.5 px-8 rounded-r-2xl bg-gradient-to-b from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-[15px] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
-          >
-            <Search className="w-5 h-5" />
-            <span className="hidden xl:inline">{t("search.search")}</span>
-          </button>
-        </div>
-
-        {/* Mobile: stacked layout */}
-        <div className="lg:hidden flex flex-col">
-          {/* FROM */}
-          <div className={`px-5 py-4 ${errRing(!!errors.from)}`}>
-            <span className={SEG_LABEL}>{t("search.from")}</span>
-            <MultiOriginInput
-              values={origins}
-              onChange={handleOriginsChange}
-              placeholder="Country, city or airport"
-              bare
-            />
-          </div>
-
-          {/* Mobile swap */}
-          <div className="flex justify-center -my-3 relative z-30">
-            <button type="button" onClick={swapLocations}
-              disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-              className="w-8 h-8 rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm">
-              <ArrowRightLeft className="w-3 h-3 rotate-90" />
+            {/* SEARCH BUTTON */}
+            <button
+              type="button"
+              onClick={handleSearch}
+              className={cn(
+                "w-full flex items-center justify-center gap-2.5 px-8 bg-gradient-to-b from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-[15px] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer",
+                calendarOpen ? "rounded-tr-2xl" : "rounded-r-2xl"
+              )}
+            >
+              <Search className="w-5 h-5" />
+              <span className="hidden xl:inline">{t("search.search")}</span>
             </button>
           </div>
 
-          {/* Separator */}
-          <div className="h-px mx-5 bg-border/15" />
-
-          {/* TO */}
-          <div className={`px-5 py-4 ${errRing(!!errors.to)}`}>
-            <span className={SEG_LABEL}>{t("search.to")}</span>
-            {anywhere ? (
-              <div className="flex items-center gap-1.5 min-h-[36px]">
-                <Globe className="w-4 h-4 text-primary shrink-0" />
-                <span className={SEG_VALUE}>Everywhere</span>
-              </div>
-            ) : (
+          {/* Mobile: stacked layout */}
+          <div className="lg:hidden flex flex-col">
+            {/* FROM */}
+            <div className={`px-5 py-4 ${errRing(!!errors.from)}`}>
+              <span className={SEG_LABEL}>{t("search.from")}</span>
               <MultiOriginInput
-                values={destinations}
-                onChange={handleDestinationsChange}
+                values={origins}
+                onChange={handleOriginsChange}
                 placeholder="Country, city or airport"
-                multiLabel="Multi-Destination"
                 bare
               />
-            )}
-          </div>
+            </div>
 
-          <div className="h-px mx-5 bg-border/15" />
+            {/* Mobile swap */}
+            <div className="flex justify-center -my-3 relative z-30">
+              <button type="button" onClick={swapLocations}
+                disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+                className="w-8 h-8 rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm">
+                <ArrowRightLeft className="w-3 h-3 rotate-90" />
+              </button>
+            </div>
 
-          {/* DATES SECTION — mobile */}
-          {isAnyDay ? (
-            <div className={`px-5 py-4 ${errRing(!!errors.dates)}`}>
-              <span className={SEG_LABEL}>Trip length</span>
-              {tripType === "roundtrip" ? (
-                <TripLengthSlider value={tripLength} onChange={setTripLength} />
+            {/* Separator */}
+            <div className="h-px mx-5 bg-border/15" />
+
+            {/* TO */}
+            <div className={`px-5 py-4 ${errRing(!!errors.to)}`}>
+              <span className={SEG_LABEL}>{t("search.to")}</span>
+              {anywhere ? (
+                <div className="flex items-center gap-1.5 min-h-[36px]">
+                  <Globe className="w-4 h-4 text-primary shrink-0" />
+                  <span className={SEG_VALUE}>Everywhere</span>
+                </div>
               ) : (
-                <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+                <MultiOriginInput
+                  values={destinations}
+                  onChange={handleDestinationsChange}
+                  placeholder="Country, city or airport"
+                  multiLabel="Multi-Destination"
+                  bare
+                />
               )}
             </div>
-          ) : (
-            <>
-              {/* DEPART */}
-              <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
-                <FlightDateRangePicker
-                  departDate={departDate} returnDate={returnDate}
-                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                  bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
-                />
+
+            <div className="h-px mx-5 bg-border/15" />
+
+            {/* DATES SECTION — mobile */}
+            {isAnyDay ? (
+              <div className={`px-5 py-4 ${errRing(!!errors.dates)}`}>
+                <span className={SEG_LABEL}>Trip length</span>
+                {tripType === "roundtrip" ? (
+                  <TripLengthSlider value={tripLength} onChange={setTripLength} />
+                ) : (
+                  <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+                )}
               </div>
+            ) : (
+              <>
+                {/* DEPART */}
+                <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
+                  <FlightDateRangePicker
+                    departDate={departDate} returnDate={returnDate}
+                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                    tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                    bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
+                    onOpenCalendar={handleOpenCalendar}
+                  />
+                </div>
 
-              {/* RETURN */}
-              {tripType === "roundtrip" && (
-                <>
-                  <div className="h-px mx-5 bg-border/15" />
-                  <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
-                    <FlightDateRangePicker
-                      departDate={departDate} returnDate={returnDate}
-                      onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                      tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                      bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
-                    />
-                  </div>
-                </>
-              )}
-            </>
-          )}
+                {/* RETURN */}
+                {tripType === "roundtrip" && (
+                  <>
+                    <div className="h-px mx-5 bg-border/15" />
+                    <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
+                      <FlightDateRangePicker
+                        departDate={departDate} returnDate={returnDate}
+                        onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                        tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                        bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
+                        onOpenCalendar={handleOpenCalendar}
+                      />
+                    </div>
+                  </>
+                )}
+              </>
+            )}
 
-          <div className="h-px mx-5 bg-border/15" />
+            <div className="h-px mx-5 bg-border/15" />
 
-          {/* TRAVELERS */}
-          <div className="px-5 py-4 cursor-pointer">
-            <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+            {/* TRAVELERS */}
+            <div className="px-5 py-4 cursor-pointer">
+              <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+            </div>
+
+            {/* SEARCH BUTTON — full width mobile */}
+            <button type="button" onClick={handleSearch}
+              className={cn(
+                "flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-base active:scale-[0.98] transition-all cursor-pointer",
+                calendarOpen ? "" : "rounded-b-2xl"
+              )}>
+              <Search className="w-5 h-5" />
+              <span>{t("search.search_flights")}</span>
+            </button>
           </div>
-
-          {/* SEARCH BUTTON — full width mobile */}
-          <button type="button" onClick={handleSearch}
-            className="flex items-center justify-center gap-2 px-6 py-4 rounded-b-2xl bg-gradient-to-r from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-base active:scale-[0.98] transition-all cursor-pointer">
-            <Search className="w-5 h-5" />
-            <span>{t("search.search_flights")}</span>
-          </button>
         </div>
+
+        {/* ═══════════════════════════════════════════
+            CALENDAR PANEL — attached below search bar
+            ═══════════════════════════════════════════ */}
+        {calendarOpen && !isAnyDay && (
+          <div className="absolute left-0 right-0 top-full z-50 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+            <CalendarPanel
+              departDate={departDate}
+              returnDate={returnDate}
+              onDepartChange={handleDepartChange}
+              onReturnChange={handleReturnChange}
+              tripType={tripType as "roundtrip" | "oneway"}
+              onTripTypeChange={handleTripTypeChange}
+              onDone={handleCloseCalendar}
+              departFlexBefore={departFlexBefore}
+              departFlexAfter={departFlexAfter}
+              returnFlexBefore={returnFlexBefore}
+              returnFlexAfter={returnFlexAfter}
+              onDepartFlexBeforeChange={setDepartFlexBefore}
+              onDepartFlexAfterChange={setDepartFlexAfter}
+              onReturnFlexBeforeChange={setReturnFlexBefore}
+              onReturnFlexAfterChange={setReturnFlexAfter}
+            />
+          </div>
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════
@@ -518,66 +578,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
           <span className="text-[12px] text-muted-foreground/60 font-medium whitespace-nowrap">{t("search.direct_flights_only")}</span>
         </label>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <button type="button" disabled={isAnyDay}
-              className={`flex h-5 items-center gap-1 text-[12px] font-medium transition-colors cursor-pointer whitespace-nowrap ${isAnyDay ? "opacity-40 pointer-events-none text-muted-foreground/60" : "text-muted-foreground/60 hover:text-primary"}`}>
-              <CalendarDays className="w-3 h-3" />
-              <span>Flex dates</span>
-              {!isAnyDay && (departFlexBefore > 0 || departFlexAfter > 0) && (() => {
-                const dLabel = `${departFlexBefore > 0 ? `-${departFlexBefore}` : ""}${departFlexAfter > 0 ? `+${departFlexAfter}` : ""}`;
-                const rLabel = tripType === "roundtrip" && (returnFlexBefore > 0 || returnFlexAfter > 0) ? ` R${returnFlexBefore > 0 ? `-${returnFlexBefore}` : ""}${returnFlexAfter > 0 ? `+${returnFlexAfter}` : ""}` : "";
-                return <span className="text-primary font-semibold ml-0.5">{dLabel}{rLabel}</span>;
-              })()}
-              <ChevronDown className="w-3 h-3 opacity-50" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[260px] p-4" align="start" side="bottom" sideOffset={8} avoidCollisions={false}>
-            <p className="text-xs font-semibold text-foreground mb-3">Departure flexibility</p>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Days before</span>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setDepartFlexBefore(Math.max(0, departFlexBefore - 1))} disabled={departFlexBefore <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors"><Minus className="w-3 h-3" /></button>
-                <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{departFlexBefore}</span>
-                <button type="button" onClick={() => setDepartFlexBefore(Math.min(10, departFlexBefore + 1))} disabled={departFlexBefore >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors"><Plus className="w-3 h-3" /></button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs text-muted-foreground">Days after</span>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setDepartFlexAfter(Math.max(0, departFlexAfter - 1))} disabled={departFlexAfter <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors"><Minus className="w-3 h-3" /></button>
-                <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{departFlexAfter}</span>
-                <button type="button" onClick={() => setDepartFlexAfter(Math.min(10, departFlexAfter + 1))} disabled={departFlexAfter >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors"><Plus className="w-3 h-3" /></button>
-              </div>
-            </div>
-            {tripType === "roundtrip" && (
-              <>
-                <div className="h-px bg-border/30 mb-3" />
-                <p className="text-xs font-semibold text-foreground mb-3">Return flexibility</p>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-muted-foreground">Days before</span>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setReturnFlexBefore(Math.max(0, returnFlexBefore - 1))} disabled={returnFlexBefore <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors"><Minus className="w-3 h-3" /></button>
-                    <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{returnFlexBefore}</span>
-                    <button type="button" onClick={() => setReturnFlexBefore(Math.min(10, returnFlexBefore + 1))} disabled={returnFlexBefore >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors"><Plus className="w-3 h-3" /></button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Days after</span>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setReturnFlexAfter(Math.max(0, returnFlexAfter - 1))} disabled={returnFlexAfter <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors"><Minus className="w-3 h-3" /></button>
-                    <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{returnFlexAfter}</span>
-                    <button type="button" onClick={() => setReturnFlexAfter(Math.min(10, returnFlexAfter + 1))} disabled={returnFlexAfter >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors"><Plus className="w-3 h-3" /></button>
-                  </div>
-                </div>
-              </>
-            )}
-            <div className="mt-4 pt-3 border-t border-border/30 flex justify-between">
-              <button type="button" onClick={() => { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Reset</button>
-            </div>
-          </PopoverContent>
-        </Popover>
 
         <div className="flex items-center gap-4 pt-1">
           <button onClick={async () => {
@@ -597,7 +597,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               onCheckedChange={checked => {
                 const on = checked === true;
                 setIsAnyDay(on);
-                if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); }
+                if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); setCalendarOpen(false); }
               }}
               className="h-4 w-4 rounded-[4px]"
             />
@@ -641,87 +641,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* RIGHT GROUP */}
         <div className="flex items-start gap-4 shrink-0 pt-[2px]">
-          {/* Flex dates — dropdown trigger only, no checkbox */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button type="button" disabled={isAnyDay}
-                className={`flex h-5 items-center gap-1 text-[12px] font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap ${isAnyDay ? "opacity-40 pointer-events-none text-muted-foreground/60" : "text-muted-foreground/60 hover:text-primary"}`}>
-                <CalendarDays className="w-3 h-3" />
-                <span>Flex</span>
-                {!isAnyDay && (departFlexBefore > 0 || departFlexAfter > 0) && (() => {
-                  const dLabel = `${departFlexBefore > 0 ? `-${departFlexBefore}` : ""}${departFlexAfter > 0 ? `+${departFlexAfter}` : ""}`;
-                  const rLabel = tripType === "roundtrip" && (returnFlexBefore > 0 || returnFlexAfter > 0) ? ` R${returnFlexBefore > 0 ? `-${returnFlexBefore}` : ""}${returnFlexAfter > 0 ? `+${returnFlexAfter}` : ""}` : "";
-                  return <span className="text-primary font-semibold ml-0.5">{dLabel}{rLabel}</span>;
-                })()}
-                <ChevronDown className="w-3 h-3 opacity-50" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[260px] p-4" align="start" side="bottom" sideOffset={8} avoidCollisions={false}>
-              <p className="text-xs font-semibold text-foreground mb-3">Departure flexibility</p>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">Days before</span>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setDepartFlexBefore(Math.max(0, departFlexBefore - 1))}
-                    disabled={departFlexBefore <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{departFlexBefore}</span>
-                  <button type="button" onClick={() => setDepartFlexBefore(Math.min(10, departFlexBefore + 1))}
-                    disabled={departFlexBefore >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs text-muted-foreground">Days after</span>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setDepartFlexAfter(Math.max(0, departFlexAfter - 1))}
-                    disabled={departFlexAfter <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{departFlexAfter}</span>
-                  <button type="button" onClick={() => setDepartFlexAfter(Math.min(10, departFlexAfter + 1))}
-                    disabled={departFlexAfter >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-              {tripType === "roundtrip" && (
-                <>
-                  <div className="h-px bg-border/30 mb-3" />
-                  <p className="text-xs font-semibold text-foreground mb-3">Return flexibility</p>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-muted-foreground">Days before</span>
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => setReturnFlexBefore(Math.max(0, returnFlexBefore - 1))}
-                        disabled={returnFlexBefore <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{returnFlexBefore}</span>
-                      <button type="button" onClick={() => setReturnFlexBefore(Math.min(10, returnFlexBefore + 1))}
-                        disabled={returnFlexBefore >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Days after</span>
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => setReturnFlexAfter(Math.max(0, returnFlexAfter - 1))}
-                        disabled={returnFlexAfter <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{returnFlexAfter}</span>
-                      <button type="button" onClick={() => setReturnFlexAfter(Math.min(10, returnFlexAfter + 1))}
-                        disabled={returnFlexAfter >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </PopoverContent>
-          </Popover>
+          {/* Flex dates — now opens the calendar panel's Flexible tab */}
+          <button type="button" disabled={isAnyDay}
+            onClick={handleOpenCalendar}
+            className={`flex h-5 items-center gap-1 text-[12px] font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap ${isAnyDay ? "opacity-40 pointer-events-none text-muted-foreground/60" : "text-muted-foreground/60 hover:text-primary"}`}>
+            <CalendarDays className="w-3 h-3" />
+            <span>Flex</span>
+            {!isAnyDay && flexBadge && <span className="text-primary font-semibold ml-0.5">{flexBadge}</span>}
+            <ChevronDown className="w-3 h-3 opacity-50" />
+          </button>
 
           <button onClick={async () => {
               const result = await requestNearestAirport();
@@ -732,7 +660,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </button>
 
           <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
-            <Checkbox checked={isAnyDay} onCheckedChange={checked => { const on = checked === true; setIsAnyDay(on); if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); } }} className="h-4 w-4 rounded-[4px]" />
+            <Checkbox checked={isAnyDay} onCheckedChange={checked => { const on = checked === true; setIsAnyDay(on); if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); setCalendarOpen(false); } }} className="h-4 w-4 rounded-[4px]" />
             <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
               <CalendarOff className="w-3 h-3" /> {t("search.any_day", "Any day")}
             </span>
