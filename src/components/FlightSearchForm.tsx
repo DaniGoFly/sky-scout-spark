@@ -346,7 +346,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               )}
             </div>
           ) : (
-            <div className={`h-full w-[320px] transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
+            <div className={`h-full w-full transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
               <div className="grid h-full grid-cols-2 items-stretch">
                 <div className="px-6 py-4 relative z-30 border-r border-border/20">
                   <FlightDateRangePicker
