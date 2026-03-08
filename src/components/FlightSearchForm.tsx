@@ -267,7 +267,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   return (
     <div className="w-full space-y-5">
       {/* ── Trip type pill ── */}
-      <div className="flex items-center justify-center sm:justify-start gap-3">
+      <div className="flex items-center justify-start gap-3">
         <div className="relative">
           <button onClick={() => setTripTypeOpen(!tripTypeOpen)}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-border/30 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/50 transition-all">
@@ -289,7 +289,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* ═══════════════════════════════════════════
           SIGNATURE SEARCH BAR
           ═══════════════════════════════════════════ */}
-      <div className="rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] overflow-visible relative z-20 backdrop-blur-sm">
+      <div className="rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] overflow-visible relative z-20 backdrop-blur-sm backdrop-blur-sm">
         {/* Desktop: single horizontal row */}
         <div className="hidden lg:flex items-stretch">
           {/* FROM */}
