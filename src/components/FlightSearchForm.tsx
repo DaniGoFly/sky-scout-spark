@@ -485,7 +485,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button type="button" onClick={handleSearch}
             className="flex items-center justify-center gap-2 px-6 py-4 rounded-b-2xl bg-gradient-to-r from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-base active:scale-[0.98] transition-all cursor-pointer">
             <Search className="w-5 h-5" />
-            <span>Search Flights</span>
+            <span>{t("search.search_flights")}</span>
           </button>
         </div>
       </div>
