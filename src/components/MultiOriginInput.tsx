@@ -127,7 +127,7 @@ const MultiOriginInput = ({
   const overflowChips = values.slice(maxVisibleChips);
   const hasOverflow = overflowChips.length > 0;
   const addActionText = isCompactAddAction ? "Add +" : "Add airport";
-  const reservedInputWidth = values.length > 0 ? (isCompactAddAction ? 64 : 96) : MIN_INPUT_WIDTH_PX;
+  const reservedInputWidth = MIN_INPUT_WIDTH_PX;
 
   /* Close on outside click */
   useEffect(() => {
