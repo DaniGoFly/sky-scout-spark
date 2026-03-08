@@ -592,26 +592,26 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* RIGHT GROUP */}
         <div className="flex items-start gap-5 shrink-0 pt-[2px]">
-          <div className="shrink-0">
-            {!isAnyDay && departDate ? (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button type="button" className="flex h-5 items-center gap-1.5 text-[11px] text-primary/70 hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
-                    <CalendarDays className="w-3 h-3" />
-                    {departFlexBefore > 0 || departFlexAfter > 0
-                      ? `± ${departFlexBefore}/${departFlexAfter} days`
-                      : "± Flex dates"}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-56 p-4 pointer-events-auto">
-                  <p className="text-xs font-semibold text-foreground mb-3">Date flexibility</p>
-                  <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <span className="inline-flex h-5 items-center text-[11px] text-muted-foreground/40 whitespace-nowrap">± Flex dates</span>
-            )}
-          </div>
+          <label className={`flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0 ${isAnyDay ? "opacity-40 pointer-events-none" : ""}`}>
+            <Checkbox
+              checked={!isAnyDay && (departFlexBefore > 0 || departFlexAfter > 0)}
+              onCheckedChange={checked => {
+                if (checked) {
+                  setDepartFlexBefore(3);
+                  setDepartFlexAfter(3);
+                  if (tripType === "roundtrip") { setReturnFlexBefore(3); setReturnFlexAfter(3); }
+                } else {
+                  setDepartFlexBefore(0);
+                  setDepartFlexAfter(0);
+                  setReturnFlexBefore(0);
+                  setReturnFlexAfter(0);
+                }
+              }}
+              disabled={isAnyDay}
+              className="h-4 w-4 rounded-[4px]"
+            />
+            <span className="text-[12px] text-muted-foreground/60 font-medium">Flex dates</span>
+          </label>
 
           <button
             onClick={async () => {
@@ -622,24 +622,27 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 setErrors(e => ({ ...e, from: undefined }));
               }
             }}
-            className="flex h-5 items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="flex h-5 items-center gap-1.5 text-[12px] text-muted-foreground/60 hover:text-primary transition-colors cursor-pointer whitespace-nowrap shrink-0 font-medium"
           >
-            <Navigation className="w-3 h-3" /> {t("search.use_location")}
+            <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
           </button>
 
-          <button
-            type="button"
-            onClick={() => setIsAnyDay(!isAnyDay)}
-            className={`flex h-5 items-center gap-1.5 text-[11px] transition-colors cursor-pointer whitespace-nowrap shrink-0 ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}
-          >
-            {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
-            {t("search.any_day", "Any day")}
-            <span className="inline-flex min-w-[10px] justify-center">{isAnyDay ? "✓" : ""}</span>
-          </button>
+          <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
+            <Checkbox
+              checked={isAnyDay}
+              onCheckedChange={checked => {
+                const on = checked === true;
+                setIsAnyDay(on);
+                if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); }
+              }}
+              className="h-4 w-4 rounded-[4px]"
+            />
+            <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.any_day", "Any day")}</span>
+          </label>
 
-          <label className="flex h-5 items-center gap-1.5 cursor-pointer select-none whitespace-nowrap shrink-0">
-            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
-            <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1">
+          <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
+            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-4 w-4 rounded-[4px]" />
+            <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
               <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
             </span>
           </label>
