@@ -114,18 +114,15 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
     // Ensure it doesn't overflow left
     if (left < 12) left = 12;
     
-    // If not enough space below, position above
-    if (top + calHeight > window.innerHeight - 12) {
-      top = rect.top - calHeight - 8;
-      if (top < 12) top = 12;
-    }
+    // ALWAYS open downward — never flip upward
+    // If not enough space, just cap maxHeight but keep it below the trigger
 
     setDropdownStyle({
       position: "fixed",
       left,
       top,
       width: calWidth,
-      maxHeight: isMobile ? "70vh" : "min(520px, calc(100vh - 24px))",
+      maxHeight: isMobile ? "70vh" : `min(520px, ${window.innerHeight - top - 12}px)`,
       zIndex: 9999,
     });
   }, [isMobile]);
@@ -149,27 +146,12 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (triggerRef.current?.contains(target)) return;
-      if (calendarRef.current?.contains(target)) return;
-      setIsOpen(false);
-    };
-    const timeout = setTimeout(() => {
-      document.addEventListener("mousedown", handleClickOutside);
-    }, 50);
-    return () => {
-      clearTimeout(timeout);
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
+  // No close-on-outside-click — calendar only closes via Done or X
 
   const handleDayClick = useCallback((day: Date) => {
     if (tripType === "oneway") {
       onDepartChange(day);
-      setIsOpen(false);
+      // Stay open — user must press Done
       return;
     }
     if (!selectingReturn || !departDate) {
@@ -183,7 +165,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
       } else {
         onReturnChange(day);
         setSelectingReturn(false);
-        setIsOpen(false);
+        // Stay open — user must press Done
       }
     }
   }, [tripType, selectingReturn, departDate, onDepartChange, onReturnChange]);
