@@ -67,27 +67,29 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   return (
     <>
       {/* ═══════════════════════════════════════════════════════════
-          SECTION A+B+C: HERO — lighter, open, premium atmosphere
+          UNIFIED HERO — continuous surface with horizontal light sweep
           ═══════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-background">
-        {/* Atmospheric glow — soft white/blue bloom behind center */}
+        {/* Horizontal light sweep — left-to-right with bright center */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          {/* Large central white bloom */}
+          {/* Primary horizontal sweep: wide ellipse centered on page */}
           <div
-            className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[1100px] h-[700px] rounded-full opacity-[0.09]"
-            style={{ background: "radial-gradient(ellipse, hsl(210 80% 97%), hsl(217 91% 58% / 0.12), transparent 70%)" }}
+            className="absolute top-[35%] left-1/2 -translate-x-1/2 w-[2200px] h-[600px] rounded-full opacity-[0.07]"
+            style={{ background: "radial-gradient(ellipse 70% 50%, hsl(210 80% 97%), hsl(217 91% 58% / 0.15), transparent 70%)" }}
           />
-          {/* Secondary softer bloom */}
+          {/* Secondary wider sweep for soft horizontal spread */}
           <div
-            className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[1400px] h-[500px] rounded-full opacity-[0.05]"
-            style={{ background: "radial-gradient(ellipse, hsl(210 60% 92%), transparent 60%)" }}
+            className="absolute top-[40%] left-1/2 -translate-x-1/2 w-[3000px] h-[400px] rounded-full opacity-[0.04]"
+            style={{ background: "radial-gradient(ellipse 80% 40%, hsl(210 60% 92%), transparent 60%)" }}
           />
-          {/* Subtle warm side accents */}
-          <div className="absolute top-[10%] right-[5%] w-[300px] h-[300px] rounded-full bg-primary/[0.025] blur-[120px]" />
-          <div className="absolute top-[15%] left-[5%] w-[250px] h-[250px] rounded-full bg-primary/[0.02] blur-[100px]" />
+          {/* Subtle tighter glow directly behind search area */}
+          <div
+            className="absolute top-[50%] left-1/2 -translate-x-1/2 w-[1000px] h-[250px] rounded-full opacity-[0.05]"
+            style={{ background: "radial-gradient(ellipse, hsl(210 90% 95%), transparent 65%)" }}
+          />
         </div>
 
-        <div className="relative z-10 pt-24 sm:pt-28 pb-6 px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 pt-24 sm:pt-28 pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-[1100px]">
 
             {/* ── Category pills ── */}
@@ -121,7 +123,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
             </div>
 
             {/* ── Headline ── */}
-            <div className="mb-10 text-center animate-fade-in">
+            <div className="mb-12 text-center animate-fade-in">
               <h1 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-bold leading-[1.12] tracking-tight text-foreground">
                 Find better flights{" "}
                 <span className="text-primary">in seconds.</span>
@@ -130,40 +132,14 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                 Compare airlines and travel sites worldwide to find the best deals.
               </p>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION D+E+F: BOOKING BAND — full-width gradient divider
-          ═══════════════════════════════════════════════════════════ */}
-      <section className="relative z-20 -mt-2">
-        {/* Gradient band background */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `linear-gradient(180deg,
-                hsl(210 60% 92% / 0.07) 0%,
-                hsl(217 80% 75% / 0.10) 25%,
-                hsl(217 70% 65% / 0.08) 50%,
-                hsl(222 40% 10% / 0.0) 100%
-              )`,
-            }}
-          />
-          {/* Central light bloom */}
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[300px] rounded-full opacity-[0.06]"
-            style={{ background: "radial-gradient(ellipse, hsl(210 80% 95%), transparent 70%)" }}
-          />
-        </div>
-
-        <div ref={searchRef} className="relative z-10 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 animate-fade-in">
-          <div className="mx-auto max-w-[1100px]">
-            <FlightSearchForm
-              aiSearchParams={aiSearchParams}
-              onParamsConsumed={handleParamsConsumed}
-            />
+            {/* ── Search bar — directly in the flow ── */}
+            <div ref={searchRef} className="animate-fade-in">
+              <FlightSearchForm
+                aiSearchParams={aiSearchParams}
+                onParamsConsumed={handleParamsConsumed}
+              />
+            </div>
           </div>
         </div>
       </section>
