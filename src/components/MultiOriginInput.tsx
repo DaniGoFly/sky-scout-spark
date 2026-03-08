@@ -120,7 +120,7 @@ const MultiOriginInput = ({
   const canAdd = values.length < maxAirports;
   const selectingRef = useRef(false);
 
-  const maxVisibleChips = compact || values.length > 3 ? 1 : MAX_VISIBLE_CHIPS;
+  const maxVisibleChips = MAX_VISIBLE_CHIPS;
   const visibleChips = values.slice(0, maxVisibleChips);
   const overflowChips = values.slice(maxVisibleChips);
   const hasOverflow = overflowChips.length > 0;
