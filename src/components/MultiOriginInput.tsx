@@ -366,7 +366,7 @@ const MultiOriginInput = ({
 
       {/* ── Autocomplete dropdown ── */}
       {showSuggestions && (
-        <PortalDropdown anchorRef={wrapperRef}>
+        <PortalDropdown anchorRef={inputAreaRef}>
           <div
             ref={dropdownRef}
             className="bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden overflow-y-auto"
