@@ -33,11 +33,11 @@ const CABIN_LABELS: Record<string, string> = {
   first: "First",
 };
 
-const TRUST_ITEMS = [
-  { icon: Plane, text: "600+ airlines" },
-  { icon: Shield, text: "No hidden fees" },
-  { icon: CheckCircle2, text: "Verified partners" },
-  { icon: Wifi, text: "Live price updates" },
+const TRUST_KEYS = [
+  { icon: Plane, key: "trust.airlines_count" },
+  { icon: Shield, key: "trust.no_hidden_fees" },
+  { icon: CheckCircle2, key: "trust.verified_partners" },
+  { icon: Wifi, key: "trust.live_updates" },
 ];
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
