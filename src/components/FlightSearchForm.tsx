@@ -437,42 +437,42 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
           <div className="h-px mx-5 bg-border/15" />
 
-          {/* DEPART */}
-          <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
-            {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
-                <span className={SEG_LABEL}>{t("calendar.depart")}</span>
-                <span className={SEG_PLACEHOLDER}>Any day</span>
-              </button>
-            ) : (
-              <FlightDateRangePicker
-                departDate={departDate} returnDate={returnDate}
-                onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
-              />
-            )}
-          </div>
-
-          {/* RETURN */}
-          {tripType === "roundtrip" && (
+          {/* DATES SECTION — mobile */}
+          {isAnyDay ? (
+            <div className={`px-5 py-4 ${errRing(!!errors.dates)}`}>
+              <span className={SEG_LABEL}>Trip length</span>
+              {tripType === "roundtrip" ? (
+                <TripLengthSlider value={tripLength} onChange={setTripLength} />
+              ) : (
+                <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+              )}
+            </div>
+          ) : (
             <>
-              <div className="h-px mx-5 bg-border/15" />
+              {/* DEPART */}
               <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
-                {isAnyDay ? (
-                  <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
-                    <span className={SEG_LABEL}>Return</span>
-                    <span className={SEG_PLACEHOLDER}>Any day</span>
-                  </button>
-                ) : (
-                  <FlightDateRangePicker
-                    departDate={departDate} returnDate={returnDate}
-                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                    tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                    bare segmentMode segmentLabel="Return" segmentDisplay={returnDisplay}
-                  />
-                )}
+                <FlightDateRangePicker
+                  departDate={departDate} returnDate={returnDate}
+                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                  bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
+                />
               </div>
+
+              {/* RETURN */}
+              {tripType === "roundtrip" && (
+                <>
+                  <div className="h-px mx-5 bg-border/15" />
+                  <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
+                    <FlightDateRangePicker
+                      departDate={departDate} returnDate={returnDate}
+                      onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                      tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                      bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
 
