@@ -541,12 +541,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
       {/* ── Trust row ── */}
       <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 pt-2">
-        {TRUST_ITEMS.map((item) => {
+        {TRUST_KEYS.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.text} className="flex items-center gap-2">
+            <div key={item.key} className="flex items-center gap-2">
               <Icon className="w-3.5 h-3.5 text-muted-foreground/40" />
-              <span className="text-[11px] text-muted-foreground/50 font-medium tracking-wide">{item.text}</span>
+              <span className="text-[11px] text-muted-foreground/50 font-medium tracking-wide">{t(item.key)}</span>
             </div>
           );
         })}
