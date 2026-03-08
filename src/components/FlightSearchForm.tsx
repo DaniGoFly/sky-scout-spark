@@ -385,7 +385,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button type="button" onClick={handleSearch}
             className="flex items-center justify-center gap-2.5 px-8 min-w-[170px] rounded-r-2xl bg-gradient-to-b from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-[15px] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer">
             <Search className="w-5 h-5" />
-            <span className="hidden xl:inline">Search</span>
+            <span className="hidden xl:inline">{t("search.search")}</span>
           </button>
         </div>
 
