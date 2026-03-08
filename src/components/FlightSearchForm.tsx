@@ -534,35 +534,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             <Navigation className="w-3 h-3" /> {t("search.use_location")}
           </button>
 
-          {/* Any day toggle — trip length opens in popover */}
-          {isAnyDay ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button type="button" className="flex items-center gap-1.5 text-[11px] text-primary transition-colors cursor-pointer">
-                  <CalendarOff className="w-3 h-3" />
-                  {t("search.any_day", "Any day")} ✓
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-64 p-4 pointer-events-auto">
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-foreground">Flexible date options</p>
-                  {tripType === "roundtrip" && (
-                    <TripLengthSlider value={tripLength} onChange={setTripLength} />
-                  )}
-                  <button type="button" onClick={() => setIsAnyDay(false)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-                    Switch to exact dates
-                  </button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          ) : (
-            <button type="button" onClick={() => setIsAnyDay(true)}
-              className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors cursor-pointer">
-              <CalendarDays className="w-3 h-3" />
-              {t("search.any_day", "Any day")}
-            </button>
-          )}
+        {/* Any day toggle — simple toggle, no popover */}
+          <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
+            className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
+            {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
+            {t("search.any_day", "Any day")} {isAnyDay && "✓"}
+          </button>
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
