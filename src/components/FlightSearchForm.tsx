@@ -33,11 +33,11 @@ const CABIN_LABELS: Record<string, string> = {
   first: "First",
 };
 
-const TRUST_ITEMS = [
-  { icon: Plane, text: "600+ airlines" },
-  { icon: Shield, text: "No hidden fees" },
-  { icon: CheckCircle2, text: "Verified partners" },
-  { icon: Wifi, text: "Live price updates" },
+const TRUST_KEYS = [
+  { icon: Plane, key: "trust.airlines_count" },
+  { icon: Shield, key: "trust.no_hidden_fees" },
+  { icon: CheckCircle2, key: "trust.verified_partners" },
+  { icon: Wifi, key: "trust.live_updates" },
 ];
 
 const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
@@ -289,7 +289,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* ═══════════════════════════════════════════
           SIGNATURE SEARCH BAR
           ═══════════════════════════════════════════ */}
-      <div className="rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] overflow-visible relative z-20 backdrop-blur-sm backdrop-blur-sm">
+      <div className="rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] overflow-visible relative z-20 backdrop-blur-sm">
         {/* Desktop: single horizontal row */}
         <div className="hidden lg:flex items-stretch">
           {/* FROM */}
@@ -336,9 +336,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
 
           {/* DEPART */}
-          <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 cursor-pointer ${errRing(!!errors.dates)}`}>
+          <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
             {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
+              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full cursor-pointer">
                 <span className={SEG_LABEL}>{t("calendar.depart")}</span>
                 <span className={SEG_PLACEHOLDER}>Any day</span>
               </button>
@@ -356,10 +356,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           {tripType === "roundtrip" && (
             <>
               <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
-              <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 cursor-pointer ${errRing(!!errors.dates)}`}>
+              <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
                 {isAnyDay ? (
-                  <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
-                    <span className={SEG_LABEL}>Return</span>
+                  <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full cursor-pointer">
+                    <span className={SEG_LABEL}>{t("calendar.return", "Return")}</span>
                     <span className={SEG_PLACEHOLDER}>Any day</span>
                   </button>
                 ) : (
@@ -367,7 +367,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                     departDate={departDate} returnDate={returnDate}
                     onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
                     tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                    bare segmentMode segmentLabel="Return" segmentDisplay={returnDisplay}
+                    bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
                   />
                 )}
               </div>
@@ -385,7 +385,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button type="button" onClick={handleSearch}
             className="flex items-center justify-center gap-2.5 px-8 min-w-[170px] rounded-r-2xl bg-gradient-to-b from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-[15px] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer">
             <Search className="w-5 h-5" />
-            <span className="hidden xl:inline">Search</span>
+            <span className="hidden xl:inline">{t("search.search")}</span>
           </button>
         </div>
 
@@ -485,7 +485,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button type="button" onClick={handleSearch}
             className="flex items-center justify-center gap-2 px-6 py-4 rounded-b-2xl bg-gradient-to-r from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-base active:scale-[0.98] transition-all cursor-pointer">
             <Search className="w-5 h-5" />
-            <span>Search Flights</span>
+            <span>{t("search.search_flights")}</span>
           </button>
         </div>
       </div>
@@ -499,7 +499,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
-          <span className="text-[12px] text-muted-foreground/60 font-medium">Direct flights only</span>
+          <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
         </label>
 
         {isAnyDay && tripType === "roundtrip" && (
@@ -521,19 +521,19 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               setErrors(e => ({ ...e, from: undefined }));
             }
           }} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer">
-            <Navigation className="w-3 h-3" /> My location
+            <Navigation className="w-3 h-3" /> {t("search.use_location")}
           </button>
 
           <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
             className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
             {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
-            {isAnyDay ? "Any day ✓" : "Any day"}
+            {isAnyDay ? `${t("search.any_day", "Any day")} ✓` : t("search.any_day", "Any day")}
           </button>
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
             <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1">
-              <Globe className="w-3 h-3" /> Anywhere
+              <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
             </span>
           </label>
         </div>
@@ -541,12 +541,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
       {/* ── Trust row ── */}
       <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 pt-2">
-        {TRUST_ITEMS.map((item) => {
+        {TRUST_KEYS.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.text} className="flex items-center gap-2">
+            <div key={item.key} className="flex items-center gap-2">
               <Icon className="w-3.5 h-3.5 text-muted-foreground/40" />
-              <span className="text-[11px] text-muted-foreground/50 font-medium tracking-wide">{item.text}</span>
+              <span className="text-[11px] text-muted-foreground/50 font-medium tracking-wide">{t(item.key)}</span>
             </div>
           );
         })}
