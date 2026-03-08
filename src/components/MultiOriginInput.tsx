@@ -246,113 +246,101 @@ const MultiOriginInput = ({
         }}
       >
         <div className="flex h-full w-full items-center overflow-hidden">
-          <div className="flex shrink-0 items-center gap-1.5">
-            {visibleChips.map((v) => (
-              <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} />
-            ))}
+          {/* ── Pinned chips group: shrink-0 so they never move ── */}
+          {(visibleChips.length > 0 || hasOverflow) && (
+            <div className="flex shrink-0 items-center gap-1.5 mr-2">
+              {visibleChips.map((v) => (
+                <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} />
+              ))}
 
-            {hasOverflow && (
-              <Popover open={overflowOpen} onOpenChange={setOverflowOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOverflowOpen(!overflowOpen);
-                    }}
-                    className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full border border-border/60 bg-secondary/40 px-2 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground"
+              {hasOverflow && (
+                <Popover open={overflowOpen} onOpenChange={setOverflowOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOverflowOpen(!overflowOpen);
+                      }}
+                      className="inline-flex h-6 shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-secondary/40 px-2 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground"
+                    >
+                      +{overflowChips.length}
+                      <ChevronDown className="h-2.5 w-2.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-auto min-w-[220px] p-2 bg-card border border-border rounded-xl shadow-xl pointer-events-auto"
+                    align="start"
+                    side="bottom"
+                    sideOffset={8}
+                    avoidCollisions={false}
                   >
-                    +{overflowChips.length}
-                    <ChevronDown className="h-2.5 w-2.5" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto min-w-[220px] p-2 bg-card border border-border rounded-xl shadow-xl pointer-events-auto"
-                  align="start"
-                  side="bottom"
-                  sideOffset={8}
-                  avoidCollisions={false}
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-2">
-                      {values.length} airports selected
-                    </span>
-                    {values.map((v) => (
-                      <div
-                        key={v.code}
-                        className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                            {v.code}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground truncate">
-                            {v.display}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemove(v.code)}
-                          className="shrink-0 p-0.5 hover:text-destructive transition-colors rounded-sm"
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-2">
+                        {values.length} airports selected
+                      </span>
+                      {values.map((v) => (
+                        <div
+                          key={v.code}
+                          className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
                         >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                              {v.code}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground truncate">
+                              {v.display}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemove(v.code)}
+                            className="shrink-0 p-0.5 hover:text-destructive transition-colors rounded-sm"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          )}
 
+          {/* ── Input area: always takes remaining space, never pushes chips ── */}
           <div
             ref={inputAreaRef}
-            className={`flex min-w-[120px] flex-1 items-center overflow-hidden ${
-              visibleChips.length > 0 || hasOverflow ? "ml-2" : ""
-            }`}
+            className="flex flex-1 min-w-0 items-center overflow-hidden"
           >
             {canAdd ? (
-              isInputActive || query ? (
-                <input
-                  ref={inputRef}
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setIsOpen(true);
-                    setIsInputActive(true);
-                  }}
-                  onFocus={() => {
-                    setIsOpen(true);
-                    setIsInputActive(true);
-                  }}
-                  onBlur={() => {
-                    if (selectingRef.current) return;
-                    if (!query) {
-                      setIsInputActive(false);
-                      setIsOpen(false);
-                    }
-                  }}
-                  onKeyDown={handleKeyDown}
-                  className="w-full min-w-0 bg-transparent text-[13px] font-medium text-foreground outline-none placeholder:text-[12px] placeholder:font-medium placeholder:text-muted-foreground/70"
-                  placeholder={values.length === 0 ? placeholder : "Add airport"}
-                  autoComplete="off"
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsInputActive(true);
-                    setIsOpen(true);
-                    requestAnimationFrame(() => inputRef.current?.focus());
-                  }}
-                  className="h-6 max-w-full rounded-md px-1.5 text-[12px] font-medium text-muted-foreground/90 transition-colors hover:bg-secondary/60 hover:text-foreground whitespace-nowrap"
-                >
-                  Add airport
-                </button>
-              )
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setIsOpen(true);
+                  setIsInputActive(true);
+                }}
+                onFocus={() => {
+                  setIsOpen(true);
+                  setIsInputActive(true);
+                }}
+                onBlur={() => {
+                  if (selectingRef.current) return;
+                  if (!query) {
+                    setIsInputActive(false);
+                    setIsOpen(false);
+                  }
+                }}
+                onKeyDown={handleKeyDown}
+                className="w-full min-w-0 bg-transparent text-[13px] font-medium text-foreground outline-none placeholder:text-[11px] placeholder:font-medium placeholder:text-muted-foreground/60"
+                placeholder={values.length === 0 ? placeholder : "Add airport"}
+                autoComplete="off"
+                style={{ textOverflow: "clip" }}
+              />
             ) : (
-              <span className="ml-1 shrink-0 text-[10px] italic text-muted-foreground">
+              <span className="shrink-0 text-[10px] italic text-muted-foreground whitespace-nowrap">
                 Max {maxAirports}
               </span>
             )}
