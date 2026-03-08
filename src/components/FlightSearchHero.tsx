@@ -18,9 +18,8 @@ const FlightSearchHero = () => {
 
   return (
     <section className="relative min-h-screen flex flex-col overflow-visible">
-      {/* Calm navy gradient */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 z-0 pointer-events-none"
         style={{
           background:
             "radial-gradient(1200px circle at 50% 10%, rgba(47,122,248,0.10), transparent 60%), linear-gradient(180deg, hsl(222 40% 10%), hsl(222 35% 12%))",
