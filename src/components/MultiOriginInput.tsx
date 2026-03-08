@@ -334,34 +334,49 @@ const MultiOriginInput = ({
           <div
             ref={inputAreaRef}
             className="flex flex-[1_1_0%] min-w-0 items-center overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            style={{ minWidth: MIN_INPUT_WIDTH_PX }}
+            style={{ minWidth: reservedInputWidth }}
           >
             {canAdd ? (
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setIsOpen(true);
-                  setIsInputActive(true);
-                }}
-                onFocus={() => {
-                  setIsOpen(true);
-                  setIsInputActive(true);
-                }}
-                onBlur={() => {
-                  if (selectingRef.current) return;
-                  if (!query) {
-                    setIsInputActive(false);
-                    setIsOpen(false);
-                  }
-                }}
-                onKeyDown={handleKeyDown}
-                className="w-full min-w-0 bg-transparent text-[13px] font-medium leading-none text-foreground outline-none overflow-x-auto whitespace-nowrap placeholder:text-[10px] placeholder:font-medium placeholder:text-muted-foreground/65"
-                placeholder={values.length === 0 ? placeholder : "Add airport"}
-                autoComplete="off"
-                style={{ textOverflow: "clip" }}
-              />
+              !isInputActive && query.length === 0 && values.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsInputActive(true);
+                    setIsOpen(true);
+                    requestAnimationFrame(() => inputRef.current?.focus());
+                  }}
+                  className="h-full shrink-0 text-[11px] font-medium text-muted-foreground/80 whitespace-nowrap"
+                >
+                  {addActionText}
+                </button>
+              ) : (
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setIsOpen(true);
+                    setIsInputActive(true);
+                  }}
+                  onFocus={() => {
+                    setIsOpen(true);
+                    setIsInputActive(true);
+                  }}
+                  onBlur={() => {
+                    if (selectingRef.current) return;
+                    if (!query) {
+                      setIsInputActive(false);
+                      setIsOpen(false);
+                    }
+                  }}
+                  onKeyDown={handleKeyDown}
+                  className="w-full min-w-0 bg-transparent text-[13px] font-medium leading-none text-foreground outline-none overflow-x-auto whitespace-nowrap placeholder:text-[10px] placeholder:font-medium placeholder:text-muted-foreground/65"
+                  placeholder={values.length === 0 ? placeholder : addActionText}
+                  autoComplete="off"
+                  style={{ textOverflow: "clip" }}
+                />
+              )
             ) : (
               <span className="shrink-0 text-[10px] italic text-muted-foreground whitespace-nowrap">
                 Max {maxAirports}
