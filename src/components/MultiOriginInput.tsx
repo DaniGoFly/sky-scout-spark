@@ -346,7 +346,7 @@ const MultiOriginInput = ({
                     setIsOpen(true);
                     requestAnimationFrame(() => inputRef.current?.focus());
                   }}
-                  className="h-full shrink-0 text-[11px] font-medium text-muted-foreground/80 whitespace-nowrap"
+                  className="h-full shrink-0 text-[14px] font-normal leading-[20px] text-muted-foreground/40 whitespace-nowrap"
                 >
                   {addActionText}
                 </button>
