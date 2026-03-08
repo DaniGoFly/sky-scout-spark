@@ -317,10 +317,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
 
           {/* TO */}
-          <div className={`min-w-0 px-6 py-4 transition-colors hover:bg-secondary/60 ${errRing(!!errors.to)}`}>
+          <div className={`min-w-0 px-5 py-3 transition-colors hover:bg-secondary/60 flex flex-col justify-center ${errRing(!!errors.to)}`}>
             <span className={SEG_LABEL}>{t("search.to")}</span>
-            {anywhere ? (
-              <div className="flex items-center gap-1.5 min-h-[30px]">
+            <div className="mt-1.5">{anywhere ? (
+              <div className="flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-primary shrink-0" />
                 <span className={SEG_VALUE}>Everywhere</span>
               </div>
@@ -332,7 +332,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 multiLabel="Multi-Destination"
                 bare
               />
-            )}
+            )}</div>
           </div>
 
           {/* DATES SLOT (fixed width) */}
