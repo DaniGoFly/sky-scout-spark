@@ -261,9 +261,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const errRing = (has?: boolean) => has ? "ring-2 ring-destructive/40" : "";
 
   /* ── Segment style tokens ── */
-  const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none mb-1.5";
-  const SEG_VALUE = "text-[15px] font-semibold text-foreground leading-snug whitespace-nowrap";
-  const SEG_PLACEHOLDER = "text-[15px] font-normal text-muted-foreground/40 leading-snug whitespace-nowrap";
+  const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
+  const SEG_VALUE = "text-[14px] font-semibold text-foreground leading-[20px] whitespace-nowrap";
+  const SEG_PLACEHOLDER = "text-[14px] font-normal text-muted-foreground/40 leading-[20px] whitespace-nowrap";
 
   return (
     <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-x-clip">
@@ -290,18 +290,18 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* ═══════════════════════════════════════════
           SIGNATURE SEARCH BAR
           ═══════════════════════════════════════════ */}
-      <div className="w-full min-w-0 max-w-full rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] overflow-hidden relative z-20 backdrop-blur-sm [contain:layout] lg:h-[94px]">
+      <div className="w-full min-w-0 max-w-full rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm lg:h-[94px]">
         {/* Desktop: fixed slot grid */}
         <div className="hidden lg:grid h-full items-stretch grid-cols-[minmax(180px,205px)_40px_minmax(180px,205px)_minmax(280px,320px)_minmax(190px,220px)_minmax(150px,170px)]">
           {/* FROM */}
-          <div className={`min-w-0 px-6 py-4 rounded-l-2xl transition-colors hover:bg-secondary/60 ${errRing(!!errors.from)}`}>
+          <div className={`min-w-0 px-5 py-3 rounded-l-2xl transition-colors hover:bg-secondary/60 flex flex-col justify-center ${errRing(!!errors.from)}`}>
             <span className={SEG_LABEL}>{t("search.from")}</span>
-            <MultiOriginInput
+            <div className="mt-1.5"><MultiOriginInput
               values={origins}
               onChange={handleOriginsChange}
               placeholder="Country, city or airport"
               bare
-            />
+            /></div>
           </div>
 
           {/* SWAP */}
@@ -317,10 +317,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
 
           {/* TO */}
-          <div className={`min-w-0 px-6 py-4 transition-colors hover:bg-secondary/60 ${errRing(!!errors.to)}`}>
+          <div className={`min-w-0 px-5 py-3 transition-colors hover:bg-secondary/60 flex flex-col justify-center ${errRing(!!errors.to)}`}>
             <span className={SEG_LABEL}>{t("search.to")}</span>
-            {anywhere ? (
-              <div className="flex items-center gap-1.5 min-h-[30px]">
+            <div className="mt-1.5">{anywhere ? (
+              <div className="flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-primary shrink-0" />
                 <span className={SEG_VALUE}>Everywhere</span>
               </div>
@@ -332,12 +332,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 multiLabel="Multi-Destination"
                 bare
               />
-            )}
+            )}</div>
           </div>
 
           {/* DATES SLOT (fixed width) */}
           {isAnyDay ? (
-            <div className={`h-full w-full px-6 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
+            <div className={`h-full w-full px-5 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
               <span className={SEG_LABEL}>Trip length</span>
               {tripType === "roundtrip" ? (
                 <TripLengthSlider value={tripLength} onChange={setTripLength} />
@@ -347,8 +347,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             </div>
           ) : (
             <div className={`h-full w-full transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
-              <div className="grid h-full grid-cols-2 items-stretch">
-                <div className="px-6 py-4 relative z-30 border-r border-border/20">
+            <div className="grid h-full grid-cols-2 items-stretch">
+                <div className="px-5 py-3 relative z-30 border-r border-border/20 flex flex-col justify-center">
                   <FlightDateRangePicker
                     departDate={departDate}
                     returnDate={returnDate}
@@ -364,7 +364,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                   />
                 </div>
 
-                <div className="px-6 py-4 relative z-30">
+                <div className="px-5 py-3 relative z-30 flex flex-col justify-center">
                   {tripType === "roundtrip" ? (
                     <FlightDateRangePicker
                       departDate={departDate}
@@ -391,7 +391,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           )}
 
           {/* TRAVELERS */}
-          <div className="w-full px-6 py-4 transition-colors hover:bg-secondary/60 border-l border-border/20 cursor-pointer">
+          <div className="w-full px-5 py-3 transition-colors hover:bg-secondary/60 border-l border-border/20 cursor-pointer flex flex-col justify-center">
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
 
