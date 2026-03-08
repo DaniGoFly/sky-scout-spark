@@ -148,6 +148,7 @@
   "calendar": {
     "dates": "Dates",
     "depart": "Depart",
+    "return": "Return",
     "select_date": "Select date",
     "select_dates": "Select dates",
     "select_return": "Select return",
