@@ -336,9 +336,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
 
           {/* DEPART */}
-          <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 cursor-pointer ${errRing(!!errors.dates)}`}>
+          <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
             {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
+              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full cursor-pointer">
                 <span className={SEG_LABEL}>{t("calendar.depart")}</span>
                 <span className={SEG_PLACEHOLDER}>Any day</span>
               </button>
