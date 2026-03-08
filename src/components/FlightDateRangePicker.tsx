@@ -146,22 +146,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (triggerRef.current?.contains(target)) return;
-      if (calendarRef.current?.contains(target)) return;
-      setIsOpen(false);
-    };
-    const timeout = setTimeout(() => {
-      document.addEventListener("mousedown", handleClickOutside);
-    }, 50);
-    return () => {
-      clearTimeout(timeout);
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
+  // No close-on-outside-click — calendar only closes via Done or X
 
   const handleDayClick = useCallback((day: Date) => {
     if (tripType === "oneway") {
