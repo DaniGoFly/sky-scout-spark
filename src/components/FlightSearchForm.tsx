@@ -262,8 +262,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
   /* ── Segment style tokens ── */
   const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none mb-1.5";
-  const SEG_VALUE = "text-[15px] font-semibold text-foreground leading-snug truncate";
-  const SEG_PLACEHOLDER = "text-[15px] font-normal text-muted-foreground/40 leading-snug";
+  const SEG_VALUE = "text-[15px] font-semibold text-foreground leading-snug whitespace-nowrap";
+  const SEG_PLACEHOLDER = "text-[15px] font-normal text-muted-foreground/40 leading-snug whitespace-nowrap";
 
   return (
     <div className="w-full space-y-5">
