@@ -519,7 +519,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <span className="text-[12px] text-muted-foreground/60 font-medium whitespace-nowrap">{t("search.direct_flights_only")}</span>
         </label>
 
-        <label className={`flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap ${isAnyDay ? "opacity-40 pointer-events-none" : ""}`}>
+        <div className={`flex h-5 items-center gap-2 select-none whitespace-nowrap ${isAnyDay ? "opacity-40 pointer-events-none" : ""}`}>
           <Checkbox
             checked={!isAnyDay && (departFlexBefore > 0 || departFlexAfter > 0)}
             onCheckedChange={checked => {
@@ -537,8 +537,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             disabled={isAnyDay}
             className="h-4 w-4 rounded-[4px]"
           />
-          <span className="text-[12px] text-muted-foreground/60 font-medium">Flex dates</span>
-        </label>
+          <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
+            <CalendarDays className="w-3 h-3" /> Flex dates
+            {!isAnyDay && departFlexBefore > 0 && (
+              <span className="text-primary font-semibold">±{departFlexBefore}d</span>
+            )}
+          </span>
+        </div>
 
         <div className="flex items-center gap-4 pt-1">
           <button onClick={async () => {
@@ -562,7 +567,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               }}
               className="h-4 w-4 rounded-[4px]"
             />
-            <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.any_day", "Any day")}</span>
+            <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
+              <CalendarOff className="w-3 h-3" /> {t("search.any_day", "Any day")}
+            </span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap">
