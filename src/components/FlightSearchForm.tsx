@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { ArrowRightLeft, Search, Globe, CalendarOff, CalendarDays, ChevronDown, Navigation, MapPin, Zap, Plane, Shield, CheckCircle2, Wifi } from "lucide-react";
+import { ArrowRightLeft, Search, Globe, CalendarOff, CalendarDays, ChevronDown, Navigation, MapPin, Zap, Plane, Shield, CheckCircle2, Wifi, Minus, Plus } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -582,14 +582,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ── Desktop options row ── */}
-      <div className="hidden lg:flex w-full min-h-[44px] items-start justify-between gap-4 px-1 pr-3">
+      <div className="hidden lg:grid w-full min-h-[44px] grid-cols-[1fr_auto] gap-x-6 items-start px-2">
         {/* LEFT GROUP */}
-        <div className="flex items-start gap-5 shrink-0">
-          <div className="w-[210px] shrink-0">
+        <div className="flex items-start gap-5 min-w-0">
+          <div className="w-[200px] shrink-0">
             <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
           </div>
-
-          <div className="w-[210px] shrink-0">
+          <div className="w-[200px] shrink-0">
             <NearbyToggle
               enabled={anywhere ? false : toNearby}
               onToggle={handleToNearbyToggle}
@@ -598,7 +597,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               disabled={anywhere}
             />
           </div>
-
           <div className="shrink-0 pt-[2px]">
             <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap">
               <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
@@ -608,98 +606,85 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
 
         {/* RIGHT GROUP */}
-        <div className="flex items-start gap-4 shrink-0 pt-[2px]">
-          {/* Flex dates with ± day popover */}
+        <div className="flex items-start gap-5 shrink-0 pt-[2px]">
+          {/* Flex dates with separate -/+ popover */}
           <Popover>
             <div className={`flex h-5 items-center gap-2 shrink-0 whitespace-nowrap ${isAnyDay ? "opacity-40 pointer-events-none" : ""}`}>
               <Checkbox
                 checked={!isAnyDay && (departFlexBefore > 0 || departFlexAfter > 0)}
                 onCheckedChange={checked => {
                   if (checked) {
-                    setDepartFlexBefore(3);
-                    setDepartFlexAfter(3);
+                    setDepartFlexBefore(3); setDepartFlexAfter(3);
                     if (tripType === "roundtrip") { setReturnFlexBefore(3); setReturnFlexAfter(3); }
                   } else {
-                    setDepartFlexBefore(0);
-                    setDepartFlexAfter(0);
-                    setReturnFlexBefore(0);
-                    setReturnFlexAfter(0);
+                    setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0);
                   }
                 }}
                 disabled={isAnyDay}
                 className="h-4 w-4 rounded-[4px]"
               />
               <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  disabled={isAnyDay}
-                  className="flex items-center gap-1 text-[12px] text-muted-foreground/60 font-medium hover:text-primary transition-colors cursor-pointer"
-                >
+                <button type="button" disabled={isAnyDay}
+                  className="flex items-center gap-1 text-[12px] text-muted-foreground/60 font-medium hover:text-primary transition-colors cursor-pointer">
                   <CalendarDays className="w-3 h-3" />
-                  <span>Flex dates</span>
-                  {!isAnyDay && departFlexBefore > 0 && (
-                    <span className="text-primary font-semibold ml-0.5">±{departFlexBefore}d</span>
+                  <span>Flex</span>
+                  {!isAnyDay && (departFlexBefore > 0 || departFlexAfter > 0) && (
+                    <span className="text-primary font-semibold ml-0.5">-{departFlexBefore}/+{departFlexAfter}</span>
                   )}
                   <ChevronDown className="w-3 h-3 opacity-50" />
                 </button>
               </PopoverTrigger>
             </div>
-            <PopoverContent className="w-48 p-3" align="start" side="bottom" sideOffset={8}>
-              <p className="text-xs font-semibold text-foreground mb-2">Flexible range</p>
-              <div className="grid grid-cols-5 gap-1.5">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => {
-                      setDepartFlexBefore(n);
-                      setDepartFlexAfter(n);
-                      if (tripType === "roundtrip") { setReturnFlexBefore(n); setReturnFlexAfter(n); }
-                    }}
-                    className={`h-7 rounded-md text-xs font-medium transition-colors ${
-                      departFlexBefore === n
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    ±{n}
+            <PopoverContent className="w-[220px] p-4" align="start" side="bottom" sideOffset={8}>
+              <p className="text-xs font-semibold text-foreground mb-3">Flexible date range</p>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-muted-foreground">Days before</span>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => { const v = Math.max(0, departFlexBefore - 1); setDepartFlexBefore(v); if (tripType === "roundtrip") setReturnFlexBefore(v); }}
+                    disabled={departFlexBefore <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
+                    <Minus className="w-3 h-3" />
                   </button>
-                ))}
+                  <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{departFlexBefore}</span>
+                  <button type="button" onClick={() => { const v = Math.min(10, departFlexBefore + 1); setDepartFlexBefore(v); if (tripType === "roundtrip") setReturnFlexBefore(v); }}
+                    disabled={departFlexBefore >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-2">Days around selected dates</p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Days after</span>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => { const v = Math.max(0, departFlexAfter - 1); setDepartFlexAfter(v); if (tripType === "roundtrip") setReturnFlexAfter(v); }}
+                    disabled={departFlexAfter <= 0} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{departFlexAfter}</span>
+                  <button type="button" onClick={() => { const v = Math.min(10, departFlexAfter + 1); setDepartFlexAfter(v); if (tripType === "roundtrip") setReturnFlexAfter(v); }}
+                    disabled={departFlexAfter >= 10} className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-3">Applied to departure{tripType === "roundtrip" ? " & return" : ""} dates</p>
             </PopoverContent>
           </Popover>
 
-          <button
-            onClick={async () => {
+          <button onClick={async () => {
               const result = await requestNearestAirport();
-              if (result) {
-                userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
-                setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
-                setErrors(e => ({ ...e, from: undefined }));
-              }
+              if (result) { userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon }; setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]); setErrors(e => ({ ...e, from: undefined })); }
             }}
-            className="flex h-5 items-center gap-1.5 text-[12px] text-muted-foreground/60 hover:text-primary transition-colors cursor-pointer whitespace-nowrap shrink-0 font-medium"
-          >
+            className="flex h-5 items-center gap-1.5 text-[12px] text-muted-foreground/60 hover:text-primary transition-colors cursor-pointer whitespace-nowrap shrink-0 font-medium">
             <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
           </button>
 
           <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
-            <Checkbox
-              checked={isAnyDay}
-              onCheckedChange={checked => {
-                const on = checked === true;
-                setIsAnyDay(on);
-                if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); }
-              }}
-              className="h-4 w-4 rounded-[4px]"
-            />
+            <Checkbox checked={isAnyDay} onCheckedChange={checked => { const on = checked === true; setIsAnyDay(on); if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); } }} className="h-4 w-4 rounded-[4px]" />
             <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
               <CalendarOff className="w-3 h-3" /> {t("search.any_day", "Any day")}
             </span>
           </label>
 
-          <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0 min-w-[100px]">
+          <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-4 w-4 rounded-[4px]" />
             <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
               <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
