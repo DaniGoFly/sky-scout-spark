@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ArrowRightLeft, Search, Globe, CalendarOff, CalendarDays, ChevronDown, Navigation, MapPin, Zap, Plane, Shield, CheckCircle2, Wifi } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
@@ -502,14 +503,22 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
         </label>
 
-        {isAnyDay && tripType === "roundtrip" && (
-          <div className="w-full lg:w-auto">
-            <TripLengthSlider value={tripLength} onChange={setTripLength} />
-          </div>
-        )}
-
+        {/* Flex date controls in a popover — no layout shift */}
         {!isAnyDay && departDate && (
-          <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" className="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors cursor-pointer">
+                <CalendarDays className="w-3 h-3" />
+                {departFlexBefore > 0 || departFlexAfter > 0
+                  ? `± ${departFlexBefore}/${departFlexAfter} days`
+                  : "± Flex dates"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 p-4 pointer-events-auto">
+              <p className="text-xs font-semibold text-foreground mb-3">Date flexibility</p>
+              <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
+            </PopoverContent>
+          </Popover>
         )}
 
         <div className="flex items-center gap-4 lg:ml-auto">
@@ -524,11 +533,35 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             <Navigation className="w-3 h-3" /> {t("search.use_location")}
           </button>
 
-          <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
-            className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
-            {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
-            {isAnyDay ? `${t("search.any_day", "Any day")} ✓` : t("search.any_day", "Any day")}
-          </button>
+          {/* Any day toggle — trip length opens in popover */}
+          {isAnyDay ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="flex items-center gap-1.5 text-[11px] text-primary transition-colors cursor-pointer">
+                  <CalendarOff className="w-3 h-3" />
+                  {t("search.any_day", "Any day")} ✓
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-4 pointer-events-auto">
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-foreground">Flexible date options</p>
+                  {tripType === "roundtrip" && (
+                    <TripLengthSlider value={tripLength} onChange={setTripLength} />
+                  )}
+                  <button type="button" onClick={() => setIsAnyDay(false)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                    Switch to exact dates
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <button type="button" onClick={() => setIsAnyDay(true)}
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors cursor-pointer">
+              <CalendarDays className="w-3 h-3" />
+              {t("search.any_day", "Any day")}
+            </button>
+          )}
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
