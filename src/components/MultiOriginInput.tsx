@@ -1,13 +1,11 @@
 /**
  * Multi-Origin Airport Input
- * Fixed-height: shows max 2 chips inline, "+X more" for overflow.
- * Dropdown for suggestions via portal.
+ * Professional multi-airport selector with inline chips and anchored dropdown.
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { X, Plane, Loader2, Plus, ChevronDown } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { X, Loader2, Plus, ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Place {
@@ -37,6 +35,7 @@ interface MultiOriginInputProps {
 const MAX_DEFAULT = 6;
 const MAX_VISIBLE_CHIPS = 2;
 
+/* ── Portal dropdown anchored to the field ── */
 const PortalDropdown = ({
   anchorRef,
   children,
@@ -52,8 +51,8 @@ const PortalDropdown = ({
     setStyle({
       position: "fixed",
       left: rect.left,
-      top: rect.bottom + 6,
-      width: Math.max(rect.width, 300),
+      top: rect.bottom + 4,
+      width: Math.max(rect.width, 320),
       maxHeight: Math.max(120, window.innerHeight - rect.bottom - 16),
       zIndex: 9999,
     });
@@ -71,6 +70,30 @@ const PortalDropdown = ({
 
   return createPortal(<div style={style}>{children}</div>, document.body);
 };
+
+/* ── Chip component ── */
+const AirportChip = ({
+  airport,
+  onRemove,
+}: {
+  airport: AirportSelection;
+  onRemove: () => void;
+}) => (
+  <span className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-bold bg-primary/12 text-primary border border-primary/20 rounded-full shrink-0 select-none transition-colors hover:bg-primary/20 hover:border-primary/30">
+    {airport.code}
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onRemove();
+      }}
+      className="ml-0.5 rounded-full hover:text-destructive transition-colors p-px"
+      aria-label={`Remove ${airport.code}`}
+    >
+      <X className="w-2.5 h-2.5" />
+    </button>
+  </span>
+);
 
 const MultiOriginInput = ({
   values,
@@ -98,6 +121,7 @@ const MultiOriginInput = ({
   const overflowChips = values.slice(MAX_VISIBLE_CHIPS);
   const hasOverflow = overflowChips.length > 0;
 
+  /* Close on outside click */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (selectingRef.current) return;
@@ -111,6 +135,7 @@ const MultiOriginInput = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /* Fetch suggestions */
   useEffect(() => {
     if (query.length < 2) {
       setSuggestions([]);
@@ -126,7 +151,7 @@ const MultiOriginInput = ({
         );
         const data: Place[] = await response.json();
         const selectedCodes = new Set(values.map((v) => v.code.toUpperCase()));
-        setSuggestions(data.filter((p) => !selectedCodes.has(p.code.toUpperCase())).slice(0, 8));
+        setSuggestions(data.filter((p) => !selectedCodes.has(p.code.toUpperCase())).slice(0, 6));
         setHighlightedIndex(-1);
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
@@ -136,7 +161,7 @@ const MultiOriginInput = ({
         setIsLoading(false);
       }
     };
-    const timer = setTimeout(fetchSuggestions, 200);
+    const timer = setTimeout(fetchSuggestions, 180);
     return () => {
       clearTimeout(timer);
       controller.abort();
@@ -193,167 +218,171 @@ const MultiOriginInput = ({
   const showEmpty = isOpen && query.length >= 2 && suggestions.length === 0 && !isLoading;
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <div ref={wrapperRef} className="relative min-w-0">
-        <div
-          className={`flex items-center gap-1 transition-all cursor-text ${
-            bare
-              ? "h-[36px] px-2 bg-transparent rounded-none overflow-hidden"
-              : compact
-                ? "h-[40px] px-2 py-1 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card overflow-hidden"
-                : "h-[52px] px-3 py-1.5 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card overflow-hidden"
-          }`}
-          onClick={() => inputRef.current?.focus()}
-        >
-          {!bare && <Plane className={`text-muted-foreground shrink-0 ${compact ? "w-3.5 h-3.5" : "w-4 h-4"}`} />}
-          
-          {/* Visible chips (max 2) */}
-          {visibleChips.map((v) => (
-            <Tooltip key={v.code}>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-bold bg-primary/10 text-primary border border-primary/25 rounded-md shrink-0 hover:bg-primary/20 transition-colors cursor-default">
-                  {v.code}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemove(v.code);
-                    }}
-                    className="ml-0.5 hover:text-destructive transition-colors rounded-sm"
-                    aria-label={`Remove ${v.code}`}
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                {v.display}
-              </TooltipContent>
-            </Tooltip>
-          ))}
+    <div ref={wrapperRef} className="relative min-w-0">
+      {/* ── Unified input container ── */}
+      <div
+        className={`flex items-center gap-1.5 min-h-[36px] cursor-text ${
+          bare
+            ? "bg-transparent"
+            : compact
+              ? "h-10 px-3 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
+              : "h-[52px] px-4 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
+        }`}
+        onClick={() => inputRef.current?.focus()}
+      >
+        {/* Visible chips */}
+        {visibleChips.map((v) => (
+          <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} />
+        ))}
 
-          {/* Overflow "+X more" badge with popover */}
-          {hasOverflow && (
-            <Popover open={overflowOpen} onOpenChange={setOverflowOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOverflowOpen(!overflowOpen);
-                  }}
-                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-bold bg-secondary text-muted-foreground border border-border/40 rounded-md shrink-0 hover:bg-secondary/80 transition-colors cursor-pointer"
-                >
-                  +{overflowChips.length}
-                  <ChevronDown className="w-2.5 h-2.5" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-auto min-w-[200px] p-2 bg-card border border-border rounded-xl shadow-xl pointer-events-auto" 
-                align="start" 
-                side="bottom"
-                sideOffset={8}
+        {/* Overflow "+X" badge */}
+        {hasOverflow && (
+          <Popover open={overflowOpen} onOpenChange={setOverflowOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOverflowOpen(!overflowOpen);
+                }}
+                className="inline-flex items-center gap-0.5 h-6 px-2 text-[11px] font-bold bg-secondary text-muted-foreground border border-border/40 rounded-full shrink-0 hover:bg-secondary/80 transition-colors cursor-pointer"
               >
-                <div className="space-y-1">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-1">
-                    {values.length} airports selected
-                  </span>
-                  {values.map((v) => (
-                    <div key={v.code} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors">
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold text-primary">{v.code}</span>
-                        <span className="text-[11px] text-muted-foreground ml-1.5 truncate">{v.display}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(v.code)}
-                        className="shrink-0 p-0.5 hover:text-destructive transition-colors rounded-sm"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
-
-          {canAdd ? (
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setIsOpen(true);
-              }}
-              onFocus={() => query.length >= 2 && setIsOpen(true)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 min-w-[70px] bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
-              placeholder={values.length === 0 ? placeholder : "+ Add"}
-              autoComplete="off"
-            />
-          ) : (
-            <span className="text-[10px] text-muted-foreground italic">Max {maxAirports}</span>
-          )}
-          {isLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground shrink-0" />}
-        </div>
-
-        {showSuggestions && (
-          <PortalDropdown anchorRef={wrapperRef}>
-            <div
-              ref={dropdownRef}
-              className="bg-card border border-border/80 rounded-xl shadow-xl overflow-hidden overflow-y-auto"
-              style={{ maxHeight: "inherit" }}
+                +{overflowChips.length}
+                <ChevronDown className="w-2.5 h-2.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-auto min-w-[220px] p-2 bg-card border border-border rounded-xl shadow-xl pointer-events-auto"
+              align="start"
+              side="bottom"
+              sideOffset={8}
             >
-              {suggestions.map((place, index) => (
-                <button
-                  key={`${place.code}-${index}`}
-                  type="button"
-                  role="option"
-                  aria-selected={index === highlightedIndex}
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    selectingRef.current = true;
-                    handleSelect(place);
-                    requestAnimationFrame(() => {
-                      selectingRef.current = false;
-                    });
-                  }}
-                  className={`w-full px-3 py-2.5 text-left flex items-center gap-3 transition-colors cursor-pointer pointer-events-auto active:scale-[0.995] ${
-                    index === highlightedIndex ? "bg-primary/10" : "hover:bg-secondary/50 active:bg-secondary/70"
-                  }`}
-                >
-                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                    <span className="text-[11px] font-bold text-muted-foreground">{place.code}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate">
-                      {place.name}
-                      {place.main_airport_name && (
-                        <span className="text-muted-foreground"> – {place.main_airport_name}</span>
-                      )}
+              <div className="space-y-0.5">
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-2">
+                  {values.length} airports
+                </span>
+                {values.map((v) => (
+                  <div
+                    key={v.code}
+                    className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                        {v.code}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground truncate">
+                        {v.display}
+                      </span>
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(v.code)}
+                      className="shrink-0 p-0.5 hover:text-destructive transition-colors rounded-sm"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </div>
-                  <Plus className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                </button>
-              ))}
-            </div>
-          </PortalDropdown>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
 
-        {showEmpty && (
-          <PortalDropdown anchorRef={wrapperRef}>
-            <div className="bg-card border border-border/80 rounded-xl shadow-xl p-4 text-center text-sm text-muted-foreground">
-              No airports found
-            </div>
-          </PortalDropdown>
+        {/* Inline text input — always after chips */}
+        {canAdd ? (
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setIsOpen(true);
+            }}
+            onFocus={() => query.length >= 2 && setIsOpen(true)}
+            onKeyDown={handleKeyDown}
+            className="flex-1 min-w-[60px] bg-transparent outline-none text-[15px] font-semibold text-foreground placeholder:text-muted-foreground/40 placeholder:font-normal"
+            placeholder={values.length === 0 ? placeholder : "+ Add"}
+            autoComplete="off"
+          />
+        ) : (
+          <span className="text-[10px] text-muted-foreground italic ml-1">
+            Max {maxAirports}
+          </span>
+        )}
+
+        {isLoading && (
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />
         )}
       </div>
-    </TooltipProvider>
+
+      {/* ── Autocomplete dropdown ── */}
+      {showSuggestions && (
+        <PortalDropdown anchorRef={wrapperRef}>
+          <div
+            ref={dropdownRef}
+            className="bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden overflow-y-auto"
+            style={{ maxHeight: "inherit" }}
+          >
+            {suggestions.map((place, index) => (
+              <button
+                key={`${place.code}-${index}`}
+                type="button"
+                role="option"
+                aria-selected={index === highlightedIndex}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  selectingRef.current = true;
+                  handleSelect(place);
+                  requestAnimationFrame(() => {
+                    selectingRef.current = false;
+                  });
+                }}
+                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors cursor-pointer ${
+                  index === highlightedIndex
+                    ? "bg-primary/10"
+                    : "hover:bg-secondary/50"
+                }`}
+              >
+                {/* Airport code badge */}
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/8 border border-primary/15 flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary">
+                    {place.code}
+                  </span>
+                </div>
+
+                {/* Airport details */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-foreground truncate">
+                    {place.name}
+                    {place.main_airport_name && (
+                      <span className="font-normal text-muted-foreground">
+                        {" "}
+                        – {place.main_airport_name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {place.country_name} ·{" "}
+                    {place.type === "airport" ? "Airport" : "All airports"}
+                  </div>
+                </div>
+
+                {/* Add icon */}
+                <Plus className="w-4 h-4 text-primary/50 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </PortalDropdown>
+      )}
+
+      {showEmpty && (
+        <PortalDropdown anchorRef={wrapperRef}>
+          <div className="bg-card border border-border/60 rounded-xl shadow-2xl p-4 text-center text-sm text-muted-foreground">
+            No airports found
+          </div>
+        </PortalDropdown>
+      )}
+    </div>
   );
 };
 
