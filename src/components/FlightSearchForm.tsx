@@ -261,9 +261,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const errRing = (has?: boolean) => has ? "ring-2 ring-destructive/40" : "";
 
   /* ── Segment style tokens ── */
-  const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none mb-1.5";
-  const SEG_VALUE = "text-[15px] font-semibold text-foreground leading-snug whitespace-nowrap";
-  const SEG_PLACEHOLDER = "text-[15px] font-normal text-muted-foreground/40 leading-snug whitespace-nowrap";
+  const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
+  const SEG_VALUE = "text-[14px] font-semibold text-foreground leading-[20px] whitespace-nowrap";
+  const SEG_PLACEHOLDER = "text-[14px] font-normal text-muted-foreground/40 leading-[20px] whitespace-nowrap";
 
   return (
     <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-x-clip">
