@@ -33,7 +33,8 @@ interface MultiOriginInputProps {
 }
 
 const MAX_DEFAULT = 6;
-const MAX_VISIBLE_CHIPS = 2;
+const MAX_VISIBLE_CHIPS = 1;
+const MIN_INPUT_WIDTH_PX = 112;
 
 /* ── Portal dropdown anchored to the field ── */
 const PortalDropdown = ({
@@ -52,7 +53,7 @@ const PortalDropdown = ({
       position: "fixed",
       left: rect.left,
       top: rect.bottom + 4,
-      width: Math.max(rect.width, 320),
+      width: rect.width,
       maxHeight: Math.max(120, window.innerHeight - rect.bottom - 16),
       zIndex: 9999,
     });
@@ -119,7 +120,7 @@ const MultiOriginInput = ({
   const canAdd = values.length < maxAirports;
   const selectingRef = useRef(false);
 
-  const maxVisibleChips = compact || values.length > 3 ? 1 : MAX_VISIBLE_CHIPS;
+  const maxVisibleChips = MAX_VISIBLE_CHIPS;
   const visibleChips = values.slice(0, maxVisibleChips);
   const overflowChips = values.slice(maxVisibleChips);
   const hasOverflow = overflowChips.length > 0;
@@ -311,7 +312,8 @@ const MultiOriginInput = ({
           {/* ── Input area: always takes remaining space, never pushes chips ── */}
           <div
             ref={inputAreaRef}
-            className="flex flex-1 min-w-0 items-center overflow-hidden"
+            className="flex flex-[1_1_0%] min-w-0 items-center overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ minWidth: MIN_INPUT_WIDTH_PX }}
           >
             {canAdd ? (
               <input
@@ -334,7 +336,7 @@ const MultiOriginInput = ({
                   }
                 }}
                 onKeyDown={handleKeyDown}
-                className="w-full min-w-0 bg-transparent text-[13px] font-medium text-foreground outline-none placeholder:text-[11px] placeholder:font-medium placeholder:text-muted-foreground/60"
+                className="w-full min-w-0 bg-transparent text-[13px] font-medium leading-none text-foreground outline-none overflow-x-auto whitespace-nowrap placeholder:text-[10px] placeholder:font-medium placeholder:text-muted-foreground/65"
                 placeholder={values.length === 0 ? placeholder : "Add airport"}
                 autoComplete="off"
                 style={{ textOverflow: "clip" }}
