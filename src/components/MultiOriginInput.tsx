@@ -424,27 +424,15 @@ const MultiOriginInput = ({
                     : "hover:bg-secondary/50"
                 }`}
               >
-                {/* Airport code badge */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/8 border border-primary/15 flex items-center justify-center">
-                  <span className="text-xs font-bold text-primary">
-                    {place.code}
-                  </span>
-                </div>
-
                 {/* Airport details */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-foreground truncate">
-                    {place.name}
-                    {place.main_airport_name && (
-                      <span className="font-normal text-muted-foreground">
-                        {" "}
-                        – {place.main_airport_name}
-                      </span>
-                    )}
+                  <div className="text-sm font-medium text-foreground truncate">
+                    {place.name}{" "}
+                    <span className="text-muted-foreground">({place.code})</span>
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
                     {place.country_name} ·{" "}
-                    {place.type === "airport" ? "Airport" : "All airports"}
+                    {place.type === "airport" ? "Airport" : "City"}
                   </div>
                 </div>
 
