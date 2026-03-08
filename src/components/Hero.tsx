@@ -72,20 +72,20 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       <section className="relative overflow-hidden bg-background">
         {/* Horizontal light sweep — left-to-right with bright center */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          {/* Primary horizontal sweep: wide ellipse centered on page */}
+          {/* Full-width horizontal sweep: left-to-right directional fade */}
           <div
-            className="absolute top-[35%] left-1/2 -translate-x-1/2 w-[2200px] h-[600px] rounded-full opacity-[0.07]"
-            style={{ background: "radial-gradient(ellipse 70% 50%, hsl(210 80% 97%), hsl(217 91% 58% / 0.15), transparent 70%)" }}
+            className="absolute top-[30%] left-0 w-full h-[500px]"
+            style={{ background: "linear-gradient(90deg, hsl(210 60% 88% / 0.10) 0%, hsl(210 70% 90% / 0.08) 30%, hsl(217 80% 85% / 0.05) 60%, transparent 90%)" }}
           />
-          {/* Secondary wider sweep for soft horizontal spread */}
+          {/* Secondary wider horizontal band for depth */}
           <div
-            className="absolute top-[40%] left-1/2 -translate-x-1/2 w-[3000px] h-[400px] rounded-full opacity-[0.04]"
-            style={{ background: "radial-gradient(ellipse 80% 40%, hsl(210 60% 92%), transparent 60%)" }}
+            className="absolute top-[35%] left-0 w-full h-[350px]"
+            style={{ background: "linear-gradient(90deg, hsl(210 50% 92% / 0.06) 5%, hsl(210 60% 90% / 0.07) 25%, hsl(215 65% 88% / 0.04) 55%, hsl(220 50% 80% / 0.02) 80%, transparent 100%)" }}
           />
-          {/* Subtle tighter glow directly behind search area */}
+          {/* Soft top-to-bottom vertical fade to blend the band into the hero */}
           <div
-            className="absolute top-[50%] left-1/2 -translate-x-1/2 w-[1000px] h-[250px] rounded-full opacity-[0.05]"
-            style={{ background: "radial-gradient(ellipse, hsl(210 90% 95%), transparent 65%)" }}
+            className="absolute top-[28%] left-0 w-full h-[550px]"
+            style={{ background: "linear-gradient(180deg, transparent 0%, hsl(210 60% 95% / 0.04) 30%, hsl(210 60% 95% / 0.04) 60%, transparent 100%)" }}
           />
         </div>
 
