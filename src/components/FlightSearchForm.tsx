@@ -495,20 +495,19 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* ═══════════════════════════════════════════
           OPTIONS ROW — clean, secondary
           ═══════════════════════════════════════════ */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 px-1">
+      <div className="lg:hidden flex flex-col gap-2.5 px-1">
         <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
 
-        <label className="flex items-center gap-2 cursor-pointer select-none">
+        <label className="flex h-5 items-center gap-2 cursor-pointer select-none">
           <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
-          <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
+          <span className="text-[12px] text-muted-foreground/60 font-medium whitespace-nowrap">{t("search.direct_flights_only")}</span>
         </label>
 
-        {/* Flex date controls in a popover — no layout shift */}
         {!isAnyDay && departDate && (
           <Popover>
             <PopoverTrigger asChild>
-              <button type="button" className="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors cursor-pointer">
+              <button type="button" className="flex h-5 items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
                 <CalendarDays className="w-3 h-3" />
                 {departFlexBefore > 0 || departFlexAfter > 0
                   ? `± ${departFlexBefore}/${departFlexAfter} days`
@@ -522,7 +521,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </Popover>
         )}
 
-        <div className="flex items-center gap-4 lg:ml-auto">
+        <div className="flex items-center gap-4 pt-1">
           <button onClick={async () => {
             const result = await requestNearestAirport();
             if (result) {
@@ -530,18 +529,87 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
               setErrors(e => ({ ...e, from: undefined }));
             }
-          }} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer">
+          }} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
             <Navigation className="w-3 h-3" /> {t("search.use_location")}
           </button>
 
-        {/* Any day toggle — simple toggle, no popover */}
           <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
-            className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
+            className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer whitespace-nowrap ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
             {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
             {t("search.any_day", "Any day")} {isAnyDay && "✓"}
           </button>
 
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+          <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
+            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
+            <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1">
+              <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div className="hidden lg:grid grid-cols-[minmax(240px,1fr)_minmax(240px,1fr)_minmax(180px,auto)_minmax(150px,auto)_minmax(280px,auto)] items-start gap-x-4 gap-y-2.5 px-1">
+        <div className="min-w-[240px]">
+          <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
+        </div>
+
+        <div className="min-w-[240px]">
+          <NearbyToggle
+            enabled={anywhere ? false : toNearby}
+            onToggle={handleToNearbyToggle}
+            radius={toRadius}
+            onRadiusChange={setToRadius}
+            disabled={anywhere}
+          />
+        </div>
+
+        <div className="min-w-[180px] pt-[2px]">
+          <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap">
+            <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
+            <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
+          </label>
+        </div>
+
+        <div className="min-w-[150px] pt-[2px]">
+          {!isAnyDay && departDate ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="flex h-5 items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
+                  <CalendarDays className="w-3 h-3" />
+                  {departFlexBefore > 0 || departFlexAfter > 0
+                    ? `± ${departFlexBefore}/${departFlexAfter} days`
+                    : "± Flex dates"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-56 p-4 pointer-events-auto">
+                <p className="text-xs font-semibold text-foreground mb-3">Date flexibility</p>
+                <FlexDateControls before={departFlexBefore} after={departFlexAfter} onBeforeChange={setDepartFlexBefore} onAfterChange={setDepartFlexAfter} />
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <span className="inline-flex h-5 items-center text-[11px] text-muted-foreground/40 whitespace-nowrap">± Flex dates</span>
+          )}
+        </div>
+
+        <div className="min-w-[280px] pt-[2px] flex h-5 items-center justify-end gap-4">
+          <button onClick={async () => {
+            const result = await requestNearestAirport();
+            if (result) {
+              userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
+              setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
+              setErrors(e => ({ ...e, from: undefined }));
+            }
+          }} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
+            <Navigation className="w-3 h-3" /> {t("search.use_location")}
+          </button>
+
+          <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
+            className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer whitespace-nowrap ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
+            {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
+            {t("search.any_day", "Any day")} {isAnyDay && "✓"}
+          </button>
+
+          <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
             <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1">
               <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
