@@ -492,18 +492,64 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
 
       {/* ═══════════════════════════════════════════
-          OPTIONS ROW — clean, secondary
+          OPTIONS ROW — logically grouped
           ═══════════════════════════════════════════ */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 px-1">
-        <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
-        {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5 px-1">
+        {/* ── Airport controls (left) ── */}
+        <button onClick={async () => {
+          const result = await requestNearestAirport();
+          if (result) {
+            userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
+            setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
+            setErrors(e => ({ ...e, from: undefined }));
+          }
+        }} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer">
+          <Navigation className="w-3 h-3" /> {t("search.use_location")}
+        </button>
 
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
-          <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
+        <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} label="Nearby from" />
+        {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} label="Nearby to" />}
+
+        <label className="flex items-center gap-1.5 cursor-pointer select-none">
+          <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
+          <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1">
+            <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
+          </span>
         </label>
 
-        {/* Flex date controls in a popover — no layout shift */}
+        {/* ── Separator ── */}
+        <div className="hidden lg:block w-px h-4 bg-border/20" />
+
+        {/* ── Date controls (anchored to date area) ── */}
+        {isAnyDay ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" className="flex items-center gap-1.5 text-[11px] text-primary font-medium transition-colors cursor-pointer">
+                <CalendarOff className="w-3 h-3" />
+                {t("search.any_day", "Any day")} ✓
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" sideOffset={8} className="w-64 p-4 pointer-events-auto">
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-foreground">Flexible date options</p>
+                {tripType === "roundtrip" && (
+                  <TripLengthSlider value={tripLength} onChange={setTripLength} />
+                )}
+                <button type="button" onClick={() => setIsAnyDay(false)}
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                  Switch to exact dates
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <button type="button" onClick={() => setIsAnyDay(true)}
+            className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors cursor-pointer">
+            <CalendarDays className="w-3 h-3" />
+            {t("search.any_day", "Any day")}
+          </button>
+        )}
+
         {!isAnyDay && departDate && (
           <Popover>
             <PopoverTrigger asChild>
@@ -521,55 +567,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </Popover>
         )}
 
-        <div className="flex items-center gap-4 lg:ml-auto">
-          <button onClick={async () => {
-            const result = await requestNearestAirport();
-            if (result) {
-              userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
-              setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
-              setErrors(e => ({ ...e, from: undefined }));
-            }
-          }} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer">
-            <Navigation className="w-3 h-3" /> {t("search.use_location")}
-          </button>
+        {/* ── Separator ── */}
+        <div className="hidden lg:block w-px h-4 bg-border/20" />
 
-          {/* Any day toggle — trip length opens in popover */}
-          {isAnyDay ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button type="button" className="flex items-center gap-1.5 text-[11px] text-primary transition-colors cursor-pointer">
-                  <CalendarOff className="w-3 h-3" />
-                  {t("search.any_day", "Any day")} ✓
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-64 p-4 pointer-events-auto">
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-foreground">Flexible date options</p>
-                  {tripType === "roundtrip" && (
-                    <TripLengthSlider value={tripLength} onChange={setTripLength} />
-                  )}
-                  <button type="button" onClick={() => setIsAnyDay(false)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-                    Switch to exact dates
-                  </button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          ) : (
-            <button type="button" onClick={() => setIsAnyDay(true)}
-              className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors cursor-pointer">
-              <CalendarDays className="w-3 h-3" />
-              {t("search.any_day", "Any day")}
-            </button>
-          )}
-
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
-            <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1">
-              <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
-            </span>
-          </label>
-        </div>
+        {/* ── Flight controls (right) ── */}
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
+          <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
+        </label>
       </div>
 
       {/* ── Trust row ── */}
