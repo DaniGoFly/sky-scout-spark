@@ -135,14 +135,31 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
-          SECTION D+E+F: BOOKING ZONE — elevated translucent panel
+          SECTION D+E+F: BOOKING BAND — full-width gradient divider
           ═══════════════════════════════════════════════════════════ */}
-      <section className="relative z-20 px-4 sm:px-6 lg:px-8 -mt-2">
-        <div className="mx-auto max-w-[1100px]">
+      <section className="relative z-20 -mt-2">
+        {/* Gradient band background */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div
-            ref={searchRef}
-            className="rounded-3xl border border-[hsl(220_30%_30%/0.35)] bg-[hsl(222_38%_13%/0.85)] backdrop-blur-xl shadow-[0_12px_60px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)] p-5 sm:p-7 lg:p-8 animate-fade-in"
-          >
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(180deg,
+                hsl(210 60% 92% / 0.07) 0%,
+                hsl(217 80% 75% / 0.10) 25%,
+                hsl(217 70% 65% / 0.08) 50%,
+                hsl(222 40% 10% / 0.0) 100%
+              )`,
+            }}
+          />
+          {/* Central light bloom */}
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[300px] rounded-full opacity-[0.06]"
+            style={{ background: "radial-gradient(ellipse, hsl(210 80% 95%), transparent 70%)" }}
+          />
+        </div>
+
+        <div ref={searchRef} className="relative z-10 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 animate-fade-in">
+          <div className="mx-auto max-w-[1100px]">
             <FlightSearchForm
               aiSearchParams={aiSearchParams}
               onParamsConsumed={handleParamsConsumed}
@@ -154,7 +171,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       {/* ═══════════════════════════════════════════════════════════
           SECTION G: SMART TRAVEL TOOLS — clearly separate
           ═══════════════════════════════════════════════════════════ */}
-      <section className="relative z-10 px-4 sm:px-6 lg:px-8 mt-16 sm:mt-20 animate-fade-in">
+      <section className="relative z-10 px-4 sm:px-6 lg:px-8 mt-20 sm:mt-24 animate-fade-in">
         <div className="mx-auto max-w-[1100px]">
           <h3 className="text-xs font-semibold text-muted-foreground/60 mb-5 uppercase tracking-[0.15em] text-center sm:text-left">
             Smart travel tools
