@@ -267,9 +267,9 @@ const MultiOriginInput = ({
           inputRef.current?.focus();
         }}
       >
-        <div className="flex h-full w-full items-center overflow-hidden">
+        <div className="flex h-full w-full items-center">
           {/* ── Pinned chips group: shrink-0 so they never move ── */}
-          {(visibleChips.length > 0 || hasOverflow) && (
+          {values.length > 0 && (
             <div className="flex shrink-0 items-center gap-1.5 mr-2">
               {visibleChips.map((v) => (
                 <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} />
