@@ -499,7 +499,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
-          <span className="text-[12px] text-muted-foreground/60 font-medium">Direct flights only</span>
+          <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
         </label>
 
         {isAnyDay && tripType === "roundtrip" && (
@@ -521,19 +521,19 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               setErrors(e => ({ ...e, from: undefined }));
             }
           }} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer">
-            <Navigation className="w-3 h-3" /> My location
+            <Navigation className="w-3 h-3" /> {t("search.use_location")}
           </button>
 
           <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
             className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
             {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
-            {isAnyDay ? "Any day ✓" : "Any day"}
+            {isAnyDay ? `${t("search.any_day", "Any day")} ✓` : t("search.any_day", "Any day")}
           </button>
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
             <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1">
-              <Globe className="w-3 h-3" /> Anywhere
+              <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
             </span>
           </label>
         </div>
