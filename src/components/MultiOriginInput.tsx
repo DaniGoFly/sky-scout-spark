@@ -269,6 +269,7 @@ const MultiOriginInput = ({
                 align="start"
                 side="bottom"
                 sideOffset={8}
+                avoidCollisions={false}
               >
                 <div className="space-y-0.5">
                   <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-2">
@@ -302,45 +303,47 @@ const MultiOriginInput = ({
           )}
 
           {canAdd ? (
-            isInputActive || query ? (
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setIsOpen(true);
-                  setIsInputActive(true);
-                }}
-                onFocus={() => {
-                  setIsOpen(true);
-                  setIsInputActive(true);
-                }}
-                onBlur={() => {
-                  if (selectingRef.current) return;
-                  if (!query) {
-                    setIsInputActive(false);
-                    setIsOpen(false);
-                  }
-                }}
-                onKeyDown={handleKeyDown}
-                className="min-w-[110px] flex-1 bg-transparent text-[14px] font-medium text-foreground outline-none placeholder:text-muted-foreground/55 placeholder:font-normal"
-                placeholder={values.length === 0 ? placeholder : "Add airport"}
-                autoComplete="off"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsInputActive(true);
-                  setIsOpen(true);
-                  requestAnimationFrame(() => inputRef.current?.focus());
-                }}
-                className="h-6 shrink-0 rounded-md px-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
-              >
-                Add airport
-              </button>
-            )
+            <div className="flex-1 min-w-[80px] overflow-hidden">
+              {isInputActive || query ? (
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setIsOpen(true);
+                    setIsInputActive(true);
+                  }}
+                  onFocus={() => {
+                    setIsOpen(true);
+                    setIsInputActive(true);
+                  }}
+                  onBlur={() => {
+                    if (selectingRef.current) return;
+                    if (!query) {
+                      setIsInputActive(false);
+                      setIsOpen(false);
+                    }
+                  }}
+                  onKeyDown={handleKeyDown}
+                  className="w-full bg-transparent text-[14px] font-medium text-foreground outline-none placeholder:text-muted-foreground/55 placeholder:font-normal"
+                  placeholder={values.length === 0 ? placeholder : "Add airport"}
+                  autoComplete="off"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsInputActive(true);
+                    setIsOpen(true);
+                    requestAnimationFrame(() => inputRef.current?.focus());
+                  }}
+                  className="h-6 rounded-md px-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground truncate max-w-full"
+                >
+                  Add airport
+                </button>
+              )}
+            </div>
           ) : (
             <span className="ml-1 shrink-0 text-[10px] italic text-muted-foreground">
               Max {maxAirports}
