@@ -212,13 +212,35 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const handleReturnChange = useCallback((date: Date | null) => { setReturnDate(date); setErrors(e => ({ ...e, dates: undefined })); }, []);
   const handleTripTypeChange = useCallback((type: "roundtrip" | "oneway") => { setTripType(type); }, []);
 
+  const updateCalendarPos = useCallback(() => {
+    if (searchBarRef.current) {
+      const rect = searchBarRef.current.getBoundingClientRect();
+      setCalendarPos({ top: rect.bottom + 8 + window.scrollY, left: rect.left + window.scrollX, width: rect.width });
+    }
+  }, []);
+
   const handleOpenCalendar = useCallback(() => {
-    if (!calendarOpen) setCalendarOpen(true);
-  }, [calendarOpen]);
+    if (!calendarOpen) {
+      updateCalendarPos();
+      setCalendarOpen(true);
+    }
+  }, [calendarOpen, updateCalendarPos]);
 
   const handleCloseCalendar = useCallback(() => {
     setCalendarOpen(false);
   }, []);
+
+  // Keep position updated on scroll/resize while open
+  useEffect(() => {
+    if (!calendarOpen) return;
+    const update = () => updateCalendarPos();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [calendarOpen, updateCalendarPos]);
 
   const handleMultiCitySearch = useCallback((segments: any[], travelersData: TravelersData) => {
     const validSegments = segments.filter(seg => seg.from?.code && seg.to?.code && seg.date);
