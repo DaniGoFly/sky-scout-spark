@@ -1,13 +1,14 @@
 /**
  * Multi-Origin Airport Input
- * Allows selecting up to 6 departure airports as pills.
- * Falls back to single-origin mode when only 1 selected.
+ * Fixed-height: shows max 2 chips inline, "+X more" for overflow.
+ * Dropdown for suggestions via portal.
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { X, Plane, Loader2, Plus } from "lucide-react";
+import { X, Plane, Loader2, Plus, ChevronDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Place {
   name: string;
@@ -34,6 +35,7 @@ interface MultiOriginInputProps {
 }
 
 const MAX_DEFAULT = 6;
+const MAX_VISIBLE_CHIPS = 2;
 
 const PortalDropdown = ({
   anchorRef,
@@ -84,18 +86,21 @@ const MultiOriginInput = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [overflowOpen, setOverflowOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null!);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const canAdd = values.length < maxAirports;
-
-  // Track if a selection is in progress to prevent blur/click-outside from closing
   const selectingRef = useRef(false);
+
+  const visibleChips = values.slice(0, MAX_VISIBLE_CHIPS);
+  const overflowChips = values.slice(MAX_VISIBLE_CHIPS);
+  const hasOverflow = overflowChips.length > 0;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (selectingRef.current) return; // Don't close during selection
+      if (selectingRef.current) return;
       const target = event.target as Node;
       if (!wrapperRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
         setIsOpen(false);
@@ -191,17 +196,19 @@ const MultiOriginInput = ({
     <TooltipProvider delayDuration={300}>
       <div ref={wrapperRef} className="relative min-w-0">
         <div
-          className={`flex flex-wrap items-center gap-1 transition-all cursor-text ${
+          className={`flex items-center gap-1 transition-all cursor-text ${
             bare
-              ? "min-h-[36px] px-2 py-1 bg-transparent rounded-none"
+              ? "h-[36px] px-2 bg-transparent rounded-none overflow-hidden"
               : compact
-                ? "min-h-[40px] px-2 py-1 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
-                : "min-h-[52px] px-3 py-1.5 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
+                ? "h-[40px] px-2 py-1 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card overflow-hidden"
+                : "h-[52px] px-3 py-1.5 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card overflow-hidden"
           }`}
           onClick={() => inputRef.current?.focus()}
         >
           {!bare && <Plane className={`text-muted-foreground shrink-0 ${compact ? "w-3.5 h-3.5" : "w-4 h-4"}`} />}
-          {values.map((v) => (
+          
+          {/* Visible chips (max 2) */}
+          {visibleChips.map((v) => (
             <Tooltip key={v.code}>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-bold bg-primary/10 text-primary border border-primary/25 rounded-md shrink-0 hover:bg-primary/20 transition-colors cursor-default">
@@ -224,6 +231,53 @@ const MultiOriginInput = ({
               </TooltipContent>
             </Tooltip>
           ))}
+
+          {/* Overflow "+X more" badge with popover */}
+          {hasOverflow && (
+            <Popover open={overflowOpen} onOpenChange={setOverflowOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOverflowOpen(!overflowOpen);
+                  }}
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-bold bg-secondary text-muted-foreground border border-border/40 rounded-md shrink-0 hover:bg-secondary/80 transition-colors cursor-pointer"
+                >
+                  +{overflowChips.length}
+                  <ChevronDown className="w-2.5 h-2.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent 
+                className="w-auto min-w-[200px] p-2 bg-card border border-border rounded-xl shadow-xl pointer-events-auto" 
+                align="start" 
+                side="bottom"
+                sideOffset={8}
+              >
+                <div className="space-y-1">
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-1">
+                    {values.length} airports selected
+                  </span>
+                  {values.map((v) => (
+                    <div key={v.code} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors">
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-primary">{v.code}</span>
+                        <span className="text-[11px] text-muted-foreground ml-1.5 truncate">{v.display}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(v.code)}
+                        className="shrink-0 p-0.5 hover:text-destructive transition-colors rounded-sm"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+
           {canAdd ? (
             <input
               ref={inputRef}
@@ -235,7 +289,7 @@ const MultiOriginInput = ({
               onFocus={() => query.length >= 2 && setIsOpen(true)}
               onKeyDown={handleKeyDown}
               className="flex-1 min-w-[70px] bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
-              placeholder={values.length === 0 ? placeholder : "+ Add airport…"}
+              placeholder={values.length === 0 ? placeholder : "+ Add"}
               autoComplete="off"
             />
           ) : (
@@ -243,13 +297,6 @@ const MultiOriginInput = ({
           )}
           {isLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground shrink-0" />}
         </div>
-
-        {values.length > 1 && (
-          <div className="mt-1 flex items-center gap-1.5 px-0.5">
-            <span className="text-[10px] text-primary/80 font-semibold uppercase tracking-wider">{multiLabel || "Multi-Origin"}</span>
-            <span className="text-[10px] text-muted-foreground">· {values.length} airports</span>
-          </div>
-        )}
 
         {showSuggestions && (
           <PortalDropdown anchorRef={wrapperRef}>
