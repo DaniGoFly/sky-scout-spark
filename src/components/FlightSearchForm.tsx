@@ -336,42 +336,43 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           {/* Separator */}
           <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
 
-          {/* DEPART */}
-          <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
-            {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full cursor-pointer">
-                <span className={SEG_LABEL}>{t("calendar.depart")}</span>
-                <span className={SEG_PLACEHOLDER}>Any day</span>
-              </button>
-            ) : (
-              <FlightDateRangePicker
-                departDate={departDate} returnDate={returnDate}
-                onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
-              />
-            )}
-          </div>
-
-          {/* RETURN */}
-          {tripType === "roundtrip" && (
+          {/* DATES SECTION */}
+          {isAnyDay ? (
+            /* ── Any-day mode: trip-length slider sits inline where dates would be ── */
+            <div className={`flex-1 min-w-[280px] max-w-[320px] px-6 py-3 flex flex-col justify-center ${errRing(!!errors.dates)}`}>
+              <span className={SEG_LABEL}>Trip length</span>
+              {tripType === "roundtrip" ? (
+                <TripLengthSlider value={tripLength} onChange={setTripLength} />
+              ) : (
+                <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+              )}
+            </div>
+          ) : (
             <>
-              <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
+              {/* DEPART */}
               <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
-                {isAnyDay ? (
-                  <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full cursor-pointer">
-                    <span className={SEG_LABEL}>{t("calendar.return", "Return")}</span>
-                    <span className={SEG_PLACEHOLDER}>Any day</span>
-                  </button>
-                ) : (
-                  <FlightDateRangePicker
-                    departDate={departDate} returnDate={returnDate}
-                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                    tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                    bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
-                  />
-                )}
+                <FlightDateRangePicker
+                  departDate={departDate} returnDate={returnDate}
+                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                  bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
+                />
               </div>
+
+              {/* RETURN */}
+              {tripType === "roundtrip" && (
+                <>
+                  <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
+                  <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
+                    <FlightDateRangePicker
+                      departDate={departDate} returnDate={returnDate}
+                      onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                      tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                      bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
 
@@ -436,42 +437,42 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
           <div className="h-px mx-5 bg-border/15" />
 
-          {/* DEPART */}
-          <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
-            {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
-                <span className={SEG_LABEL}>{t("calendar.depart")}</span>
-                <span className={SEG_PLACEHOLDER}>Any day</span>
-              </button>
-            ) : (
-              <FlightDateRangePicker
-                departDate={departDate} returnDate={returnDate}
-                onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
-              />
-            )}
-          </div>
-
-          {/* RETURN */}
-          {tripType === "roundtrip" && (
+          {/* DATES SECTION — mobile */}
+          {isAnyDay ? (
+            <div className={`px-5 py-4 ${errRing(!!errors.dates)}`}>
+              <span className={SEG_LABEL}>Trip length</span>
+              {tripType === "roundtrip" ? (
+                <TripLengthSlider value={tripLength} onChange={setTripLength} />
+              ) : (
+                <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+              )}
+            </div>
+          ) : (
             <>
-              <div className="h-px mx-5 bg-border/15" />
+              {/* DEPART */}
               <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
-                {isAnyDay ? (
-                  <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full">
-                    <span className={SEG_LABEL}>Return</span>
-                    <span className={SEG_PLACEHOLDER}>Any day</span>
-                  </button>
-                ) : (
-                  <FlightDateRangePicker
-                    departDate={departDate} returnDate={returnDate}
-                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                    tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                    bare segmentMode segmentLabel="Return" segmentDisplay={returnDisplay}
-                  />
-                )}
+                <FlightDateRangePicker
+                  departDate={departDate} returnDate={returnDate}
+                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                  bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
+                />
               </div>
+
+              {/* RETURN */}
+              {tripType === "roundtrip" && (
+                <>
+                  <div className="h-px mx-5 bg-border/15" />
+                  <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
+                    <FlightDateRangePicker
+                      departDate={departDate} returnDate={returnDate}
+                      onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                      tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                      bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
 
@@ -533,35 +534,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             <Navigation className="w-3 h-3" /> {t("search.use_location")}
           </button>
 
-          {/* Any day toggle — trip length opens in popover */}
-          {isAnyDay ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button type="button" className="flex items-center gap-1.5 text-[11px] text-primary transition-colors cursor-pointer">
-                  <CalendarOff className="w-3 h-3" />
-                  {t("search.any_day", "Any day")} ✓
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-64 p-4 pointer-events-auto">
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-foreground">Flexible date options</p>
-                  {tripType === "roundtrip" && (
-                    <TripLengthSlider value={tripLength} onChange={setTripLength} />
-                  )}
-                  <button type="button" onClick={() => setIsAnyDay(false)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-                    Switch to exact dates
-                  </button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          ) : (
-            <button type="button" onClick={() => setIsAnyDay(true)}
-              className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors cursor-pointer">
-              <CalendarDays className="w-3 h-3" />
-              {t("search.any_day", "Any day")}
-            </button>
-          )}
+        {/* Any day toggle — simple toggle, no popover */}
+          <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
+            className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
+            {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
+            {t("search.any_day", "Any day")} {isAnyDay && "✓"}
+          </button>
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
