@@ -151,7 +151,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
   const handleDayClick = useCallback((day: Date) => {
     if (tripType === "oneway") {
       onDepartChange(day);
-      setIsOpen(false);
+      // Stay open — user must press Done
       return;
     }
     if (!selectingReturn || !departDate) {
@@ -165,7 +165,7 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
       } else {
         onReturnChange(day);
         setSelectingReturn(false);
-        setIsOpen(false);
+        // Stay open — user must press Done
       }
     }
   }, [tripType, selectingReturn, departDate, onDepartChange, onReturnChange]);
