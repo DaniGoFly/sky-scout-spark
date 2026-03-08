@@ -267,9 +267,9 @@ const MultiOriginInput = ({
           inputRef.current?.focus();
         }}
       >
-        <div className="flex h-full w-full items-center">
+        <div className="flex h-full w-full items-center overflow-hidden">
           {/* ── Pinned chips group: shrink-0 so they never move ── */}
-          {values.length > 0 && (
+          {(visibleChips.length > 0 || hasOverflow) && (
             <div className="flex shrink-0 items-center gap-1.5 mr-2">
               {visibleChips.map((v) => (
                 <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} />
@@ -333,7 +333,7 @@ const MultiOriginInput = ({
           {/* ── Input area: always takes remaining space, never pushes chips ── */}
           <div
             ref={inputAreaRef}
-            className="flex flex-1 min-w-0 items-center whitespace-nowrap"
+            className="flex flex-[1_1_0%] min-w-0 items-center overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             style={{ minWidth: reservedInputWidth }}
           >
             {canAdd ? (
