@@ -426,7 +426,7 @@ const MultiOriginInput = ({
       )}
 
       {showEmpty && (
-        <PortalDropdown anchorRef={wrapperRef}>
+        <PortalDropdown anchorRef={inputAreaRef}>
           <div className="bg-card border border-border/60 rounded-xl shadow-2xl p-4 text-center text-sm text-muted-foreground">
             No airports found
           </div>
