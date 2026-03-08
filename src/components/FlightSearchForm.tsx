@@ -285,7 +285,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const SEG_PLACEHOLDER = "text-[14px] font-normal text-muted-foreground/40 leading-[20px] whitespace-nowrap";
 
   return (
-    <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-x-clip">
+    <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-visiblee">
       {/* ── Trip type pill ── */}
       <div className="flex items-center justify-start gap-3">
         <div className="relative">
@@ -545,7 +545,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             CALENDAR PANEL — attached below search bar
             ═══════════════════════════════════════════ */}
         {calendarOpen && !isAnyDay && (
-          <div className="absolute left-0 right-0 top-full z-50 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+          <div className="absolute left-0 right-0 top-full z[9999] mt-20 animate-in fade-in-0 slide-in-from-top-2 duration-200">
             <CalendarPanel
               departDate={departDate}
               returnDate={returnDate}
