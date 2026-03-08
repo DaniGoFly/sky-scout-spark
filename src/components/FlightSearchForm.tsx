@@ -364,7 +364,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                   />
                 </div>
 
-                <div className="px-6 py-4 relative z-30">
+                <div className="px-5 py-3 relative z-30 flex flex-col justify-center">
                   {tripType === "roundtrip" ? (
                     <FlightDateRangePicker
                       departDate={departDate}
