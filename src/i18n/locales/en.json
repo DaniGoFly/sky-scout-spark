@@ -37,8 +37,10 @@
     "select_return_date": "Please select return date",
     "return_after_depart": "Return date must be after departure",
     "infant_needs_adult": "Each infant needs an adult",
-    "use_location": "Use my location",
-    "compare_airports": "Compare multiple departure airports at once"
+    "use_location": "My location",
+    "compare_airports": "Compare multiple departure airports at once",
+    "any_day": "Any day",
+    "anywhere": "Anywhere"
   },
   "sort": {
     "best": "Best",
