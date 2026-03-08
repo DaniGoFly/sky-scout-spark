@@ -236,8 +236,12 @@
   },
   "trust": {
     "airlines": "Prices from 600+ airlines",
+    "airlines_count": "600+ airlines",
     "no_fees": "No hidden fees",
+    "no_hidden_fees": "No hidden fees",
     "secure": "Secure booking via verified partners",
+    "verified_partners": "Verified partners",
+    "live_updates": "Live price updates",
     "updated": "Updated {{seconds}}s ago"
   },
   "progress": {
