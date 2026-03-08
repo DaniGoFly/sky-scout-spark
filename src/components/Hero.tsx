@@ -93,7 +93,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           <div className="mx-auto max-w-[1100px]">
 
             {/* ── Category pills ── */}
-            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-1 scrollbar-none justify-center" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-1 scrollbar-none justify-start" style={{ WebkitOverflowScrolling: "touch" }}>
               {MODE_PILLS.map((pill) => {
                 const Icon = pill.icon;
                 return (
