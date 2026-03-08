@@ -310,7 +310,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* ═══════════════════════════════════════════
           SIGNATURE SEARCH BAR + CALENDAR
           ═══════════════════════════════════════════ */}
-      <div className="relative">
+      <div className="relative" ref={searchBarRef}>
         {/* Search bar */}
         <div className={cn(
           "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm lg:h-[94px]",
