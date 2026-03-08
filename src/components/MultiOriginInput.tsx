@@ -113,6 +113,7 @@ const MultiOriginInput = ({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [isInputActive, setIsInputActive] = useState(false);
+  const [isCompactAddAction, setIsCompactAddAction] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null!);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null!);
@@ -125,6 +126,8 @@ const MultiOriginInput = ({
   const visibleChips = values.slice(0, maxVisibleChips);
   const overflowChips = values.slice(maxVisibleChips);
   const hasOverflow = overflowChips.length > 0;
+  const addActionText = isCompactAddAction ? "Add +" : "Add airport";
+  const reservedInputWidth = values.length > 0 ? (isCompactAddAction ? 64 : 96) : MIN_INPUT_WIDTH_PX;
 
   /* Close on outside click */
   useEffect(() => {
