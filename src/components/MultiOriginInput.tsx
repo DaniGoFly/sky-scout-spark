@@ -33,7 +33,8 @@ interface MultiOriginInputProps {
 }
 
 const MAX_DEFAULT = 6;
-const MAX_VISIBLE_CHIPS = 2;
+const MAX_VISIBLE_CHIPS = 1;
+const MIN_INPUT_WIDTH_PX = 112;
 
 /* ── Portal dropdown anchored to the field ── */
 const PortalDropdown = ({
