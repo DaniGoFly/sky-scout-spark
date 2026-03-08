@@ -336,7 +336,7 @@ const MultiOriginInput = ({
                   }
                 }}
                 onKeyDown={handleKeyDown}
-                className="w-full min-w-0 bg-transparent text-[13px] font-medium text-foreground outline-none placeholder:text-[11px] placeholder:font-medium placeholder:text-muted-foreground/60"
+                className="w-full min-w-0 bg-transparent text-[13px] font-medium leading-none text-foreground outline-none overflow-x-auto whitespace-nowrap placeholder:text-[10px] placeholder:font-medium placeholder:text-muted-foreground/65"
                 placeholder={values.length === 0 ? placeholder : "Add airport"}
                 autoComplete="off"
                 style={{ textOverflow: "clip" }}
