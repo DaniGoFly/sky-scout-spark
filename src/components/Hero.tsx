@@ -93,7 +93,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           <div className="mx-auto max-w-[1100px]">
 
             {/* ── Category pills ── */}
-            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-1 scrollbar-none justify-center" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-1 scrollbar-none justify-start" style={{ WebkitOverflowScrolling: "touch" }}>
               {MODE_PILLS.map((pill) => {
                 const Icon = pill.icon;
                 return (
@@ -123,12 +123,12 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
             </div>
 
             {/* ── Headline ── */}
-            <div className="mb-12 text-center animate-fade-in">
+            <div className="mb-12 text-left animate-fade-in">
               <h1 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-bold leading-[1.12] tracking-tight text-foreground">
                 Find better flights{" "}
                 <span className="text-primary">in seconds.</span>
               </h1>
-              <p className="mt-4 text-[15px] sm:text-base text-muted-foreground leading-relaxed max-w-lg mx-auto">
+              <p className="mt-4 text-[15px] sm:text-base text-muted-foreground leading-relaxed max-w-lg">
                 Compare airlines and travel sites worldwide to find the best deals.
               </p>
             </div>
