@@ -144,6 +144,23 @@ const MultiOriginInput = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!inputAreaRef.current) return;
+
+    const updateCompactAction = () => {
+      const width = inputAreaRef.current?.clientWidth ?? 0;
+      setIsCompactAddAction(width > 0 && width < COMPACT_ADD_THRESHOLD_PX);
+    };
+
+    updateCompactAction();
+    const observer = new ResizeObserver(updateCompactAction);
+    observer.observe(inputAreaRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [values.length, hasOverflow]);
+
   /* Fetch suggestions */
   useEffect(() => {
     if (query.length < 2) {
