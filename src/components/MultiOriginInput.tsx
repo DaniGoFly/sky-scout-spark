@@ -113,6 +113,7 @@ const MultiOriginInput = ({
   const [isInputActive, setIsInputActive] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null!);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputAreaRef = useRef<HTMLDivElement>(null!);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const canAdd = values.length < maxAirports;
