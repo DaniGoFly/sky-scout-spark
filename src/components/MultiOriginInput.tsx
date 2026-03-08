@@ -251,7 +251,7 @@ const MultiOriginInput = ({
       <div
         className={`cursor-text overflow-hidden ${
           bare
-            ? "h-[30px] px-0 bg-transparent"
+            ? "h-[24px] px-0 bg-transparent"
             : compact
               ? "h-[44px] px-3 py-2 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
               : "h-[52px] px-4 py-3 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
@@ -346,7 +346,7 @@ const MultiOriginInput = ({
                     setIsOpen(true);
                     requestAnimationFrame(() => inputRef.current?.focus());
                   }}
-                  className="h-full shrink-0 text-[11px] font-medium text-muted-foreground/80 whitespace-nowrap"
+                  className="h-full shrink-0 text-[14px] font-normal leading-[20px] text-muted-foreground/40 whitespace-nowrap"
                 >
                   {addActionText}
                 </button>
@@ -371,7 +371,7 @@ const MultiOriginInput = ({
                     }
                   }}
                   onKeyDown={handleKeyDown}
-                  className="w-full min-w-0 bg-transparent text-[13px] font-medium leading-none text-foreground outline-none overflow-x-auto whitespace-nowrap placeholder:text-[10px] placeholder:font-medium placeholder:text-muted-foreground/65"
+                  className="w-full min-w-0 bg-transparent text-[14px] font-normal leading-[20px] text-foreground outline-none overflow-x-auto whitespace-nowrap placeholder:text-[14px] placeholder:font-normal placeholder:text-muted-foreground/40"
                   placeholder={values.length === 0 ? placeholder : addActionText}
                   autoComplete="off"
                   style={{ textOverflow: "clip" }}
