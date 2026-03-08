@@ -551,7 +551,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
             className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer whitespace-nowrap ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
             {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
-            {t("search.any_day", "Any day")} {isAnyDay && "✓"}
+            {t("search.any_day", "Any day")}
+            <span className="inline-flex min-w-[10px] justify-center">{isAnyDay ? "✓" : ""}</span>
           </button>
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
@@ -563,12 +564,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      <div className="hidden lg:grid grid-cols-[minmax(240px,1fr)_minmax(240px,1fr)_minmax(180px,auto)_minmax(150px,auto)_minmax(280px,auto)] items-start gap-x-4 gap-y-2.5 px-1">
-        <div className="min-w-[240px]">
+      <div className="hidden lg:grid w-full grid-cols-[240px_240px_180px_170px_minmax(0,1fr)] items-start gap-x-4 gap-y-2.5 px-1">
+        <div className="w-[240px]">
           <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         </div>
 
-        <div className="min-w-[240px]">
+        <div className="w-[240px]">
           <NearbyToggle
             enabled={anywhere ? false : toNearby}
             onToggle={handleToNearbyToggle}
@@ -578,14 +579,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           />
         </div>
 
-        <div className="min-w-[180px] pt-[2px]">
+        <div className="w-[180px] pt-[2px]">
           <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap">
             <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
             <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
           </label>
         </div>
 
-        <div className="min-w-[150px] pt-[2px]">
+        <div className="w-[170px] pt-[2px]">
           {!isAnyDay && departDate ? (
             <Popover>
               <PopoverTrigger asChild>
@@ -606,7 +607,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           )}
         </div>
 
-        <div className="min-w-[280px] pt-[2px] flex h-5 items-center justify-end gap-4">
+        <div className="min-w-0 pt-[2px] flex h-5 items-center justify-end gap-4">
           <button onClick={async () => {
             const result = await requestNearestAirport();
             if (result) {
@@ -621,7 +622,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
             className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer whitespace-nowrap ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
             {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
-            {t("search.any_day", "Any day")} {isAnyDay && "✓"}
+            {t("search.any_day", "Any day")}
+            <span className="inline-flex min-w-[10px] justify-center">{isAnyDay ? "✓" : ""}</span>
           </button>
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
