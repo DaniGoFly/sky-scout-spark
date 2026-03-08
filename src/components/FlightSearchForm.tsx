@@ -336,42 +336,43 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           {/* Separator */}
           <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
 
-          {/* DEPART */}
-          <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
-            {isAnyDay ? (
-              <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full cursor-pointer">
-                <span className={SEG_LABEL}>{t("calendar.depart")}</span>
-                <span className={SEG_PLACEHOLDER}>Any day</span>
-              </button>
-            ) : (
-              <FlightDateRangePicker
-                departDate={departDate} returnDate={returnDate}
-                onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
-              />
-            )}
-          </div>
-
-          {/* RETURN */}
-          {tripType === "roundtrip" && (
+          {/* DATES SECTION */}
+          {isAnyDay ? (
+            /* ── Any-day mode: trip-length slider sits inline where dates would be ── */
+            <div className={`flex-1 min-w-[280px] max-w-[320px] px-6 py-3 flex flex-col justify-center ${errRing(!!errors.dates)}`}>
+              <span className={SEG_LABEL}>Trip length</span>
+              {tripType === "roundtrip" ? (
+                <TripLengthSlider value={tripLength} onChange={setTripLength} />
+              ) : (
+                <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+              )}
+            </div>
+          ) : (
             <>
-              <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
+              {/* DEPART */}
               <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
-                {isAnyDay ? (
-                  <button type="button" onClick={() => setIsAnyDay(false)} className="text-left w-full cursor-pointer">
-                    <span className={SEG_LABEL}>{t("calendar.return", "Return")}</span>
-                    <span className={SEG_PLACEHOLDER}>Any day</span>
-                  </button>
-                ) : (
-                  <FlightDateRangePicker
-                    departDate={departDate} returnDate={returnDate}
-                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                    tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                    bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
-                  />
-                )}
+                <FlightDateRangePicker
+                  departDate={departDate} returnDate={returnDate}
+                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                  bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
+                />
               </div>
+
+              {/* RETURN */}
+              {tripType === "roundtrip" && (
+                <>
+                  <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
+                  <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
+                    <FlightDateRangePicker
+                      departDate={departDate} returnDate={returnDate}
+                      onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                      tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                      bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
 
