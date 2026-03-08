@@ -110,6 +110,7 @@ const MultiOriginInput = ({
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const [isInputActive, setIsInputActive] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null!);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -117,8 +118,9 @@ const MultiOriginInput = ({
   const canAdd = values.length < maxAirports;
   const selectingRef = useRef(false);
 
-  const visibleChips = values.slice(0, MAX_VISIBLE_CHIPS);
-  const overflowChips = values.slice(MAX_VISIBLE_CHIPS);
+  const maxVisibleChips = compact || values.length > 3 ? 1 : MAX_VISIBLE_CHIPS;
+  const visibleChips = values.slice(0, maxVisibleChips);
+  const overflowChips = values.slice(maxVisibleChips);
   const hasOverflow = overflowChips.length > 0;
 
   /* Close on outside click */
@@ -128,6 +130,7 @@ const MultiOriginInput = ({
       const target = event.target as Node;
       if (!wrapperRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
         setIsOpen(false);
+        setIsInputActive(false);
         setQuery("");
       }
     };
@@ -180,6 +183,7 @@ const MultiOriginInput = ({
       onChange([...values, { code: place.code, display }]);
       setQuery("");
       setIsOpen(false);
+      setIsInputActive(false);
       setSuggestions([]);
       inputRef.current?.focus();
     },
@@ -211,6 +215,7 @@ const MultiOriginInput = ({
       handleSelect(suggestions[highlightedIndex]);
     } else if (e.key === "Escape") {
       setIsOpen(false);
+      if (!query) setIsInputActive(false);
     }
   };
 
@@ -219,56 +224,32 @@ const MultiOriginInput = ({
 
   return (
     <div ref={wrapperRef} className="relative min-w-0">
-      {/* ── Structured 2-level input container ── */}
+      {/* ── Single-row stable input container ── */}
       <div
-        className={`cursor-text ${
+        className={`cursor-text overflow-hidden ${
           bare
             ? "bg-transparent"
             : compact
-              ? "px-3 py-2 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
-              : "px-4 py-3 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
+              ? "h-[44px] px-3 py-2 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
+              : "h-[52px] px-4 py-3 bg-secondary/50 rounded-xl border-2 border-transparent focus-within:border-primary/60 focus-within:bg-card"
         }`}
-        onClick={() => inputRef.current?.focus()}
+        onClick={() => {
+          if (!canAdd) return;
+          if (!isInputActive) {
+            setIsInputActive(true);
+            setIsOpen(true);
+            requestAnimationFrame(() => inputRef.current?.focus());
+            return;
+          }
+          inputRef.current?.focus();
+        }}
       >
-        {/* ── Top row: chips + typing input ── */}
-        <div className="flex items-center gap-1.5 min-h-[24px]">
+        <div className="flex h-full w-full items-center gap-1.5 overflow-hidden">
           {visibleChips.map((v) => (
             <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} />
           ))}
 
-          {/* Typing input */}
-          {canAdd ? (
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              {values.length > 0 && !query && (
-                <Plus className="w-3 h-3 text-muted-foreground/40 shrink-0" />
-              )}
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setIsOpen(true);
-                }}
-                onFocus={() => query.length >= 2 && setIsOpen(true)}
-                onKeyDown={handleKeyDown}
-                className="flex-1 min-w-[60px] bg-transparent outline-none text-[15px] font-semibold text-foreground placeholder:text-muted-foreground/40 placeholder:font-normal"
-                placeholder={values.length === 0 ? placeholder : "Add country, city or airport"}
-                autoComplete="off"
-              />
-              {isLoading && (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />
-              )}
-            </div>
-          ) : (
-            <span className="text-[10px] text-muted-foreground italic ml-1">
-              Max {maxAirports}
-            </span>
-          )}
-        </div>
-
-        {/* ── Bottom row: overflow "+X" badge ── */}
-        {hasOverflow && (
-          <div className="mt-1.5 pt-1.5 border-t border-border/10">
+          {hasOverflow && (
             <Popover open={overflowOpen} onOpenChange={setOverflowOpen}>
               <PopoverTrigger asChild>
                 <button
@@ -277,10 +258,10 @@ const MultiOriginInput = ({
                     e.stopPropagation();
                     setOverflowOpen(!overflowOpen);
                   }}
-                  className="inline-flex items-center gap-1 h-5 px-2 text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer rounded-md hover:bg-secondary/60"
+                  className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full border border-border/60 bg-secondary/40 px-2 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground"
                 >
-                  +{overflowChips.length} more airport{overflowChips.length > 1 ? "s" : ""}
-                  <ChevronDown className="w-2.5 h-2.5" />
+                  +{overflowChips.length}
+                  <ChevronDown className="h-2.5 w-2.5" />
                 </button>
               </PopoverTrigger>
               <PopoverContent
@@ -318,8 +299,58 @@ const MultiOriginInput = ({
                 </div>
               </PopoverContent>
             </Popover>
-          </div>
-        )}
+          )}
+
+          {canAdd ? (
+            isInputActive || query ? (
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setIsOpen(true);
+                  setIsInputActive(true);
+                }}
+                onFocus={() => {
+                  setIsOpen(true);
+                  setIsInputActive(true);
+                }}
+                onBlur={() => {
+                  if (selectingRef.current) return;
+                  if (!query) {
+                    setIsInputActive(false);
+                    setIsOpen(false);
+                  }
+                }}
+                onKeyDown={handleKeyDown}
+                className="min-w-[110px] flex-1 bg-transparent text-[14px] font-medium text-foreground outline-none placeholder:text-muted-foreground/55 placeholder:font-normal"
+                placeholder={values.length === 0 ? placeholder : "Add airport"}
+                autoComplete="off"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsInputActive(true);
+                  setIsOpen(true);
+                  requestAnimationFrame(() => inputRef.current?.focus());
+                }}
+                className="h-6 shrink-0 rounded-md px-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+              >
+                Add airport
+              </button>
+            )
+          ) : (
+            <span className="ml-1 shrink-0 text-[10px] italic text-muted-foreground">
+              Max {maxAirports}
+            </span>
+          )}
+
+          {isLoading && (
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+          )}
+        </div>
       </div>
 
       {/* ── Autocomplete dropdown ── */}
