@@ -269,6 +269,7 @@ const MultiOriginInput = ({
                 align="start"
                 side="bottom"
                 sideOffset={8}
+                avoidCollisions={false}
               >
                 <div className="space-y-0.5">
                   <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider px-2">
