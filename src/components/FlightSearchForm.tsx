@@ -564,12 +564,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      <div className="hidden lg:grid w-full grid-cols-[240px_240px_180px_170px_minmax(0,1fr)] items-start gap-x-4 gap-y-2.5 px-1">
-        <div className="w-[240px]">
+      <div className="hidden lg:grid w-full h-[44px] grid-cols-[220px_220px_180px_170px_minmax(0,1fr)] items-stretch overflow-hidden">
+        <div className="h-full pr-3">
           <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         </div>
 
-        <div className="w-[240px]">
+        <div className="h-full pr-3">
           <NearbyToggle
             enabled={anywhere ? false : toNearby}
             onToggle={handleToNearbyToggle}
@@ -579,14 +579,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           />
         </div>
 
-        <div className="w-[180px] pt-[2px]">
+        <div className="h-full pt-[2px] pr-3">
           <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap">
             <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
             <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
           </label>
         </div>
 
-        <div className="w-[170px] pt-[2px]">
+        <div className="h-full pt-[2px] pr-3">
           {!isAnyDay && departDate ? (
             <Popover>
               <PopoverTrigger asChild>
@@ -607,26 +607,32 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           )}
         </div>
 
-        <div className="min-w-0 pt-[2px] flex h-5 items-center justify-end gap-4">
-          <button onClick={async () => {
-            const result = await requestNearestAirport();
-            if (result) {
-              userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
-              setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
-              setErrors(e => ({ ...e, from: undefined }));
-            }
-          }} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
+        <div className="h-full min-w-0 grid grid-cols-[150px_110px_110px] items-center">
+          <button
+            onClick={async () => {
+              const result = await requestNearestAirport();
+              if (result) {
+                userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
+                setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
+                setErrors(e => ({ ...e, from: undefined }));
+              }
+            }}
+            className="flex h-5 items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors cursor-pointer whitespace-nowrap"
+          >
             <Navigation className="w-3 h-3" /> {t("search.use_location")}
           </button>
 
-          <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
-            className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer whitespace-nowrap ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
+          <button
+            type="button"
+            onClick={() => setIsAnyDay(!isAnyDay)}
+            className={`flex h-5 items-center gap-1.5 text-[11px] transition-colors cursor-pointer whitespace-nowrap ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}
+          >
             {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
             {t("search.any_day", "Any day")}
             <span className="inline-flex min-w-[10px] justify-center">{isAnyDay ? "✓" : ""}</span>
           </button>
 
-          <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
+          <label className="flex h-5 items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-3.5 w-3.5 rounded-[3px]" />
             <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1">
               <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
