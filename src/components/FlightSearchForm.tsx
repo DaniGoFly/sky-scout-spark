@@ -266,7 +266,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const SEG_PLACEHOLDER = "text-[15px] font-normal text-muted-foreground/40 leading-snug whitespace-nowrap";
 
   return (
-    <div className="w-full max-w-full space-y-5">
+    <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-x-clip">
       {/* ── Trip type pill ── */}
       <div className="flex items-center justify-start gap-3">
         <div className="relative">
