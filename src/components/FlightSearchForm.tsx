@@ -266,7 +266,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const SEG_PLACEHOLDER = "text-[15px] font-normal text-muted-foreground/40 leading-snug whitespace-nowrap";
 
   return (
-    <div className="w-full space-y-5">
+    <div className="w-full max-w-full space-y-5">
       {/* ── Trip type pill ── */}
       <div className="flex items-center justify-start gap-3">
         <div className="relative">
@@ -290,11 +290,11 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* ═══════════════════════════════════════════
           SIGNATURE SEARCH BAR
           ═══════════════════════════════════════════ */}
-      <div className="rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] overflow-visible relative z-20 backdrop-blur-sm">
-        {/* Desktop: single horizontal row */}
-        <div className="hidden lg:flex items-stretch">
+      <div className="w-full min-w-0 max-w-full rounded-2xl border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] overflow-hidden relative z-20 backdrop-blur-sm [contain:layout]">
+        {/* Desktop: fixed slot grid */}
+        <div className="hidden lg:grid items-stretch grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)_320px_220px_170px]">
           {/* FROM */}
-          <div className={`flex-1 min-w-0 px-6 py-4 rounded-l-2xl transition-colors hover:bg-secondary/60 ${errRing(!!errors.from)}`}>
+          <div className={`min-w-0 px-6 py-4 rounded-l-2xl transition-colors hover:bg-secondary/60 ${errRing(!!errors.from)}`}>
             <span className={SEG_LABEL}>{t("search.from")}</span>
             <MultiOriginInput
               values={origins}
@@ -305,8 +305,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
 
           {/* SWAP */}
-          <div className="flex items-center justify-center shrink-0 relative z-30" style={{ width: '40px', margin: '0 -20px' }}>
-            <button type="button" onClick={swapLocations}
+          <div className="flex items-center justify-center relative z-30">
+            <button
+              type="button"
+              onClick={swapLocations}
               disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
               className="w-[32px] h-[32px] rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 hover:scale-105 disabled:opacity-20 transition-all cursor-pointer shadow-sm"
             >
@@ -315,10 +317,10 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
 
           {/* TO */}
-          <div className={`flex-1 min-w-0 px-6 py-4 transition-colors hover:bg-secondary/60 ${errRing(!!errors.to)}`}>
+          <div className={`min-w-0 px-6 py-4 transition-colors hover:bg-secondary/60 ${errRing(!!errors.to)}`}>
             <span className={SEG_LABEL}>{t("search.to")}</span>
             {anywhere ? (
-              <div className="flex items-center gap-1.5 min-h-[36px]">
+              <div className="flex items-center gap-1.5 min-h-[30px]">
                 <Globe className="w-4 h-4 text-primary shrink-0" />
                 <span className={SEG_VALUE}>Everywhere</span>
               </div>
@@ -333,13 +335,9 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             )}
           </div>
 
-          {/* Separator */}
-          <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
-
-          {/* DATES SECTION */}
+          {/* DATES SLOT (fixed width) */}
           {isAnyDay ? (
-            /* ── Any-day mode: trip-length slider sits inline where dates would be ── */
-            <div className={`flex-1 min-w-[280px] max-w-[320px] px-6 py-3 flex flex-col justify-center ${errRing(!!errors.dates)}`}>
+            <div className={`h-full w-[320px] px-6 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
               <span className={SEG_LABEL}>Trip length</span>
               {tripType === "roundtrip" ? (
                 <TripLengthSlider value={tripLength} onChange={setTripLength} />
@@ -348,44 +346,61 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               )}
             </div>
           ) : (
-            <>
-              {/* DEPART */}
-              <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
-                <FlightDateRangePicker
-                  departDate={departDate} returnDate={returnDate}
-                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                  bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
-                />
-              </div>
+            <div className={`h-full w-[320px] transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
+              <div className="grid h-full grid-cols-2 items-stretch">
+                <div className="px-6 py-4 relative z-30 border-r border-border/20">
+                  <FlightDateRangePicker
+                    departDate={departDate}
+                    returnDate={returnDate}
+                    onDepartChange={handleDepartChange}
+                    onReturnChange={handleReturnChange}
+                    tripType={tripType as "roundtrip" | "oneway"}
+                    onTripTypeChange={handleTripTypeChange}
+                    hasError={!!errors.dates}
+                    bare
+                    segmentMode
+                    segmentLabel={t("calendar.depart")}
+                    segmentDisplay={departDisplay}
+                  />
+                </div>
 
-              {/* RETURN */}
-              {tripType === "roundtrip" && (
-                <>
-                  <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
-                  <div className={`min-w-[140px] px-6 py-4 transition-colors hover:bg-secondary/60 relative z-30 ${errRing(!!errors.dates)}`}>
+                <div className="px-6 py-4 relative z-30">
+                  {tripType === "roundtrip" ? (
                     <FlightDateRangePicker
-                      departDate={departDate} returnDate={returnDate}
-                      onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                      tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                      bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
+                      departDate={departDate}
+                      returnDate={returnDate}
+                      onDepartChange={handleDepartChange}
+                      onReturnChange={handleReturnChange}
+                      tripType={tripType as "roundtrip" | "oneway"}
+                      onTripTypeChange={handleTripTypeChange}
+                      hasError={!!errors.dates}
+                      bare
+                      segmentMode
+                      segmentLabel={t("calendar.return", "Return")}
+                      segmentDisplay={returnDisplay}
                     />
-                  </div>
-                </>
-              )}
-            </>
+                  ) : (
+                    <div className="flex h-full flex-col justify-center">
+                      <span className={SEG_LABEL}>{t("calendar.return", "Return")}</span>
+                      <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
 
-          <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
-
           {/* TRAVELERS */}
-          <div className="min-w-[220px] px-6 py-4 transition-colors hover:bg-secondary/60 cursor-pointer">
+          <div className="w-[220px] px-6 py-4 transition-colors hover:bg-secondary/60 border-l border-border/20 cursor-pointer">
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
 
           {/* SEARCH BUTTON */}
-          <button type="button" onClick={handleSearch}
-            className="flex items-center justify-center gap-2.5 px-8 min-w-[170px] rounded-r-2xl bg-gradient-to-b from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-[15px] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer">
+          <button
+            type="button"
+            onClick={handleSearch}
+            className="w-[170px] flex items-center justify-center gap-2.5 px-8 rounded-r-2xl bg-gradient-to-b from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-[15px] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
+          >
             <Search className="w-5 h-5" />
             <span className="hidden xl:inline">{t("search.search")}</span>
           </button>
@@ -536,7 +551,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
             className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer whitespace-nowrap ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
             {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
-            {t("search.any_day", "Any day")} {isAnyDay && "✓"}
+            {t("search.any_day", "Any day")}
+            <span className="inline-flex min-w-[10px] justify-center">{isAnyDay ? "✓" : ""}</span>
           </button>
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
@@ -548,12 +564,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
       </div>
 
-      <div className="hidden lg:grid grid-cols-[minmax(240px,1fr)_minmax(240px,1fr)_minmax(180px,auto)_minmax(150px,auto)_minmax(280px,auto)] items-start gap-x-4 gap-y-2.5 px-1">
-        <div className="min-w-[240px]">
+      <div className="hidden lg:grid w-full grid-cols-[240px_240px_180px_170px_minmax(0,1fr)] items-start gap-x-4 gap-y-2.5 px-1">
+        <div className="w-[240px]">
           <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         </div>
 
-        <div className="min-w-[240px]">
+        <div className="w-[240px]">
           <NearbyToggle
             enabled={anywhere ? false : toNearby}
             onToggle={handleToNearbyToggle}
@@ -563,14 +579,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           />
         </div>
 
-        <div className="min-w-[180px] pt-[2px]">
+        <div className="w-[180px] pt-[2px]">
           <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap">
             <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
             <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
           </label>
         </div>
 
-        <div className="min-w-[150px] pt-[2px]">
+        <div className="w-[170px] pt-[2px]">
           {!isAnyDay && departDate ? (
             <Popover>
               <PopoverTrigger asChild>
@@ -591,7 +607,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           )}
         </div>
 
-        <div className="min-w-[280px] pt-[2px] flex h-5 items-center justify-end gap-4">
+        <div className="min-w-0 pt-[2px] flex h-5 items-center justify-end gap-4">
           <button onClick={async () => {
             const result = await requestNearestAirport();
             if (result) {
@@ -606,7 +622,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <button type="button" onClick={() => setIsAnyDay(!isAnyDay)}
             className={`flex items-center gap-1.5 text-[11px] transition-colors cursor-pointer whitespace-nowrap ${isAnyDay ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"}`}>
             {isAnyDay ? <CalendarOff className="w-3 h-3" /> : <CalendarDays className="w-3 h-3" />}
-            {t("search.any_day", "Any day")} {isAnyDay && "✓"}
+            {t("search.any_day", "Any day")}
+            <span className="inline-flex min-w-[10px] justify-center">{isAnyDay ? "✓" : ""}</span>
           </button>
 
           <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">

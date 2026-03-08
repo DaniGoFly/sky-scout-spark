@@ -28,7 +28,7 @@ const FlightSearchHero = () => {
       />
 
       <div className="relative z-10 flex-1 flex flex-col justify-center pt-28 pb-20 px-4">
-        <div className="container mx-auto max-w-5xl">
+        <div className="mx-auto w-full max-w-[1160px]">
           <div className="text-center mb-14 animate-fade-in">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-5 leading-tight tracking-tight text-foreground">
               {t("hero.title_search")}{" "}
