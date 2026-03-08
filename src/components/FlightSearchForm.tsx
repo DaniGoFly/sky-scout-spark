@@ -337,7 +337,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
           {/* DATES SLOT (fixed width) */}
           {isAnyDay ? (
-            <div className={`h-full w-[320px] px-6 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
+            <div className={`h-full w-full px-6 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
               <span className={SEG_LABEL}>Trip length</span>
               {tripType === "roundtrip" ? (
                 <TripLengthSlider value={tripLength} onChange={setTripLength} />
