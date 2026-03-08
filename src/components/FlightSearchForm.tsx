@@ -391,7 +391,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           )}
 
           {/* TRAVELERS */}
-          <div className="w-[220px] px-6 py-4 transition-colors hover:bg-secondary/60 border-l border-border/20 cursor-pointer">
+          <div className="w-full px-6 py-4 transition-colors hover:bg-secondary/60 border-l border-border/20 cursor-pointer">
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
 
