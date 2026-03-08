@@ -300,7 +300,7 @@ const MultiOriginInput = ({
             onFocus={() => query.length >= 2 && setIsOpen(true)}
             onKeyDown={handleKeyDown}
             className="flex-1 min-w-[60px] bg-transparent outline-none text-[15px] font-semibold text-foreground placeholder:text-muted-foreground/40 placeholder:font-normal"
-            placeholder={values.length === 0 ? placeholder : "+ Add"}
+            placeholder={values.length === 0 ? placeholder : "Add airport"}
             autoComplete="off"
           />
         ) : (
