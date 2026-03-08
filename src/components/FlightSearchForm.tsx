@@ -301,7 +301,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               onChange={handleOriginsChange}
               placeholder="Country, city or airport"
               bare
-            />
+            /></div>
           </div>
 
           {/* SWAP */}
