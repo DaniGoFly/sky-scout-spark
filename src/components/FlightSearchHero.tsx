@@ -17,7 +17,7 @@ const FlightSearchHero = () => {
   }, []);
 
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden">
+    <section className="relative min-h-screen flex flex-col overflow-visible">
       {/* Calm navy gradient */}
       <div
         className="absolute inset-0"
