@@ -12,7 +12,7 @@ interface NearbyToggleProps {
 }
 
 const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = false }: NearbyToggleProps) => (
-  <div className="w-full min-w-0">
+  <div className="flex h-full min-h-[44px] w-full min-w-0 flex-col justify-start">
     <label className={cn("flex h-5 items-center gap-2 select-none", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
       <Checkbox
         checked={enabled}
