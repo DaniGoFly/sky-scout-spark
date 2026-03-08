@@ -284,8 +284,8 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
         className="w-full h-full text-left px-4 flex flex-col justify-center cursor-pointer focus:outline-none"
         onClick={() => setIsOpen(true)}
       >
-        <span className="block text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none mb-1.5">Travellers</span>
-        <span className="block text-[15px] leading-[20px] font-medium text-foreground whitespace-nowrap">{getDisplayText()}</span>
+        <span className="block text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none">Travellers</span>
+        <span className="block text-[14px] leading-[20px] mt-1.5 font-semibold text-foreground whitespace-nowrap">{getDisplayText()}</span>
       </button>
     ) : null;
 
