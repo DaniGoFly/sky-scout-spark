@@ -114,18 +114,15 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
     // Ensure it doesn't overflow left
     if (left < 12) left = 12;
     
-    // If not enough space below, position above
-    if (top + calHeight > window.innerHeight - 12) {
-      top = rect.top - calHeight - 8;
-      if (top < 12) top = 12;
-    }
+    // ALWAYS open downward — never flip upward
+    // If not enough space, just cap maxHeight but keep it below the trigger
 
     setDropdownStyle({
       position: "fixed",
       left,
       top,
       width: calWidth,
-      maxHeight: isMobile ? "70vh" : "min(520px, calc(100vh - 24px))",
+      maxHeight: isMobile ? "70vh" : `min(520px, ${window.innerHeight - top - 12}px)`,
       zIndex: 9999,
     });
   }, [isMobile]);
