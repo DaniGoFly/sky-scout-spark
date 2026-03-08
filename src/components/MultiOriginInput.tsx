@@ -371,10 +371,15 @@ const MultiOriginInput = ({
                     }
                   }}
                   onKeyDown={handleKeyDown}
-                  className="w-full min-w-0 bg-transparent text-[14px] font-normal leading-[20px] text-foreground outline-none overflow-x-auto whitespace-nowrap placeholder:text-[14px] placeholder:font-normal placeholder:text-muted-foreground/40"
+                  className="bg-transparent text-[14px] font-normal leading-[20px] text-foreground outline-none placeholder:text-[14px] placeholder:font-normal placeholder:text-muted-foreground/40"
                   placeholder={values.length === 0 ? placeholder : addActionText}
                   autoComplete="off"
-                  style={{ textOverflow: "clip" }}
+                  style={{ 
+                    maxWidth: "180px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap"
+                  }}
                 />
               )
             ) : (
