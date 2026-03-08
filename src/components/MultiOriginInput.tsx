@@ -312,7 +312,8 @@ const MultiOriginInput = ({
           {/* ── Input area: always takes remaining space, never pushes chips ── */}
           <div
             ref={inputAreaRef}
-            className="flex flex-1 min-w-0 items-center overflow-hidden"
+            className="flex flex-[1_1_0%] min-w-0 items-center overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ minWidth: MIN_INPUT_WIDTH_PX }}
           >
             {canAdd ? (
               <input
