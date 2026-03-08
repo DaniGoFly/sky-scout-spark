@@ -379,7 +379,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <div className="hidden lg:block w-px self-stretch my-3.5 bg-border/20" />
 
           {/* TRAVELERS */}
-          <div className="min-w-[130px] px-6 py-4 transition-colors hover:bg-secondary/60 cursor-pointer">
+          <div className="min-w-[220px] px-6 py-4 transition-colors hover:bg-secondary/60 cursor-pointer">
             <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
           </div>
 
