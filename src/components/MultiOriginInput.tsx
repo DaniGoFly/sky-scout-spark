@@ -267,10 +267,10 @@ const MultiOriginInput = ({
           inputRef.current?.focus();
         }}
       >
-        <div className="flex h-full w-full items-center overflow-hidden">
-          {/* ── Pinned chips group: shrink-0 so they never move ── */}
+        <div className="flex h-full w-full items-center overflow-hidden gap-2">
+          {/* ── Pinned chips group: fixed width, never moves ── */}
           {(visibleChips.length > 0 || hasOverflow) && (
-            <div className="flex shrink-0 items-center gap-1.5 mr-2">
+            <div className="flex flex-[0_0_auto] items-center gap-1.5">
               {visibleChips.map((v) => (
                 <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} />
               ))}
@@ -330,11 +330,10 @@ const MultiOriginInput = ({
             </div>
           )}
 
-          {/* ── Input area: always takes remaining space, never pushes chips ── */}
+          {/* ── Input area: flexible, constrained, never pushes chips ── */}
           <div
             ref={inputAreaRef}
-            className="flex flex-[1_1_0%] min-w-0 items-center overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            style={{ minWidth: reservedInputWidth }}
+            className="flex flex-[1_1_0%] min-w-0 items-center overflow-hidden"
           >
             {canAdd ? (
               !isInputActive && query.length === 0 && values.length > 0 ? (
@@ -346,50 +345,49 @@ const MultiOriginInput = ({
                     setIsOpen(true);
                     requestAnimationFrame(() => inputRef.current?.focus());
                   }}
-                  className="h-full shrink-0 text-[14px] font-normal leading-[20px] text-muted-foreground/40 whitespace-nowrap"
+                  className="flex-[0_0_auto] text-[14px] font-normal leading-[20px] text-muted-foreground/40 whitespace-nowrap"
                 >
                   {addActionText}
                 </button>
               ) : (
-                <input
-                  ref={inputRef}
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setIsOpen(true);
-                    setIsInputActive(true);
-                  }}
-                  onFocus={() => {
-                    setIsOpen(true);
-                    setIsInputActive(true);
-                  }}
-                  onBlur={() => {
-                    if (selectingRef.current) return;
-                    if (!query) {
-                      setIsInputActive(false);
-                      setIsOpen(false);
-                    }
-                  }}
-                  onKeyDown={handleKeyDown}
-                  className="bg-transparent text-[14px] font-normal leading-[20px] text-foreground outline-none placeholder:text-[14px] placeholder:font-normal placeholder:text-muted-foreground/40"
-                  placeholder={values.length === 0 ? placeholder : addActionText}
-                  autoComplete="off"
-                  style={{ 
-                    maxWidth: "180px",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap"
-                  }}
-                />
+                <div className="flex items-center min-w-0 w-full overflow-hidden">
+                  <input
+                    ref={inputRef}
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setIsOpen(true);
+                      setIsInputActive(true);
+                    }}
+                    onFocus={() => {
+                      setIsOpen(true);
+                      setIsInputActive(true);
+                    }}
+                    onBlur={() => {
+                      if (selectingRef.current) return;
+                      if (!query) {
+                        setIsInputActive(false);
+                        setIsOpen(false);
+                      }
+                    }}
+                    onKeyDown={handleKeyDown}
+                    className="w-full min-w-0 bg-transparent text-[14px] font-normal leading-[20px] text-foreground outline-none placeholder:text-[14px] placeholder:font-normal placeholder:text-muted-foreground/40 overflow-hidden"
+                    placeholder={values.length === 0 ? placeholder : addActionText}
+                    autoComplete="off"
+                    style={{ 
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    }}
+                  />
+                  {isLoading && (
+                    <Loader2 className="ml-1 h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+                  )}
+                </div>
               )
             ) : (
-              <span className="shrink-0 text-[10px] italic text-muted-foreground whitespace-nowrap">
+              <span className="flex-[0_0_auto] text-[10px] italic text-muted-foreground whitespace-nowrap">
                 Max {maxAirports}
               </span>
-            )}
-
-            {isLoading && (
-              <Loader2 className="ml-1 h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
             )}
           </div>
         </div>
