@@ -25,6 +25,10 @@ interface FlightSearchFormProps {
   onParamsConsumed?: () => void;
 }
 
+export interface FlightSearchFormHandle {
+  openFlexDates: () => void;
+}
+
 type TripType = "roundtrip" | "oneway" | "multicity";
 
 const CABIN_LABELS: Record<string, string> = {
