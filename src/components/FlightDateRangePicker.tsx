@@ -164,7 +164,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
 
   return (
     <div
-      className="w-full bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden pointer-events-auto"
+      className="w-full bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden pointer-events-auto z-[9999] relative"
       onClick={(e) => e.stopPropagation()}
     >
       {/* ── Header: Trip type + Tabs + Close ── */}
