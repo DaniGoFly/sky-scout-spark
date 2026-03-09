@@ -22,46 +22,9 @@ interface AirportAutocompleteProps {
 }
 
 /**
- * Dropdown rendered via React Portal so it's never clipped by
- * ancestor overflow:hidden / backdrop-filter stacking contexts.
+ * Dropdown rendered absolutely under the field wrapper so it stays
+ * anchored to the trigger and never drifts.
  */
-const PortalDropdown = ({
-  anchorRef,
-  children,
-}: {
-  anchorRef: React.RefObject<HTMLDivElement>;
-  children: React.ReactNode;
-}) => {
-  const [style, setStyle] = useState<React.CSSProperties>({});
-
-  const updatePosition = useCallback(() => {
-    if (!anchorRef.current) return;
-    const rect = anchorRef.current.getBoundingClientRect();
-
-    setStyle({
-      position: "fixed",
-      left: rect.left,
-      top: rect.bottom + 8,
-      width: Math.max(rect.width, 280),
-      maxHeight: Math.max(120, window.innerHeight - rect.bottom - 16),
-      zIndex: 9999,
-    });
-  }, [anchorRef]);
-
-  useEffect(() => {
-    updatePosition();
-    // Only update on resize, not scroll - keeps dropdown stable while open
-    window.addEventListener("resize", updatePosition);
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [updatePosition]);
-
-  return createPortal(
-    <div style={style}>{children}</div>,
-    document.body
-  );
-};
 
 const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", compact = false, hasError = false }: AirportAutocompleteProps) => {
   const [query, setQuery] = useState(value?.display || "");
