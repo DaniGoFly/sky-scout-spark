@@ -369,10 +369,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           ═══════════════════════════════════════════ */}
       <div className="relative overflow-visible">
         {/* Search bar */}
-        <div className={cn(
-          "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm lg:h-[94px] overflow-visible",
-          calendarOpen ? "rounded-t-2xl" : "rounded-2xl"
-        )}>
+        <div
+          ref={searchBarRef}
+          className={cn(
+            "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm lg:h-[94px] overflow-visible",
+            calendarOpen ? "rounded-t-2xl" : "rounded-2xl",
+          )}
+        >
           {/* Desktop: fixed slot grid */}
           <div className="hidden lg:grid h-full items-stretch grid-cols-[minmax(180px,205px)_40px_minmax(180px,205px)_minmax(280px,320px)_minmax(190px,220px)_minmax(150px,170px)] overflow-visible">
             {/* FROM */}
