@@ -290,7 +290,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
           ) : (
             <Search className="w-4 h-4" />
           )}
-          <span className="hidden sm:inline">{isSearching ? "Searching…" : "Search"}</span>
+          <span className="hidden sm:inline">{isSearching ? t("search.searching") : t("search.search")}</span>
         </Button>
       </div>
     </div>
