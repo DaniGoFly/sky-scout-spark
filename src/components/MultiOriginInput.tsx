@@ -373,7 +373,7 @@ const MultiOriginInput = ({
           <div
             ref={dropdownRef}
             style={dropdownOverlay.style}
-            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden overflow-y-auto max-h-[360px] isolate [contain:paint] transform-gpu"
+            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden overflow-y-auto max-h-[360px] isolate [contain:paint]"
           >
             {suggestions.map((place, index) => (
               <button
@@ -418,7 +418,7 @@ const MultiOriginInput = ({
           <div
             ref={dropdownRef}
             style={dropdownOverlay.style}
-            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden isolate [contain:paint] transform-gpu"
+            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden isolate [contain:paint]"
           >
             <div className="px-4 py-3 text-center text-sm text-muted-foreground">
               No airports found

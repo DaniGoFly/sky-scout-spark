@@ -303,7 +303,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
                 <div
                   ref={tripTypeMenuRef}
                   style={{ ...tripTypeOverlay.style, minWidth: 160 }}
-                  className="pointer-events-auto fixed z-[9999] bg-card border border-border rounded-xl shadow-xl overflow-hidden isolate transform-gpu"
+                  className="pointer-events-auto fixed z-[9999] bg-card border border-border rounded-xl shadow-xl overflow-hidden isolate"
                 >
                   {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
                     <button
@@ -360,7 +360,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               <div
                 ref={tripTypeMenuRef}
                 style={{ ...tripTypeOverlay.style, minWidth: 160 }}
-                className="pointer-events-auto fixed z-[9999] bg-card border border-border rounded-xl shadow-xl overflow-hidden isolate transform-gpu"
+                className="pointer-events-auto fixed z-[9999] bg-card border border-border rounded-xl shadow-xl overflow-hidden isolate"
               >
                 {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
                   <button
@@ -632,7 +632,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <OverlayPortal>
             <div
               style={calendarOverlay.style}
-              className="pointer-events-auto fixed z-[9999] w-full isolate [contain:paint] transform-gpu"
+              className="pointer-events-auto fixed z-[9999] w-full isolate [contain:paint]"
             >
               <CalendarPanel
                 departDate={departDate}
