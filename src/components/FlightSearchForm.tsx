@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ArrowRightLeft, Search, Globe, CalendarOff, CalendarDays, ChevronDown, Navigation, MapPin, Zap, Plane, Shield, CheckCircle2, Wifi, Minus, Plus } from "lucide-react";
@@ -74,9 +73,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [returnFlexAfter, setReturnFlexAfter] = useState(0);
 
   const [tripTypeOpen, setTripTypeOpen] = useState(false);
-
-  const searchBarRef = useRef<HTMLDivElement>(null);
-  const [calendarPos, setCalendarPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
   /* ── Calendar panel open state (lifted) ── */
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -212,33 +208,13 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const handleReturnChange = useCallback((date: Date | null) => { setReturnDate(date); setErrors(e => ({ ...e, dates: undefined })); }, []);
   const handleTripTypeChange = useCallback((type: "roundtrip" | "oneway") => { setTripType(type); }, []);
 
-  const updateCalendarPos = useCallback(() => {
-    if (searchBarRef.current) {
-      const rect = searchBarRef.current.getBoundingClientRect();
-      setCalendarPos({ top: rect.bottom + 8 + window.scrollY, left: rect.left + window.scrollX, width: rect.width });
-    }
-  }, []);
-
   const handleOpenCalendar = useCallback(() => {
-    if (!calendarOpen) {
-      updateCalendarPos();
-      setCalendarOpen(true);
-    }
-  }, [calendarOpen, updateCalendarPos]);
+    setCalendarOpen(true);
+  }, []);
 
   const handleCloseCalendar = useCallback(() => {
     setCalendarOpen(false);
   }, []);
-
-  // Keep position updated on resize only while open (not scroll - stability)
-  useEffect(() => {
-    if (!calendarOpen) return;
-    const update = () => updateCalendarPos();
-    window.addEventListener("resize", update);
-    return () => {
-      window.removeEventListener("resize", update);
-    };
-  }, [calendarOpen, updateCalendarPos]);
 
   const handleMultiCitySearch = useCallback((segments: any[], travelersData: TravelersData) => {
     const validSegments = segments.filter(seg => seg.from?.code && seg.to?.code && seg.date);
@@ -333,7 +309,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       {/* ═══════════════════════════════════════════
           SIGNATURE SEARCH BAR + CALENDAR
           ═══════════════════════════════════════════ */}
-      <div className="relative" ref={searchBarRef}>
+      <div className="relative">
         {/* Search bar */}
         <div className={cn(
           "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm lg:h-[94px]",
@@ -565,43 +541,34 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
         </div>
 
-      </div>
 
-      {/* ═══════════════════════════════════════════
-          CALENDAR PANEL — rendered via portal to avoid clipping
-          ═══════════════════════════════════════════ */}
-      {calendarOpen && !isAnyDay && calendarPos && createPortal(
-        <div
-          className="animate-in fade-in-0 slide-in-from-top-2 duration-200"
-          style={{
-            position: "absolute",
-            top: calendarPos.top,
-            left: calendarPos.left,
-            width: calendarPos.width,
-            zIndex: 9999,
-            pointerEvents: "auto",
-          }}
-        >
-          <CalendarPanel
-            departDate={departDate}
-            returnDate={returnDate}
-            onDepartChange={handleDepartChange}
-            onReturnChange={handleReturnChange}
-            tripType={tripType as "roundtrip" | "oneway"}
-            onTripTypeChange={handleTripTypeChange}
-            onDone={handleCloseCalendar}
-            departFlexBefore={departFlexBefore}
-            departFlexAfter={departFlexAfter}
-            returnFlexBefore={returnFlexBefore}
-            returnFlexAfter={returnFlexAfter}
-            onDepartFlexBeforeChange={setDepartFlexBefore}
-            onDepartFlexAfterChange={setDepartFlexAfter}
-            onReturnFlexBeforeChange={setReturnFlexBefore}
-            onReturnFlexAfterChange={setReturnFlexAfter}
-          />
-        </div>,
-        document.body
-      )}
+        {/* Calendar panel (anchored to search bar) */}
+        {calendarOpen && !isAnyDay && (
+          <div
+            className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full animate-in fade-in-0 slide-in-from-top-2 duration-200"
+            style={{ pointerEvents: "auto" }}
+          >
+            <CalendarPanel
+              departDate={departDate}
+              returnDate={returnDate}
+              onDepartChange={handleDepartChange}
+              onReturnChange={handleReturnChange}
+              tripType={tripType as "roundtrip" | "oneway"}
+              onTripTypeChange={handleTripTypeChange}
+              onDone={handleCloseCalendar}
+              departFlexBefore={departFlexBefore}
+              departFlexAfter={departFlexAfter}
+              returnFlexBefore={returnFlexBefore}
+              returnFlexAfter={returnFlexAfter}
+              onDepartFlexBeforeChange={setDepartFlexBefore}
+              onDepartFlexAfterChange={setDepartFlexAfter}
+              onReturnFlexBeforeChange={setReturnFlexBefore}
+              onReturnFlexAfterChange={setReturnFlexAfter}
+            />
+          </div>
+        )}
+
+      </div>
 
       {/* ═══════════════════════════════════════════
           OPTIONS ROW — clean, secondary

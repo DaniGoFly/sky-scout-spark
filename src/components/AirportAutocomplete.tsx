@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useRef } from "react";
 import { Plane, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+
 
 interface Place {
   name: string;
@@ -22,46 +22,9 @@ interface AirportAutocompleteProps {
 }
 
 /**
- * Dropdown rendered via React Portal so it's never clipped by
- * ancestor overflow:hidden / backdrop-filter stacking contexts.
+ * Dropdown rendered absolutely under the field wrapper so it stays
+ * anchored to the trigger and never drifts.
  */
-const PortalDropdown = ({
-  anchorRef,
-  children,
-}: {
-  anchorRef: React.RefObject<HTMLDivElement>;
-  children: React.ReactNode;
-}) => {
-  const [style, setStyle] = useState<React.CSSProperties>({});
-
-  const updatePosition = useCallback(() => {
-    if (!anchorRef.current) return;
-    const rect = anchorRef.current.getBoundingClientRect();
-
-    setStyle({
-      position: "fixed",
-      left: rect.left,
-      top: rect.bottom + 8,
-      width: Math.max(rect.width, 280),
-      maxHeight: Math.max(120, window.innerHeight - rect.bottom - 16),
-      zIndex: 9999,
-    });
-  }, [anchorRef]);
-
-  useEffect(() => {
-    updatePosition();
-    // Only update on resize, not scroll - keeps dropdown stable while open
-    window.addEventListener("resize", updatePosition);
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [updatePosition]);
-
-  return createPortal(
-    <div style={style}>{children}</div>,
-    document.body
-  );
-};
 
 const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", compact = false, hasError = false }: AirportAutocompleteProps) => {
   const [query, setQuery] = useState(value?.display || "");
@@ -73,7 +36,7 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside (handles portal-rendered dropdown)
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -204,51 +167,46 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
       </div>
 
       {showSuggestions && (
-        <PortalDropdown anchorRef={wrapperRef}>
-          <div
-            ref={dropdownRef}
-            className="bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto"
-            style={{ maxHeight: "inherit" }}
-          >
-            {suggestions.map((place, index) => (
-              <button
-                key={`${place.code}-${index}`}
-                type="button"
-                onClick={() => handleSelect(place)}
-                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
-                  index === highlightedIndex 
-                    ? "bg-primary/10" 
-                    : "hover:bg-secondary/50"
-                }`}
-              >
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                  <span className="text-xs font-bold text-muted-foreground">
-                    {place.code}
-                  </span>
+        <div
+          ref={dropdownRef}
+          className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto max-h-[360px]"
+        >
+          {suggestions.map((place, index) => (
+            <button
+              key={`${place.code}-${index}`}
+              type="button"
+              onClick={() => handleSelect(place)}
+              className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                index === highlightedIndex 
+                  ? "bg-primary/10" 
+                  : "hover:bg-secondary/50"
+              }`}
+            >
+              <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                <span className="text-xs font-bold text-muted-foreground">
+                  {place.code}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground truncate">
+                  {place.name}
+                  {place.main_airport_name && (
+                    <span className="text-muted-foreground"> – {place.main_airport_name}</span>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-foreground truncate">
-                    {place.name}
-                    {place.main_airport_name && (
-                      <span className="text-muted-foreground"> – {place.main_airport_name}</span>
-                    )}
-                  </div>
-                  <div className="text-sm text-muted-foreground truncate">
-                    {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
-                  </div>
+                <div className="text-sm text-muted-foreground truncate">
+                  {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
                 </div>
-              </button>
-            ))}
-          </div>
-        </PortalDropdown>
+              </div>
+            </button>
+          ))}
+        </div>
       )}
 
       {showEmpty && (
-        <PortalDropdown anchorRef={wrapperRef}>
-          <div className="bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground">
-            No airports found
-          </div>
-        </PortalDropdown>
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground">
+          No airports found
+        </div>
       )}
     </div>
   );
