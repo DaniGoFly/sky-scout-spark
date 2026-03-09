@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addDays } from "date-fns";
-import { Loader2, Navigation, Plane, SlidersHorizontal, MapPin, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Navigation, Plane, MapPin, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,10 +48,9 @@ const Explore = () => {
   const [destinations, setDestinations] = useState<ExploreResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [tripLength, setTripLength] = useState<[number, number]>([3, 14]);
-  const [dateMode, setDateMode] = useState<"flexible" | "exact">("flexible");
-  const [directOnly, setDirectOnly] = useState(false);
+  const directOnly = false;
   const [hoveredIata, setHoveredIata] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  
   const [selectedDest, setSelectedDest] = useState<ExploreResult | null>(null);
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
@@ -148,11 +147,11 @@ const Explore = () => {
       currency: currency.toLowerCase(),
     });
     // Mark as explore estimate so results page can show info banner
-    if (!hasDates || dateMode === "flexible") {
+    if (!hasDates) {
       params.set("explore_from_price", String(Math.round(dest.price)));
     }
     navigate(`/flights/results?${params.toString()}`);
-  }, [origin, navigate, currency, dateMode]);
+  }, [origin, navigate, currency]);
 
   const originAirport = useMemo(() =>
     origin ? AIRPORTS.find(a => a.code === origin.code) : null,
@@ -201,80 +200,37 @@ const Explore = () => {
               {/* Divider */}
               <div className="h-px bg-[rgba(255,255,255,0.06)] mx-4" />
 
-              {/* DATES + FILTERS chips */}
-              <div className="px-4 py-3">
-                <label className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground mb-2 uppercase tracking-[0.08em]">
-                  <SlidersHorizontal className="w-3 h-3" />
-                  Dates & Filters
-                </label>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {[
-                    { label: "Flexible dates", active: dateMode === "flexible", onClick: () => setDateMode("flexible") },
-                    { label: "Exact dates", active: dateMode === "exact", onClick: () => setDateMode("exact") },
-                    { label: "Direct only", active: directOnly, onClick: () => setDirectOnly(!directOnly) },
-                  ].map((chip) => (
-                    <button
-                      key={chip.label}
-                      onClick={chip.onClick}
-                      className={cn(
-                        "h-8 px-3 rounded-full text-xs font-medium border transition-all duration-150",
-                        chip.active
-                          ? "bg-primary/15 text-primary border-primary/40"
-                          : "border-[rgba(255,255,255,0.1)] text-muted-foreground hover:text-foreground hover:border-[rgba(255,255,255,0.2)]"
-                      )}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className={cn(
-                      "h-8 px-3 rounded-full text-xs font-medium border transition-all duration-150 flex items-center gap-1",
-                      showFilters
-                        ? "bg-primary/15 text-primary border-primary/40"
-                        : "border-[rgba(255,255,255,0.1)] text-muted-foreground hover:text-foreground hover:border-[rgba(255,255,255,0.2)]"
-                    )}
-                  >
-                    <SlidersHorizontal className="w-3 h-3" />
-                    Filters
-                  </button>
-                </div>
-
-                {/* Expandable sliders */}
-                {(showFilters || dateMode === "flexible") && (
-                  <div className="space-y-3 pt-3 w-full max-w-full overflow-visible box-border mb-6">
-                    <div className="space-y-1.5 w-full max-w-full">
-                      <div className="flex justify-between text-[11px] text-muted-foreground">
-                        <span>Trip length</span>
-                        <span className="font-semibold text-foreground tabular-nums">{tripLength[0]}–{tripLength[1]} days</span>
-                      </div>
-                      <Slider
-                        value={tripLength}
-                        onValueChange={(v) => setTripLength([v[0], v[1]])}
-                        min={1}
-                        max={21}
-                        step={1}
-                        className="w-full max-w-full"
-                      />
-                    </div>
-                    {showFilters && (
-                      <div className="space-y-1.5 w-full max-w-full">
-                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                          <span>Max price</span>
-                          <span className="font-semibold text-foreground tabular-nums">{formatPrice(maxPrice)}</span>
-                        </div>
-                        <Slider
-                          value={[maxPrice]}
-                          onValueChange={(v) => setMaxPrice(v[0])}
-                          min={50}
-                          max={priceMax}
-                          step={25}
-                          className="w-full max-w-full"
-                        />
-                      </div>
-                    )}
+              {/* Filters — trip length + max price sliders */}
+              <div className="px-4 py-3 space-y-4">
+                <div className="space-y-1.5 w-full">
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>Trip length</span>
+                    <span className="font-semibold text-foreground tabular-nums">{tripLength[0]}–{tripLength[1]} days</span>
                   </div>
-                )}
+                  <Slider
+                    value={tripLength}
+                    onValueChange={(v) => setTripLength([v[0], v[1]])}
+                    min={1}
+                    max={21}
+                    step={1}
+                    minStepsBetweenThumbs={1}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-1.5 w-full">
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>Max price</span>
+                    <span className="font-semibold text-foreground tabular-nums">{formatPrice(maxPrice)}</span>
+                  </div>
+                  <Slider
+                    value={[maxPrice]}
+                    onValueChange={(v) => setMaxPrice(v[0])}
+                    min={50}
+                    max={priceMax}
+                    step={25}
+                    className="w-full"
+                  />
+                </div>
               </div>
 
               {/* Divider */}
@@ -426,9 +382,6 @@ const Explore = () => {
                             <div className="text-right shrink-0 flex items-center gap-1.5">
                               <div>
                                 <p className="text-sm font-bold text-foreground tabular-nums">From {formatPrice(dest.price)}</p>
-                                {dateMode === "flexible" && (
-                                  <p className="text-[9px] text-muted-foreground/60 leading-tight">Flexible dates</p>
-                                )}
                               </div>
                               <ArrowRight className={cn("w-3.5 h-3.5 transition-all duration-150", hoveredIata === dest.destinationIata ? "text-primary translate-x-0.5" : "text-muted-foreground/20")} />
                             </div>
