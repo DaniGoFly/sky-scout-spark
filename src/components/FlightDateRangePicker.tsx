@@ -23,6 +23,8 @@ export interface CalendarPanelProps {
   onDepartFlexAfterChange: (v: number) => void;
   onReturnFlexBeforeChange: (v: number) => void;
   onReturnFlexAfterChange: (v: number) => void;
+  /** Override the initial active tab when the panel mounts */
+  initialTab?: "specific" | "flexible";
 }
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
