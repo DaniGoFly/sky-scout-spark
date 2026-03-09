@@ -656,8 +656,8 @@ const LiveFlightResults = () => {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-5">
               <Plane className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-lg font-semibold text-foreground mb-2">Select a route to search</p>
-            <p className="text-sm text-muted-foreground mb-6 max-w-sm">Choose your origin, destination, and dates to find the best flights.</p>
+            <p className="text-lg font-semibold text-foreground mb-2">{t("results.select_route")}</p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-sm">{t("results.select_route_sub")}</p>
             <Button onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
           </div>
         )}
