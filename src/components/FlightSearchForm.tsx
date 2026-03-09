@@ -603,7 +603,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* Calendar panel (inline absolute positioning, scrolls with search bar) */}
         {calendarOpen && !isAnyDay && (
-          <div className="absolute left-0 right-0 top-full z-40">
+          <div className="absolute left-0 right-0 top-full z-[100]">
             <CalendarPanel
               departDate={departDate}
               returnDate={returnDate}
