@@ -127,8 +127,8 @@ export function saveFlight(flight: Flight, context?: SearchContext): void {
     extractIsoDate(flight.return?.departureTime) ||
     null;
 
-  const resolvedTripType: "oneway" | "roundtrip" =
-    context?.tripType || inferredReturnDate || flight.return ? "roundtrip" : "oneway";
+  const hasRoundtripSignals = context?.tripType === "roundtrip" || Boolean(inferredReturnDate) || Boolean(flight.return);
+  const resolvedTripType: "oneway" | "roundtrip" = hasRoundtripSignals ? "roundtrip" : "oneway";
 
   const saved: SavedFlight = {
     id: flight.id,
