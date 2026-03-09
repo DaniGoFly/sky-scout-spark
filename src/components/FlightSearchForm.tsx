@@ -632,7 +632,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           <OverlayPortal>
             <div
               style={calendarOverlay.style}
-              className="pointer-events-auto fixed z-[9999] w-full isolate [contain:paint] transform-gpu"
+              className="pointer-events-auto fixed z-[9999] w-full isolate [contain:paint]"
             >
               <CalendarPanel
                 departDate={departDate}

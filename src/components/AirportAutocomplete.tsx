@@ -180,7 +180,7 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
           <div
             ref={dropdownRef}
             style={dropdownOverlay.style}
-            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto max-h-[360px] isolate [contain:paint] transform-gpu"
+            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto max-h-[360px] isolate [contain:paint]"
           >
             {suggestions.map((place, index) => (
               <button
@@ -216,7 +216,7 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
           <div
             ref={dropdownRef}
             style={dropdownOverlay.style}
-            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground isolate [contain:paint] transform-gpu"
+            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground isolate [contain:paint]"
           >
             No airports found
           </div>

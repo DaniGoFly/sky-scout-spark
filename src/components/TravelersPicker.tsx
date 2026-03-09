@@ -1,10 +1,11 @@
-import { useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Users, ChevronDown, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { OverlayPortal } from "@/components/overlays/OverlayPortal";
+import { useAnchoredOverlay } from "@/hooks/useAnchoredOverlay";
 
 export interface TravelersData {
   adults: number;
@@ -35,6 +36,31 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
 
+  const triggerWrapRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const overlay = useAnchoredOverlay({
+    open: isOpen,
+    anchorRef: triggerWrapRef,
+    offset: 8,
+    matchWidth: false,
+  });
+
+  // Close panel when clicking outside (panel is portaled)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (triggerWrapRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setIsOpen(false);
+    };
+
+    document.addEventListener("mousedown", onDown, true);
+    return () => document.removeEventListener("mousedown", onDown, true);
+  }, [isOpen]);
+
   const totalTravelers = value.adults + value.children + value.infantsSeat + value.infantsLap;
   const totalInfants = value.infantsSeat + value.infantsLap;
 
@@ -47,7 +73,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
 
   const increment = (field: keyof TravelersData) => {
     if (typeof value[field] !== "number") return;
-    
+
     if (field === "infantsSeat" || field === "infantsLap") {
       if (!canAddInfant) return;
     } else if (!canAddMore) return;
@@ -59,7 +85,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
     if (typeof value[field] !== "number") return;
     const min = field === "adults" ? 1 : 0;
     if (value[field] <= min) return;
-    
+
     // Auto-reduce infants if adults go down
     if (field === "adults" && value[field] === totalInfants) {
       // Need to reduce infants first
@@ -71,20 +97,20 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
         return;
       }
     }
-    
+
     updateValue({ [field]: value[field] - 1 });
   };
 
   const getDisplayText = () => {
     const passengerCount = value.adults + value.children + value.infantsSeat;
     const travelerText = `${passengerCount} traveler${passengerCount !== 1 ? "s" : ""}`;
-    const classLabel = CABIN_CLASSES.find(c => c.value === value.cabinClass)?.label || "Economy";
+    const classLabel = CABIN_CLASSES.find((c) => c.value === value.cabinClass)?.label || "Economy";
     return segmentMode ? `${travelerText} • ${classLabel}` : `${travelerText}, ${classLabel}`;
   };
 
-  const helperText = totalTravelers >= MAX_TRAVELERS 
+  const helperText = totalTravelers >= MAX_TRAVELERS
     ? "Maximum 9 travelers reached"
-    : totalInfants >= value.adults 
+    : totalInfants >= value.adults
       ? "Each infant requires an adult"
       : null;
 
@@ -93,7 +119,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
       {/* Passengers */}
       <div className="space-y-4">
         <h4 className="font-semibold text-sm text-foreground">Passengers</h4>
-        
+
         {/* Adults */}
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -226,7 +252,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
               key={cabin.value}
               onClick={() => updateValue({ cabinClass: cabin.value })}
               className={cn(
-                "px-3 py-2.5 rounded-lg text-sm font-medium transition-all truncate",
+                "px-3 py-2.5 rounded-lg text-sm font-medium transition-colors truncate",
                 value.cabinClass === cabin.value
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
@@ -238,15 +264,13 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
         </div>
       </div>
 
-      <Button 
-        className="w-full" 
-        onClick={() => setIsOpen(false)}
-      >
+      <Button className="w-full" onClick={() => setIsOpen(false)}>
         Done
       </Button>
     </div>
   );
 
+  // Mobile (non-compact) stays as a bottom sheet (already stable and doesn’t fight the header)
   if (isMobile && !compact) {
     return (
       <div className="min-w-0">
@@ -277,68 +301,77 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
     );
   }
 
-  if (compact) {
-    const triggerContent = segmentMode ? (
-      <button
-        type="button"
-        className="w-full h-full text-left px-4 flex flex-col justify-center cursor-pointer focus:outline-none"
-        onClick={() => setIsOpen(true)}
+  const Panel = isOpen ? (
+    <OverlayPortal>
+      <div
+        ref={panelRef}
+        style={{ ...overlay.style, minWidth: 320 }}
+        className="pointer-events-auto fixed z-[9999] w-80 p-4 bg-card border border-border rounded-xl shadow-xl isolate"
       >
-        <span className="block text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none">Travellers</span>
-        <span className="block text-[14px] leading-[20px] mt-1.5 font-semibold text-foreground whitespace-nowrap">{getDisplayText()}</span>
-      </button>
-    ) : null;
+        <PickerContent />
+      </div>
+    </OverlayPortal>
+  ) : null;
 
+  if (compact) {
     return (
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          {segmentMode ? (
-            triggerContent
-          ) : (
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-medium shrink-0 min-w-0 transition-all",
-                bare
-                  ? "h-[36px] bg-transparent border-0 rounded-none hover:bg-secondary/30 p-0 px-2"
-                  : "h-[42px] bg-secondary/40 border border-border/60 rounded-lg hover:bg-secondary/60 hover:border-primary/50"
-              )}
-            >
-              {!bare && <Users className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />}
-              <span className="truncate text-xs">{getDisplayText()}</span>
-              {!bare && <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0 ml-auto" />}
-            </Button>
-          )}
-        </PopoverTrigger>
-        <PopoverContent className="w-80 p-4 bg-card" align="start" side="bottom" sideOffset={8} avoidCollisions={false}>
-          <PickerContent />
-        </PopoverContent>
-      </Popover>
+      <div ref={triggerWrapRef} className="min-w-0">
+        {segmentMode ? (
+          <button
+            type="button"
+            className="w-full h-full text-left px-4 flex flex-col justify-center cursor-pointer focus:outline-none"
+            onClick={() => setIsOpen((v) => !v)}
+            aria-expanded={isOpen}
+          >
+            <span className="block text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none">
+              Travellers
+            </span>
+            <span className="block text-[14px] leading-[20px] mt-1.5 font-semibold text-foreground whitespace-nowrap">
+              {getDisplayText()}
+            </span>
+          </button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsOpen((v) => !v)}
+            className={cn(
+              "w-full justify-start text-left font-medium shrink-0 min-w-0 transition-all",
+              bare
+                ? "h-[36px] bg-transparent border-0 rounded-none hover:bg-secondary/30 p-0 px-2"
+                : "h-[42px] bg-secondary/40 border border-border/60 rounded-lg hover:bg-secondary/60 hover:border-primary/50"
+            )}
+          >
+            {!bare && <Users className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />}
+            <span className="truncate text-xs">{getDisplayText()}</span>
+            {!bare && <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0 ml-auto" />}
+          </Button>
+        )}
+
+        {Panel}
+      </div>
     );
   }
 
   return (
-    <div className="min-w-0">
+    <div ref={triggerWrapRef} className="min-w-0">
       <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
         Travelers
       </label>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full h-14 justify-between text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all min-w-0"
-          >
-            <div className="flex items-center min-w-0 flex-1">
-              <Users className="mr-3 h-5 w-5 text-muted-foreground shrink-0" />
-              <span className="truncate">{getDisplayText()}</span>
-            </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-80 p-4 bg-card" align="start" side="bottom" sideOffset={8} avoidCollisions={false}>
-          <PickerContent />
-        </PopoverContent>
-      </Popover>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setIsOpen((v) => !v)}
+        className="w-full h-14 justify-between text-left font-medium bg-secondary/50 border-2 border-transparent rounded-xl hover:bg-card hover:border-primary/50 transition-all min-w-0"
+      >
+        <div className="flex items-center min-w-0 flex-1">
+          <Users className="mr-3 h-5 w-5 text-muted-foreground shrink-0" />
+          <span className="truncate">{getDisplayText()}</span>
+        </div>
+        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+      </Button>
+
+      {Panel}
     </div>
   );
 };
