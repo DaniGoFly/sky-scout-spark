@@ -735,6 +735,8 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
       </div>
     </div>
   );
-};
+});
+
+FlightSearchForm.displayName = "FlightSearchForm";
 
 export default FlightSearchForm;
