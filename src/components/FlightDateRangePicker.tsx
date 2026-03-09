@@ -208,7 +208,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
       {activeTab === "specific" ? (
         <>
           {/* Selection hint */}
-          <div className="px-6 py-2.5 text-sm text-center text-gray-400 bg-gray-50/60">
+          <div className="px-6 py-2.5 text-sm text-center text-gray-400 bg-white border-b border-gray-100">
             {tripType === "roundtrip"
               ? (selectingReturn ? "Select return date" : "Select departure date")
               : "Select departure date"}
