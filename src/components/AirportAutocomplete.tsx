@@ -1,4 +1,4 @@
-import { useState, useEffect, useReft";
+import { useState, useEffect, useRef } from "react";
 import { Plane, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
