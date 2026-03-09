@@ -288,9 +288,18 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   const handleSave = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const nowSaved = toggleSavedFlight(flight);
+    const ctx: SearchContext = {
+      tripType: (searchParams.get("trip") as "oneway" | "roundtrip") || (flight.return ? "roundtrip" : "oneway"),
+      adults: Number(searchParams.get("adults")) || 1,
+      children: Number(searchParams.get("children")) || 0,
+      infants: Number(searchParams.get("infants")) || 0,
+      travelClass: searchParams.get("class") || "economy",
+      currency: searchParams.get("currency") || localeCurrency || undefined,
+      market: searchParams.get("market") || marketCode || undefined,
+    };
+    const nowSaved = toggleSavedFlight(flight, ctx);
     setIsSaved(nowSaved);
-  }, [flight]);
+  }, [flight, searchParams, localeCurrency, marketCode]);
 
   const handleViewDeal = useCallback(async () => {
     if (!canResolve || isResolving) return;
