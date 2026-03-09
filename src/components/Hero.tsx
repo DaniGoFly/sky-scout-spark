@@ -163,6 +163,10 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                   key={tool.title}
                   onClick={() => {
                     if (isAI) setShowAIGuide(!showAIGuide);
+                    else if (tool.title === "Flexible Dates") {
+                      searchRef?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      setTimeout(() => searchFormRef.current?.openFlexDates(), 400);
+                    }
                     else if (tool.href) navigate(tool.href);
                   }}
                   className="flex items-center gap-4 p-5 rounded-2xl border border-border/25 bg-card/30 hover:bg-card/50 hover:border-border/40 transition-all text-left group cursor-pointer"
