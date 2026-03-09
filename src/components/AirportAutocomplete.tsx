@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Plane, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { OverlayPortal } from "@/components/overlays/OverlayPortal";
-import { useAnchoredOverlay } from "@/hooks/useAnchoredOverlay";
-
 
 interface Place {
   name: string;
@@ -24,10 +21,9 @@ interface AirportAutocompleteProps {
 }
 
 /**
- * Dropdown rendered absolutely under the field wrapper so it stays
- * anchored to the trigger and never drifts.
+ * Dropdown rendered inline with absolute positioning.
+ * Scrolls naturally with the search bar.
  */
-
 const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", compact = false, hasError = false }: AirportAutocompleteProps) => {
   const [query, setQuery] = useState(value?.display || "");
   const [suggestions, setSuggestions] = useState<Place[]>([]);
@@ -140,13 +136,6 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
   const showSuggestions = isOpen && suggestions.length > 0;
   const showEmpty = isOpen && query.length >= 2 && suggestions.length === 0 && !isLoading;
 
-  const dropdownOverlay = useAnchoredOverlay({
-    open: isOpen,
-    anchorRef: wrapperRef,
-    offset: 8,
-    matchWidth: true,
-  });
-
   return (
     <div ref={wrapperRef} className="relative min-w-0">
       <div className="relative group min-w-0">
@@ -175,52 +164,47 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
         )}
       </div>
 
+      {/* Dropdown: inline absolute positioning, scrolls with search bar */}
       {showSuggestions && (
-        <OverlayPortal>
-          <div
-            ref={dropdownRef}
-            style={dropdownOverlay.style}
-            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto max-h-[360px] isolate [contain:paint]"
-          >
-            {suggestions.map((place, index) => (
-              <button
-                key={`${place.code}-${index}`}
-                type="button"
-                onClick={() => handleSelect(place)}
-                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
-                  index === highlightedIndex ? "bg-primary/10" : "hover:bg-secondary/50"
-                }`}
-              >
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                  <span className="text-xs font-bold text-muted-foreground">{place.code}</span>
+        <div
+          ref={dropdownRef}
+          className="absolute left-0 right-0 z-50 mt-2 min-w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto max-h-[360px]"
+        >
+          {suggestions.map((place, index) => (
+            <button
+              key={`${place.code}-${index}`}
+              type="button"
+              onClick={() => handleSelect(place)}
+              className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                index === highlightedIndex ? "bg-primary/10" : "hover:bg-secondary/50"
+              }`}
+            >
+              <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                <span className="text-xs font-bold text-muted-foreground">{place.code}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground truncate">
+                  {place.name}
+                  {place.main_airport_name && (
+                    <span className="text-muted-foreground"> – {place.main_airport_name}</span>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-foreground truncate">
-                    {place.name}
-                    {place.main_airport_name && (
-                      <span className="text-muted-foreground"> – {place.main_airport_name}</span>
-                    )}
-                  </div>
-                  <div className="text-sm text-muted-foreground truncate">
-                    {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
-                  </div>
+                <div className="text-sm text-muted-foreground truncate">
+                  {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
                 </div>
-              </button>
-            ))}
-          </div>
-        </OverlayPortal>
+              </div>
+            </button>
+          ))}
+        </div>
       )}
 
       {showEmpty && (
-        <OverlayPortal>
-          <div
-            ref={dropdownRef}
-            style={dropdownOverlay.style}
-            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground isolate [contain:paint]"
-          >
-            No airports found
-          </div>
-        </OverlayPortal>
+        <div
+          ref={dropdownRef}
+          className="absolute left-0 right-0 z-50 mt-2 min-w-[280px] bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground"
+        >
+          No airports found
+        </div>
       )}
     </div>
   );
