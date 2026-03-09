@@ -382,9 +382,6 @@ const Explore = () => {
                             <div className="text-right shrink-0 flex items-center gap-1.5">
                               <div>
                                 <p className="text-sm font-bold text-foreground tabular-nums">From {formatPrice(dest.price)}</p>
-                                {dateMode === "flexible" && (
-                                  <p className="text-[9px] text-muted-foreground/60 leading-tight">Flexible dates</p>
-                                )}
                               </div>
                               <ArrowRight className={cn("w-3.5 h-3.5 transition-all duration-150", hoveredIata === dest.destinationIata ? "text-primary translate-x-0.5" : "text-muted-foreground/20")} />
                             </div>
