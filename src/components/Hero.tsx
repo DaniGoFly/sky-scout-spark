@@ -20,7 +20,7 @@ const MODE_PILLS = [
   { id: "flights", label: "nav.flights", icon: Plane, active: true },
   { id: "hotels", label: "nav.hotels", icon: Building2, active: false, comingSoon: true },
   { id: "cars", label: "hero.car_rental", icon: Car, active: false, comingSoon: true },
-  { id: "packages", label: "hero.packages", icon: Package, active: false, badge: "New", comingSoon: true },
+  { id: "packages", label: "hero.packages", icon: Package, active: false, comingSoon: true },
 ] as const;
 
 const POPULAR_DESTINATIONS = [
@@ -113,11 +113,6 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                   >
                     <Icon className="w-4 h-4" />
                     {t(pill.label)}
-                    {"badge" in pill && pill.badge && (
-                      <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 rounded-full leading-none">
-                        {pill.badge}
-                      </span>
-                    )}
                   </button>
                 );
               })}
