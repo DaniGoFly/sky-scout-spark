@@ -247,7 +247,8 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   const anchorRef = useRef<HTMLAnchorElement>(null);
   const isMobile = useIsMobile();
   const { t } = useTranslation();
-  const { formatPrice } = useLocale();
+  const { formatPrice, currency: localeCurrency, marketCode } = useLocale();
+  const [searchParams] = useSearchParams();
 
   const badgeColors = getBadgeConfig(badgeLabel);
 
