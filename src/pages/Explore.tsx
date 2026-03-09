@@ -98,22 +98,24 @@ const Explore = () => {
     }
   }, []);
 
-  // Enrich destinations with lat/lon from airports DB
+  // Enrich destinations with lat/lon from airports DB — only keep results with real price data
   const enrichedDestinations = useMemo(() => {
-    return destinations.map(d => {
-      if (d.lat && d.lon && d.destinationName) return d;
-      const airport = AIRPORTS.find(a => a.code === d.destinationIata);
-      if (airport) {
-        return {
-          ...d,
-          lat: d.lat || airport.lat,
-          lon: d.lon || airport.lon,
-          destinationName: d.destinationName || airport.city,
-          country: d.country || airport.country,
-        };
-      }
-      return d;
-    }).filter(d => d.lat && d.lon);
+    return destinations
+      .filter(d => d.price > 0 && d.departDate && d.returnDate)
+      .map(d => {
+        if (d.lat && d.lon && d.destinationName) return d;
+        const airport = AIRPORTS.find(a => a.code === d.destinationIata);
+        if (airport) {
+          return {
+            ...d,
+            lat: d.lat || airport.lat,
+            lon: d.lon || airport.lon,
+            destinationName: d.destinationName || airport.city,
+            country: d.country || airport.country,
+          };
+        }
+        return d;
+      }).filter(d => d.lat && d.lon);
   }, [destinations]);
 
   // Client-side filtering: trip length (calendar days) + max price
