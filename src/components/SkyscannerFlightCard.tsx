@@ -6,6 +6,7 @@
  */
 
 import { memo, useState, useRef, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Heart, Plane, Loader2, ExternalLink, Flame, TrendingDown, Minus, TrendingUp, Copy } from "lucide-react";
 import { format, parse } from "date-fns";
 import { useTranslation } from "react-i18next";
