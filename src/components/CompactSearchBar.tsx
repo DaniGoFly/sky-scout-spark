@@ -171,7 +171,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
           <MultiOriginInput
             values={origins}
             onChange={setOrigins}
-            placeholder="From"
+            placeholder={t("search.from")}
             compact
           />
         </div>
