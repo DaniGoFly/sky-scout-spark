@@ -320,6 +320,16 @@ const Explore = () => {
                     </div>
                   ))}
                 </div>
+              ) : sortedDestinations.length === 0 && !origin ? (
+                <div className="p-8 text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-3">
+                    <MapPin className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground mb-1">Explore destinations</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Choose a departure airport or use your location to explore destinations.
+                  </p>
+                </div>
               ) : sortedDestinations.length === 0 ? (
                 <div className="p-8 text-center">
                   <div className="w-12 h-12 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-3">
@@ -327,9 +337,7 @@ const Explore = () => {
                   </div>
                   <p className="text-sm font-medium text-foreground mb-1">No destinations found</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    {origin
-                      ? "Try widening the trip window, turning off 'Direct only', or selecting a different origin."
-                      : "Select an origin airport to explore."}
+                    Try widening the trip window, turning off 'Direct only', or selecting a different origin.
                   </p>
                 </div>
               ) : (
