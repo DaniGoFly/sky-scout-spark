@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Calendar, Users, Search, Globe } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { AIRPORTS, getAirportsInRadius } from "@/lib/airports";
 
 const SearchForm = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
   const [anywhere, setAnywhere] = useState(false);
 
@@ -203,7 +205,7 @@ const SearchForm = () => {
               : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
           }`}
         >
-          Round trip
+          {t("old_search.round_trip")}
         </button>
         <button
           onClick={() => setTripType("oneway")}
@@ -213,7 +215,7 @@ const SearchForm = () => {
               : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
           }`}
         >
-          One way
+          {t("old_search.one_way")}
         </button>
         <div className="ml-auto flex items-center gap-2">
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -226,7 +228,7 @@ const SearchForm = () => {
               className="scale-[0.7]"
             />
             <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Globe className="w-3 h-3" /> Anywhere
+              <Globe className="w-3 h-3" /> {t("old_search.anywhere_label")}
             </span>
           </label>
         </div>
@@ -236,14 +238,14 @@ const SearchForm = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-start">
         {/* From */}
         <div className="lg:col-span-3">
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">From</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t("old_search.from_label")}</label>
           <MultiOriginInput
             values={origins}
             onChange={(v) => {
               setOrigins(v);
               if (fromNearby) setFromNearby(false);
             }}
-            placeholder="Where from?"
+            placeholder={t("search.where_from")}
           />
           <NearbyToggle
             enabled={fromNearby}
@@ -268,11 +270,11 @@ const SearchForm = () => {
 
         {/* To */}
         <div className="lg:col-span-3">
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">To</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t("old_search.to_label")}</label>
           {anywhere ? (
             <div className="min-h-[52px] px-3 py-3 bg-secondary/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center gap-2 text-sm text-primary/70">
               <Globe className="w-4 h-4" />
-              Searching everywhere
+              {t("old_search.searching_everywhere")}
             </div>
           ) : (
             <>
@@ -282,7 +284,7 @@ const SearchForm = () => {
                   setDestinations(v);
                   if (toNearby) toCenterRef.current = v;
                 }}
-                placeholder="Where to?"
+                placeholder={t("search.where_to")}
                 multiLabel="Multi-Destination"
               />
               <NearbyToggle
@@ -297,7 +299,7 @@ const SearchForm = () => {
 
         {/* Depart Date */}
         <div className="lg:col-span-2">
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Depart</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t("old_search.depart")}</label>
           <Button
             variant="outline"
             onClick={() => setDepartOpen(true)}
@@ -315,7 +317,7 @@ const SearchForm = () => {
           <Dialog open={departOpen} onOpenChange={setDepartOpen}>
             <DialogContent className="sm:max-w-fit p-0 gap-0">
               <DialogHeader className="p-4 pb-0">
-                <DialogTitle>Select departure date</DialogTitle>
+                <DialogTitle>{t("old_search.select_departure_date")}</DialogTitle>
               </DialogHeader>
               <div className="p-4">
                 <CalendarComponent
@@ -347,7 +349,7 @@ const SearchForm = () => {
         {/* Return Date */}
         {tripType === "roundtrip" && (
           <div className="lg:col-span-2">
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Return</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t("old_search.return_label")}</label>
             <Button
               variant="outline"
               onClick={() => setReturnOpen(true)}
@@ -365,7 +367,7 @@ const SearchForm = () => {
             <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
               <DialogContent className="sm:max-w-fit p-0 gap-0">
                 <DialogHeader className="p-4 pb-0">
-                  <DialogTitle>Select return date</DialogTitle>
+                  <DialogTitle>{t("old_search.select_return_date")}</DialogTitle>
                 </DialogHeader>
                 <div className="p-4">
                   <CalendarComponent
@@ -394,7 +396,7 @@ const SearchForm = () => {
 
         {/* Passengers */}
         <div className={tripType === "oneway" ? "lg:col-span-2" : "lg:col-span-1"}>
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Travelers</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t("old_search.travelers_label")}</label>
           <Popover open={passengersOpen} onOpenChange={setPassengersOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -407,7 +409,7 @@ const SearchForm = () => {
             </PopoverTrigger>
             <PopoverContent className="w-56" align="end" side="bottom" sideOffset={8}>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Adults</span>
+                <span className="text-sm font-medium">{t("old_search.adults")}</span>
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
@@ -431,7 +433,7 @@ const SearchForm = () => {
                 </div>
               </div>
               <Button className="w-full mt-4" size="sm" onClick={() => setPassengersOpen(false)}>
-                Done
+                {t("old_search.done")}
               </Button>
             </PopoverContent>
           </Popover>
@@ -447,7 +449,7 @@ const SearchForm = () => {
           className="h-12 px-8 text-base font-semibold"
         >
           <Search className="w-5 h-5 mr-2" />
-          {anywhere ? "Explore Destinations" : "Search Flights"}
+          {anywhere ? t("old_search.explore_destinations") : t("old_search.search_flights")}
         </Button>
       </div>
     </div>

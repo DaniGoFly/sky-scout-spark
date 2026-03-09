@@ -35,9 +35,9 @@ const POPULAR_DESTINATIONS = [
 ];
 
 const SMART_TOOLS = [
-  { icon: Sparkles, title: "AI Travel Guide", desc: "Get personalized travel recommendations" },
-  { icon: MapPin, title: "Explore Map", desc: "Discover cheapest destinations nearby", href: "/explore" },
-  { icon: CalendarSearch, title: "Flexible Dates", desc: "Find the cheapest days to fly" },
+  { icon: Sparkles, titleKey: "hero_section.ai_travel_guide", descKey: "hero_section.ai_travel_desc" },
+  { icon: MapPin, titleKey: "hero_section.explore_map", descKey: "hero_section.explore_map_desc", href: "/explore" },
+  { icon: CalendarSearch, titleKey: "hero_section.flexible_dates_title", descKey: "hero_section.flexible_dates_desc" },
 ];
 
 const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
@@ -147,18 +147,18 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       <section className="relative z-0 px-4 sm:px-6 lg:px-8 mt-20 sm:mt-24 animate-fade-in">
         <div className="mx-auto max-w-[1100px]">
           <h3 className="text-xs font-semibold text-muted-foreground/60 mb-5 uppercase tracking-[0.15em] text-center sm:text-left">
-            Smart travel tools
+            {t("hero_section.smart_tools")}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {SMART_TOOLS.map((tool) => {
               const Icon = tool.icon;
-              const isAI = tool.title === "AI Travel Guide";
+              const isAI = tool.titleKey === "hero_section.ai_travel_guide";
               return (
                 <button
-                  key={tool.title}
+                  key={tool.titleKey}
                   onClick={() => {
                     if (isAI) setShowAIGuide(!showAIGuide);
-                    else if (tool.title === "Flexible Dates") {
+                    else if (tool.titleKey === "hero_section.flexible_dates_title") {
                       searchRef?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
                       setTimeout(() => searchFormRef.current?.openFlexDates(), 400);
                     }
@@ -170,8 +170,8 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                     <Icon className="w-5 h-5 text-muted-foreground/70 group-hover:text-primary transition-colors" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-sm font-semibold text-foreground block">{tool.title}</span>
-                    <span className="text-[12px] text-muted-foreground/60 leading-snug">{tool.desc}</span>
+                    <span className="text-sm font-semibold text-foreground block">{t(tool.titleKey)}</span>
+                    <span className="text-[12px] text-muted-foreground/60 leading-snug">{t(tool.descKey)}</span>
                   </div>
                 </button>
               );
@@ -193,7 +193,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       <section className="relative z-0 px-4 sm:px-6 lg:px-8 mt-14 sm:mt-18 pb-10 animate-fade-in">
         <div className="mx-auto max-w-[1100px]">
           <h3 className="text-xs font-semibold text-muted-foreground/60 mb-5 uppercase tracking-[0.15em] text-center sm:text-left">
-            Popular destinations right now
+            {t("hero_section.popular_destinations")}
           </h3>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
             {POPULAR_DESTINATIONS.map((dest) => (
@@ -210,7 +210,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                 <span className="text-xl">{dest.emoji}</span>
                 <div className="text-left">
                   <span className="text-sm font-medium text-foreground block leading-tight group-hover:text-primary transition-colors">{dest.city}</span>
-                  <span className="text-xs text-muted-foreground/60 font-medium">from {dest.price}</span>
+                  <span className="text-xs text-muted-foreground/60 font-medium">{t("hero_section.from_price", { price: dest.price })}</span>
                 </div>
               </button>
             ))}
