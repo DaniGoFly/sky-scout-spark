@@ -64,7 +64,7 @@ const SavedFlights = () => {
     params.set("from", flight.origin);
     params.set("to", flight.destination);
     if (departDate) params.set("depart", departDate);
-    if (isRoundtrip && returnDate) params.set("return", returnDate);
+    if (isRoundtrip && fallbackReturnDate) params.set("return", fallbackReturnDate);
     else params.delete("return");
 
     params.set("trip", restoredTripType);
