@@ -109,116 +109,123 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
     onSearch(segments, travelers);
   };
 
+  /* Style tokens matching the standard search bar */
+  const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Segments */}
       {segments.map((segment, index) => (
-        <div key={segment.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
-          {/* From */}
-          <div className="min-w-0">
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Flight {index + 1} — From
-            </label>
-            <AirportAutocomplete
-              value={segment.from}
-              onChange={(val) => updateSegment(segment.id, "from", val)}
-              placeholder="Origin"
-              icon="from"
-              compact
-              hasError={!!errors[`${segment.id}-from`]}
-            />
-            {errors[`${segment.id}-from`] && (
-              <p className="text-destructive text-xs mt-1">{errors[`${segment.id}-from`]}</p>
-            )}
-          </div>
-
-          {/* To */}
-          <div className="min-w-0">
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">To</label>
-            <AirportAutocomplete
-              value={segment.to}
-              onChange={(val) => updateSegment(segment.id, "to", val)}
-              placeholder="Destination"
-              icon="to"
-              compact
-              hasError={!!errors[`${segment.id}-to`]}
-            />
-            {errors[`${segment.id}-to`] && (
-              <p className="text-destructive text-xs mt-1">{errors[`${segment.id}-to`]}</p>
-            )}
-          </div>
-
-          {/* Date */}
-          <div
-            className="min-w-0 relative overflow-visible"
-            ref={(el) => {
-              calendarWrapRefs.current[segment.id] = el;
-            }}
-          >
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Date</label>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                setOpenCalendarSegmentId((prev) => (prev === segment.id ? null : segment.id))
-              }
-              className={cn(
-                "w-full h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm",
-                !segment.date && "text-muted-foreground",
-                errors[`${segment.id}-date`] && "border-destructive"
-              )}
-            >
-              <Calendar className="mr-2 h-4 w-4 shrink-0" />
-              <span className="truncate">
-                {segment.date ? format(segment.date, "MMM d, yyyy") : "Select date"}
-              </span>
-            </Button>
-
-            {openCalendarSegmentId === segment.id && (
-              <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-auto rounded-xl border border-border bg-card p-0 shadow-xl">
-                <CalendarComponent
-                  mode="single"
-                  selected={segment.date || undefined}
-                  onSelect={(date) => {
-                    updateSegment(segment.id, "date", date);
-                    if (date) setOpenCalendarSegmentId(null);
-                  }}
-                  disabled={(date) => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    if (date < today) return true;
-                    if (index > 0 && segments[index - 1].date) {
-                      return date < segments[index - 1].date!;
-                    }
-                    return false;
-                  }}
+        <div
+          key={segment.id}
+          className="w-full border border-border/10 bg-background/60 backdrop-blur-sm rounded-2xl overflow-visible"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] items-stretch">
+            {/* From */}
+            <div className={cn(
+              "min-w-0 px-5 py-3 transition-colors hover:bg-secondary/60 flex flex-col justify-center overflow-visible rounded-l-2xl",
+              errors[`${segment.id}-from`] && "ring-2 ring-destructive/40"
+            )}>
+              <span className={SEG_LABEL}>Flight {index + 1} — From</span>
+              <div className="mt-1.5">
+                <AirportAutocomplete
+                  value={segment.from}
+                  onChange={(val) => updateSegment(segment.id, "from", val)}
+                  placeholder="Country, city or airport"
+                  icon="from"
+                  compact
+                  hasError={false}
                 />
               </div>
-            )}
-            {errors[`${segment.id}-date`] && (
-              <p className="text-destructive text-xs mt-1">{errors[`${segment.id}-date`]}</p>
-            )}
-          </div>
+            </div>
 
-          {/* Remove button */}
-          <div className="flex items-end pb-0.5">
-            {segments.length > 2 ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 text-muted-foreground hover:text-destructive shrink-0"
-                onClick={() => removeSegment(segment.id)}
+            {/* To */}
+            <div className={cn(
+              "min-w-0 px-5 py-3 transition-colors hover:bg-secondary/60 flex flex-col justify-center overflow-visible border-l border-border/20",
+              errors[`${segment.id}-to`] && "ring-2 ring-destructive/40"
+            )}>
+              <span className={SEG_LABEL}>To</span>
+              <div className="mt-1.5">
+                <AirportAutocomplete
+                  value={segment.to}
+                  onChange={(val) => updateSegment(segment.id, "to", val)}
+                  placeholder="Country, city or airport"
+                  icon="to"
+                  compact
+                  hasError={false}
+                />
+              </div>
+            </div>
+
+            {/* Date */}
+            <div
+              className={cn(
+                "min-w-0 relative overflow-visible px-5 py-3 transition-colors hover:bg-secondary/60 flex flex-col justify-center border-l border-border/20",
+                errors[`${segment.id}-date`] && "ring-2 ring-destructive/40"
+              )}
+              ref={(el) => {
+                calendarWrapRefs.current[segment.id] = el;
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenCalendarSegmentId((prev) => (prev === segment.id ? null : segment.id))
+                }
+                className="w-full text-left focus:outline-none cursor-pointer"
               >
-                <X className="w-4 h-4" />
-              </Button>
-            ) : (
-              <div className="h-10 w-10 shrink-0" />
-            )}
+                <span className={SEG_LABEL}>Date</span>
+                <span className={cn(
+                  "block text-[14px] leading-[20px] mt-1.5 font-semibold whitespace-nowrap",
+                  segment.date ? "text-foreground" : "text-muted-foreground/40 font-normal"
+                )}>
+                  {segment.date ? format(segment.date, "d MMM yyyy") : "Select date"}
+                </span>
+              </button>
+
+              {openCalendarSegmentId === segment.id && (
+                <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-auto rounded-xl border border-border bg-card p-0 shadow-xl">
+                  <CalendarComponent
+                    mode="single"
+                    selected={segment.date || undefined}
+                    onSelect={(date) => {
+                      updateSegment(segment.id, "date", date);
+                      if (date) setOpenCalendarSegmentId(null);
+                    }}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      if (date < today) return true;
+                      if (index > 0 && segments[index - 1].date) {
+                        return date < segments[index - 1].date!;
+                      }
+                      return false;
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Remove button */}
+            <div className="flex items-center justify-center px-2 border-l border-border/20">
+              {segments.length > 2 ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0 rounded-full"
+                  onClick={() => removeSegment(segment.id)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              ) : (
+                <div className="h-9 w-9 shrink-0" />
+              )}
+            </div>
           </div>
         </div>
       ))}
 
-      {/* Add flight button — compact */}
+      {/* Add flight button */}
       {segments.length < 5 && (
         <Button
           variant="ghost"
@@ -231,15 +238,15 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
         </Button>
       )}
 
-      {/* Travelers & Search — matches roundtrip/oneway footer */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
+      {/* Travelers & Search */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-border/20">
         <div className="w-full md:w-auto md:min-w-[200px]">
           <TravelersPicker value={travelers} onChange={setTravelers} />
         </div>
         <Button
           size="lg"
           onClick={handleSearch}
-          className="w-full md:w-auto gap-2 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+          className="w-full md:w-auto gap-2 px-8 bg-gradient-to-b from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold hover:brightness-110 active:scale-[0.98] transition-all"
         >
           <Search className="w-4 h-4" />
           Search Multi-city
