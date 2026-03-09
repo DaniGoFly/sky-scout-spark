@@ -603,30 +603,32 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </div>
 
 
-        {/* Calendar panel (anchored to search bar) */}
+        {/* Calendar panel (anchored to search bar) — PORTALED to global overlay root */}
         {calendarOpen && !isAnyDay && (
-          <div
-            className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full animate-in fade-in-0 slide-in-from-top-2 duration-200"
-            style={{ pointerEvents: "auto" }}
-          >
-            <CalendarPanel
-              departDate={departDate}
-              returnDate={returnDate}
-              onDepartChange={handleDepartChange}
-              onReturnChange={handleReturnChange}
-              tripType={tripType as "roundtrip" | "oneway"}
-              onTripTypeChange={handleTripTypeChange}
-              onDone={handleCloseCalendar}
-              departFlexBefore={departFlexBefore}
-              departFlexAfter={departFlexAfter}
-              returnFlexBefore={returnFlexBefore}
-              returnFlexAfter={returnFlexAfter}
-              onDepartFlexBeforeChange={setDepartFlexBefore}
-              onDepartFlexAfterChange={setDepartFlexAfter}
-              onReturnFlexBeforeChange={setReturnFlexBefore}
-              onReturnFlexAfterChange={setReturnFlexAfter}
-            />
-          </div>
+          <OverlayPortal>
+            <div
+              style={calendarOverlay.style}
+              className="pointer-events-auto fixed z-[9999] w-full isolate [contain:paint] transform-gpu"
+            >
+              <CalendarPanel
+                departDate={departDate}
+                returnDate={returnDate}
+                onDepartChange={handleDepartChange}
+                onReturnChange={handleReturnChange}
+                tripType={tripType as "roundtrip" | "oneway"}
+                onTripTypeChange={handleTripTypeChange}
+                onDone={handleCloseCalendar}
+                departFlexBefore={departFlexBefore}
+                departFlexAfter={departFlexAfter}
+                returnFlexBefore={returnFlexBefore}
+                returnFlexAfter={returnFlexAfter}
+                onDepartFlexBeforeChange={setDepartFlexBefore}
+                onDepartFlexAfterChange={setDepartFlexAfter}
+                onReturnFlexBeforeChange={setReturnFlexBefore}
+                onReturnFlexAfterChange={setReturnFlexAfter}
+              />
+            </div>
+          </OverlayPortal>
         )}
 
       </div>
