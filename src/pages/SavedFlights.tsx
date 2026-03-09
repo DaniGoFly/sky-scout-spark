@@ -187,10 +187,10 @@ const SavedFlights = () => {
                         </p>
                         {flight.return && (
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            Return: {flight.return.origin} → {flight.return.destination} · {formatDuration(flight.return.durationMinutes)}
+                            {t("saved.return_label")} {flight.return.origin} → {flight.return.destination} · {formatDuration(flight.return.durationMinutes)}
                           </p>
                         )}
-                        <p className="text-[10px] text-muted-foreground/60 mt-1">Saved {savedLabel}</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">{t("saved.saved_label")} {savedLabel}</p>
                       </div>
 
                       {/* Price + actions */}
