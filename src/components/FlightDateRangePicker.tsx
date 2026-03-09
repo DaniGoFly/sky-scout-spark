@@ -124,7 +124,11 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
 }) => {
   const [currentMonth, setCurrentMonth] = useState(() => departDate ? startOfMonth(departDate) : startOfMonth(new Date()));
   const [selectingReturn, setSelectingReturn] = useState(() => !!departDate && !returnDate && tripType === "roundtrip");
-  const [activeTab, setActiveTab] = useState<"specific" | "flexible">("specific");
+  const [activeTab, setActiveTab] = useState<"specific" | "flexible">(
+    departFlexBefore > 0 || departFlexAfter > 0 || returnFlexBefore > 0 || returnFlexAfter > 0
+      ? "flexible"
+      : (initialTab ?? "specific")
+  );
   const isMobile = useIsMobile();
   const today = useMemo(() => startOfDay(new Date()), []);
   const nextMonth = useMemo(() => addMonths(currentMonth, 1), [currentMonth]);
