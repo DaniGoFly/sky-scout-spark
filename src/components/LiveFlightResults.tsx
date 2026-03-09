@@ -611,8 +611,8 @@ const LiveFlightResults = () => {
       <div className="container mx-auto px-4 py-4 md:py-6">
         {exploreFromPrice && isSearching && (
           <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 mb-4 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Explore prices are flexible "from" estimates.</span>{" "}
-            Exact prices update after selecting dates.
+            <span className="font-medium text-foreground">{t("results.explore_estimates")}</span>{" "}
+            {t("results.exact_prices_update")}
           </div>
         )}
         {showSkeleton && (
@@ -622,14 +622,14 @@ const LiveFlightResults = () => {
               <p className="text-base font-semibold text-foreground">{t("results.searching")}</p>
               <p className="text-sm text-muted-foreground">
                 {isCartesian
-                  ? `Searching ${cartesianProgress.completed}/${cartesianProgress.total} route combinations…`
+                  ? t("results.searching_combinations", { completed: cartesianProgress.completed, total: cartesianProgress.total })
                   : isMultiOrigin
-                  ? `Searching ${progress.completed}/${progress.total} departure airports…`
+                  ? t("results.searching_airports", { completed: progress.completed, total: progress.total })
                   : t("results.searching_sub")}
               </p>
               {(isCartesian || isMultiOrigin) && (
                 <Button variant="ghost" size="sm" onClick={cancelSearch} className="mt-2 text-xs text-muted-foreground">
-                  Cancel
+                  {t("results.cancel")}
                 </Button>
               )}
             </div>
@@ -656,8 +656,8 @@ const LiveFlightResults = () => {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-5">
               <Plane className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-lg font-semibold text-foreground mb-2">Select a route to search</p>
-            <p className="text-sm text-muted-foreground mb-6 max-w-sm">Choose your origin, destination, and dates to find the best flights.</p>
+            <p className="text-lg font-semibold text-foreground mb-2">{t("results.select_route")}</p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-sm">{t("results.select_route_sub")}</p>
             <Button onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
           </div>
         )}
@@ -697,7 +697,7 @@ const LiveFlightResults = () => {
               {failedOrigins.length > 0 && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-400">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span className="flex-1">No results from: {failedOrigins.join(", ")}</span>
+                  <span className="flex-1">{t("results.no_results_from", { origins: failedOrigins.join(", ") })}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -706,7 +706,7 @@ const LiveFlightResults = () => {
                     className="h-6 px-2 text-[11px] text-amber-400 hover:text-amber-300 gap-1"
                   >
                     <RotateCcw className="w-3 h-3" />
-                    Retry
+                    {t("results.retry")}
                   </Button>
                 </div>
               )}
@@ -722,13 +722,13 @@ const LiveFlightResults = () => {
                     <Loader2 className="w-3 h-3 animate-spin text-primary" />
                     <span>
                       {isCartesian
-                        ? `Searching ${cartesianProgress.completed}/${cartesianProgress.total} combinations…`
+                        ? t("results.searching_combinations", { completed: cartesianProgress.completed, total: cartesianProgress.total })
                         : isMultiOrigin
-                        ? `Searching ${progress.completed}/${progress.total} origins…`
-                        : t("results.updating", "Searching more fares…")}
+                        ? t("results.searching_origins", { completed: progress.completed, total: progress.total })
+                        : t("results.updating")}
                     </span>
                     {(isCartesian || isMultiOrigin) && (
-                      <button onClick={cancelSearch} className="text-primary/70 hover:text-primary text-[11px] ml-1">Cancel</button>
+                      <button onClick={cancelSearch} className="text-primary/70 hover:text-primary text-[11px] ml-1">{t("results.cancel")}</button>
                     )}
                   </div>
                 )}
@@ -752,7 +752,7 @@ const LiveFlightResults = () => {
                   <span className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-sm border text-[10px] transition-colors ${hideLongLayovers ? "bg-primary border-primary text-primary-foreground" : "border-border bg-transparent"}`}>
                     {hideLongLayovers && "✓"}
                   </span>
-                  Hide long layovers (5h+)
+                  {t("results.hide_long_layovers")}
                 </button>
               </div>
               <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} flightsCurrency={flightsCurrency} />
@@ -767,7 +767,7 @@ const LiveFlightResults = () => {
                 )}
               </div>
               <p className="text-[11px] text-muted-foreground/60 px-1 italic">
-                Prices may differ from other platforms depending on agency availability and fare rules.
+                {t("results.prices_may_differ")}
               </p>
               {/* Nearby airport savings suggestion — only in single-origin mode */}
               {!isMultiOrigin && !nearbyAlertDismissed && enrichedFlights.length > 0 && (
@@ -807,13 +807,13 @@ const LiveFlightResults = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-semibold text-foreground">
-                              From {origin}
+                              {t("results.from_origin", { origin })}
                             </span>
                             <span className="text-xs text-muted-foreground ml-2">
-                              — best from {formatPrice(cheapest, flightsCurrency)}
+                              {t("results.best_from", { price: formatPrice(cheapest, flightsCurrency) })}
                             </span>
                           </div>
-                          <span className="text-[10px] text-muted-foreground">{originFlights.length} results · Top 10 shown</span>
+                          <span className="text-[10px] text-muted-foreground">{t("results.results_top_shown", { count: originFlights.length })}</span>
                         </div>
                         {originFlights.map((flight, index) => renderFlightCard(flight, index))}
                       </div>

@@ -2,7 +2,8 @@
   "nav": {
     "flights": "Flüge",
     "hotels": "Hotels",
-    "explore": "Entdecken"
+    "explore": "Entdecken",
+    "saved": "Gespeichert"
   },
   "hero": {
     "title_search": "Suche ",
@@ -25,6 +26,7 @@
     "where_to": "Wohin?",
     "search_flights": "Flüge suchen",
     "search": "Suchen",
+    "searching": "Suche läuft…",
     "nearby_airports": "Nahegelegene Flughäfen",
     "nearby": "In der Nähe",
     "origin": "Abflug",
@@ -38,7 +40,11 @@
     "return_after_depart": "Rückreise muss nach Abreise sein",
     "infant_needs_adult": "Jedes Kleinkind braucht einen Erwachsenen",
     "use_location": "Meinen Standort verwenden",
-    "compare_airports": "Mehrere Abflughäfen gleichzeitig vergleichen"
+    "compare_airports": "Mehrere Abflughäfen gleichzeitig vergleichen",
+    "any_day": "Beliebiger Tag",
+    "anywhere": "Überall",
+    "enter_origin": "Bitte Abflughafen eingeben",
+    "enter_destination": "Bitte Zielflughafen eingeben"
   },
   "sort": {
     "best": "Beste",
@@ -101,8 +107,20 @@
     "opens_partner": "Öffnet offizielle Partnerbuchung · Preis kann sich ändern",
     "opens_partner_short": "Öffnet Partnerbuchung · Preis kann sich ändern",
     "best": "Beste",
+    "best_value": "Bestes Angebot",
     "save": "Flug speichern",
-    "unsave": "Flug entfernen"
+    "unsave": "Flug entfernen",
+    "scarcity": "Nur noch wenige Plätze zu diesem Preis",
+    "best_price": "Bester Preis",
+    "departing_from": "Abflug von:",
+    "from_price": "Ab",
+    "via": "über",
+    "layover": "Zwischenstopp:",
+    "stops_unknown": "Stopps unbekannt",
+    "link_not_secure": "Link möglicherweise unsicher",
+    "link_not_secure_desc": "Der Buchungslink konnte nicht verifiziert werden. Sie können ihn manuell kopieren.",
+    "copy_link": "Link kopieren",
+    "link_copied": "Link kopiert"
   },
   "results": {
     "searching": "Suche Live-Preise…",
@@ -122,7 +140,26 @@
     "showing_top": "Top {{count}} angezeigt",
     "traveler": "Reisender",
     "travelers": "Reisende",
-    "back_to_search": "Zurück zur Suche"
+    "back_to_search": "Zurück zur Suche",
+    "select_route": "Route zum Suchen auswählen",
+    "select_route_sub": "Wählen Sie Abflugort, Ziel und Daten, um die besten Flüge zu finden.",
+    "explore_estimates": "Explore-Preise sind flexible Ab-Schätzungen.",
+    "exact_prices_update": "Genaue Preise werden nach Datumsauswahl aktualisiert.",
+    "searching_combinations": "Suche {{completed}}/{{total}} Routenkombinationen…",
+    "searching_airports": "Suche {{completed}}/{{total}} Abflughäfen…",
+    "searching_origins": "Suche {{completed}}/{{total}} Abflugorte…",
+    "searching_more": "Suche weitere Tarife…",
+    "refresh": "Preise aktualisieren",
+    "updating": "Suche weitere Tarife…",
+    "hide_long_layovers": "Lange Zwischenstopps ausblenden (5h+)",
+    "prices_may_differ": "Preise können je nach Agenturverfügbarkeit und Tarifregeln von anderen Plattformen abweichen.",
+    "no_results_from": "Keine Ergebnisse von: {{origins}}",
+    "retry": "Erneut versuchen",
+    "cancel": "Abbrechen",
+    "from_origin": "Ab {{origin}}",
+    "best_from": "— beste ab {{price}}",
+    "results_top_shown": "{{count}} Ergebnisse · Top 10 angezeigt",
+    "saved_label": "Gespeichert"
   },
   "travelers": {
     "title": "Reisende",
@@ -148,6 +185,7 @@
   "calendar": {
     "dates": "Daten",
     "depart": "Abflug",
+    "return": "Rückflug",
     "select_date": "Datum wählen",
     "select_dates": "Daten wählen",
     "select_return": "Rückflug wählen",
@@ -166,6 +204,7 @@
     "trip_length": "Reisedauer",
     "max_price": "Max. Preis",
     "days": "Tage",
+    "day": "Tag",
     "destinations": "Ziele",
     "destinations_from": "Ziele ab {{city}}",
     "by_price": "nach Preis",
@@ -175,7 +214,8 @@
     "no_destinations_sub": "Versuchen Sie, den Reisezeitraum zu erweitern, 'Nur Direkt' auszuschalten oder einen anderen Abflugort zu wählen.",
     "select_origin": "Wählen Sie einen Abflughafen zum Entdecken.",
     "cheapest": "Günstigste",
-    "select_origin_label": "Abflugort wählen"
+    "select_origin_label": "Abflugort wählen",
+    "explore_flights": "Flüge entdecken"
   },
   "footer": {
     "brand_desc": "Vergleichen Sie Flüge und Hotels von vertrauenswürdigen Reiseanbietern.",
@@ -262,5 +302,136 @@
     "stops_n": "{{count}} Stopps",
     "direct_flight": "Direktflug",
     "operated_by": "Betrieben von {{carrier}}"
+  },
+  "saved": {
+    "title": "Gespeicherte Flüge",
+    "flights_count": "{{count}} Flug gespeichert",
+    "flights_count_plural": "{{count}} Flüge gespeichert",
+    "clear_all": "Alle löschen",
+    "no_saved": "Noch keine Flüge gespeichert",
+    "no_saved_sub": "Tippen Sie auf das Herz-Symbol auf einer Flugkarte, um ihn hier zu speichern.",
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "days_ago": "vor {{count}} Tagen",
+    "saved_label": "Gespeichert",
+    "remove": "Entfernen",
+    "return_label": "Rückflug:"
+  },
+  "not_found": {
+    "title": "Seite nicht gefunden",
+    "description": "Die gesuchte Seite existiert nicht oder wurde verschoben. Lassen Sie uns Sie zurückbringen.",
+    "back_home": "Zurück zur Startseite"
+  },
+  "coming_soon": {
+    "feature_title": "Kommt bald",
+    "feature_desc": "Dieser Bereich kommt später. Entdecken Sie zunächst Flüge und Hotels.",
+    "booking_title": "Demo-Modus",
+    "booking_desc": "Live-Buchungslinks kommen bald. Dies ist eine Demo mit Beispieldaten.",
+    "auth_title": "Kein Konto erforderlich",
+    "auth_desc": "Konten sind nicht erforderlich. Sie können Flüge und Hotels ohne Anmeldung suchen.",
+    "search_flights": "Flüge suchen",
+    "search_hotels": "Hotels suchen"
+  },
+  "how_it_works": {
+    "title": "So funktioniert's",
+    "subtitle": "Finden Sie Ihren perfekten Flug in 3 einfachen Schritten",
+    "step1_title": "Suchen",
+    "step1_desc": "Geben Sie Ihr Ziel und Datum ein, um Flüge zu suchen",
+    "step2_title": "Vergleichen",
+    "step2_desc": "Preise verschiedener Anbieter ansehen und vergleichen",
+    "step3_title": "Buchen",
+    "step3_desc": "Direkt bei Fluggesellschaften oder Reiseseiten buchen"
+  },
+  "why_us": {
+    "badge": "Warum GoFlyFinder",
+    "title": "Warum Reisende uns wählen",
+    "subtitle": "Wir machen die Suche nach günstigen Flügen einfach und stressfrei",
+    "feature1_title": "Alles an einem Ort suchen",
+    "feature1_desc": "Vergleichen Sie Preise von hunderten Fluggesellschaften und Reiseseiten auf einmal.",
+    "feature2_title": "Die besten Angebote finden",
+    "feature2_desc": "Wir suchen nach Angeboten, damit Sie es nicht müssen. Lassen Sie uns die harte Arbeit machen.",
+    "feature3_title": "Mit Vertrauen buchen",
+    "feature3_desc": "Wir arbeiten nur mit vertrauenswürdigen Reiseanbietern zusammen, die Sie kennen und denen Sie vertrauen.",
+    "feature4_title": "Schnell und einfach",
+    "feature4_desc": "Einfache Suche, schnelle Ergebnisse. Finden Sie Ihren Flug in Sekunden."
+  },
+  "destinations": {
+    "trending": "Im Trend",
+    "title": "Beliebte Reiseziele",
+    "subtitle": "Entdecken Sie die beliebtesten Städte der Welt — klicken Sie, um sofort Flüge zu suchen.",
+    "explore_flights": "Flüge entdecken",
+    "flights_to": "Flüge nach {{city}}"
+  },
+  "price_calendar": {
+    "title": "Preistrends",
+    "estimated": "Geschätzt",
+    "lowest": "Niedrigster:",
+    "based_on": "Basierend auf:",
+    "cheapest": "Günstigster",
+    "above_average": "Überdurchschnittlich",
+    "estimates_only": "Preise sind nur Schätzungen"
+  },
+  "details": {
+    "route": "Route",
+    "duration": "Dauer",
+    "amenities": "Enthaltene Leistungen",
+    "checked_bag": "23 kg Aufgabegepäck",
+    "wifi": "WLAN an Bord",
+    "meals": "Mahlzeiten inklusive",
+    "included": "Was enthalten ist",
+    "free_seat": "Kostenlose Sitzplatzwahl",
+    "priority_boarding": "Priority Boarding",
+    "flexible_rebooking": "Flexible Umbuchung",
+    "free_cancellation": "24h kostenlose Stornierung",
+    "total_per_person": "Gesamtpreis pro Person",
+    "includes_taxes": "Inklusive Steuern & Gebühren",
+    "continue_booking": "Weiter zur Buchung",
+    "booking_unavailable": "Buchung nicht verfügbar",
+    "redirect_notice": "Sie werden zur sicheren Buchung auf flights.goflyfinder.com weitergeleitet."
+  },
+  "compare": {
+    "title": "Flughäfen vergleichen",
+    "compare_departure": "Abflughäfen vergleichen",
+    "all_origins": "Alle Abflugorte",
+    "by_origin": "Nach Abflugort",
+    "show_all": "Alle anzeigen",
+    "cheapest": "Günstigster",
+    "save_up_to": "Sparen Sie bis zu {{amount}}",
+    "saves": "{{origin}} spart {{amount}}",
+    "from_price": "{{origin}} → {{destination}} ab {{price}}",
+    "drive_time": "Ca. {{time}} von {{origin}}",
+    "view_origin": "{{origin}} anzeigen",
+    "result": "Ergebnis",
+    "results": "Ergebnisse"
+  },
+  "price_insight": {
+    "low_label": "Preise sind niedrig",
+    "low_sub": "Jetzt ist ein guter Zeitpunkt zum Buchen",
+    "typical_label": "Preise sind normal",
+    "typical_sub": "Ziemlich üblich für diese Strecke",
+    "high_label": "Preise sind hoch",
+    "high_sub": "Flexible Daten in Betracht ziehen"
+  },
+  "nearby": {
+    "dismiss": "Vorschlag verwerfen",
+    "drive_min": "{{min}} Min. Fahrt",
+    "drive_hours": "{{h}} Std. Fahrt",
+    "drive_hours_min": "{{h}} Std. {{m}} Min. Fahrt"
+  },
+  "contact": {
+    "title": "Kontaktieren Sie uns",
+    "subtitle": "Haben Sie eine Frage, Feedback oder eine Partnerschaftsanfrage? Wir freuen uns von Ihnen zu hören.",
+    "name": "Name",
+    "email": "E-Mail",
+    "subject": "Betreff",
+    "message": "Nachricht",
+    "send": "Nachricht senden",
+    "email_label": "E-Mail",
+    "response_time": "Antwortzeit",
+    "response_time_text": "Wir antworten normalerweise innerhalb von 24–72 Stunden."
+  },
+  "hotel": {
+    "searching": "Hotels werden gesucht...",
+    "finding_deals": "Die besten Angebote in {{destination}} finden"
   }
 }

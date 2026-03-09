@@ -123,16 +123,16 @@ const SavedFlights = () => {
             <div>
               <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
                 <Heart className="w-5 h-5 text-red-500 fill-current" />
-                Saved Flights
+                {t("saved.title")}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                {flights.length} {flights.length === 1 ? "flight" : "flights"} saved
+                {flights.length === 1 ? t("saved.flights_count", { count: flights.length }) : t("saved.flights_count_plural", { count: flights.length })}
               </p>
             </div>
             {flights.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearAll} className="text-muted-foreground hover:text-destructive text-xs gap-1">
                 <Trash2 className="w-3.5 h-3.5" />
-                Clear all
+                {t("saved.clear_all")}
               </Button>
             )}
           </div>
@@ -142,10 +142,8 @@ const SavedFlights = () => {
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-5">
                 <Heart className="w-8 h-8 text-muted-foreground" />
               </div>
-              <p className="text-lg font-semibold text-foreground mb-2">No saved flights yet</p>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Tap the heart icon on any flight card to save it here for later.
-              </p>
+              <p className="text-lg font-semibold text-foreground mb-2">{t("saved.no_saved")}</p>
+              <p className="text-sm text-muted-foreground max-w-sm">{t("saved.no_saved_sub")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -154,7 +152,7 @@ const SavedFlights = () => {
                 const airlineLogo = getAirlineLogo(flight.airlines?.[0] || "");
                 const savedDate = new Date(flight.savedAt);
                 const daysAgo = Math.floor((Date.now() - savedDate.getTime()) / 86400000);
-                const savedLabel = daysAgo === 0 ? "Today" : daysAgo === 1 ? "Yesterday" : `${daysAgo}d ago`;
+                const savedLabel = daysAgo === 0 ? t("saved.today") : daysAgo === 1 ? t("saved.yesterday") : t("saved.days_ago", { count: daysAgo });
 
                 return (
                   <div
@@ -185,14 +183,14 @@ const SavedFlights = () => {
                           <span className="text-xs text-muted-foreground">{airlineName}</span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {flight.departureTime?.split(" ")[0] || "—"} · {formatDuration(flight.durationMinutes)} · {flight.stopsCount === 0 ? "Direct" : `${flight.stopsCount} stop${flight.stopsCount > 1 ? "s" : ""}`}
+                          {flight.departureTime?.split(" ")[0] || "—"} · {formatDuration(flight.durationMinutes)} · {flight.stopsCount === 0 ? t("card.direct") : flight.stopsCount === 1 ? t("card.stop_1") : t("card.stops_n", { count: flight.stopsCount })}
                         </p>
                         {flight.return && (
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            Return: {flight.return.origin} → {flight.return.destination} · {formatDuration(flight.return.durationMinutes)}
+                            {t("saved.return_label")} {flight.return.origin} → {flight.return.destination} · {formatDuration(flight.return.durationMinutes)}
                           </p>
                         )}
-                        <p className="text-[10px] text-muted-foreground/60 mt-1">Saved {savedLabel}</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">{t("saved.saved_label")} {savedLabel}</p>
                       </div>
 
                       {/* Price + actions */}
@@ -207,7 +205,7 @@ const SavedFlights = () => {
                           className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive gap-1"
                         >
                           <Trash2 className="w-3 h-3" />
-                          Remove
+                           {t("saved.remove")}
                         </Button>
                       </div>
                     </div>

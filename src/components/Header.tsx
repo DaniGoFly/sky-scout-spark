@@ -82,7 +82,7 @@ const Header = () => {
             )}
           >
             <Heart className="w-3.5 h-3.5" />
-            Saved
+            {t("nav.saved")}
           </Link>
 
           <LocaleSelector />
@@ -116,7 +116,7 @@ const Header = () => {
                     // Hotels nav item controlled by feature flag
                     ...(HOTELS_ENABLED ? [{ path: "/hotels", label: t("nav.hotels"), active: location.pathname === "/hotels" }] : []),
                     { path: "/explore", label: t("nav.explore"), active: location.pathname === "/explore" },
-                    { path: "/saved", label: "Saved", active: location.pathname === "/saved" },
+                    { path: "/saved", label: t("nav.saved"), active: location.pathname === "/saved" },
                   ].map((item) =>
                     item.active ? (
                       <span key={item.path} className="px-4 py-3 rounded-xl font-medium text-primary bg-primary/10 cursor-default text-[15px]">

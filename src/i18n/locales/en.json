@@ -2,7 +2,8 @@
   "nav": {
     "flights": "Flights",
     "hotels": "Hotels",
-    "explore": "Explore"
+    "explore": "Explore",
+    "saved": "Saved"
   },
   "hero": {
     "title_search": "Search ",
@@ -25,6 +26,7 @@
     "where_to": "Where to?",
     "search_flights": "Search Flights",
     "search": "Search",
+    "searching": "Searching…",
     "nearby_airports": "Nearby airports",
     "nearby": "Nearby",
     "origin": "origin",
@@ -40,7 +42,9 @@
     "use_location": "My location",
     "compare_airports": "Compare multiple departure airports at once",
     "any_day": "Any day",
-    "anywhere": "Anywhere"
+    "anywhere": "Anywhere",
+    "enter_origin": "Please enter an origin airport",
+    "enter_destination": "Please enter a destination airport"
   },
   "sort": {
     "best": "Best",
@@ -103,8 +107,20 @@
     "opens_partner": "Opens official partner booking · Price may change",
     "opens_partner_short": "Opens partner booking · Price may change",
     "best": "Best",
+    "best_value": "Best Value",
     "save": "Save flight",
-    "unsave": "Unsave flight"
+    "unsave": "Unsave flight",
+    "scarcity": "Only a few seats left at this price",
+    "best_price": "Best Price",
+    "departing_from": "Departing from:",
+    "from_price": "From",
+    "via": "via",
+    "layover": "Layover:",
+    "stops_unknown": "Stops unknown",
+    "link_not_secure": "Link may not be secure",
+    "link_not_secure_desc": "The booking link could not be verified. You can copy it manually.",
+    "copy_link": "Copy link",
+    "link_copied": "Link copied"
   },
   "results": {
     "searching": "Searching live prices…",
@@ -124,7 +140,26 @@
     "showing_top": "Showing top {{count}}",
     "traveler": "traveler",
     "travelers": "travelers",
-    "back_to_search": "Back to search"
+    "back_to_search": "Back to search",
+    "select_route": "Select a route to search",
+    "select_route_sub": "Choose your origin, destination, and dates to find the best flights.",
+    "explore_estimates": "Explore prices are flexible \"from\" estimates.",
+    "exact_prices_update": "Exact prices update after selecting dates.",
+    "searching_combinations": "Searching {{completed}}/{{total}} route combinations…",
+    "searching_airports": "Searching {{completed}}/{{total}} departure airports…",
+    "searching_origins": "Searching {{completed}}/{{total}} origins…",
+    "searching_more": "Searching more fares…",
+    "refresh": "Refresh prices",
+    "updating": "Searching more fares…",
+    "hide_long_layovers": "Hide long layovers (5h+)",
+    "prices_may_differ": "Prices may differ from other platforms depending on agency availability and fare rules.",
+    "no_results_from": "No results from: {{origins}}",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "from_origin": "From {{origin}}",
+    "best_from": "— best from {{price}}",
+    "results_top_shown": "{{count}} results · Top 10 shown",
+    "saved_label": "Saved"
   },
   "travelers": {
     "title": "Travelers",
@@ -169,6 +204,7 @@
     "trip_length": "Trip length",
     "max_price": "Max price",
     "days": "days",
+    "day": "day",
     "destinations": "destinations",
     "destinations_from": "destinations from {{city}}",
     "by_price": "by price",
@@ -178,7 +214,8 @@
     "no_destinations_sub": "Try widening the trip window, turning off 'Direct only', or selecting a different origin.",
     "select_origin": "Select an origin airport to explore.",
     "cheapest": "Cheapest",
-    "select_origin_label": "Select origin"
+    "select_origin_label": "Select origin",
+    "explore_flights": "Explore flights"
   },
   "footer": {
     "brand_desc": "Compare flights and hotels from trusted travel providers.",
@@ -269,5 +306,136 @@
     "stops_n": "{{count}} stops",
     "direct_flight": "Direct flight",
     "operated_by": "Operated by {{carrier}}"
+  },
+  "saved": {
+    "title": "Saved Flights",
+    "flights_count": "{{count}} flight saved",
+    "flights_count_plural": "{{count}} flights saved",
+    "clear_all": "Clear all",
+    "no_saved": "No saved flights yet",
+    "no_saved_sub": "Tap the heart icon on any flight card to save it here for later.",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "days_ago": "{{count}}d ago",
+    "saved_label": "Saved",
+    "remove": "Remove",
+    "return_label": "Return:"
+  },
+  "not_found": {
+    "title": "Page Not Found",
+    "description": "The page you're looking for doesn't exist or has been moved. Let's get you back on track.",
+    "back_home": "Back to Home"
+  },
+  "coming_soon": {
+    "feature_title": "Coming Soon",
+    "feature_desc": "This section is coming later. For now, explore Flights and Hotels.",
+    "booking_title": "Demo Mode",
+    "booking_desc": "Live booking links launch soon. This is a demo using sample data.",
+    "auth_title": "No Account Required",
+    "auth_desc": "Accounts are not required. You can search flights and hotels without signing up.",
+    "search_flights": "Search Flights",
+    "search_hotels": "Search Hotels"
+  },
+  "how_it_works": {
+    "title": "How it works",
+    "subtitle": "Find your perfect flight in 3 easy steps",
+    "step1_title": "Search",
+    "step1_desc": "Enter your destination and dates to search flights",
+    "step2_title": "Compare",
+    "step2_desc": "View and compare prices from different providers",
+    "step3_title": "Book",
+    "step3_desc": "Book directly with airlines or travel sites"
+  },
+  "why_us": {
+    "badge": "Why GoFlyFinder",
+    "title": "Why travelers choose us",
+    "subtitle": "We make finding cheap flights simple and stress-free",
+    "feature1_title": "Search all in one place",
+    "feature1_desc": "Compare prices from hundreds of airlines and travel sites at once.",
+    "feature2_title": "Find the best deals",
+    "feature2_desc": "We search for deals so you don't have to. Let us do the hard work.",
+    "feature3_title": "Book with confidence",
+    "feature3_desc": "We only work with trusted travel providers you know and trust.",
+    "feature4_title": "Fast and easy",
+    "feature4_desc": "Simple search, quick results. Find your flight in seconds."
+  },
+  "destinations": {
+    "trending": "Trending now",
+    "title": "Popular destinations",
+    "subtitle": "Explore the world's most loved cities — click to search flights instantly.",
+    "explore_flights": "Explore flights",
+    "flights_to": "Flights to {{city}}"
+  },
+  "price_calendar": {
+    "title": "Price Trends",
+    "estimated": "Estimated",
+    "lowest": "Lowest:",
+    "based_on": "Based on:",
+    "cheapest": "Cheapest",
+    "above_average": "Above average",
+    "estimates_only": "Prices are estimates only"
+  },
+  "details": {
+    "route": "Route",
+    "duration": "Duration",
+    "amenities": "Included Amenities",
+    "checked_bag": "23kg checked bag",
+    "wifi": "In-flight WiFi",
+    "meals": "Meals included",
+    "included": "What's included",
+    "free_seat": "Free seat selection",
+    "priority_boarding": "Priority boarding",
+    "flexible_rebooking": "Flexible rebooking",
+    "free_cancellation": "24h free cancellation",
+    "total_per_person": "Total price per person",
+    "includes_taxes": "Includes taxes & fees",
+    "continue_booking": "Continue to Booking",
+    "booking_unavailable": "Booking unavailable",
+    "redirect_notice": "You'll be redirected to complete your booking securely on flights.goflyfinder.com."
+  },
+  "compare": {
+    "title": "Compare airports",
+    "compare_departure": "Compare departure airports",
+    "all_origins": "All origins",
+    "by_origin": "By origin",
+    "show_all": "Show all",
+    "cheapest": "Cheapest",
+    "save_up_to": "Save up to {{amount}}",
+    "saves": "{{origin}} saves {{amount}}",
+    "from_price": "{{origin}} → {{destination}} from {{price}}",
+    "drive_time": "Approx. {{time}} from {{origin}}",
+    "view_origin": "View {{origin}}",
+    "result": "result",
+    "results": "results"
+  },
+  "price_insight": {
+    "low_label": "Prices are low",
+    "low_sub": "Now is a good time to book",
+    "typical_label": "Prices are typical",
+    "typical_sub": "Fairly standard for this route",
+    "high_label": "Prices are high",
+    "high_sub": "Consider flexible dates"
+  },
+  "nearby": {
+    "dismiss": "Dismiss suggestion",
+    "drive_min": "{{min}}m drive",
+    "drive_hours": "{{h}}h drive",
+    "drive_hours_min": "{{h}}h {{m}}m drive"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have a question, feedback, or partnership inquiry? We'd love to hear from you.",
+    "name": "Name",
+    "email": "Email",
+    "subject": "Subject",
+    "message": "Message",
+    "send": "Send Message",
+    "email_label": "Email",
+    "response_time": "Response Time",
+    "response_time_text": "We typically respond within 24–72 hours."
+  },
+  "hotel": {
+    "searching": "Searching hotels...",
+    "finding_deals": "Finding the best deals in {{destination}}"
   }
 }

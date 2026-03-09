@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Calendar, Search, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -20,6 +21,7 @@ interface CompactSearchBarProps {
 const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchBarProps) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { currency, marketCode } = useLocale();
   
   const defaultDates = getDefaultDates();
@@ -115,11 +117,11 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
    */
   const handleSearch = useCallback(() => {
     if (origins.length === 0) {
-      toast.error("Please enter an origin airport");
+      toast.error(t("search.enter_origin"));
       return;
     }
     if (!to) {
-      toast.error("Please enter a destination airport");
+      toast.error(t("search.enter_destination"));
       return;
     }
 
@@ -150,7 +152,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
                 : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >
-            Round trip
+            {t("search.roundtrip")}
           </button>
           <button
             onClick={() => setTripType("oneway")}
@@ -160,7 +162,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
                 : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >
-            One way
+            {t("search.oneway")}
           </button>
         </div>
 
@@ -169,7 +171,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
           <MultiOriginInput
             values={origins}
             onChange={setOrigins}
-            placeholder="From"
+            placeholder={t("search.from")}
             compact
           />
         </div>
@@ -195,7 +197,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
           <AirportAutocomplete
             value={to}
             onChange={setTo}
-            placeholder="To"
+            placeholder={t("search.to")}
             icon="to"
             compact
           />
@@ -288,7 +290,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
           ) : (
             <Search className="w-4 h-4" />
           )}
-          <span className="hidden sm:inline">{isSearching ? "Searching…" : "Search"}</span>
+          <span className="hidden sm:inline">{isSearching ? t("search.searching") : t("search.search")}</span>
         </Button>
       </div>
     </div>
