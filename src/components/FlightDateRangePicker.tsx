@@ -164,11 +164,11 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
 
   return (
     <div
-      className="w-full bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden pointer-events-auto z-[9999] relative"
+      className="w-full bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden pointer-events-auto z-[9999] relative isolate opacity-100 mix-blend-normal"
       onClick={(e) => e.stopPropagation()}
     >
       {/* ── Header: Trip type + Tabs + Close ── */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white">
         {/* Trip type */}
         <div className="flex gap-1">
           <button type="button" onClick={() => onTripTypeChange("roundtrip")}
