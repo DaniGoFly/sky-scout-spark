@@ -36,40 +36,7 @@ const MAX_VISIBLE_CHIPS = 1;
 const MIN_INPUT_WIDTH_PX = 112;
 const COMPACT_ADD_THRESHOLD_PX = 106;
 
-/* ── Portal dropdown anchored to the field ── */
-const PortalDropdown = ({
-  anchorRef,
-  children,
-}: {
-  anchorRef: React.RefObject<HTMLDivElement>;
-  children: React.ReactNode;
-}) => {
-  const [style, setStyle] = useState<React.CSSProperties>({});
-
-  const updatePosition = useCallback(() => {
-    if (!anchorRef.current) return;
-    const rect = anchorRef.current.getBoundingClientRect();
-    setStyle({
-      position: "fixed",
-      left: rect.left,
-      top: rect.bottom + 8,
-      width: Math.max(rect.width, 280),
-      maxHeight: Math.max(120, window.innerHeight - rect.bottom - 16),
-      zIndex: 9999,
-    });
-  }, [anchorRef]);
-
-  useEffect(() => {
-    updatePosition();
-    // Only update on resize, not scroll - keeps panel stable while open
-    window.addEventListener("resize", updatePosition);
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [updatePosition]);
-
-  return createPortal(<div style={style}>{children}</div>, document.body);
-};
+/* ── Dropdown panel is rendered absolutely under this field wrapper (stable + anchored) ── */
 
 /* ── Chip component ── */
 const AirportChip = ({
