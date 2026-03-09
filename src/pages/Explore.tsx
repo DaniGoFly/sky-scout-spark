@@ -147,7 +147,7 @@ const Explore = () => {
       currency: currency.toLowerCase(),
     });
     // Mark as explore estimate so results page can show info banner
-    if (!hasDates || dateMode === "flexible") {
+    if (!hasDates) {
       params.set("explore_from_price", String(Math.round(dest.price)));
     }
     navigate(`/flights/results?${params.toString()}`);
