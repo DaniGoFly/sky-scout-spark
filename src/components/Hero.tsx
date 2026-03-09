@@ -89,8 +89,8 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           />
         </div>
 
-        <div className="relative z-10 pt-24 sm:pt-28 pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-[1100px]">
+        <div className="relative z-10 pt-24 sm:pt-28 pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8 overflow-visible">
+          <div className="mx-auto max-w-[1100px] overflow-visible">
 
             {/* ── Category pills ── */}
             <div className="flex items-center gap-1.5 mb-10 overflow-x-auto pb-1 scrollbar-none justify-start" style={{ WebkitOverflowScrolling: "touch" }}>
