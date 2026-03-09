@@ -176,46 +176,51 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
       </div>
 
       {showSuggestions && (
-        <div
-          ref={dropdownRef}
-          className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto max-h-[360px]"
-        >
-          {suggestions.map((place, index) => (
-            <button
-              key={`${place.code}-${index}`}
-              type="button"
-              onClick={() => handleSelect(place)}
-              className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
-                index === highlightedIndex 
-                  ? "bg-primary/10" 
-                  : "hover:bg-secondary/50"
-              }`}
-            >
-              <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                <span className="text-xs font-bold text-muted-foreground">
-                  {place.code}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-foreground truncate">
-                  {place.name}
-                  {place.main_airport_name && (
-                    <span className="text-muted-foreground"> – {place.main_airport_name}</span>
-                  )}
+        <OverlayPortal>
+          <div
+            ref={dropdownRef}
+            style={dropdownOverlay.style}
+            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto max-h-[360px] isolate [contain:paint] transform-gpu"
+          >
+            {suggestions.map((place, index) => (
+              <button
+                key={`${place.code}-${index}`}
+                type="button"
+                onClick={() => handleSelect(place)}
+                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                  index === highlightedIndex ? "bg-primary/10" : "hover:bg-secondary/50"
+                }`}
+              >
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                  <span className="text-xs font-bold text-muted-foreground">{place.code}</span>
                 </div>
-                <div className="text-sm text-muted-foreground truncate">
-                  {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-foreground truncate">
+                    {place.name}
+                    {place.main_airport_name && (
+                      <span className="text-muted-foreground"> – {place.main_airport_name}</span>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        </OverlayPortal>
       )}
 
       {showEmpty && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground">
-          No airports found
-        </div>
+        <OverlayPortal>
+          <div
+            ref={dropdownRef}
+            style={dropdownOverlay.style}
+            className="pointer-events-auto fixed z-[9999] w-full min-w-[280px] bg-card border border-border rounded-xl shadow-lg p-4 text-center text-muted-foreground isolate [contain:paint] transform-gpu"
+          >
+            No airports found
+          </div>
+        </OverlayPortal>
       )}
     </div>
   );
