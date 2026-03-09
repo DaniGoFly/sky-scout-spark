@@ -438,7 +438,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                 {tripType === "roundtrip" ? (
                   <TripLengthSlider value={tripLength} onChange={setTripLength} />
                 ) : (
-                  <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+                  <span className={`${SEG_PLACEHOLDER} text-[13px]`}>{t("search_form.flexible_departure")}</span>
                 )}
               </div>
             ) : (
