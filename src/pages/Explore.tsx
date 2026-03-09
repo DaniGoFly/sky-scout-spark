@@ -73,6 +73,8 @@ const Explore = () => {
   }, [geoInitDone]);
 
   // Fetch explore data
+  // Fetch explore data — only refetch when origin or currency changes
+  // Trip length filtering is done client-side since the API doesn't support it
   useEffect(() => {
     if (!origin?.code) return;
     setIsLoading(true);
@@ -80,8 +82,6 @@ const Explore = () => {
       origin: origin.code,
       currency,
       direct: directOnly,
-      min_trip_duration: tripLength[0],
-      max_trip_duration: tripLength[1],
       period: "month",
     })
       .then(res => {
@@ -89,7 +89,7 @@ const Explore = () => {
         else setDestinations([]);
       })
       .finally(() => setIsLoading(false));
-  }, [origin?.code, currency, directOnly, tripLength[0], tripLength[1]]);
+  }, [origin?.code, currency, directOnly]);
 
   const handleUseMyLocation = useCallback(async () => {
     const result = await requestNearestAirport();
