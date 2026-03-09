@@ -242,7 +242,7 @@ PriceIntelBadge.displayName = "PriceIntelBadge";
 
 /* ─── Main card ─── */
 
-const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel, originSource, totalPassengers = 1 }: FlightCardProps) => {
+const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel, originSource, totalPassengers = 1, savedContext }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(() => isFlightSaved(flight.id));
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
