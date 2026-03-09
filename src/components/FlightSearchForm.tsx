@@ -230,14 +230,12 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
     setCalendarOpen(false);
   }, []);
 
-  // Keep position updated on scroll/resize while open
+  // Keep position updated on resize only while open (not scroll - stability)
   useEffect(() => {
     if (!calendarOpen) return;
     const update = () => updateCalendarPos();
-    window.addEventListener("scroll", update, true);
     window.addEventListener("resize", update);
     return () => {
-      window.removeEventListener("scroll", update, true);
       window.removeEventListener("resize", update);
     };
   }, [calendarOpen, updateCalendarPos]);

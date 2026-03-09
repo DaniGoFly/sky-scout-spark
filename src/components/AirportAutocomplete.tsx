@@ -50,10 +50,9 @@ const PortalDropdown = ({
 
   useEffect(() => {
     updatePosition();
-    window.addEventListener("scroll", updatePosition, true);
+    // Only update on resize, not scroll - keeps dropdown stable while open
     window.addEventListener("resize", updatePosition);
     return () => {
-      window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
     };
   }, [updatePosition]);
