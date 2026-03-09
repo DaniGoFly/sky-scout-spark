@@ -507,5 +507,94 @@
     "view_origin": "View {{origin}}",
     "result": "result",
     "results": "results"
+  },
+  "hero_section": {
+    "smart_tools": "Smart travel tools",
+    "ai_travel_guide": "AI Travel Guide",
+    "ai_travel_desc": "Get personalized travel recommendations",
+    "explore_map": "Explore Map",
+    "explore_map_desc": "Discover cheapest destinations nearby",
+    "flexible_dates_title": "Flexible Dates",
+    "flexible_dates_desc": "Find the cheapest days to fly",
+    "popular_destinations": "Popular destinations right now",
+    "from_price": "from {{price}}"
+  },
+  "old_search": {
+    "round_trip": "Round trip",
+    "one_way": "One way",
+    "anywhere_label": "Anywhere",
+    "searching_everywhere": "Searching everywhere",
+    "from_label": "From",
+    "to_label": "To",
+    "depart": "Depart",
+    "return_label": "Return",
+    "select_departure_date": "Select departure date",
+    "select_return_date": "Select return date",
+    "travelers_label": "Travelers",
+    "adults": "Adults",
+    "done": "Done",
+    "explore_destinations": "Explore Destinations",
+    "search_flights": "Search Flights"
+  },
+  "results_page": {
+    "service_unavailable": "Service temporarily unavailable",
+    "having_trouble": "We're having trouble connecting.",
+    "search_directly": "Search Directly",
+    "no_cached_prices": "No cached prices available",
+    "historical_data": "These results use historical data. For live prices, search directly.",
+    "search_live_prices": "Search Live Prices",
+    "try_different_dates": "Try Different Dates",
+    "prices_not_available": "Prices not available yet",
+    "airlines_publish_advance": "Airlines typically publish fares 9-11 months in advance.",
+    "search_date": "Search {{date}}",
+    "modify_search": "Modify Search",
+    "ready_to_search": "Ready to search",
+    "enter_details": "Enter your travel details above to find the best flight deals",
+    "searching_flights": "Searching flights...",
+    "flights_found": "{{count}} flights found",
+    "results_found_count": "{{count}} results found",
+    "showing_top_count": "Showing top {{count}}",
+    "show_more": "Show {{count}} more flights",
+    "showing_of": "Showing {{shown}} of {{total}} results",
+    "capped_at": "capped at {{max}}",
+    "top_results_filters": "Showing top {{max}} results. Use filters to narrow your search.",
+    "live_availability": "For live availability and booking:",
+    "nearby_dates": "Showing prices for nearby dates",
+    "results_for": "Results for: {{dates}}",
+    "cheapest_badge": "Cheapest",
+    "traveler_count": "{{count}} traveler",
+    "traveler_count_plural": "{{count}} travelers",
+    "nearby_dates_label": "nearby dates"
+  },
+  "explore_page": {
+    "explore_destinations": "Explore destinations",
+    "choose_departure": "Choose a departure airport or use your location to explore destinations.",
+    "direct": "Direct",
+    "stop": "{{count}} stop",
+    "stops": "{{count}} stops",
+    "show_less": "Show Less",
+    "show_more_count": "Show More ({{count}} more)",
+    "from_price": "From {{price}}"
+  },
+  "error_boundary": {
+    "something_went_wrong": "Something went wrong",
+    "offers_malformed": "Some offers were malformed. Please try again.",
+    "try_again": "Try again"
+  },
+  "hotel_details": {
+    "pay_at_property": "Pay at property",
+    "no_prepayment": "No prepayment needed",
+    "best_price_guarantee": "Best price guarantee",
+    "price_per_night": "Price per night",
+    "includes_taxes": "Includes taxes & fees"
+  },
+  "hotel_filters": {
+    "price_per_night": "Price per night"
+  },
+  "cabin": {
+    "economy": "Economy",
+    "premium_economy": "Premium Economy",
+    "business": "Business",
+    "first": "First"
   }
 }

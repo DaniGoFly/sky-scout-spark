@@ -503,5 +503,104 @@
     "view_origin": "{{origin}} anzeigen",
     "result": "Ergebnis",
     "results": "Ergebnisse"
+  },
+  "hero_section": {
+    "smart_tools": "Smarte Reisetools",
+    "ai_travel_guide": "KI-Reiseführer",
+    "ai_travel_desc": "Personalisierte Reiseempfehlungen erhalten",
+    "explore_map": "Karte entdecken",
+    "explore_map_desc": "Günstigste Ziele in der Nähe entdecken",
+    "flexible_dates_title": "Flexible Daten",
+    "flexible_dates_desc": "Die günstigsten Flugtage finden",
+    "popular_destinations": "Beliebte Reiseziele gerade",
+    "from_price": "ab {{price}}"
+  },
+  "old_search": {
+    "round_trip": "Hin & Rück",
+    "one_way": "Nur Hinflug",
+    "anywhere_label": "Überall",
+    "searching_everywhere": "Überall suchen",
+    "from_label": "Von",
+    "to_label": "Nach",
+    "depart": "Abflug",
+    "return_label": "Rückflug",
+    "select_departure_date": "Abflugdatum wählen",
+    "select_return_date": "Rückflugdatum wählen",
+    "travelers_label": "Reisende",
+    "adults": "Erwachsene",
+    "done": "Fertig",
+    "explore_destinations": "Ziele entdecken",
+    "search_flights": "Flüge suchen"
+  },
+  "results_page": {
+    "service_unavailable": "Service vorübergehend nicht verfügbar",
+    "having_trouble": "Wir haben Verbindungsprobleme.",
+    "search_directly": "Direkt suchen",
+    "no_cached_prices": "Keine gecachten Preise verfügbar",
+    "historical_data": "Diese Ergebnisse verwenden historische Daten. Für Live-Preise direkt suchen.",
+    "search_live_prices": "Live-Preise suchen",
+    "try_different_dates": "Andere Daten versuchen",
+    "prices_not_available": "Preise noch nicht verfügbar",
+    "airlines_publish_advance": "Fluggesellschaften veröffentlichen Tarife in der Regel 9–11 Monate im Voraus.",
+    "search_date": "Suche {{date}}",
+    "modify_search": "Suche ändern",
+    "ready_to_search": "Bereit zum Suchen",
+    "enter_details": "Geben Sie oben Ihre Reisedaten ein, um die besten Flugangebote zu finden",
+    "searching_flights": "Flüge werden gesucht...",
+    "flights_found": "{{count}} Flüge gefunden",
+    "results_found_count": "{{count}} Ergebnisse gefunden",
+    "showing_top_count": "Top {{count}} angezeigt",
+    "show_more": "{{count}} weitere Flüge anzeigen",
+    "showing_of": "{{shown}} von {{total}} Ergebnissen angezeigt",
+    "capped_at": "begrenzt auf {{max}}",
+    "top_results_filters": "Top {{max}} Ergebnisse angezeigt. Verwenden Sie Filter, um Ihre Suche einzugrenzen.",
+    "live_availability": "Für Live-Verfügbarkeit und Buchung:",
+    "nearby_dates": "Preise für nahegelegene Daten anzeigen",
+    "results_for": "Ergebnisse für: {{dates}}",
+    "cheapest_badge": "Günstigste",
+    "traveler_count": "{{count}} Reisender",
+    "traveler_count_plural": "{{count}} Reisende",
+    "nearby_dates_label": "nahegelegene Daten"
+  },
+  "explore_page": {
+    "explore_destinations": "Ziele entdecken",
+    "choose_departure": "Wählen Sie einen Abflughafen oder nutzen Sie Ihren Standort, um Ziele zu entdecken.",
+    "direct": "Direkt",
+    "stop": "{{count}} Stopp",
+    "stops": "{{count}} Stopps",
+    "show_less": "Weniger anzeigen",
+    "show_more_count": "Mehr anzeigen ({{count}} weitere)",
+    "from_price": "Ab {{price}}"
+  },
+  "error_boundary": {
+    "something_went_wrong": "Etwas ist schiefgelaufen",
+    "offers_malformed": "Einige Angebote waren fehlerhaft. Bitte versuchen Sie es erneut.",
+    "try_again": "Erneut versuchen"
+  },
+  "hotel_details": {
+    "pay_at_property": "Bezahlung vor Ort",
+    "no_prepayment": "Keine Vorauszahlung nötig",
+    "best_price_guarantee": "Bestpreisgarantie",
+    "price_per_night": "Preis pro Nacht",
+    "includes_taxes": "Inklusive Steuern & Gebühren"
+  },
+  "hotel_filters": {
+    "price_per_night": "Preis pro Nacht"
+  },
+  "cabin": {
+    "economy": "Economy",
+    "premium_economy": "Premium Economy",
+    "business": "Business",
+    "first": "First"
+  },
+  "trust": {
+    "airlines": "Preise von 600+ Fluggesellschaften",
+    "airlines_count": "600+ Fluggesellschaften",
+    "no_fees": "Keine versteckten Gebühren",
+    "no_hidden_fees": "Keine versteckten Gebühren",
+    "secure": "Sichere Buchung über geprüfte Partner",
+    "verified_partners": "Verifizierte Partner",
+    "live_updates": "Live-Preisaktualisierungen",
+    "updated": "Vor {{seconds}}s aktualisiert"
   }
 }
