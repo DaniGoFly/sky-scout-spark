@@ -722,10 +722,10 @@ const LiveFlightResults = () => {
                     <Loader2 className="w-3 h-3 animate-spin text-primary" />
                     <span>
                       {isCartesian
-                        ? `Searching ${cartesianProgress.completed}/${cartesianProgress.total} combinations…`
+                        ? t("results.searching_combinations", { completed: cartesianProgress.completed, total: cartesianProgress.total })
                         : isMultiOrigin
-                        ? `Searching ${progress.completed}/${progress.total} origins…`
-                        : t("results.updating", "Searching more fares…")}
+                        ? t("results.searching_origins", { completed: progress.completed, total: progress.total })
+                        : t("results.updating")}
                     </span>
                     {(isCartesian || isMultiOrigin) && (
                       <button onClick={cancelSearch} className="text-primary/70 hover:text-primary text-[11px] ml-1">Cancel</button>
