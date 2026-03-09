@@ -266,7 +266,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
       )}
 
       {/* ── Footer ── */}
-      <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50/40">
+      <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-white">
         <Button type="button" variant="ghost" onClick={handleClear} className="text-sm text-gray-500 hover:text-gray-800">
           Clear dates
         </Button>
