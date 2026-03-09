@@ -113,11 +113,6 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                   >
                     <Icon className="w-4 h-4" />
                     {t(pill.label)}
-                    {"badge" in pill && pill.badge && (
-                      <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 rounded-full leading-none">
-                        {pill.badge}
-                      </span>
-                    )}
                   </button>
                 );
               })}
