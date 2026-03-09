@@ -55,6 +55,7 @@ function parseDepartureHour(timeStr: string): number | null {
 
 const LiveFlightResults = () => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { formatDate, currency, formatPrice, marketCode } = useLocale();
