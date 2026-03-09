@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { Plane, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+
 
 interface Place {
   name: string;
