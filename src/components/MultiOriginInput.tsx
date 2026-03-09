@@ -1,13 +1,11 @@
 /**
  * Multi-Origin Airport Input
- * Professional multi-airport selector with inline chips and anchored dropdown.
+ * Professional multi-airport selector with inline chips and inline dropdown.
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Loader2, Plus, ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { OverlayPortal } from "@/components/overlays/OverlayPortal";
-import { useAnchoredOverlay } from "@/hooks/useAnchoredOverlay";
 
 interface Place {
   name: string;
