@@ -60,9 +60,9 @@ const SavedFlights = () => {
     else params.delete("return");
 
     params.set("trip", restoredTripType);
-    params.set("adults", String(flight.adults ?? Number(params.get("adults")) || 1));
-    params.set("children", String(flight.children ?? Number(params.get("children")) || 0));
-    params.set("infants", String(flight.infants ?? Number(params.get("infants")) || 0));
+    params.set("adults", String(flight.adults ?? (Number(params.get("adults")) || 1)));
+    params.set("children", String(flight.children ?? (Number(params.get("children")) || 0)));
+    params.set("infants", String(flight.infants ?? (Number(params.get("infants")) || 0)));
     params.set("class", flight.travelClass || params.get("class") || "economy");
 
     if (flight.currency) params.set("currency", flight.currency);
