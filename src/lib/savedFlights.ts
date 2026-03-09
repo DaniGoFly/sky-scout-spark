@@ -82,6 +82,12 @@ export interface SearchContext {
   selection?: SavedSelection;
 }
 
+function extractIsoDate(value?: string | null): string {
+  if (!value) return "";
+  const match = value.match(/\d{4}-\d{2}-\d{2}/);
+  return match?.[0] || "";
+}
+
 function readStore(): SavedFlight[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
