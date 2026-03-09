@@ -147,7 +147,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       <section className="relative z-0 px-4 sm:px-6 lg:px-8 mt-20 sm:mt-24 animate-fade-in">
         <div className="mx-auto max-w-[1100px]">
           <h3 className="text-xs font-semibold text-muted-foreground/60 mb-5 uppercase tracking-[0.15em] text-center sm:text-left">
-            Smart travel tools
+            {t("hero_section.smart_tools")}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {SMART_TOOLS.map((tool) => {
