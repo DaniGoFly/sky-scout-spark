@@ -395,7 +395,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <div className="mt-1.5"><MultiOriginInput
                 values={origins}
                 onChange={handleOriginsChange}
-                placeholder="Country, city or airport"
+                placeholder={t("search_form.placeholder_airport")}
                 bare
               /></div>
             </div>
