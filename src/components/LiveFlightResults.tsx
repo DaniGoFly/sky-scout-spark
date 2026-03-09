@@ -807,13 +807,13 @@ const LiveFlightResults = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-semibold text-foreground">
-                              From {origin}
+                              {t("results.from_origin", { origin })}
                             </span>
                             <span className="text-xs text-muted-foreground ml-2">
-                              — best from {formatPrice(cheapest, flightsCurrency)}
+                              {t("results.best_from", { price: formatPrice(cheapest, flightsCurrency) })}
                             </span>
                           </div>
-                          <span className="text-[10px] text-muted-foreground">{originFlights.length} results · Top 10 shown</span>
+                          <span className="text-[10px] text-muted-foreground">{t("results.results_top_shown", { count: originFlights.length })}</span>
                         </div>
                         {originFlights.map((flight, index) => renderFlightCard(flight, index))}
                       </div>
