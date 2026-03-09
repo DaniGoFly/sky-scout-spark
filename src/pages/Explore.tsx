@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AirportAutocomplete from "@/components/AirportAutocomplete";
 import ExploreMap from "@/components/explore/ExploreMap";
 import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
-import { detectGeo } from "@/lib/priceApi";
+// detectGeo removed — no auto-origin detection
 import { useLocale } from "@/hooks/useLocale";
 import { AIRPORTS, type AirportData } from "@/lib/airports";
 import { requestNearestAirport } from "@/lib/nearestAirport";
@@ -27,11 +27,6 @@ interface AirportSelection {
   display: string;
 }
 
-function getDefaultAirportByCountry(countryCode: string): AirportData | null {
-  const countryAirports = AIRPORTS.filter(a => a.country === countryCode);
-  if (countryAirports.length === 0) return AIRPORTS.find(a => a.code === "JFK") || null;
-  return countryAirports[0];
-}
 
 function formatDateRange(depart?: string, ret?: string): string {
   if (!depart) return "";
@@ -61,13 +56,11 @@ const Explore = () => {
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const isMobile = useIsMobile();
-  // Auto-detect origin from geo — only once on mount
-  // Parse origin from URL params (Anywhere mode from SearchForm) or geo-detect
+  // Parse origin from URL params only (e.g. Anywhere mode from SearchForm)
   useEffect(() => {
     if (geoInitDone) return;
     setGeoInitDone(true);
 
-    // Check URL params first (from SearchForm Anywhere mode)
     const params = new URLSearchParams(window.location.search);
     const fromCode = params.get("from");
     if (fromCode) {
@@ -75,19 +68,9 @@ const Explore = () => {
       const airport = AIRPORTS.find(a => a.code === code);
       if (airport) {
         setOrigin({ code: airport.code, display: `${airport.city} (${airport.code})` });
-        return;
       }
     }
-
-    detectGeo().then(geo => {
-      if (!geo) return;
-      setOrigin(prev => {
-        if (prev) return prev;
-        const airport = getDefaultAirportByCountry(geo.country);
-        if (airport) return { code: airport.code, display: `${airport.city} (${airport.code})` };
-        return prev;
-      });
-    });
+    // No auto-detection — page stays blank until user picks an origin
   }, [geoInitDone]);
 
   // Fetch explore data
@@ -332,6 +315,16 @@ const Explore = () => {
                     </div>
                   ))}
                 </div>
+              ) : sortedDestinations.length === 0 && !origin ? (
+                <div className="p-8 text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-3">
+                    <MapPin className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground mb-1">Explore destinations</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Choose a departure airport or use your location to explore destinations.
+                  </p>
+                </div>
               ) : sortedDestinations.length === 0 ? (
                 <div className="p-8 text-center">
                   <div className="w-12 h-12 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-3">
@@ -339,9 +332,7 @@ const Explore = () => {
                   </div>
                   <p className="text-sm font-medium text-foreground mb-1">No destinations found</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    {origin
-                      ? "Try widening the trip window, turning off 'Direct only', or selecting a different origin."
-                      : "Select an origin airport to explore."}
+                    Try widening the trip window, turning off 'Direct only', or selecting a different origin.
                   </p>
                 </div>
               ) : (
