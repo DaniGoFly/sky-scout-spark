@@ -152,7 +152,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
                 : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >
-            Round trip
+            {t("search.roundtrip")}
           </button>
           <button
             onClick={() => setTripType("oneway")}
@@ -162,7 +162,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
                 : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >
-            One way
+            {t("search.oneway")}
           </button>
         </div>
 
