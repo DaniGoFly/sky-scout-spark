@@ -73,6 +73,8 @@ const Explore = () => {
   }, [geoInitDone]);
 
   // Fetch explore data
+  // Fetch explore data — only refetch when origin or currency changes
+  // Trip length filtering is done client-side since the API doesn't support it
   useEffect(() => {
     if (!origin?.code) return;
     setIsLoading(true);
@@ -80,8 +82,6 @@ const Explore = () => {
       origin: origin.code,
       currency,
       direct: directOnly,
-      min_trip_duration: tripLength[0],
-      max_trip_duration: tripLength[1],
       period: "month",
     })
       .then(res => {
@@ -89,7 +89,7 @@ const Explore = () => {
         else setDestinations([]);
       })
       .finally(() => setIsLoading(false));
-  }, [origin?.code, currency, directOnly, tripLength[0], tripLength[1]]);
+  }, [origin?.code, currency, directOnly]);
 
   const handleUseMyLocation = useCallback(async () => {
     const result = await requestNearestAirport();
@@ -116,13 +116,24 @@ const Explore = () => {
     }).filter(d => d.lat && d.lon);
   }, [destinations]);
 
-  const sortedDestinations = useMemo(() =>
-    [...enrichedDestinations]
-      .filter(d => d.price <= maxPrice)
+  // Client-side filtering: trip length (calendar days) + max price
+  const sortedDestinations = useMemo(() => {
+    return [...enrichedDestinations]
+      .filter(d => {
+        // Price filter
+        if (d.price > maxPrice) return false;
+        // Trip length filter — compute calendar days between depart and return
+        if (d.departDate && d.returnDate) {
+          const depart = new Date(d.departDate + "T00:00:00");
+          const ret = new Date(d.returnDate + "T00:00:00");
+          const days = Math.round((ret.getTime() - depart.getTime()) / (1000 * 60 * 60 * 24));
+          if (days < tripLength[0] || days > tripLength[1]) return false;
+        }
+        return true;
+      })
       .sort((a, b) => a.price - b.price)
-      .slice(0, 80),
-    [enrichedDestinations, maxPrice]
-  );
+      .slice(0, 80);
+  }, [enrichedDestinations, maxPrice, tripLength]);
 
   const priceMax = useMemo(() => {
     if (!enrichedDestinations.length) return 2000;
