@@ -6,30 +6,25 @@ export interface AnchoredOverlayOptions {
   anchorRef: RefObject<HTMLElement | null>;
   offset?: number;
   matchWidth?: boolean;
-
   /**
-   * CSS selector for the element that overlays must never overlap (e.g. fixed header).
-   * Defaults to "header".
+   * CSS selector for a fixed boundary element (e.g. the header) that overlays
+   * must never overlap. Defaults to "header".
    */
   boundarySelector?: string;
-
-  /** Minimum gap (px) to keep below the boundary element. */
+  /** Minimum gap (px) to keep below the boundary. */
   boundaryGap?: number;
 }
 
-function getBoundaryBottom(selector: string): number {
-  const el = document.querySelector(selector) as HTMLElement | null;
-  if (!el) return 0;
-  return el.getBoundingClientRect().bottom;
-}
-
 /**
- * Anchored overlay positioning for portaled panels.
+ * Calculates a LOCKED position for portaled overlay panels.
  *
- * Key UX goals:
- * - Calculate position once on open (no scroll-follow "swimming")
- * - Clamp overlay below the fixed header area
- * - Only recompute on meaningful layout changes (width change / big resize)
+ * Design goals
+ * ────────────
+ * 1. Measure once on open → no scroll-follow → no "swimming"
+ * 2. Clamp below the fixed header (boundarySelector) so overlays never
+ *    slide into the logo/nav bar
+ * 3. Only re-measure on viewport WIDTH changes (≥2 px) so small mobile
+ *    height changes (address-bar hide/show) don't cause jitter
  */
 export function useAnchoredOverlay({
   open,
@@ -39,92 +34,69 @@ export function useAnchoredOverlay({
   boundarySelector = "header",
   boundaryGap = 8,
 }: AnchoredOverlayOptions) {
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const boundaryBottomRef = useRef(0);
-  const lastViewportRef = useRef<{ w: number; h: number } | null>(null);
-  const rafRef = useRef<number | null>(null);
+  // Single state: both values captured at the same instant → always in sync
+  const [snapshot, setSnapshot] = useState<{
+    rect: DOMRect;
+    boundaryBottom: number;
+  } | null>(null);
+
+  // Track last measured viewport width to ignore tiny height jitter
+  const lastWidthRef = useRef(-1);
 
   const measure = useCallback(() => {
     const el = anchorRef.current;
     if (!el) return;
-
-    boundaryBottomRef.current = getBoundaryBottom(boundarySelector);
-    setRect(el.getBoundingClientRect());
+    const bEl = document.querySelector(boundarySelector) as HTMLElement | null;
+    const boundaryBottom = bEl ? bEl.getBoundingClientRect().bottom : 0;
+    setSnapshot({ rect: el.getBoundingClientRect(), boundaryBottom });
   }, [anchorRef, boundarySelector]);
-
-  const update = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      measure();
-    });
-  }, [measure]);
 
   useLayoutEffect(() => {
     if (!open) return;
 
-    // Lock placement at open.
-    lastViewportRef.current = { w: window.innerWidth, h: window.innerHeight };
-    update();
+    // Capture placement once when opening
+    lastWidthRef.current = window.innerWidth;
+    measure();
 
+    // Only update when the viewport WIDTH meaningfully changes
+    // (avoids jitter from mobile address-bar resize events)
     const onResize = () => {
-      // Avoid "jitter" on mobile where scrolling can trigger small viewport-height resizes
-      // (address bar show/hide). Only update on width changes or significant height changes.
-      const last = lastViewportRef.current;
       const w = window.innerWidth;
-      const h = window.innerHeight;
-      if (!last) {
-        lastViewportRef.current = { w, h };
-        update();
-        return;
-      }
-
-      const dw = Math.abs(w - last.w);
-      const dh = Math.abs(h - last.h);
-
-      if (dw >= 2 || dh >= 160) {
-        lastViewportRef.current = { w, h };
-        update();
+      if (Math.abs(w - lastWidthRef.current) >= 2) {
+        lastWidthRef.current = w;
+        measure();
       }
     };
 
     window.addEventListener("resize", onResize);
 
-    const anchorEl = anchorRef.current;
-    const ro = anchorEl ? new ResizeObserver(() => update()) : null;
-    if (anchorEl && ro) ro.observe(anchorEl);
-
-    const boundaryEl = document.querySelector(boundarySelector) as HTMLElement | null;
-    const bro = boundaryEl ? new ResizeObserver(() => update()) : null;
-    if (boundaryEl && bro) bro.observe(boundaryEl);
+    // Also update if the anchor element itself resizes (e.g. text reflow)
+    const el = anchorRef.current;
+    const ro = el ? new ResizeObserver(measure) : null;
+    if (el && ro) ro.observe(el);
 
     return () => {
       window.removeEventListener("resize", onResize);
       ro?.disconnect();
-      bro?.disconnect();
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
     };
-  }, [open, update, anchorRef, boundarySelector]);
+  }, [open, measure, anchorRef]);
 
   const style = useMemo<CSSProperties>(() => {
-    if (!rect) return { display: "none" };
+    if (!snapshot) return { display: "none" };
 
-    const left = Math.round(rect.left);
-    const width = matchWidth ? Math.round(rect.width) : undefined;
+    const { rect, boundaryBottom } = snapshot;
 
-    const unclampedTop = rect.bottom + offset;
-    const minTop = boundaryBottomRef.current > 0 ? boundaryBottomRef.current + boundaryGap : 0;
-    const top = Math.round(Math.max(unclampedTop, minTop));
+    // Clamp: overlay must always sit below the header boundary
+    const minTop = boundaryBottom > 0 ? boundaryBottom + boundaryGap : 0;
+    const top = Math.round(Math.max(rect.bottom + offset, minTop));
 
     return {
       position: "fixed",
-      left,
+      left: Math.round(rect.left),
       top,
-      width,
+      ...(matchWidth ? { width: Math.round(rect.width) } : {}),
     };
-  }, [rect, offset, matchWidth, boundaryGap]);
+  }, [snapshot, offset, matchWidth, boundaryGap]);
 
-  return { style, rect, update };
+  return { style, rect: snapshot?.rect ?? null, update: measure };
 }
-
