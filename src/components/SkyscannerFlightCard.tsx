@@ -552,7 +552,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
           {originSource && (
             <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-primary/30 bg-primary/5 w-fit">
               <Plane className="w-3 h-3 text-primary" />
-              <span className="text-[11px] text-muted-foreground">Departing from: <span className="font-semibold text-foreground">{originSource}</span></span>
+              <span className="text-[11px] text-muted-foreground">{t("card.departing_from")} <span className="font-semibold text-foreground">{originSource}</span></span>
             </div>
           )}
           <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} layoverMinutes={outboundLayoverMinutes} dateLabel={outData.dateLabel} />
