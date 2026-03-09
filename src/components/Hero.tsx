@@ -69,7 +69,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       {/* ═══════════════════════════════════════════════════════════
           UNIFIED HERO — continuous surface with horizontal light sweep
           ═══════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-background">
+      <section className="relative overflow-visible bg-background">
         {/* Full-width left-to-right atmospheric booking zone — covers entire hero */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           {/* Primary L→R sweep: starts strong left, fades right — spans full height */}
