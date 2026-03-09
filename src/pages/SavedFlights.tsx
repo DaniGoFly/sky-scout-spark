@@ -40,7 +40,7 @@ const SavedFlights = () => {
       params.get("depart") ||
       extractDate(flight.departureTime);
 
-    const returnDate =
+    const rawReturnDate =
       flight.returnDate ||
       params.get("return") ||
       extractDate(flight.return?.departureTime) ||
@@ -49,7 +49,15 @@ const SavedFlights = () => {
     const isRoundtrip =
       flight.tripType === "roundtrip" ||
       Boolean(flight.return) ||
-      Boolean(returnDate);
+      Boolean(rawReturnDate);
+
+    const fallbackReturnDate = (() => {
+      if (!isRoundtrip || rawReturnDate || !departDate) return rawReturnDate;
+      const d = new Date(`${departDate}T12:00:00`);
+      if (Number.isNaN(d.getTime())) return rawReturnDate;
+      d.setDate(d.getDate() + 7);
+      return d.toISOString().slice(0, 10);
+    })();
 
     const restoredTripType = isRoundtrip ? "roundtrip" : "oneway";
 
