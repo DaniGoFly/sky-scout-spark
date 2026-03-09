@@ -97,7 +97,7 @@ const LiveFlightResults = () => {
   const [selectedOrigin, setSelectedOrigin] = useState<string | null>(null);
   const [originViewMode, setOriginViewMode] = useState<OriginViewMode>("all");
   const [nearbyAlertDismissed, setNearbyAlertDismissed] = useState(false);
-  const [hideLongLayovers, setHideLongLayovers] = useState(true);
+  const [hideLongLayovers, setHideLongLayovers] = useState(() => searchParams.get("saved_hide_long_layovers") !== "false");
   const prevSearchKeyRef = useRef<string>("");
   const prevSortRef = useRef<string>("best");
   const prevResultsRef = useRef<EnrichedFlight[]>([]);
