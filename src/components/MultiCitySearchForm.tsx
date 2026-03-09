@@ -1,8 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Plus, X, Search, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import AirportAutocomplete from "./AirportAutocomplete";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
@@ -39,6 +38,22 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
     cabinClass: "economy",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [openCalendarSegmentId, setOpenCalendarSegmentId] = useState<string | null>(null);
+  const calendarWrapRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!openCalendarSegmentId) return;
+
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const activeWrapper = calendarWrapRefs.current[openCalendarSegmentId];
+      if (activeWrapper?.contains(target)) return;
+      setOpenCalendarSegmentId(null);
+    };
+
+    document.addEventListener("mousedown", onDown, true);
+    return () => document.removeEventListener("mousedown", onDown, true);
+  }, [openCalendarSegmentId]);
 
   const addSegment = () => {
     if (segments.length >= 5) return;
@@ -52,6 +67,9 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
   const removeSegment = (id: string) => {
     if (segments.length <= 2) return;
     setSegments(segments.filter((s) => s.id !== id));
+    if (openCalendarSegmentId === id) {
+      setOpenCalendarSegmentId(null);
+    }
     const newErrors = { ...errors };
     delete newErrors[`${id}-from`];
     delete newErrors[`${id}-to`];
@@ -131,29 +149,40 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
           </div>
 
           {/* Date */}
-          <div className="min-w-0">
+          <div
+            className="min-w-0 relative overflow-visible"
+            ref={(el) => {
+              calendarWrapRefs.current[segment.id] = el;
+            }}
+          >
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">Date</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm",
-                    !segment.date && "text-muted-foreground",
-                    errors[`${segment.id}-date`] && "border-destructive"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4 shrink-0" />
-                  <span className="truncate">
-                    {segment.date ? format(segment.date, "MMM d, yyyy") : "Select date"}
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start" side="bottom" avoidCollisions={false}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                setOpenCalendarSegmentId((prev) => (prev === segment.id ? null : segment.id))
+              }
+              className={cn(
+                "w-full h-10 justify-start text-left font-normal bg-secondary/50 border-transparent rounded-lg text-sm",
+                !segment.date && "text-muted-foreground",
+                errors[`${segment.id}-date`] && "border-destructive"
+              )}
+            >
+              <Calendar className="mr-2 h-4 w-4 shrink-0" />
+              <span className="truncate">
+                {segment.date ? format(segment.date, "MMM d, yyyy") : "Select date"}
+              </span>
+            </Button>
+
+            {openCalendarSegmentId === segment.id && (
+              <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-auto rounded-xl border border-border bg-card p-0 shadow-xl">
                 <CalendarComponent
                   mode="single"
                   selected={segment.date || undefined}
-                  onSelect={(date) => updateSegment(segment.id, "date", date)}
+                  onSelect={(date) => {
+                    updateSegment(segment.id, "date", date);
+                    if (date) setOpenCalendarSegmentId(null);
+                  }}
                   disabled={(date) => {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
@@ -163,10 +192,9 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
                     }
                     return false;
                   }}
-                  initialFocus
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+            )}
             {errors[`${segment.id}-date`] && (
               <p className="text-destructive text-xs mt-1">{errors[`${segment.id}-date`]}</p>
             )}
