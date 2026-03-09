@@ -21,6 +21,7 @@ interface CompactSearchBarProps {
 const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchBarProps) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { currency, marketCode } = useLocale();
   
   const defaultDates = getDefaultDates();
