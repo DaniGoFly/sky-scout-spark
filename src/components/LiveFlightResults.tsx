@@ -210,7 +210,7 @@ const LiveFlightResults = () => {
         sort: "best" as const, limit: 100, tripClass, market: effectiveMarket,
       });
     }
-  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, effectiveCurrency, effectiveMarket, isRoundtrip, tripClass, searchFlights, cancelSearch, isMultiOrigin, origins, searchMultiOrigin, isCartesian, destinations, dfb, dfa, rfb, rfa, hasFlexDates, cartesianSearch]);
+  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, effectiveCurrency, effectiveMarket, isRoundtrip, tripClass, searchFlights, cancelSearch, isMultiOrigin, origins, searchMultiOrigin, isCartesian, destinations, dfb, dfa, rfb, rfa, hasFlexDates, cartesianSearch, initialSort, initialFilters, searchParams]);
 
   // ── Step 1: Enrich raw flights ──
   const enrichedFlights = useMemo<EnrichedFlight[]>(() => {
