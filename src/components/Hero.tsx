@@ -73,20 +73,15 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       <section className="relative overflow-visible bg-background">
         {/* Full-width left-to-right atmospheric booking zone — covers entire hero */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          {/* Primary L→R sweep: starts strong left, fades right — spans full height */}
+          {/* Single smooth top-to-bottom gradient — no overlapping radials */}
           <div
             className="absolute top-0 left-0 w-full h-full"
-            style={{ background: "linear-gradient(90deg, hsl(215 50% 80% / 0.09) 0%, hsl(215 55% 82% / 0.07) 20%, hsl(217 60% 78% / 0.055) 40%, hsl(220 50% 75% / 0.035) 60%, hsl(222 40% 60% / 0.015) 80%, transparent 100%)" }}
+            style={{ background: "linear-gradient(180deg, hsl(222 40% 8% / 0.6) 0%, hsl(220 42% 12% / 0.35) 30%, hsl(218 38% 14% / 0.15) 60%, transparent 100%)" }}
           />
-          {/* Secondary L→R layer for depth — slightly offset */}
+          {/* Subtle left-side accent for depth */}
           <div
             className="absolute top-0 left-0 w-full h-full"
-            style={{ background: "linear-gradient(90deg, hsl(210 45% 85% / 0.05) 0%, hsl(212 50% 80% / 0.06) 15%, hsl(215 55% 78% / 0.045) 35%, hsl(218 45% 72% / 0.025) 55%, transparent 85%)" }}
-          />
-          {/* Very gentle vertical intensity — peaks in center of section, no hard top/bottom edges */}
-          <div
-            className="absolute top-0 left-0 w-full h-full"
-            style={{ background: "radial-gradient(ellipse 100% 70% at 35% 55%, hsl(215 50% 88% / 0.04), transparent 70%)" }}
+            style={{ background: "linear-gradient(135deg, hsl(215 50% 50% / 0.06) 0%, transparent 50%)" }}
           />
         </div>
 
