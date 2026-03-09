@@ -752,7 +752,7 @@ const LiveFlightResults = () => {
                   <span className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-sm border text-[10px] transition-colors ${hideLongLayovers ? "bg-primary border-primary text-primary-foreground" : "border-border bg-transparent"}`}>
                     {hideLongLayovers && "✓"}
                   </span>
-                  Hide long layovers (5h+)
+                  {t("results.hide_long_layovers")}
                 </button>
               </div>
               <MemoizedActiveChips filters={filters} actualPriceRange={actualPriceRange} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} flightsCurrency={flightsCurrency} />
