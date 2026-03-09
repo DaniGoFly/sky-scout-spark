@@ -240,8 +240,8 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
       {/* Travelers & Search */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-border/20">
-        <div className="w-full md:w-auto md:min-w-[200px] border border-border/10 bg-background/60 backdrop-blur-sm rounded-2xl px-5 py-3 transition-colors hover:bg-secondary/60">
-          <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+        <div className="w-full md:w-auto md:min-w-[200px] [&_button]:bg-background/60">
+          <TravelersPicker value={travelers} onChange={setTravelers} />
         </div>
         <Button
           size="lg"
