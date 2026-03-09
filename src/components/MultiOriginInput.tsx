@@ -54,7 +54,7 @@ const PortalDropdown = ({
       position: "fixed",
       left: rect.left,
       top: rect.bottom + 8,
-      width: rect.width,
+      width: Math.max(rect.width, 280),
       maxHeight: Math.max(120, window.innerHeight - rect.bottom - 16),
       zIndex: 9999,
     });
