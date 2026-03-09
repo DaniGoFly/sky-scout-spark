@@ -280,34 +280,31 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             </button>
 
             {tripTypeOpen && (
-              <OverlayPortal>
-                <div
-                  ref={tripTypeMenuRef}
-                  style={{ ...tripTypeOverlay.style, minWidth: 160 }}
-                  className="pointer-events-auto fixed z-[9999] bg-card border border-border rounded-xl shadow-xl overflow-hidden isolate"
-                >
-                  {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => {
-                        setTripType(type);
-                        setTripTypeOpen(false);
-                      }}
-                      className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
-                        tripType === type
-                          ? "bg-primary/15 text-primary font-medium"
-                          : "text-foreground hover:bg-secondary"
-                      }`}
-                    >
-                      {type === "roundtrip"
-                        ? t("search.roundtrip")
-                        : type === "oneway"
-                          ? t("search.oneway")
-                          : t("search.multicity")}
-                    </button>
-                  ))}
-                </div>
-              </OverlayPortal>
+              <div
+                ref={tripTypeMenuRef}
+                className="absolute left-0 top-full mt-2 z-50 min-w-[160px] bg-card border border-border rounded-xl shadow-xl overflow-hidden"
+              >
+                {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      setTripType(type);
+                      setTripTypeOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                      tripType === type
+                        ? "bg-primary/15 text-primary font-medium"
+                        : "text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {type === "roundtrip"
+                      ? t("search.roundtrip")
+                      : type === "oneway"
+                        ? t("search.oneway")
+                        : t("search.multicity")}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>
