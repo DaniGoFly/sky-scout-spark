@@ -53,7 +53,7 @@ const PortalDropdown = ({
     setStyle({
       position: "fixed",
       left: rect.left,
-      top: rect.bottom + 4,
+      top: rect.bottom + 8,
       width: rect.width,
       maxHeight: Math.max(120, window.innerHeight - rect.bottom - 16),
       zIndex: 9999,
@@ -443,9 +443,11 @@ const MultiOriginInput = ({
       )}
 
       {showEmpty && (
-        <PortalDropdown anchorRef={inputAreaRef}>
-          <div className="bg-card border border-border/60 rounded-xl shadow-2xl p-4 text-center text-sm text-muted-foreground">
-            No airports found
+        <PortalDropdown anchorRef={wrapperRef}>
+          <div className="bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden">
+            <div className="px-4 py-3 text-center text-sm text-muted-foreground">
+              No airports found
+            </div>
           </div>
         </PortalDropdown>
       )}
