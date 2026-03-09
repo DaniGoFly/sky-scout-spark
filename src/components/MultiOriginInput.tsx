@@ -358,65 +358,55 @@ const MultiOriginInput = ({
         </div>
       </div>
 
-      {/* ── Autocomplete dropdown ── */}
+      {/* ── Autocomplete dropdown (anchored) ── */}
       {showSuggestions && (
-        <PortalDropdown anchorRef={wrapperRef}>
-          <div
-            ref={dropdownRef}
-            className="bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden overflow-y-auto"
-            style={{ maxHeight: "inherit", minWidth: "280px" }}
-          >
-            {suggestions.map((place, index) => (
-              <button
-                key={`${place.code}-${index}`}
-                type="button"
-                role="option"
-                aria-selected={index === highlightedIndex}
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  selectingRef.current = true;
-                  handleSelect(place);
-                  requestAnimationFrame(() => {
-                    selectingRef.current = false;
-                  });
-                }}
-                className={`w-full px-4 py-3 text-left flex items-center justify-between gap-3 transition-colors cursor-pointer ${
-                  index === highlightedIndex
-                    ? "bg-primary/10"
-                    : "hover:bg-secondary/50"
-                }`}
-              >
-                {/* Airport details */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-foreground truncate">
-                    {place.name}{" "}
-                    <span className="text-muted-foreground">({place.code})</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {place.country_name} ·{" "}
-                    {place.type === "airport" ? "Airport" : "City"}
-                  </div>
+        <div
+          ref={dropdownRef}
+          className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full min-w-[280px] bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden overflow-y-auto max-h-[360px] pointer-events-auto"
+        >
+          {suggestions.map((place, index) => (
+            <button
+              key={`${place.code}-${index}`}
+              type="button"
+              role="option"
+              aria-selected={index === highlightedIndex}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectingRef.current = true;
+                handleSelect(place);
+                requestAnimationFrame(() => {
+                  selectingRef.current = false;
+                });
+              }}
+              className={`w-full px-4 py-3 text-left flex items-center justify-between gap-3 transition-colors cursor-pointer ${
+                index === highlightedIndex ? "bg-primary/10" : "hover:bg-secondary/50"
+              }`}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-foreground truncate">
+                  {place.name}{" "}
+                  <span className="text-muted-foreground">({place.code})</span>
                 </div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {place.country_name} · {place.type === "airport" ? "Airport" : "City"}
+                </div>
+              </div>
 
-                {/* Add icon */}
-                <div className="flex-[0_0_auto]">
-                  <Plus className="w-4 h-4 text-primary/50" />
-                </div>
-              </button>
-            ))}
-          </div>
-        </PortalDropdown>
+              <div className="flex-[0_0_auto]">
+                <Plus className="w-4 h-4 text-primary/50" />
+              </div>
+            </button>
+          ))}
+        </div>
       )}
 
       {showEmpty && (
-        <PortalDropdown anchorRef={wrapperRef}>
-          <div className="bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden">
-            <div className="px-4 py-3 text-center text-sm text-muted-foreground">
-              No airports found
-            </div>
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full min-w-[280px] bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden pointer-events-auto">
+          <div className="px-4 py-3 text-center text-sm text-muted-foreground">
+            No airports found
           </div>
-        </PortalDropdown>
+        </div>
       )}
     </div>
   );

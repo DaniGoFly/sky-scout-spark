@@ -541,43 +541,34 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
         </div>
 
-      </div>
 
-      {/* ═══════════════════════════════════════════
-          CALENDAR PANEL — rendered via portal to avoid clipping
-          ═══════════════════════════════════════════ */}
-      {calendarOpen && !isAnyDay && calendarPos && createPortal(
-        <div
-          className="animate-in fade-in-0 slide-in-from-top-2 duration-200"
-          style={{
-            position: "absolute",
-            top: calendarPos.top,
-            left: calendarPos.left,
-            width: calendarPos.width,
-            zIndex: 9999,
-            pointerEvents: "auto",
-          }}
-        >
-          <CalendarPanel
-            departDate={departDate}
-            returnDate={returnDate}
-            onDepartChange={handleDepartChange}
-            onReturnChange={handleReturnChange}
-            tripType={tripType as "roundtrip" | "oneway"}
-            onTripTypeChange={handleTripTypeChange}
-            onDone={handleCloseCalendar}
-            departFlexBefore={departFlexBefore}
-            departFlexAfter={departFlexAfter}
-            returnFlexBefore={returnFlexBefore}
-            returnFlexAfter={returnFlexAfter}
-            onDepartFlexBeforeChange={setDepartFlexBefore}
-            onDepartFlexAfterChange={setDepartFlexAfter}
-            onReturnFlexBeforeChange={setReturnFlexBefore}
-            onReturnFlexAfterChange={setReturnFlexAfter}
-          />
-        </div>,
-        document.body
-      )}
+        {/* Calendar panel (anchored to search bar) */}
+        {calendarOpen && !isAnyDay && (
+          <div
+            className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full animate-in fade-in-0 slide-in-from-top-2 duration-200"
+            style={{ pointerEvents: "auto" }}
+          >
+            <CalendarPanel
+              departDate={departDate}
+              returnDate={returnDate}
+              onDepartChange={handleDepartChange}
+              onReturnChange={handleReturnChange}
+              tripType={tripType as "roundtrip" | "oneway"}
+              onTripTypeChange={handleTripTypeChange}
+              onDone={handleCloseCalendar}
+              departFlexBefore={departFlexBefore}
+              departFlexAfter={departFlexAfter}
+              returnFlexBefore={returnFlexBefore}
+              returnFlexAfter={returnFlexAfter}
+              onDepartFlexBeforeChange={setDepartFlexBefore}
+              onDepartFlexAfterChange={setDepartFlexAfter}
+              onReturnFlexBeforeChange={setReturnFlexBefore}
+              onReturnFlexAfterChange={setReturnFlexAfter}
+            />
+          </div>
+        )}
+
+      </div>
 
       {/* ═══════════════════════════════════════════
           OPTIONS ROW — clean, secondary
