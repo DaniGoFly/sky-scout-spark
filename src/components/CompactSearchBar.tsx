@@ -197,7 +197,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
           <AirportAutocomplete
             value={to}
             onChange={setTo}
-            placeholder="To"
+            placeholder={t("search.to")}
             icon="to"
             compact
           />
