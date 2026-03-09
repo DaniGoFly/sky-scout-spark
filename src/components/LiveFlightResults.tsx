@@ -327,10 +327,53 @@ const LiveFlightResults = () => {
     });
   }, [filteredFlights]);
 
-  // ── Step 3: Sort with color-coded pinned labels ──
   const { sortedFlights, pinnedLabels } = useMemo(() => {
     const sorted = [...dedupedFlights];
     const labels = new Map<string, string>();
+
+    const buildSig = (f: EnrichedFlight) => [
+      f.origin,
+      f.destination,
+      f.departureTime,
+      f.arrivalTime,
+      f.airlines?.join(","),
+      f.flightNumbers?.join(","),
+    ].filter(Boolean).join("|");
+
+    const buildInboundSig = (f: EnrichedFlight) => {
+      const ret = (f as any).return;
+      if (!ret) return "";
+      return [
+        ret.origin,
+        ret.destination,
+        ret.departureTime,
+        ret.arrivalTime,
+        ret.airlines?.join(","),
+        ret.flightNumbers?.join(","),
+      ].filter(Boolean).join("|");
+    };
+
+    const findSavedMatchIndex = (items: EnrichedFlight[]) => {
+      if (!savedFlightId && !savedOutboundSig && !savedInboundSig) return -1;
+      return items.findIndex((f) => {
+        if (savedTripType === "roundtrip" && !(f as any).return) return false;
+        if (savedFlightId && f.id === savedFlightId) return true;
+        if (savedOutboundSig && buildSig(f) === savedOutboundSig) {
+          if (!savedInboundSig) return true;
+          return buildInboundSig(f) === savedInboundSig;
+        }
+        return false;
+      });
+    };
+
+    const applySavedPriority = (items: EnrichedFlight[]) => {
+      const idx = findSavedMatchIndex(items);
+      if (idx <= 0) return items.slice(0, MAX_DISPLAY);
+      const copy = [...items];
+      const [match] = copy.splice(idx, 1);
+      labels.set(match.id, labels.get(match.id) || "Saved");
+      return [match, ...copy].slice(0, MAX_DISPLAY);
+    };
 
     const bestSort = (a: EnrichedFlight, b: EnrichedFlight) => {
       const sa = a.price.amount * 0.6 + a.durationMinutes * 0.3 + a.outboundStopsTotal * 100;
@@ -356,14 +399,14 @@ const LiveFlightResults = () => {
           if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
           return (a.departureTime || "").localeCompare(b.departureTime || "");
         });
-        break;
+        return { sortedFlights: applySavedPriority(sorted), pinnedLabels: labels };
       case "fastest":
         sorted.sort((a, b) => {
           if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
           if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
           return (a.departureTime || "").localeCompare(b.departureTime || "");
         });
-        break;
+        return { sortedFlights: applySavedPriority(sorted), pinnedLabels: labels };
       case "best": default: {
         const pinnedIds = new Set<string>();
         const pinned: EnrichedFlight[] = [];
@@ -372,11 +415,10 @@ const LiveFlightResults = () => {
         if (byDuration[0] && !pinnedIds.has(byDuration[0].id)) { pinnedIds.add(byDuration[0].id); pinned.push(byDuration[0]); }
         const rest = sorted.filter(f => !pinnedIds.has(f.id));
         rest.sort(bestSort);
-        return { sortedFlights: [...pinned, ...rest].slice(0, MAX_DISPLAY), pinnedLabels: labels };
+        return { sortedFlights: applySavedPriority([...pinned, ...rest]), pinnedLabels: labels };
       }
     }
-    return { sortedFlights: sorted.slice(0, MAX_DISPLAY), pinnedLabels: labels };
-  }, [dedupedFlights, sortBy]);
+  }, [dedupedFlights, sortBy, savedFlightId, savedOutboundSig, savedInboundSig, savedTripType]);
 
   // ── Grouped by origin (for "by-origin" view) ──
   const groupedByOrigin = useMemo(() => {
