@@ -48,8 +48,7 @@ const Explore = () => {
   const [destinations, setDestinations] = useState<ExploreResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [tripLength, setTripLength] = useState<[number, number]>([3, 14]);
-  const [dateMode, setDateMode] = useState<"flexible" | "exact">("flexible");
-  const [directOnly, setDirectOnly] = useState(false);
+  const directOnly = false;
   const [hoveredIata, setHoveredIata] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDest, setSelectedDest] = useState<ExploreResult | null>(null);
