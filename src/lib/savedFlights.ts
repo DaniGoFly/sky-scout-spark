@@ -124,11 +124,11 @@ export function unsaveFlight(flightId: string): void {
   writeStore(store);
 }
 
-export function toggleSavedFlight(flight: Flight): boolean {
+export function toggleSavedFlight(flight: Flight, context?: SearchContext): boolean {
   if (isFlightSaved(flight.id)) {
     unsaveFlight(flight.id);
     return false;
   }
-  saveFlight(flight);
+  saveFlight(flight, context);
   return true;
 }
