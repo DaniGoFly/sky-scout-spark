@@ -73,35 +73,20 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       <section className="relative overflow-visible bg-background">
         {/* Full-width left-to-right atmospheric booking zone — covers entire hero */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          {/* Primary L→R sweep — 16-bit smooth with color-interpolation hint */}
+          {/* Primary L→R sweep: starts strong left, fades right — spans full height */}
           <div
             className="absolute top-0 left-0 w-full h-full"
-            style={{ 
-              background: "linear-gradient(90deg in oklab, hsl(215 50% 80% / 0.09) 0%, hsl(215 52% 81% / 0.08) 8%, hsl(215 53% 81% / 0.075) 14%, hsl(215 55% 82% / 0.07) 20%, hsl(216 56% 81% / 0.066) 25%, hsl(216 57% 80% / 0.062) 30%, hsl(217 58% 79% / 0.058) 35%, hsl(217 60% 78% / 0.055) 40%, hsl(218 57% 77% / 0.05) 45%, hsl(218 55% 76% / 0.045) 50%, hsl(219 52% 75% / 0.04) 55%, hsl(220 50% 75% / 0.035) 60%, hsl(220 47% 71% / 0.03) 65%, hsl(221 45% 68% / 0.025) 70%, hsl(221 42% 64% / 0.02) 75%, hsl(222 40% 60% / 0.015) 80%, hsl(222 37% 57% / 0.011) 85%, hsl(222 35% 55% / 0.007) 90%, hsl(222 30% 50% / 0.003) 95%, transparent 100%)",
-            }}
+            style={{ background: "linear-gradient(90deg, hsl(215 50% 80% / 0.09) 0%, hsl(215 55% 82% / 0.07) 20%, hsl(217 60% 78% / 0.055) 40%, hsl(220 50% 75% / 0.035) 60%, hsl(222 40% 60% / 0.015) 80%, transparent 100%)" }}
           />
-          {/* Secondary L→R layer for depth — oklab interpolation */}
+          {/* Secondary L→R layer for depth — slightly offset */}
           <div
             className="absolute top-0 left-0 w-full h-full"
-            style={{ 
-              background: "linear-gradient(90deg in oklab, hsl(210 45% 85% / 0.05) 0%, hsl(211 46% 84% / 0.053) 5%, hsl(211 47% 83% / 0.055) 10%, hsl(212 49% 81% / 0.058) 15%, hsl(213 51% 80% / 0.055) 22%, hsl(214 53% 79% / 0.05) 30%, hsl(215 55% 78% / 0.045) 38%, hsl(216 52% 76% / 0.038) 46%, hsl(218 48% 73% / 0.03) 54%, hsl(219 45% 70% / 0.022) 62%, hsl(220 42% 68% / 0.015) 72%, hsl(221 40% 65% / 0.009) 82%, hsl(222 38% 62% / 0.004) 90%, transparent 100%)",
-            }}
+            style={{ background: "linear-gradient(90deg, hsl(210 45% 85% / 0.05) 0%, hsl(212 50% 80% / 0.06) 15%, hsl(215 55% 78% / 0.045) 35%, hsl(218 45% 72% / 0.025) 55%, transparent 85%)" }}
           />
-          {/* Soft radial glow — expanded for smoother falloff */}
+          {/* Very gentle vertical intensity — peaks in center of section, no hard top/bottom edges */}
           <div
             className="absolute top-0 left-0 w-full h-full"
-            style={{ 
-              background: "radial-gradient(ellipse 130% 100% at 28% 50%, hsl(215 50% 88% / 0.035) 0%, hsl(215 49% 87% / 0.03) 15%, hsl(215 48% 85% / 0.025) 30%, hsl(216 46% 83% / 0.02) 40%, hsl(217 45% 80% / 0.015) 50%, hsl(219 42% 77% / 0.01) 60%, hsl(220 40% 75% / 0.005) 72%, transparent 88%)",
-            }}
-          />
-          {/* Anti-banding: SVG noise dither — higher frequency, slightly stronger */}
-          <div
-            className="absolute inset-0 opacity-[0.025] mix-blend-soft-light"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-              backgroundRepeat: "repeat",
-              backgroundSize: "256px 256px",
-            }}
+            style={{ background: "radial-gradient(ellipse 100% 70% at 35% 55%, hsl(215 50% 88% / 0.04), transparent 70%)" }}
           />
         </div>
 
