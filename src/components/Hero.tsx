@@ -202,16 +202,22 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           </h3>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
             {POPULAR_DESTINATIONS.map((dest) => (
-              <div
+              <button
                 key={dest.city}
-                className="shrink-0 flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-card/30 border border-border/20 hover:border-border/40 hover:bg-card/50 transition-all cursor-pointer group"
+                onClick={() => {
+                  searchRef?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  setTimeout(() => {
+                    handleDestinationSelect({ destinationCity: dest.city, destinationCode: dest.code });
+                  }, 300);
+                }}
+                className="shrink-0 flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-card/30 border border-border/20 hover:border-primary/40 hover:bg-card/50 transition-all cursor-pointer group"
               >
                 <span className="text-xl">{dest.emoji}</span>
-                <div>
+                <div className="text-left">
                   <span className="text-sm font-medium text-foreground block leading-tight group-hover:text-primary transition-colors">{dest.city}</span>
                   <span className="text-xs text-muted-foreground/60 font-medium">from {dest.price}</span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
