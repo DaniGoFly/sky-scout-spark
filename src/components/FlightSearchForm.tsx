@@ -544,38 +544,28 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
         {/* Calendar panel (anchored to search bar) */}
         {calendarOpen && !isAnyDay && (
-          <>
-            {/* Backdrop — dims content below */}
-            <div 
-              className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[900]"
-              onClick={handleCloseCalendar}
-              style={{ pointerEvents: "auto" }}
+          <div
+            className="absolute left-0 top-[calc(100%+8px)] z-[9999] w-full animate-in fade-in-0 slide-in-from-top-2 duration-200"
+            style={{ pointerEvents: "auto" }}
+          >
+            <CalendarPanel
+              departDate={departDate}
+              returnDate={returnDate}
+              onDepartChange={handleDepartChange}
+              onReturnChange={handleReturnChange}
+              tripType={tripType as "roundtrip" | "oneway"}
+              onTripTypeChange={handleTripTypeChange}
+              onDone={handleCloseCalendar}
+              departFlexBefore={departFlexBefore}
+              departFlexAfter={departFlexAfter}
+              returnFlexBefore={returnFlexBefore}
+              returnFlexAfter={returnFlexAfter}
+              onDepartFlexBeforeChange={setDepartFlexBefore}
+              onDepartFlexAfterChange={setDepartFlexAfter}
+              onReturnFlexBeforeChange={setReturnFlexBefore}
+              onReturnFlexAfterChange={setReturnFlexAfter}
             />
-            
-            {/* Calendar panel */}
-            <div
-              className="absolute left-0 top-[calc(100%+8px)] z-[1000] w-full animate-in fade-in-0 slide-in-from-top-2 duration-200"
-              style={{ pointerEvents: "auto" }}
-            >
-              <CalendarPanel
-                departDate={departDate}
-                returnDate={returnDate}
-                onDepartChange={handleDepartChange}
-                onReturnChange={handleReturnChange}
-                tripType={tripType as "roundtrip" | "oneway"}
-                onTripTypeChange={handleTripTypeChange}
-                onDone={handleCloseCalendar}
-                departFlexBefore={departFlexBefore}
-                departFlexAfter={departFlexAfter}
-                returnFlexBefore={returnFlexBefore}
-                returnFlexAfter={returnFlexAfter}
-                onDepartFlexBeforeChange={setDepartFlexBefore}
-                onDepartFlexAfterChange={setDepartFlexAfter}
-                onReturnFlexBeforeChange={setReturnFlexBefore}
-                onReturnFlexAfterChange={setReturnFlexAfter}
-              />
-            </div>
-          </>
+          </div>
         )}
 
       </div>
