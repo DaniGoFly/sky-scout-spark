@@ -184,7 +184,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
               </button>
 
               {openCalendarSegmentId === segment.id && (
-                <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-auto rounded-xl border border-border bg-card p-0 shadow-xl">
+                <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-auto rounded-xl border border-border bg-[hsl(222_40%_12%)] p-0 shadow-xl isolation-auto" style={{ backdropFilter: 'none' }}>
                   <CalendarComponent
                     mode="single"
                     selected={segment.date || undefined}
@@ -240,8 +240,8 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
       {/* Travelers & Search */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-border/20">
-        <div className="w-full md:w-auto md:min-w-[200px]">
-          <TravelersPicker value={travelers} onChange={setTravelers} />
+        <div className="w-full md:w-auto md:min-w-[200px] border border-border/10 bg-background/60 backdrop-blur-sm rounded-2xl px-5 py-3 transition-colors hover:bg-secondary/60">
+          <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
         </div>
         <Button
           size="lg"
