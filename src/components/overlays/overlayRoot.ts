@@ -4,11 +4,17 @@
 let cachedRoot: HTMLElement | null = null;
 
 export function ensureOverlayRoot(): HTMLElement {
-  if (cachedRoot && document.body.contains(cachedRoot)) return cachedRoot;
+  // If we already have it, keep it as the LAST element in <body> so it wins ties
+  // against other z-index:9999 layers created earlier.
+  if (cachedRoot && document.body.contains(cachedRoot)) {
+    document.body.appendChild(cachedRoot);
+    return cachedRoot;
+  }
 
-  const existing = document.getElementById("app-overlay-root");
+  const existing = document.getElementById("app-overlay-root") as HTMLElement | null;
   if (existing) {
-    cachedRoot = existing as HTMLElement;
+    document.body.appendChild(existing);
+    cachedRoot = existing;
     return cachedRoot;
   }
 
