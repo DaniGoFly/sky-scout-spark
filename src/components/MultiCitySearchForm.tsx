@@ -38,6 +38,22 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
     cabinClass: "economy",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [openCalendarSegmentId, setOpenCalendarSegmentId] = useState<string | null>(null);
+  const calendarWrapRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!openCalendarSegmentId) return;
+
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const activeWrapper = calendarWrapRefs.current[openCalendarSegmentId];
+      if (activeWrapper?.contains(target)) return;
+      setOpenCalendarSegmentId(null);
+    };
+
+    document.addEventListener("mousedown", onDown, true);
+    return () => document.removeEventListener("mousedown", onDown, true);
+  }, [openCalendarSegmentId]);
 
   const addSegment = () => {
     if (segments.length >= 5) return;
@@ -51,6 +67,9 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
   const removeSegment = (id: string) => {
     if (segments.length <= 2) return;
     setSegments(segments.filter((s) => s.id !== id));
+    if (openCalendarSegmentId === id) {
+      setOpenCalendarSegmentId(null);
+    }
     const newErrors = { ...errors };
     delete newErrors[`${id}-from`];
     delete newErrors[`${id}-to`];
