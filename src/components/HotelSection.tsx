@@ -1,31 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Building2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const destinations = [
-  {
-    city: "New York",
-    properties: "12,500+ hotels",
-    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=3840&auto=format&fit=crop&q=90",
-  },
-  {
-    city: "London",
-    properties: "9,800+ hotels",
-    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=3840&auto=format&fit=crop&q=90",
-  },
-  {
-    city: "Paris",
-    properties: "8,200+ hotels",
-    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=3840&auto=format&fit=crop&q=90",
-  },
-  {
-    city: "Tokyo",
-    properties: "7,500+ hotels",
-    image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=3840&auto=format&fit=crop&q=90",
-  },
+  { city: "New York", count: "12,500+", image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=3840&auto=format&fit=crop&q=90" },
+  { city: "London", count: "9,800+", image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=3840&auto=format&fit=crop&q=90" },
+  { city: "Paris", count: "8,200+", image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=3840&auto=format&fit=crop&q=90" },
+  { city: "Tokyo", count: "7,500+", image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=3840&auto=format&fit=crop&q=90" },
 ];
 
 const HotelSection = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleDestinationClick = (city: string) => {
@@ -39,21 +25,17 @@ const HotelSection = () => {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
               <Building2 className="w-4 h-4" />
-              <span>Hotels</span>
+              <span>{t("hotel.title")}</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Find your perfect stay
+              {t("hotel.find_stay")}
             </h2>
             <p className="text-muted-foreground">
-              Compare prices from all major booking sites
+              {t("hotel.compare_prices")}
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/hotels")}
-            className="w-fit"
-          >
-            Search all hotels
+          <Button variant="outline" onClick={() => navigate("/hotels")} className="w-fit">
+            {t("hotel.search_all")}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
@@ -65,15 +47,11 @@ const HotelSection = () => {
               onClick={() => handleDestinationClick(destination.city)}
               className="group relative rounded-xl overflow-hidden aspect-[4/3] cursor-pointer"
             >
-              <img
-                src={destination.image}
-                alt={destination.city}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
+              <img src={destination.image} alt={destination.city} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <h3 className="text-lg font-bold text-white">{destination.city}</h3>
-                <p className="text-white/70 text-sm">{destination.properties}</p>
+                <p className="text-white/70 text-sm">{destination.count}+ {t("hotel.title").toLowerCase()}</p>
               </div>
             </div>
           ))}

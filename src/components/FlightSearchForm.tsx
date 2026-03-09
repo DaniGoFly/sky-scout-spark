@@ -267,10 +267,10 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
   const tripTypeLabel = tripType === "roundtrip" ? t("search.roundtrip") : tripType === "oneway" ? t("search.oneway") : t("search.multicity");
 
   // Display values
-  const departDisplay = isAnyDay ? "Any day" : departDate ? format(departDate, "d MMM") : "Select date";
-  const returnDisplay = isAnyDay ? "Any day" : returnDate ? format(returnDate, "d MMM") : "Select date";
+  const departDisplay = isAnyDay ? t("search.any_day") : departDate ? format(departDate, "d MMM") : t("search_form.select_date");
+  const returnDisplay = isAnyDay ? t("search.any_day") : returnDate ? format(returnDate, "d MMM") : t("search_form.select_date");
   const totalPax = travelers.adults + travelers.children + travelers.infantsSeat;
-  const travelersDisplay = `${totalPax} traveller${totalPax !== 1 ? "s" : ""}`;
+  const travelersDisplay = totalPax === 1 ? t("search_form.travelers_count", { count: totalPax }) : t("search_form.travelers_count_plural", { count: totalPax });
 
 
   // ── Multi-city mode ──
@@ -395,7 +395,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <div className="mt-1.5"><MultiOriginInput
                 values={origins}
                 onChange={handleOriginsChange}
-                placeholder="Country, city or airport"
+                placeholder={t("search_form.placeholder_airport")}
                 bare
               /></div>
             </div>
@@ -418,14 +418,14 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <div className="mt-1.5">{anywhere ? (
                 <div className="flex items-center gap-1.5">
                   <Globe className="w-4 h-4 text-primary shrink-0" />
-                  <span className={SEG_VALUE}>Everywhere</span>
+                  <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
                 </div>
               ) : (
                 <MultiOriginInput
                   values={destinations}
                   onChange={handleDestinationsChange}
-                  placeholder="Country, city or airport"
-                  multiLabel="Multi-Destination"
+                  placeholder={t("search_form.placeholder_airport")}
+                  multiLabel={t("search_form.multi_destination")}
                   bare
                 />
               )}</div>
@@ -434,11 +434,11 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
             {/* DATES SLOT (fixed width) */}
             {isAnyDay ? (
               <div className={`h-full w-full px-5 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
-                <span className={SEG_LABEL}>Trip length</span>
+                <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
                 {tripType === "roundtrip" ? (
                   <TripLengthSlider value={tripLength} onChange={setTripLength} />
                 ) : (
-                  <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+                  <span className={`${SEG_PLACEHOLDER} text-[13px]`}>{t("search_form.flexible_departure")}</span>
                 )}
               </div>
             ) : (
@@ -526,7 +526,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <MultiOriginInput
                 values={origins}
                 onChange={handleOriginsChange}
-                placeholder="Country, city or airport"
+                placeholder={t("search_form.placeholder_airport")}
                 bare
               />
             </div>
@@ -549,14 +549,14 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               {anywhere ? (
                 <div className="flex items-center gap-1.5 min-h-[36px]">
                   <Globe className="w-4 h-4 text-primary shrink-0" />
-                  <span className={SEG_VALUE}>Everywhere</span>
+                  <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
                 </div>
               ) : (
                 <MultiOriginInput
                   values={destinations}
                   onChange={handleDestinationsChange}
-                  placeholder="Country, city or airport"
-                  multiLabel="Multi-Destination"
+                  placeholder={t("search_form.placeholder_airport")}
+                  multiLabel={t("search_form.multi_destination")}
                   bare
                 />
               )}
@@ -567,11 +567,11 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
             {/* DATES SECTION — mobile */}
             {isAnyDay ? (
               <div className={`px-5 py-4 ${errRing(!!errors.dates)}`}>
-                <span className={SEG_LABEL}>Trip length</span>
+                <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
                 {tripType === "roundtrip" ? (
                   <TripLengthSlider value={tripLength} onChange={setTripLength} />
                 ) : (
-                  <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible departure</span>
+                  <span className={`${SEG_PLACEHOLDER} text-[13px]`}>{t("search_form.flexible_departure")}</span>
                 )}
               </div>
             ) : (
