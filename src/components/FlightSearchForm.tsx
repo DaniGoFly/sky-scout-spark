@@ -479,7 +479,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                   </div>
                 </div>
               ) : (
-                <div className="px-5 py-3 relative z-30 flex flex-col justify-center">
+                <div className="h-full px-5 py-3 relative z-30 flex flex-col justify-center">
                   <FlightDateRangePicker
                     departDate={departDate}
                     returnDate={returnDate}
