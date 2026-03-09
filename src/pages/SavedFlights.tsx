@@ -27,17 +27,18 @@ const SavedFlights = () => {
   }, []);
 
   const handleOpenFlight = useCallback((flight: SavedFlight) => {
-    // Extract date portion from departureTime/arrivalTime
     const departDate = flight.departureTime?.split(" ")[0] || flight.departureTime?.split("T")[0] || "";
     const returnDate = flight.return?.departureTime?.split(" ")[0] || flight.return?.departureTime?.split("T")[0] || "";
+    const hasReturn = !!returnDate;
 
     const params = new URLSearchParams({
-      origin: flight.origin,
-      destination: flight.destination,
-      ...(departDate && { departDate }),
-      ...(returnDate && { returnDate }),
+      from: flight.origin,
+      to: flight.destination,
+      ...(departDate && { depart: departDate }),
+      ...(hasReturn && { return: returnDate }),
       adults: "1",
-      cabinClass: "economy",
+      trip: hasReturn ? "roundtrip" : "oneway",
+      class: "economy",
     });
 
     navigate(`/search?${params.toString()}`);
