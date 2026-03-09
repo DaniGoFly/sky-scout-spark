@@ -27,11 +27,6 @@ interface AirportSelection {
   display: string;
 }
 
-function getDefaultAirportByCountry(countryCode: string): AirportData | null {
-  const countryAirports = AIRPORTS.filter(a => a.country === countryCode);
-  if (countryAirports.length === 0) return AIRPORTS.find(a => a.code === "JFK") || null;
-  return countryAirports[0];
-}
 
 function formatDateRange(depart?: string, ret?: string): string {
   if (!depart) return "";
