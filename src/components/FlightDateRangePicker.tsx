@@ -164,11 +164,11 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
 
   return (
     <div
-      className="w-full bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden pointer-events-auto z-[9999] relative"
+      className="w-full bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden pointer-events-auto z-[9999] relative isolate opacity-100 mix-blend-normal"
       onClick={(e) => e.stopPropagation()}
     >
       {/* ── Header: Trip type + Tabs + Close ── */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white">
         {/* Trip type */}
         <div className="flex gap-1">
           <button type="button" onClick={() => onTripTypeChange("roundtrip")}
@@ -208,7 +208,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
       {activeTab === "specific" ? (
         <>
           {/* Selection hint */}
-          <div className="px-6 py-2.5 text-sm text-center text-gray-400 bg-gray-50/60">
+          <div className="px-6 py-2.5 text-sm text-center text-gray-400 bg-white border-b border-gray-100">
             {tripType === "roundtrip"
               ? (selectingReturn ? "Select return date" : "Select departure date")
               : "Select departure date"}
@@ -266,7 +266,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
       )}
 
       {/* ── Footer ── */}
-      <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50/40">
+      <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-white">
         <Button type="button" variant="ghost" onClick={handleClear} className="text-sm text-gray-500 hover:text-gray-800">
           Clear dates
         </Button>
