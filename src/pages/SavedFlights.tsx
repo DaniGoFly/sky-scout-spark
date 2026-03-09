@@ -142,10 +142,8 @@ const SavedFlights = () => {
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-5">
                 <Heart className="w-8 h-8 text-muted-foreground" />
               </div>
-              <p className="text-lg font-semibold text-foreground mb-2">No saved flights yet</p>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Tap the heart icon on any flight card to save it here for later.
-              </p>
+              <p className="text-lg font-semibold text-foreground mb-2">{t("saved.no_saved")}</p>
+              <p className="text-sm text-muted-foreground max-w-sm">{t("saved.no_saved_sub")}</p>
             </div>
           ) : (
             <div className="space-y-3">
