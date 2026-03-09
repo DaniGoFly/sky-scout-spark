@@ -117,11 +117,11 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
    */
   const handleSearch = useCallback(() => {
     if (origins.length === 0) {
-      toast.error("Please enter an origin airport");
+      toast.error(t("search.enter_origin"));
       return;
     }
     if (!to) {
-      toast.error("Please enter a destination airport");
+      toast.error(t("search.enter_destination"));
       return;
     }
 
