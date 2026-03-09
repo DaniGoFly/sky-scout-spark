@@ -1,8 +1,9 @@
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import type { CSSProperties, RefObject } from "react";
 
 export interface AnchoredOverlayOptions {
   open: boolean;
-  anchorRef: React.RefObject<HTMLElement | null>;
+  anchorRef: RefObject<HTMLElement | null>;
   offset?: number;
   matchWidth?: boolean;
 }
@@ -35,7 +36,7 @@ export function useAnchoredOverlay({ open, anchorRef, offset = 8, matchWidth = t
     };
   }, [open, update, anchorRef]);
 
-  const style = useMemo<React.CSSProperties>(() => {
+  const style = useMemo<CSSProperties>(() => {
     if (!rect) return { display: "none" };
 
     return {

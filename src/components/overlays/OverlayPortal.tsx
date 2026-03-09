@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ensureOverlayRoot } from "./overlayRoot";
 
 interface OverlayPortalProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function OverlayPortal({ children }: OverlayPortalProps) {
