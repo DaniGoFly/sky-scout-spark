@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { OverlayPortal } from "@/components/overlays/OverlayPortal";
-import { useAnchoredOverlay } from "@/hooks/useAnchoredOverlay";
 
 export interface TravelersData {
   adults: number;
@@ -39,14 +37,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
   const triggerWrapRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const overlay = useAnchoredOverlay({
-    open: isOpen,
-    anchorRef: triggerWrapRef,
-    offset: 8,
-    matchWidth: false,
-  });
-
-  // Close panel when clicking outside (panel is portaled)
+  // Close panel when clicking outside
   useEffect(() => {
     if (!isOpen) return;
 
@@ -270,7 +261,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
     </div>
   );
 
-  // Mobile (non-compact) stays as a bottom sheet (already stable and doesn’t fight the header)
+  // Mobile (non-compact) stays as a bottom sheet
   if (isMobile && !compact) {
     return (
       <div className="min-w-0">
@@ -301,21 +292,19 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
     );
   }
 
+  // Inline panel (absolute positioning, scrolls with search bar)
   const Panel = isOpen ? (
-    <OverlayPortal>
-      <div
-        ref={panelRef}
-        style={{ ...overlay.style, minWidth: 320 }}
-        className="pointer-events-auto fixed z-[9999] w-80 p-4 bg-card border border-border rounded-xl shadow-xl isolate"
-      >
-        <PickerContent />
-      </div>
-    </OverlayPortal>
+    <div
+      ref={panelRef}
+      className="absolute left-0 top-full mt-2 z-50 w-80 p-4 bg-card border border-border rounded-xl shadow-xl"
+    >
+      <PickerContent />
+    </div>
   ) : null;
 
   if (compact) {
     return (
-      <div ref={triggerWrapRef} className="min-w-0">
+      <div ref={triggerWrapRef} className="relative min-w-0">
         {segmentMode ? (
           <button
             type="button"
@@ -354,7 +343,7 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
   }
 
   return (
-    <div ref={triggerWrapRef} className="min-w-0">
+    <div ref={triggerWrapRef} className="relative min-w-0">
       <label className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
         Travelers
       </label>

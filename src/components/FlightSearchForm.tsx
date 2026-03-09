@@ -19,8 +19,6 @@ import { toast } from "sonner";
 import type { AISearchParams } from "./FlightSearchHero";
 import { useLocale } from "@/hooks/useLocale";
 import { cn } from "@/lib/utils";
-import { OverlayPortal } from "@/components/overlays/OverlayPortal";
-import { useAnchoredOverlay } from "@/hooks/useAnchoredOverlay";
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
@@ -74,31 +72,15 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [returnFlexBefore, setReturnFlexBefore] = useState(0);
   const [returnFlexAfter, setReturnFlexAfter] = useState(0);
 
-  const [tripTypeOpen, setTripTypeOpen] = useState(false);
-
   /* ── Calendar panel open state (lifted) ── */
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [tripTypeOpen, setTripTypeOpen] = useState(false);
 
-  // Portal anchors (escape all local stacking contexts)
-  const searchBarRef = useRef<HTMLDivElement | null>(null);
+  // Refs for trip type dropdown
   const tripTypeButtonRef = useRef<HTMLButtonElement | null>(null);
   const tripTypeMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const calendarOverlay = useAnchoredOverlay({
-    open: calendarOpen && !isAnyDay,
-    anchorRef: searchBarRef,
-    offset: 8,
-    matchWidth: true,
-  });
-
-  const tripTypeOverlay = useAnchoredOverlay({
-    open: tripTypeOpen,
-    anchorRef: tripTypeButtonRef,
-    offset: 6,
-    matchWidth: false,
-  });
-
-  // Close trip type menu on outside click (menu is portaled)
+  // Close trip type menu on outside click
   useEffect(() => {
     if (!tripTypeOpen) return;
     const onDown = (e: MouseEvent) => {
@@ -299,34 +281,31 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
             </button>
 
             {tripTypeOpen && (
-              <OverlayPortal>
-                <div
-                  ref={tripTypeMenuRef}
-                  style={{ ...tripTypeOverlay.style, minWidth: 160 }}
-                  className="pointer-events-auto fixed z-[9999] bg-card border border-border rounded-xl shadow-xl overflow-hidden isolate"
-                >
-                  {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => {
-                        setTripType(type);
-                        setTripTypeOpen(false);
-                      }}
-                      className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
-                        tripType === type
-                          ? "bg-primary/15 text-primary font-medium"
-                          : "text-foreground hover:bg-secondary"
-                      }`}
-                    >
-                      {type === "roundtrip"
-                        ? t("search.roundtrip")
-                        : type === "oneway"
-                          ? t("search.oneway")
-                          : t("search.multicity")}
-                    </button>
-                  ))}
-                </div>
-              </OverlayPortal>
+              <div
+                ref={tripTypeMenuRef}
+                className="absolute left-0 top-full mt-2 z-50 min-w-[160px] bg-card border border-border rounded-xl shadow-xl overflow-hidden"
+              >
+                {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      setTripType(type);
+                      setTripTypeOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                      tripType === type
+                        ? "bg-primary/15 text-primary font-medium"
+                        : "text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {type === "roundtrip"
+                      ? t("search.roundtrip")
+                      : type === "oneway"
+                        ? t("search.oneway")
+                        : t("search.multicity")}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -356,34 +335,31 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </button>
 
           {tripTypeOpen && (
-            <OverlayPortal>
-              <div
-                ref={tripTypeMenuRef}
-                style={{ ...tripTypeOverlay.style, minWidth: 160 }}
-                className="pointer-events-auto fixed z-[9999] bg-card border border-border rounded-xl shadow-xl overflow-hidden isolate"
-              >
-                {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => {
-                      setTripType(type);
-                      setTripTypeOpen(false);
-                    }}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
-                      tripType === type
-                        ? "bg-primary/15 text-primary font-medium"
-                        : "text-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    {type === "roundtrip"
-                      ? t("search.roundtrip")
-                      : type === "oneway"
-                        ? t("search.oneway")
-                        : t("search.multicity")}
-                  </button>
-                ))}
-              </div>
-            </OverlayPortal>
+            <div
+              ref={tripTypeMenuRef}
+              className="absolute left-0 top-full mt-2 z-50 min-w-[160px] bg-card border border-border rounded-xl shadow-xl overflow-hidden"
+            >
+              {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    setTripType(type);
+                    setTripTypeOpen(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                    tripType === type
+                      ? "bg-primary/15 text-primary font-medium"
+                      : "text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {type === "roundtrip"
+                    ? t("search.roundtrip")
+                    : type === "oneway"
+                      ? t("search.oneway")
+                      : t("search.multicity")}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>
@@ -394,7 +370,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       <div className="relative overflow-visible">
         {/* Search bar */}
         <div
-          ref={searchBarRef}
           className={cn(
             "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm lg:h-[94px] overflow-visible",
             calendarOpen ? "rounded-t-2xl" : "rounded-2xl",
@@ -626,33 +601,27 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           </div>
         </div>
 
-
-        {/* Calendar panel (anchored to search bar) — PORTALED to global overlay root */}
+        {/* Calendar panel (inline absolute positioning, scrolls with search bar) */}
         {calendarOpen && !isAnyDay && (
-          <OverlayPortal>
-            <div
-              style={calendarOverlay.style}
-              className="pointer-events-auto fixed z-[9999] w-full isolate [contain:paint]"
-            >
-              <CalendarPanel
-                departDate={departDate}
-                returnDate={returnDate}
-                onDepartChange={handleDepartChange}
-                onReturnChange={handleReturnChange}
-                tripType={tripType as "roundtrip" | "oneway"}
-                onTripTypeChange={handleTripTypeChange}
-                onDone={handleCloseCalendar}
-                departFlexBefore={departFlexBefore}
-                departFlexAfter={departFlexAfter}
-                returnFlexBefore={returnFlexBefore}
-                returnFlexAfter={returnFlexAfter}
-                onDepartFlexBeforeChange={setDepartFlexBefore}
-                onDepartFlexAfterChange={setDepartFlexAfter}
-                onReturnFlexBeforeChange={setReturnFlexBefore}
-                onReturnFlexAfterChange={setReturnFlexAfter}
-              />
-            </div>
-          </OverlayPortal>
+          <div className="absolute left-0 right-0 top-full z-40">
+            <CalendarPanel
+              departDate={departDate}
+              returnDate={returnDate}
+              onDepartChange={handleDepartChange}
+              onReturnChange={handleReturnChange}
+              tripType={tripType as "roundtrip" | "oneway"}
+              onTripTypeChange={handleTripTypeChange}
+              onDone={handleCloseCalendar}
+              departFlexBefore={departFlexBefore}
+              departFlexAfter={departFlexAfter}
+              returnFlexBefore={returnFlexBefore}
+              returnFlexAfter={returnFlexAfter}
+              onDepartFlexBeforeChange={setDepartFlexBefore}
+              onDepartFlexAfterChange={setDepartFlexAfter}
+              onReturnFlexBeforeChange={setReturnFlexBefore}
+              onReturnFlexAfterChange={setReturnFlexAfter}
+            />
+          </div>
         )}
 
       </div>
