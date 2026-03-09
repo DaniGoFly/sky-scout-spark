@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { Heart, Plane, Trash2, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Heart, Plane, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -11,9 +12,11 @@ import { useLocale } from "@/hooks/useLocale";
 const SavedFlights = () => {
   const { t } = useTranslation();
   const { formatPrice } = useLocale();
+  const navigate = useNavigate();
   const [flights, setFlights] = useState<SavedFlight[]>(() => getSavedFlights());
 
-  const handleRemove = useCallback((id: string) => {
+  const handleRemove = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     unsaveFlight(id);
     setFlights(getSavedFlights());
   }, []);
@@ -22,6 +25,23 @@ const SavedFlights = () => {
     localStorage.removeItem("gofly_saved_flights");
     setFlights([]);
   }, []);
+
+  const handleOpenFlight = useCallback((flight: SavedFlight) => {
+    // Extract date portion from departureTime/arrivalTime
+    const departDate = flight.departureTime?.split(" ")[0] || flight.departureTime?.split("T")[0] || "";
+    const returnDate = flight.return?.departureTime?.split(" ")[0] || flight.return?.departureTime?.split("T")[0] || "";
+
+    const params = new URLSearchParams({
+      origin: flight.origin,
+      destination: flight.destination,
+      ...(departDate && { departDate }),
+      ...(returnDate && { returnDate }),
+      adults: "1",
+      cabinClass: "economy",
+    });
+
+    navigate(`/search?${params.toString()}`);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -66,7 +86,14 @@ const SavedFlights = () => {
                 const savedLabel = daysAgo === 0 ? "Today" : daysAgo === 1 ? "Yesterday" : `${daysAgo}d ago`;
 
                 return (
-                  <div key={flight.id} className="rounded-xl border border-border/60 bg-card p-4 transition-all hover:border-border">
+                  <div
+                    key={flight.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleOpenFlight(flight)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleOpenFlight(flight); }}
+                    className="rounded-xl border border-border/60 bg-card p-4 transition-all cursor-pointer hover:border-primary/40 hover:shadow-md active:scale-[0.995]"
+                  >
                     <div className="flex items-start gap-3">
                       {/* Airline logo */}
                       <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -105,7 +132,7 @@ const SavedFlights = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemove(flight.id)}
+                          onClick={(e) => handleRemove(e, flight.id)}
                           className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive gap-1"
                         >
                           <Trash2 className="w-3 h-3" />
