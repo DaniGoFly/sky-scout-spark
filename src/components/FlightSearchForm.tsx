@@ -555,8 +555,8 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                 <MultiOriginInput
                   values={destinations}
                   onChange={handleDestinationsChange}
-                  placeholder="Country, city or airport"
-                  multiLabel="Multi-Destination"
+                  placeholder={t("search_form.placeholder_airport")}
+                  multiLabel={t("search_form.multi_destination")}
                   bare
                 />
               )}
