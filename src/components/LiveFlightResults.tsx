@@ -629,7 +629,7 @@ const LiveFlightResults = () => {
               </p>
               {(isCartesian || isMultiOrigin) && (
                 <Button variant="ghost" size="sm" onClick={cancelSearch} className="mt-2 text-xs text-muted-foreground">
-                  Cancel
+                  {t("results.cancel")}
                 </Button>
               )}
             </div>
