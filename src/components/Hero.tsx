@@ -46,6 +46,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   const [aiSearchParams, setAiSearchParams] = useState<AISearchParams | null>(null);
   const [travelPrompt, setTravelPrompt] = useState<string | null>(null);
   const [showAIGuide, setShowAIGuide] = useState(false);
+  const searchFormRef = useRef<FlightSearchFormHandle>(null);
 
   useImperativeHandle(ref, () => ({
     setDestination: (params: AISearchParams) => setAiSearchParams(params),
