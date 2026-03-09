@@ -443,7 +443,8 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               </div>
             ) : (
               <div className={`h-full w-full transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
-              <div className="grid h-full grid-cols-2 items-stretch">
+              {tripType === "roundtrip" ? (
+                <div className="grid h-full grid-cols-2 items-stretch">
                   <div className="px-5 py-3 relative z-30 border-r border-border/20 flex flex-col justify-center">
                     <FlightDateRangePicker
                       departDate={departDate}
@@ -460,31 +461,41 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                       onOpenCalendar={handleOpenCalendar}
                     />
                   </div>
-
                   <div className="px-5 py-3 relative z-30 flex flex-col justify-center">
-                    {tripType === "roundtrip" ? (
-                      <FlightDateRangePicker
-                        departDate={departDate}
-                        returnDate={returnDate}
-                        onDepartChange={handleDepartChange}
-                        onReturnChange={handleReturnChange}
-                        tripType={tripType as "roundtrip" | "oneway"}
-                        onTripTypeChange={handleTripTypeChange}
-                        hasError={!!errors.dates}
-                        bare
-                        segmentMode
-                        segmentLabel={t("calendar.return", "Return")}
-                        segmentDisplay={returnDisplay}
-                        onOpenCalendar={handleOpenCalendar}
-                      />
-                    ) : (
-                      <div className="flex h-full flex-col justify-center">
-                        <span className={SEG_LABEL}>{t("calendar.return", "Return")}</span>
-                        <span className={`${SEG_PLACEHOLDER} text-[13px]`}>Flexible</span>
-                      </div>
-                    )}
+                    <FlightDateRangePicker
+                      departDate={departDate}
+                      returnDate={returnDate}
+                      onDepartChange={handleDepartChange}
+                      onReturnChange={handleReturnChange}
+                      tripType={tripType as "roundtrip" | "oneway"}
+                      onTripTypeChange={handleTripTypeChange}
+                      hasError={!!errors.dates}
+                      bare
+                      segmentMode
+                      segmentLabel={t("calendar.return", "Return")}
+                      segmentDisplay={returnDisplay}
+                      onOpenCalendar={handleOpenCalendar}
+                    />
                   </div>
                 </div>
+              ) : (
+                <div className="px-5 py-3 relative z-30 flex flex-col justify-center">
+                  <FlightDateRangePicker
+                    departDate={departDate}
+                    returnDate={returnDate}
+                    onDepartChange={handleDepartChange}
+                    onReturnChange={handleReturnChange}
+                    tripType={tripType as "roundtrip" | "oneway"}
+                    onTripTypeChange={handleTripTypeChange}
+                    hasError={!!errors.dates}
+                    bare
+                    segmentMode
+                    segmentLabel={t("calendar.depart")}
+                    segmentDisplay={departDisplay}
+                    onOpenCalendar={handleOpenCalendar}
+                  />
+                </div>
+              )}
               </div>
             )}
 
