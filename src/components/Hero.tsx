@@ -1,7 +1,7 @@
-import { useState, forwardRef, useImperativeHandle, RefObject } from "react";
+import { useState, forwardRef, useImperativeHandle, RefObject, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import FlightSearchForm from "./FlightSearchForm";
+import FlightSearchForm, { type FlightSearchFormHandle } from "./FlightSearchForm";
 import TravelAssistant from "./TravelAssistant";
 import { Plane, Building2, Car, Package, Sparkles, MapPin, CalendarSearch } from "lucide-react";
 import { toast } from "sonner";
@@ -46,6 +46,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
   const [aiSearchParams, setAiSearchParams] = useState<AISearchParams | null>(null);
   const [travelPrompt, setTravelPrompt] = useState<string | null>(null);
   const [showAIGuide, setShowAIGuide] = useState(false);
+  const searchFormRef = useRef<FlightSearchFormHandle>(null);
 
   useImperativeHandle(ref, () => ({
     setDestination: (params: AISearchParams) => setAiSearchParams(params),
@@ -136,6 +137,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
             {/* ── Search bar — directly in the flow ── */}
             <div ref={searchRef} className="animate-fade-in overflow-visible">
               <FlightSearchForm
+                ref={searchFormRef}
                 aiSearchParams={aiSearchParams}
                 onParamsConsumed={handleParamsConsumed}
               />
@@ -161,6 +163,10 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                   key={tool.title}
                   onClick={() => {
                     if (isAI) setShowAIGuide(!showAIGuide);
+                    else if (tool.title === "Flexible Dates") {
+                      searchRef?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      setTimeout(() => searchFormRef.current?.openFlexDates(), 400);
+                    }
                     else if (tool.href) navigate(tool.href);
                   }}
                   className="flex items-center gap-4 p-5 rounded-2xl border border-border/25 bg-card/30 hover:bg-card/50 hover:border-border/40 transition-all text-left group cursor-pointer"

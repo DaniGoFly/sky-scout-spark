@@ -23,6 +23,8 @@ export interface CalendarPanelProps {
   onDepartFlexAfterChange: (v: number) => void;
   onReturnFlexBeforeChange: (v: number) => void;
   onReturnFlexAfterChange: (v: number) => void;
+  /** Override the initial active tab when the panel mounts */
+  initialTab?: "specific" | "flexible";
 }
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -119,10 +121,15 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
   tripType, onTripTypeChange, onDone,
   departFlexBefore, departFlexAfter, returnFlexBefore, returnFlexAfter,
   onDepartFlexBeforeChange, onDepartFlexAfterChange, onReturnFlexBeforeChange, onReturnFlexAfterChange,
+  initialTab,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(() => departDate ? startOfMonth(departDate) : startOfMonth(new Date()));
   const [selectingReturn, setSelectingReturn] = useState(() => !!departDate && !returnDate && tripType === "roundtrip");
-  const [activeTab, setActiveTab] = useState<"specific" | "flexible">("specific");
+  const [activeTab, setActiveTab] = useState<"specific" | "flexible">(
+    departFlexBefore > 0 || departFlexAfter > 0 || returnFlexBefore > 0 || returnFlexAfter > 0
+      ? "flexible"
+      : (initialTab ?? "specific")
+  );
   const isMobile = useIsMobile();
   const today = useMemo(() => startOfDay(new Date()), []);
   const nextMonth = useMemo(() => addMonths(currentMonth, 1), [currentMonth]);

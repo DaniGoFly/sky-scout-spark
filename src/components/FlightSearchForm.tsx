@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ArrowRightLeft, Search, Globe, CalendarOff, ChevronDown, Navigation, MapPin, Zap, Plane, Shield, CheckCircle2, Wifi, Minus, Plus } from "lucide-react";
@@ -25,6 +25,10 @@ interface FlightSearchFormProps {
   onParamsConsumed?: () => void;
 }
 
+export interface FlightSearchFormHandle {
+  openFlexDates: () => void;
+}
+
 type TripType = "roundtrip" | "oneway" | "multicity";
 
 const CABIN_LABELS: Record<string, string> = {
@@ -41,7 +45,7 @@ const TRUST_KEYS = [
   { icon: Wifi, key: "trust.live_updates" },
 ];
 
-const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
+const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProps>(({ aiSearchParams, onParamsConsumed }, ref) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { currency, marketCode } = useLocale();
@@ -74,7 +78,16 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
   /* ── Calendar panel open state (lifted) ── */
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarInitialTab, setCalendarInitialTab] = useState<"specific" | "flexible" | undefined>(undefined);
   const [tripTypeOpen, setTripTypeOpen] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    openFlexDates: () => {
+      setIsAnyDay(false);
+      setCalendarInitialTab("flexible");
+      setCalendarOpen(true);
+    },
+  }));
 
   // Refs for trip type dropdown
   const tripTypeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -230,6 +243,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
   const handleCloseCalendar = useCallback(() => {
     setCalendarOpen(false);
+    setCalendarInitialTab(undefined);
   }, []);
 
   const handleMultiCitySearch = useCallback((segments: any[], travelersData: TravelersData) => {
@@ -613,6 +627,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               onDepartFlexAfterChange={setDepartFlexAfter}
               onReturnFlexBeforeChange={setReturnFlexBefore}
               onReturnFlexAfterChange={setReturnFlexAfter}
+              initialTab={calendarInitialTab}
             />
           </div>
         )}
@@ -731,6 +746,8 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
       </div>
     </div>
   );
-};
+});
+
+FlightSearchForm.displayName = "FlightSearchForm";
 
 export default FlightSearchForm;
