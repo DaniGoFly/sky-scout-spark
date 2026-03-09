@@ -170,8 +170,8 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                     <Icon className="w-5 h-5 text-muted-foreground/70 group-hover:text-primary transition-colors" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-sm font-semibold text-foreground block">{tool.title}</span>
-                    <span className="text-[12px] text-muted-foreground/60 leading-snug">{tool.desc}</span>
+                    <span className="text-sm font-semibold text-foreground block">{t(tool.titleKey)}</span>
+                    <span className="text-[12px] text-muted-foreground/60 leading-snug">{t(tool.descKey)}</span>
                   </div>
                 </button>
               );
