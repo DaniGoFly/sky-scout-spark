@@ -184,7 +184,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
               </button>
 
               {openCalendarSegmentId === segment.id && (
-                <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-auto rounded-xl border border-border bg-card p-0 shadow-xl">
+                <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-auto rounded-xl border border-border bg-[hsl(222_40%_12%)] p-0 shadow-xl isolation-auto" style={{ backdropFilter: 'none' }}>
                   <CalendarComponent
                     mode="single"
                     selected={segment.date || undefined}
