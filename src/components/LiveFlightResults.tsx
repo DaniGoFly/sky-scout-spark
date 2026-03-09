@@ -164,11 +164,11 @@ const LiveFlightResults = () => {
     if (!from || !to || !depart) return;
     if (searchKey === prevSearchKeyRef.current) return;
     prevSearchKeyRef.current = searchKey;
-    prevSortRef.current = "best";
+    prevSortRef.current = initialSort;
     cancelSearch();
-    setFilters({ ...DEFAULT_FILTERS });
-    setSortBy("best");
-    setSelectedOrigin(null);
+    setFilters({ ...DEFAULT_FILTERS, ...initialFilters });
+    setSortBy(initialSort);
+    setSelectedOrigin(searchParams.get("saved_origin") || null);
     setOriginViewMode("all");
     setNearbyAlertDismissed(false);
 
