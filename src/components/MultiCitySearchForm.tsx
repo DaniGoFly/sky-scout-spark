@@ -240,7 +240,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
       {/* Travelers & Search */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-border/20">
-        <div className="w-full md:w-auto md:min-w-[200px]">
+        <div className="w-full md:w-auto md:min-w-[200px] [&_button]:bg-background/60">
           <TravelersPicker value={travelers} onChange={setTravelers} />
         </div>
         <Button
