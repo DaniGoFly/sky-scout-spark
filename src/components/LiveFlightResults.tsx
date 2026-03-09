@@ -611,8 +611,8 @@ const LiveFlightResults = () => {
       <div className="container mx-auto px-4 py-4 md:py-6">
         {exploreFromPrice && isSearching && (
           <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 mb-4 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Explore prices are flexible "from" estimates.</span>{" "}
-            Exact prices update after selecting dates.
+            <span className="font-medium text-foreground">{t("results.explore_estimates")}</span>{" "}
+            {t("results.exact_prices_update")}
           </div>
         )}
         {showSkeleton && (
