@@ -73,20 +73,29 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       <section className="relative overflow-visible bg-background">
         {/* Full-width left-to-right atmospheric booking zone — covers entire hero */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          {/* Primary L→R sweep: starts strong left, fades right — spans full height */}
+          {/* Primary L→R sweep: smoother with more gradient stops and gentler opacity transitions */}
           <div
             className="absolute top-0 left-0 w-full h-full"
-            style={{ background: "linear-gradient(90deg, hsl(215 50% 80% / 0.09) 0%, hsl(215 55% 82% / 0.07) 20%, hsl(217 60% 78% / 0.055) 40%, hsl(220 50% 75% / 0.035) 60%, hsl(222 40% 60% / 0.015) 80%, transparent 100%)" }}
+            style={{ 
+              background: "linear-gradient(90deg, hsl(215 50% 80% / 0.09) 0%, hsl(215 52% 81% / 0.08) 10%, hsl(215 55% 82% / 0.07) 20%, hsl(216 57% 80% / 0.062) 30%, hsl(217 60% 78% / 0.055) 40%, hsl(218 55% 76% / 0.045) 50%, hsl(220 50% 75% / 0.035) 60%, hsl(221 45% 68% / 0.025) 70%, hsl(222 40% 60% / 0.015) 80%, hsl(222 35% 55% / 0.007) 90%, transparent 100%)",
+              filter: "blur(0.5px)"
+            }}
           />
-          {/* Secondary L→R layer for depth — slightly offset */}
+          {/* Secondary L→R layer for depth — smoother blending */}
           <div
             className="absolute top-0 left-0 w-full h-full"
-            style={{ background: "linear-gradient(90deg, hsl(210 45% 85% / 0.05) 0%, hsl(212 50% 80% / 0.06) 15%, hsl(215 55% 78% / 0.045) 35%, hsl(218 45% 72% / 0.025) 55%, transparent 85%)" }}
+            style={{ 
+              background: "linear-gradient(90deg, hsl(210 45% 85% / 0.05) 0%, hsl(211 47% 83% / 0.055) 8%, hsl(212 50% 80% / 0.06) 15%, hsl(213 52% 79% / 0.052) 25%, hsl(215 55% 78% / 0.045) 35%, hsl(216 50% 75% / 0.035) 45%, hsl(218 45% 72% / 0.025) 55%, hsl(220 42% 68% / 0.015) 70%, hsl(222 38% 62% / 0.007) 82%, transparent 95%)",
+              filter: "blur(0.5px)"
+            }}
           />
-          {/* Very gentle vertical intensity — peaks in center of section, no hard top/bottom edges */}
+          {/* Very gentle vertical intensity — larger, softer radial for smooth glow */}
           <div
             className="absolute top-0 left-0 w-full h-full"
-            style={{ background: "radial-gradient(ellipse 100% 70% at 35% 55%, hsl(215 50% 88% / 0.04), transparent 70%)" }}
+            style={{ 
+              background: "radial-gradient(ellipse 120% 90% at 30% 50%, hsl(215 50% 88% / 0.035) 0%, hsl(215 48% 85% / 0.025) 30%, hsl(217 45% 80% / 0.015) 50%, hsl(220 40% 75% / 0.007) 70%, transparent 90%)",
+              filter: "blur(1px)"
+            }}
           />
         </div>
 
