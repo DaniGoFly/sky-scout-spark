@@ -20,7 +20,7 @@ import { resolveDeal } from "@/lib/flightSearchApi";
 import { trackFlightClick } from "@/lib/clickTracking";
 import { shouldShowScarcity } from "@/lib/scarcityIndicator";
 import { sanitizeDealUrl } from "@/lib/urlSanitizer";
-import { isFlightSaved, toggleSavedFlight } from "@/lib/savedFlights";
+import { isFlightSaved, toggleSavedFlight, type SearchContext } from "@/lib/savedFlights";
 import { useLocale } from "@/hooks/useLocale";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
