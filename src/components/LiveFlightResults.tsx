@@ -622,9 +622,9 @@ const LiveFlightResults = () => {
               <p className="text-base font-semibold text-foreground">{t("results.searching")}</p>
               <p className="text-sm text-muted-foreground">
                 {isCartesian
-                  ? `Searching ${cartesianProgress.completed}/${cartesianProgress.total} route combinations…`
+                  ? t("results.searching_combinations", { completed: cartesianProgress.completed, total: cartesianProgress.total })
                   : isMultiOrigin
-                  ? `Searching ${progress.completed}/${progress.total} departure airports…`
+                  ? t("results.searching_airports", { completed: progress.completed, total: progress.total })
                   : t("results.searching_sub")}
               </p>
               {(isCartesian || isMultiOrigin) && (
