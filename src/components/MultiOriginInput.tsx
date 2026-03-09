@@ -443,9 +443,11 @@ const MultiOriginInput = ({
       )}
 
       {showEmpty && (
-        <PortalDropdown anchorRef={inputAreaRef}>
-          <div className="bg-card border border-border/60 rounded-xl shadow-2xl p-4 text-center text-sm text-muted-foreground">
-            No airports found
+        <PortalDropdown anchorRef={wrapperRef}>
+          <div className="bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden">
+            <div className="px-4 py-3 text-center text-sm text-muted-foreground">
+              No airports found
+            </div>
           </div>
         </PortalDropdown>
       )}
