@@ -728,7 +728,7 @@ const LiveFlightResults = () => {
                         : t("results.updating")}
                     </span>
                     {(isCartesian || isMultiOrigin) && (
-                      <button onClick={cancelSearch} className="text-primary/70 hover:text-primary text-[11px] ml-1">Cancel</button>
+                      <button onClick={cancelSearch} className="text-primary/70 hover:text-primary text-[11px] ml-1">{t("results.cancel")}</button>
                     )}
                   </div>
                 )}
