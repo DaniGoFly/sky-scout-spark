@@ -151,7 +151,7 @@ const Explore = () => {
       params.set("explore_from_price", String(Math.round(dest.price)));
     }
     navigate(`/flights/results?${params.toString()}`);
-  }, [origin, navigate, currency, dateMode]);
+  }, [origin, navigate, currency]);
 
   const originAirport = useMemo(() =>
     origin ? AIRPORTS.find(a => a.code === origin.code) : null,
