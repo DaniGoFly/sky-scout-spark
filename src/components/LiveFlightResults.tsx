@@ -82,8 +82,19 @@ const LiveFlightResults = () => {
     search: cartesianSearch, cancelSearch: cartesianCancel,
   } = useCartesianSearch();
 
-  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
-  const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
+  const initialSort = ((searchParams.get("saved_sort") || "best") as "best" | "cheapest" | "fastest");
+  const initialFilters: FilterState = {
+    stopsMode: ((searchParams.get("saved_stops") as FilterState["stopsMode"]) || "any"),
+    airlines: (searchParams.get("saved_airlines") || "").split(",").map(s => s.trim()).filter(Boolean),
+    departureTime: (searchParams.get("saved_departure") || "").split(",").map(s => s.trim()).filter(Boolean),
+    priceRange: [
+      Number(searchParams.get("saved_price_min")) || 0,
+      Number(searchParams.get("saved_price_max")) || 10000,
+    ],
+  };
+
+  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">(initialSort);
+  const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS, ...initialFilters });
   const [selectedOrigin, setSelectedOrigin] = useState<string | null>(null);
   const [originViewMode, setOriginViewMode] = useState<OriginViewMode>("all");
   const [nearbyAlertDismissed, setNearbyAlertDismissed] = useState(false);
