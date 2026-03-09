@@ -205,7 +205,7 @@ const SavedFlights = () => {
                           className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive gap-1"
                         >
                           <Trash2 className="w-3 h-3" />
-                           Remove
+                           {t("saved.remove")}
                         </Button>
                       </div>
                     </div>
