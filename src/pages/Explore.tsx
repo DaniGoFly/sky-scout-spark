@@ -50,7 +50,7 @@ const Explore = () => {
   const [tripLength, setTripLength] = useState<[number, number]>([3, 14]);
   const directOnly = false;
   const [hoveredIata, setHoveredIata] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  
   const [selectedDest, setSelectedDest] = useState<ExploreResult | null>(null);
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
