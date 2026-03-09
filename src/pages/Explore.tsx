@@ -116,13 +116,24 @@ const Explore = () => {
     }).filter(d => d.lat && d.lon);
   }, [destinations]);
 
-  const sortedDestinations = useMemo(() =>
-    [...enrichedDestinations]
-      .filter(d => d.price <= maxPrice)
+  // Client-side filtering: trip length (calendar days) + max price
+  const sortedDestinations = useMemo(() => {
+    return [...enrichedDestinations]
+      .filter(d => {
+        // Price filter
+        if (d.price > maxPrice) return false;
+        // Trip length filter — compute calendar days between depart and return
+        if (d.departDate && d.returnDate) {
+          const depart = new Date(d.departDate + "T00:00:00");
+          const ret = new Date(d.returnDate + "T00:00:00");
+          const days = Math.round((ret.getTime() - depart.getTime()) / (1000 * 60 * 60 * 24));
+          if (days < tripLength[0] || days > tripLength[1]) return false;
+        }
+        return true;
+      })
       .sort((a, b) => a.price - b.price)
-      .slice(0, 80),
-    [enrichedDestinations, maxPrice]
-  );
+      .slice(0, 80);
+  }, [enrichedDestinations, maxPrice, tripLength]);
 
   const priceMax = useMemo(() => {
     if (!enrichedDestinations.length) return 2000;
