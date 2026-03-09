@@ -1,8 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Plus, X, Search, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import AirportAutocomplete from "./AirportAutocomplete";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
