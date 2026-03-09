@@ -19,8 +19,6 @@ import { toast } from "sonner";
 import type { AISearchParams } from "./FlightSearchHero";
 import { useLocale } from "@/hooks/useLocale";
 import { cn } from "@/lib/utils";
-import { OverlayPortal } from "@/components/overlays/OverlayPortal";
-import { useAnchoredOverlay } from "@/hooks/useAnchoredOverlay";
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
