@@ -35,9 +35,9 @@ const POPULAR_DESTINATIONS = [
 ];
 
 const SMART_TOOLS = [
-  { icon: Sparkles, title: "AI Travel Guide", desc: "Get personalized travel recommendations" },
-  { icon: MapPin, title: "Explore Map", desc: "Discover cheapest destinations nearby", href: "/explore" },
-  { icon: CalendarSearch, title: "Flexible Dates", desc: "Find the cheapest days to fly" },
+  { icon: Sparkles, titleKey: "hero_section.ai_travel_guide", descKey: "hero_section.ai_travel_desc" },
+  { icon: MapPin, titleKey: "hero_section.explore_map", descKey: "hero_section.explore_map_desc", href: "/explore" },
+  { icon: CalendarSearch, titleKey: "hero_section.flexible_dates_title", descKey: "hero_section.flexible_dates_desc" },
 ];
 
 const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
