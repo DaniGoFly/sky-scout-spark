@@ -567,7 +567,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
             {/* DATES SECTION — mobile */}
             {isAnyDay ? (
               <div className={`px-5 py-4 ${errRing(!!errors.dates)}`}>
-                <span className={SEG_LABEL}>Trip length</span>
+                <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
                 {tripType === "roundtrip" ? (
                   <TripLengthSlider value={tripLength} onChange={setTripLength} />
                 ) : (
