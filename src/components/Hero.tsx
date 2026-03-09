@@ -210,7 +210,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                 <span className="text-xl">{dest.emoji}</span>
                 <div className="text-left">
                   <span className="text-sm font-medium text-foreground block leading-tight group-hover:text-primary transition-colors">{dest.city}</span>
-                  <span className="text-xs text-muted-foreground/60 font-medium">from {dest.price}</span>
+                  <span className="text-xs text-muted-foreground/60 font-medium">{t("hero_section.from_price", { price: dest.price })}</span>
                 </div>
               </button>
             ))}
