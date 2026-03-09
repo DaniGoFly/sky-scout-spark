@@ -137,6 +137,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
             {/* ── Search bar — directly in the flow ── */}
             <div ref={searchRef} className="animate-fade-in overflow-visible">
               <FlightSearchForm
+                ref={searchFormRef}
                 aiSearchParams={aiSearchParams}
                 onParamsConsumed={handleParamsConsumed}
               />
