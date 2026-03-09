@@ -183,7 +183,7 @@ const SavedFlights = () => {
                           <span className="text-xs text-muted-foreground">{airlineName}</span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {flight.departureTime?.split(" ")[0] || "—"} · {formatDuration(flight.durationMinutes)} · {flight.stopsCount === 0 ? "Direct" : `${flight.stopsCount} stop${flight.stopsCount > 1 ? "s" : ""}`}
+                          {flight.departureTime?.split(" ")[0] || "—"} · {formatDuration(flight.durationMinutes)} · {flight.stopsCount === 0 ? t("card.direct") : flight.stopsCount === 1 ? t("card.stop_1") : t("card.stops_n", { count: flight.stopsCount })}
                         </p>
                         {flight.return && (
                           <p className="text-xs text-muted-foreground mt-0.5">
