@@ -34,6 +34,7 @@ interface FlightCardProps {
   priceIntel?: PriceIntelligence | null;
   originSource?: string;
   totalPassengers?: number;
+  savedContext?: Pick<SearchContext, "sortBy" | "filters">;
 }
 
 /** Type guard to check if flight has enriched stop data */
@@ -241,7 +242,7 @@ PriceIntelBadge.displayName = "PriceIntelBadge";
 
 /* ─── Main card ─── */
 
-const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel, originSource, totalPassengers = 1 }: FlightCardProps) => {
+const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, returnDate: returnDateProp, priceIntel, originSource, totalPassengers = 1, savedContext }: FlightCardProps) => {
   const [isSaved, setIsSaved] = useState(() => isFlightSaved(flight.id));
   const [isResolving, setIsResolving] = useState(false);
   const anchorRef = useRef<HTMLAnchorElement>(null);
@@ -288,18 +289,42 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
   const handleSave = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const entries = Array.from(searchParams.entries());
+    const searchParamsSnapshot = Object.fromEntries(entries);
+    const depart = searchParams.get("depart") || departDate || undefined;
+    const ret = searchParams.get("return") || returnDateProp || undefined;
+    const derivedTripType = (searchParams.get("trip") as "oneway" | "roundtrip") || (ret ? "roundtrip" : "oneway");
+
     const ctx: SearchContext = {
-      tripType: (searchParams.get("trip") as "oneway" | "roundtrip") || (flight.return ? "roundtrip" : "oneway"),
+      tripType: ret ? "roundtrip" : derivedTripType,
+      departDate: depart,
+      returnDate: ret ?? null,
       adults: Number(searchParams.get("adults")) || 1,
       children: Number(searchParams.get("children")) || 0,
       infants: Number(searchParams.get("infants")) || 0,
       travelClass: searchParams.get("class") || "economy",
       currency: searchParams.get("currency") || localeCurrency || undefined,
       market: searchParams.get("market") || marketCode || undefined,
+      sortBy: savedContext?.sortBy,
+      searchParams: searchParamsSnapshot,
+      filters: savedContext?.filters,
+      selection: {
+        itineraryId: flight.id,
+        outboundItineraryId: flight.id,
+        outboundFingerprint: [flight.origin, flight.destination, flight.departureTime, flight.arrivalTime, flight.airlines?.join(","), flight.flightNumbers?.join(",")].filter(Boolean).join("|"),
+        inboundFingerprint: flight.return
+          ? [flight.return.origin, flight.return.destination, flight.return.departureTime, flight.return.arrivalTime, flight.return.airlines?.join(","), flight.return.flightNumbers?.join(",")].filter(Boolean).join("|")
+          : undefined,
+        proposalId: flight.proposalId || flight.click_id,
+        searchId: flight.searchId || flight.search_id,
+        resultsBase: flight.resultsBase || flight.results_base,
+      },
     };
+
     const nowSaved = toggleSavedFlight(flight, ctx);
     setIsSaved(nowSaved);
-  }, [flight, searchParams, localeCurrency, marketCode]);
+  }, [flight, searchParams, localeCurrency, marketCode, departDate, returnDateProp, savedContext]);
 
   const handleViewDeal = useCallback(async () => {
     if (!canResolve || isResolving) return;

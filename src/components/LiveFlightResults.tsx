@@ -81,12 +81,23 @@ const LiveFlightResults = () => {
     search: cartesianSearch, cancelSearch: cartesianCancel,
   } = useCartesianSearch();
 
-  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">("best");
-  const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS });
+  const initialSort = ((searchParams.get("saved_sort") || "best") as "best" | "cheapest" | "fastest");
+  const initialFilters: FilterState = {
+    stopsMode: ((searchParams.get("saved_stops") as FilterState["stopsMode"]) || "any"),
+    airlines: (searchParams.get("saved_airlines") || "").split(",").map(s => s.trim()).filter(Boolean),
+    departureTime: (searchParams.get("saved_departure") || "").split(",").map(s => s.trim()).filter(Boolean),
+    priceRange: [
+      Number(searchParams.get("saved_price_min")) || 0,
+      Number(searchParams.get("saved_price_max")) || 10000,
+    ],
+  };
+
+  const [sortBy, setSortBy] = useState<"best" | "cheapest" | "fastest">(initialSort);
+  const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS, ...initialFilters });
   const [selectedOrigin, setSelectedOrigin] = useState<string | null>(null);
   const [originViewMode, setOriginViewMode] = useState<OriginViewMode>("all");
   const [nearbyAlertDismissed, setNearbyAlertDismissed] = useState(false);
-  const [hideLongLayovers, setHideLongLayovers] = useState(true);
+  const [hideLongLayovers, setHideLongLayovers] = useState(() => searchParams.get("saved_hide_long_layovers") !== "false");
   const prevSearchKeyRef = useRef<string>("");
   const prevSortRef = useRef<string>("best");
   const prevResultsRef = useRef<EnrichedFlight[]>([]);
@@ -111,6 +122,12 @@ const LiveFlightResults = () => {
   const tripClass = searchParams.get("class") || "economy";
   const exploreFromPrice = searchParams.get("explore_from_price");
   const isRoundtrip = tripType === "roundtrip";
+
+  // Saved restore hints (for exact itinerary prioritization)
+  const savedTripType = searchParams.get("saved_trip");
+  const savedFlightId = searchParams.get("saved_flight_id") || "";
+  const savedOutboundSig = searchParams.get("saved_outbound_sig") || "";
+  const savedInboundSig = searchParams.get("saved_inbound_sig") || "";
 
   // Flex dates from URL
   const dfb = Number(searchParams.get("dfb")) || 0;
@@ -146,13 +163,14 @@ const LiveFlightResults = () => {
     if (!from || !to || !depart) return;
     if (searchKey === prevSearchKeyRef.current) return;
     prevSearchKeyRef.current = searchKey;
-    prevSortRef.current = "best";
+    prevSortRef.current = initialSort;
     cancelSearch();
-    setFilters({ ...DEFAULT_FILTERS });
-    setSortBy("best");
-    setSelectedOrigin(null);
+    setFilters({ ...DEFAULT_FILTERS, ...initialFilters });
+    setSortBy(initialSort);
+    setSelectedOrigin(searchParams.get("saved_origin") || null);
     setOriginViewMode("all");
     setNearbyAlertDismissed(false);
+    setHideLongLayovers(searchParams.get("saved_hide_long_layovers") !== "false");
 
     if (isCartesian) {
       // Cartesian: multi-destination and/or flex dates
@@ -192,7 +210,7 @@ const LiveFlightResults = () => {
         sort: "best" as const, limit: 100, tripClass, market: effectiveMarket,
       });
     }
-  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, effectiveCurrency, effectiveMarket, isRoundtrip, tripClass, searchFlights, cancelSearch, isMultiOrigin, origins, searchMultiOrigin, isCartesian, destinations, dfb, dfa, rfb, rfa, hasFlexDates, cartesianSearch]);
+  }, [searchKey, from, to, depart, returnDate, adults, children, infants, tripType, effectiveCurrency, effectiveMarket, isRoundtrip, tripClass, searchFlights, cancelSearch, isMultiOrigin, origins, searchMultiOrigin, isCartesian, destinations, dfb, dfa, rfb, rfa, hasFlexDates, cartesianSearch, initialSort, initialFilters, searchParams]);
 
   // ── Step 1: Enrich raw flights ──
   const enrichedFlights = useMemo<EnrichedFlight[]>(() => {
@@ -309,10 +327,53 @@ const LiveFlightResults = () => {
     });
   }, [filteredFlights]);
 
-  // ── Step 3: Sort with color-coded pinned labels ──
   const { sortedFlights, pinnedLabels } = useMemo(() => {
     const sorted = [...dedupedFlights];
     const labels = new Map<string, string>();
+
+    const buildSig = (f: EnrichedFlight) => [
+      f.origin,
+      f.destination,
+      f.departureTime,
+      f.arrivalTime,
+      f.airlines?.join(","),
+      f.flightNumbers?.join(","),
+    ].filter(Boolean).join("|");
+
+    const buildInboundSig = (f: EnrichedFlight) => {
+      const ret = (f as any).return;
+      if (!ret) return "";
+      return [
+        ret.origin,
+        ret.destination,
+        ret.departureTime,
+        ret.arrivalTime,
+        ret.airlines?.join(","),
+        ret.flightNumbers?.join(","),
+      ].filter(Boolean).join("|");
+    };
+
+    const findSavedMatchIndex = (items: EnrichedFlight[]) => {
+      if (!savedFlightId && !savedOutboundSig && !savedInboundSig) return -1;
+      return items.findIndex((f) => {
+        if (savedTripType === "roundtrip" && !(f as any).return) return false;
+        if (savedFlightId && f.id === savedFlightId) return true;
+        if (savedOutboundSig && buildSig(f) === savedOutboundSig) {
+          if (!savedInboundSig) return true;
+          return buildInboundSig(f) === savedInboundSig;
+        }
+        return false;
+      });
+    };
+
+    const applySavedPriority = (items: EnrichedFlight[]) => {
+      const idx = findSavedMatchIndex(items);
+      if (idx <= 0) return items.slice(0, MAX_DISPLAY);
+      const copy = [...items];
+      const [match] = copy.splice(idx, 1);
+      labels.set(match.id, labels.get(match.id) || "Saved");
+      return [match, ...copy].slice(0, MAX_DISPLAY);
+    };
 
     const bestSort = (a: EnrichedFlight, b: EnrichedFlight) => {
       const sa = a.price.amount * 0.6 + a.durationMinutes * 0.3 + a.outboundStopsTotal * 100;
@@ -338,14 +399,14 @@ const LiveFlightResults = () => {
           if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
           return (a.departureTime || "").localeCompare(b.departureTime || "");
         });
-        break;
+        return { sortedFlights: applySavedPriority(sorted), pinnedLabels: labels };
       case "fastest":
         sorted.sort((a, b) => {
           if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
           if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
           return (a.departureTime || "").localeCompare(b.departureTime || "");
         });
-        break;
+        return { sortedFlights: applySavedPriority(sorted), pinnedLabels: labels };
       case "best": default: {
         const pinnedIds = new Set<string>();
         const pinned: EnrichedFlight[] = [];
@@ -354,11 +415,10 @@ const LiveFlightResults = () => {
         if (byDuration[0] && !pinnedIds.has(byDuration[0].id)) { pinnedIds.add(byDuration[0].id); pinned.push(byDuration[0]); }
         const rest = sorted.filter(f => !pinnedIds.has(f.id));
         rest.sort(bestSort);
-        return { sortedFlights: [...pinned, ...rest].slice(0, MAX_DISPLAY), pinnedLabels: labels };
+        return { sortedFlights: applySavedPriority([...pinned, ...rest]), pinnedLabels: labels };
       }
     }
-    return { sortedFlights: sorted.slice(0, MAX_DISPLAY), pinnedLabels: labels };
-  }, [dedupedFlights, sortBy]);
+  }, [dedupedFlights, sortBy, savedFlightId, savedOutboundSig, savedInboundSig, savedTripType]);
 
   // ── Grouped by origin (for "by-origin" view) ──
   const groupedByOrigin = useMemo(() => {
@@ -507,10 +567,21 @@ const LiveFlightResults = () => {
           priceIntel={intel}
           originSource={isMultiOrigin ? originSource : undefined}
           totalPassengers={totalPassengers}
+          savedContext={{
+            sortBy,
+            filters: {
+              stopsMode: filters.stopsMode,
+              airlines: filters.airlines,
+              priceRange: filters.priceRange,
+              departureTime: filters.departureTime,
+              selectedOrigin: selectedOrigin || undefined,
+              hideLongLayovers,
+            },
+          }}
         />
       </div>
     );
-  }, [pinnedLabels, dedupedFlights, depart, returnDate, isMultiOrigin, totalPassengers]);
+  }, [pinnedLabels, dedupedFlights, depart, returnDate, isMultiOrigin, totalPassengers, sortBy, filters, selectedOrigin, hideLongLayovers]);
 
   return (
     <div className="min-h-screen bg-background pt-16" style={{ paddingTop: "calc(4rem + env(safe-area-inset-top))" }}>

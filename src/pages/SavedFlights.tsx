@@ -27,33 +27,89 @@ const SavedFlights = () => {
   }, []);
 
   const handleOpenFlight = useCallback((flight: SavedFlight) => {
-    // Extract clean YYYY-MM-DD dates from stored timestamps
-    const extractDate = (dt?: string) => {
+    const extractDate = (dt?: string | null) => {
       if (!dt) return "";
-      // Handle "2026-05-18 17:35" or "2026-05-18T17:35:00"
-      return dt.split(" ")[0]?.split("T")[0] || "";
+      const match = dt.match(/\d{4}-\d{2}-\d{2}/);
+      return match?.[0] || "";
     };
 
-    const departDate = extractDate(flight.departureTime);
-    const returnDate = extractDate(flight.return?.departureTime);
-    const hasReturn = !!returnDate;
-    const tripType = flight.tripType || (hasReturn ? "roundtrip" : "oneway");
+    const params = new URLSearchParams(flight.searchParams ? Object.entries(flight.searchParams) : []);
 
-    const params = new URLSearchParams({
-      from: flight.origin,
-      to: flight.destination,
-      ...(departDate && { depart: departDate }),
-      ...(hasReturn && { return: returnDate }),
-      adults: String(flight.adults ?? 1),
-      children: String(flight.children ?? 0),
-      infants: String(flight.infants ?? 0),
-      trip: tripType,
-      class: flight.travelClass || "economy",
-    });
+    const departDate =
+      flight.departDate ||
+      params.get("depart") ||
+      extractDate(flight.departureTime);
 
-    // Include currency/market if stored
+    const rawReturnDate =
+      flight.returnDate ||
+      params.get("return") ||
+      extractDate(flight.return?.departureTime) ||
+      "";
+
+    const isRoundtrip =
+      flight.tripType === "roundtrip" ||
+      Boolean(flight.return) ||
+      Boolean(rawReturnDate);
+
+    const fallbackReturnDate = (() => {
+      if (!isRoundtrip || rawReturnDate || !departDate) return rawReturnDate;
+      const d = new Date(`${departDate}T12:00:00`);
+      if (Number.isNaN(d.getTime())) return rawReturnDate;
+      d.setDate(d.getDate() + 7);
+      return d.toISOString().slice(0, 10);
+    })();
+
+    const restoredTripType = isRoundtrip ? "roundtrip" : "oneway";
+
+    params.set("from", flight.origin);
+    params.set("to", flight.destination);
+    if (departDate) params.set("depart", departDate);
+    if (isRoundtrip && fallbackReturnDate) params.set("return", fallbackReturnDate);
+    else params.delete("return");
+
+    params.set("trip", restoredTripType);
+    params.set("adults", String(flight.adults ?? (Number(params.get("adults")) || 1)));
+    params.set("children", String(flight.children ?? (Number(params.get("children")) || 0)));
+    params.set("infants", String(flight.infants ?? (Number(params.get("infants")) || 0)));
+    params.set("class", flight.travelClass || params.get("class") || "economy");
+
     if (flight.currency) params.set("currency", flight.currency);
     if (flight.market) params.set("market", flight.market);
+
+    // Restore saved filters/sort/selection hints
+    if (flight.sortBy) params.set("saved_sort", flight.sortBy);
+    if (flight.filters?.stopsMode) params.set("saved_stops", flight.filters.stopsMode);
+    if (flight.filters?.airlines?.length) params.set("saved_airlines", flight.filters.airlines.join(","));
+    if (flight.filters?.departureTime?.length) params.set("saved_departure", flight.filters.departureTime.join(","));
+    if (flight.filters?.priceRange) {
+      params.set("saved_price_min", String(flight.filters.priceRange[0]));
+      params.set("saved_price_max", String(flight.filters.priceRange[1]));
+    }
+    if (flight.filters?.selectedOrigin) params.set("saved_origin", flight.filters.selectedOrigin);
+    if (typeof flight.filters?.hideLongLayovers === "boolean") {
+      params.set("saved_hide_long_layovers", String(flight.filters.hideLongLayovers));
+    }
+
+    params.set("saved_trip", restoredTripType);
+    params.set("saved_flight_id", flight.selection?.itineraryId || flight.id);
+    if (flight.selection?.outboundFingerprint) params.set("saved_outbound_sig", flight.selection.outboundFingerprint);
+    if (flight.selection?.inboundFingerprint) params.set("saved_inbound_sig", flight.selection.inboundFingerprint);
+
+    const inboundRestoreSucceeded = isRoundtrip ? Boolean(params.get("return")) : true;
+
+    if (isRoundtrip) {
+      console.debug("[saved-flights][restore-roundtrip]", {
+        savedTripType: flight.tripType,
+        savedDepartureDate: flight.departDate || flight.searchParams?.depart,
+        savedReturnDate: flight.returnDate || flight.searchParams?.return,
+        savedOutboundItineraryId: flight.selection?.outboundItineraryId || flight.selection?.itineraryId || flight.id,
+        savedInboundItineraryId: flight.selection?.inboundItineraryId,
+        restoredTripType,
+        restoredDepartureDate: params.get("depart"),
+        restoredReturnDate: params.get("return"),
+        inboundRestoreSucceeded,
+      });
+    }
 
     navigate(`/search?${params.toString()}`);
   }, [navigate]);
