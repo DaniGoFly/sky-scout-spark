@@ -46,8 +46,7 @@ const Explore = () => {
   const [origin, setOrigin] = useState<AirportSelection | null>(null);
   const [geoInitDone, setGeoInitDone] = useState(false);
   const [destinations, setDestinations] = useState<ExploreResult[]>([]);
-  const [fetchFailed, setFetchFailed] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [tripLength, setTripLength] = useState<[number, number]>([3, 14]);
   const [dateMode, setDateMode] = useState<"flexible" | "exact">("flexible");
   const [directOnly, setDirectOnly] = useState(false);
