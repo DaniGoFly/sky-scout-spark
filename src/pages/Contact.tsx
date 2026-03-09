@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Mail, Clock } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 const Contact = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
@@ -20,8 +22,8 @@ const Contact = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
-      title: "Message Sent!",
-      description: "We'll get back to you within 24-48 hours.",
+      title: t("contact.sent_title"),
+      description: t("contact.sent_desc"),
     });
     setFormData({ name: "", email: "", subject: "", message: "" });
   };
@@ -32,34 +34,34 @@ const Contact = () => {
       <main className="flex-1 pt-24 pb-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-foreground mb-4">Contact Us</h1>
+            <h1 className="text-4xl font-bold text-foreground mb-4">{t("contact.title")}</h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Have questions or need assistance? We're here to help you find the best flight deals.
+              {t("contact.subtitle")}
             </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Form */}
             <div className="bg-card rounded-2xl p-8 border border-border">
-              <h2 className="text-2xl font-semibold text-foreground mb-6">Send us a message</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-6">{t("contact.send_title")}</h2>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
+                    <Label htmlFor="name">{t("contact.name")}</Label>
                     <Input
                       id="name"
-                      placeholder="Your name"
+                      placeholder={t("contact.name_placeholder")}
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t("contact.email")}</Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder={t("contact.email_placeholder")}
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
@@ -67,20 +69,20 @@ const Contact = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
+                  <Label htmlFor="subject">{t("contact.subject")}</Label>
                   <Input
                     id="subject"
-                    placeholder="How can we help?"
+                    placeholder={t("contact.subject_placeholder")}
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
+                  <Label htmlFor="message">{t("contact.message")}</Label>
                   <Textarea
                     id="message"
-                    placeholder="Tell us more about your inquiry..."
+                    placeholder={t("contact.message_placeholder")}
                     rows={5}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -88,7 +90,7 @@ const Contact = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full">
-                  Send Message
+                  {t("contact.send")}
                 </Button>
               </form>
             </div>
@@ -96,9 +98,9 @@ const Contact = () => {
             {/* Contact Info */}
             <div className="space-y-8">
               <div>
-                <h2 className="text-2xl font-semibold text-foreground mb-6">Get in Touch</h2>
+                <h2 className="text-2xl font-semibold text-foreground mb-6">{t("contact.get_in_touch")}</h2>
                 <p className="text-muted-foreground mb-8">
-                  If you have questions about flight searches or using GoFlyFinder, feel free to reach out via email.
+                  {t("contact.get_in_touch_desc")}
                 </p>
               </div>
 
@@ -108,7 +110,7 @@ const Contact = () => {
                     <Mail className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Email</h3>
+                    <h3 className="font-semibold text-foreground mb-1">{t("contact.email_label")}</h3>
                     <p className="text-muted-foreground">goflyfinder@gmail.com</p>
                   </div>
                 </div>
@@ -118,14 +120,14 @@ const Contact = () => {
                     <Clock className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Response Time</h3>
-                    <p className="text-muted-foreground">We typically respond within 24–72 hours.</p>
+                    <h3 className="font-semibold text-foreground mb-1">{t("contact.response_time")}</h3>
+                    <p className="text-muted-foreground">{t("contact.response_time_text")}</p>
                   </div>
                 </div>
               </div>
 
               <p className="text-sm text-muted-foreground pt-4 border-t border-border">
-                GoFlyFinder is an independent flight comparison platform. All bookings are completed through third-party travel partners.
+                {t("contact.independent_note")}
               </p>
             </div>
           </div>

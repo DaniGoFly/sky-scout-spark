@@ -13,7 +13,6 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
   const { t } = useTranslation();
   if (!flight) return null;
 
-  // Check if we have a valid booking link
   const hasValidBookingLink = flight.deepLink && flight.deepLink !== "#";
 
   const getStopsLabel = (stops: number): string => {
@@ -47,7 +46,6 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
                 <p className="text-3xl font-bold text-foreground">{flight.departureTime}</p>
                 <p className="text-lg font-medium text-muted-foreground">{flight.departureCode}</p>
               </div>
-
               <div className="flex-1 px-6">
                 <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
                   <Clock className="w-4 h-4" />
@@ -61,7 +59,6 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
                   {getStopsLabel(flight.stops)}
                 </p>
               </div>
-
               <div className="text-center">
                 <p className="text-3xl font-bold text-foreground">{flight.arrivalTime}</p>
                 <p className="text-lg font-medium text-muted-foreground">{flight.arrivalCode}</p>
@@ -74,17 +71,16 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
             <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <MapPin className="w-4 h-4" />
-                <span className="text-sm font-medium">Route</span>
+                <span className="text-sm font-medium">{t("details.route")}</span>
               </div>
               <p className="font-semibold text-foreground">
                 {flight.departureCode} → {flight.arrivalCode}
               </p>
             </div>
-
             <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <Clock className="w-4 h-4" />
-                <span className="text-sm font-medium">Duration</span>
+                <span className="text-sm font-medium">{t("details.duration")}</span>
               </div>
               <p className="font-semibold text-foreground">{flight.duration}</p>
             </div>
@@ -93,43 +89,43 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
           {/* Amenities */}
           <div>
             <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              Included Amenities
+              {t("details.amenities")}
             </h4>
             <div className="flex flex-wrap gap-3">
               <div className="flex items-center gap-2 px-3 py-2 bg-secondary/50 rounded-lg text-sm">
                 <Luggage className="w-4 h-4 text-primary" />
-                <span>23kg checked bag</span>
+                <span>{t("details.checked_bag")}</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-2 bg-secondary/50 rounded-lg text-sm">
                 <Wifi className="w-4 h-4 text-primary" />
-                <span>In-flight WiFi</span>
+                <span>{t("details.wifi")}</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-2 bg-secondary/50 rounded-lg text-sm">
                 <Coffee className="w-4 h-4 text-primary" />
-                <span>Meals included</span>
+                <span>{t("details.meals")}</span>
               </div>
             </div>
           </div>
 
           {/* What's included */}
           <div className="bg-muted/30 rounded-xl p-4">
-            <h4 className="font-semibold text-foreground mb-3">What's included</h4>
+            <h4 className="font-semibold text-foreground mb-3">{t("details.included")}</h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Check className="w-4 h-4 text-emerald-500" />
-                <span>Free seat selection</span>
+                <span>{t("details.free_seat")}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Check className="w-4 h-4 text-emerald-500" />
-                <span>Priority boarding</span>
+                <span>{t("details.priority_boarding")}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Check className="w-4 h-4 text-emerald-500" />
-                <span>Flexible rebooking</span>
+                <span>{t("details.flexible_rebooking")}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Check className="w-4 h-4 text-emerald-500" />
-                <span>24h free cancellation</span>
+                <span>{t("details.free_cancellation")}</span>
               </div>
             </div>
           </div>
@@ -138,9 +134,9 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
           <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Total price per person</p>
+                <p className="text-sm text-muted-foreground">{t("details.total_per_person")}</p>
                 <p className="text-4xl font-bold text-foreground">${flight.price}</p>
-                <p className="text-xs text-muted-foreground mt-1">Includes taxes & fees</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("details.includes_taxes")}</p>
               </div>
               {hasValidBookingLink ? (
                 <a
@@ -149,17 +145,17 @@ const FlightDetailsModal = ({ flight, isOpen, onClose }: FlightDetailsModalProps
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 shrink-0 rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground shadow-lg hover:bg-primary/90 transition-all duration-200"
                 >
-                  Continue to Booking
+                  {t("details.continue_booking")}
                   <ExternalLink className="w-4 h-4" />
                 </a>
               ) : (
-                <p className="text-sm text-muted-foreground">Booking unavailable</p>
+                <p className="text-sm text-muted-foreground">{t("details.booking_unavailable")}</p>
               )}
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            You'll be redirected to complete your booking securely on flights.goflyfinder.com.
+            {t("details.redirect_notice")}
           </p>
         </div>
       </DialogContent>

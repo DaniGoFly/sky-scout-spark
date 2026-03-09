@@ -5,6 +5,7 @@
 
 import { useMemo } from "react";
 import { TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { computePriceInsight } from "@/lib/priceApi";
 import { useLocale } from "@/hooks/useLocale";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ interface PriceInsightProps {
 }
 
 const PriceInsight = ({ origin, destination, currentPrice, priceCurrency }: PriceInsightProps) => {
+  const { t } = useTranslation();
   const { currency, formatPrice } = useLocale();
 
   const insight = useMemo(() =>
@@ -29,8 +31,8 @@ const PriceInsight = ({ origin, destination, currentPrice, priceCurrency }: Pric
   const config = {
     low: {
       icon: TrendingDown,
-      label: "Prices are low",
-      sublabel: "Now is a good time to book",
+      label: t("price_insight.low_label"),
+      sublabel: t("price_insight.low_sub"),
       color: "text-emerald-400",
       bg: "bg-emerald-500/10 border-emerald-500/20",
       dotColor: "bg-emerald-500",
@@ -38,8 +40,8 @@ const PriceInsight = ({ origin, destination, currentPrice, priceCurrency }: Pric
     },
     typical: {
       icon: Minus,
-      label: "Prices are typical",
-      sublabel: "Fairly standard for this route",
+      label: t("price_insight.typical_label"),
+      sublabel: t("price_insight.typical_sub"),
       color: "text-amber-400",
       bg: "bg-amber-500/10 border-amber-500/20",
       dotColor: "bg-amber-500",
@@ -47,8 +49,8 @@ const PriceInsight = ({ origin, destination, currentPrice, priceCurrency }: Pric
     },
     high: {
       icon: TrendingUp,
-      label: "Prices are high",
-      sublabel: "Consider flexible dates",
+      label: t("price_insight.high_label"),
+      sublabel: t("price_insight.high_sub"),
       color: "text-red-400",
       bg: "bg-red-500/10 border-red-500/20",
       dotColor: "bg-red-500",

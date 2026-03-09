@@ -1,5 +1,6 @@
 import { Plane, Clock, Luggage } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import { LiveFlight } from "@/hooks/useFlightSearch";
 
 interface FlightCardProps {
@@ -9,10 +10,12 @@ interface FlightCardProps {
 }
 
 const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps) => {
+  const { t } = useTranslation();
+
   const getStopsLabel = (stops: number): string => {
-    if (stops === 0) return "Direct";
-    if (stops === 1) return "1 stop";
-    return `${stops} stops`;
+    if (stops === 0) return t("flight_card.direct");
+    if (stops === 1) return t("flight_card.stop_1");
+    return t("flight_card.stops_n", { count: stops });
   };
 
   return (
@@ -26,7 +29,7 @@ const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps
     >
       {featured && (
         <div className="absolute -top-3 left-6 bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
-          Best Value
+          {t("flight_card.best_value")}
         </div>
       )}
 
@@ -38,9 +41,7 @@ const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps
               src={flight.airlineLogo} 
               alt={flight.airline} 
               className="w-8 h-8 object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/placeholder.svg";
-              }}
+              onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
             />
           </div>
           <span className="font-semibold text-foreground">{flight.airline}</span>
@@ -52,7 +53,6 @@ const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps
             <p className="text-2xl font-bold text-foreground">{flight.departureTime}</p>
             <p className="text-sm text-muted-foreground">{flight.departureCode}</p>
           </div>
-
           <div className="flex-1 flex flex-col items-center px-4">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
               <Clock className="w-4 h-4" />
@@ -65,7 +65,6 @@ const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps
               {getStopsLabel(flight.stops)}
             </p>
           </div>
-
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground">{flight.arrivalTime}</p>
             <p className="text-sm text-muted-foreground">{flight.arrivalCode}</p>
@@ -83,19 +82,16 @@ const FlightCard = ({ flight, featured = false, onViewDetails }: FlightCardProps
         {/* Price & CTA */}
         <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3">
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">From</p>
+            <p className="text-sm text-muted-foreground">{t("flight_card.from")}</p>
             <p className="text-3xl font-bold text-foreground">${flight.price}</p>
-            <p className="text-xs text-muted-foreground">per person</p>
+            <p className="text-xs text-muted-foreground">{t("flight_card.per_person")}</p>
           </div>
           <Button 
             size="lg" 
             className="gap-2" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewDetails?.();
-            }}
+            onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }}
           >
-            View Deal
+            {t("flight_card.view_deal")}
           </Button>
         </div>
       </div>

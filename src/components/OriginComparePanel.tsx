@@ -1,11 +1,10 @@
 /**
  * Origin Comparison Panel — Premium polish
- * Shows cheapest price per origin, savings amount, and view toggle.
- * Clicking an origin filters results; click again to reset.
  */
 
 import { useMemo, memo } from "react";
 import { Plane, ChevronDown, TrendingDown, LayoutList, LayoutGrid } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -37,6 +36,7 @@ const OriginComparePanel = memo(({
   flights, origins, selectedOrigin, onSelectOrigin,
   formatPrice, flightsCurrency, viewMode, onViewModeChange,
 }: OriginComparePanelProps) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
 
   const stats = useMemo((): OriginStat[] => {
@@ -73,7 +73,6 @@ const OriginComparePanel = memo(({
 
   const cheapestOrigin = stats.find((s) => s.isCheapest);
 
-  /* ── Pill-style segmented toggle ── */
   const viewToggle = (
     <div className="flex bg-secondary/60 rounded-lg p-0.5 border border-border/40">
       <button
@@ -85,7 +84,7 @@ const OriginComparePanel = memo(({
         }`}
       >
         <LayoutGrid className="w-3 h-3" />
-        All origins
+        {t("compare.all_origins")}
       </button>
       <button
         onClick={() => onViewModeChange("by-origin")}
@@ -96,12 +95,11 @@ const OriginComparePanel = memo(({
         }`}
       >
         <LayoutList className="w-3 h-3" />
-        By origin
+        {t("compare.by_origin")}
       </button>
     </div>
   );
 
-  /* ── Origin cards row ── */
   const originCards = (
     <div className={`flex gap-2 ${isMobile ? "overflow-x-auto snap-x snap-mandatory pb-1 -mx-1 px-1 scrollbar-none" : "flex-wrap"}`}>
       {stats.map((s) => {
@@ -132,13 +130,13 @@ const OriginComparePanel = memo(({
             </span>
             {s.isCheapest ? (
               <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[9px] px-1.5 py-0">
-                Cheapest
+                {t("compare.cheapest")}
               </Badge>
             ) : s.diff > 0 ? (
               <span className="text-[10px] text-muted-foreground">+{formatPrice(s.diff, flightsCurrency)}</span>
             ) : null}
             <span className="text-[10px] text-muted-foreground">
-              {s.count} {s.count === 1 ? "result" : "results"}
+              {s.count} {s.count === 1 ? t("compare.result") : t("compare.results")}
             </span>
           </button>
         );
@@ -146,18 +144,17 @@ const OriginComparePanel = memo(({
     </div>
   );
 
-  /* ── Mobile: collapsible ── */
   if (isMobile) {
     return (
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 bg-card border border-border/60 rounded-xl mb-2">
           <div className="flex items-center gap-2 min-w-0">
             <Plane className="w-4 h-4 text-primary shrink-0" />
-            <span className="text-sm font-semibold text-foreground truncate">Compare airports</span>
+            <span className="text-sm font-semibold text-foreground truncate">{t("compare.title")}</span>
             <Badge variant="secondary" className="text-[10px] shrink-0">{stats.length}</Badge>
             {maxSavings > 0 && (
               <span className="text-[10px] text-emerald-400 font-medium truncate">
-                Save {formatPrice(maxSavings, flightsCurrency)}
+                {t("compare.save", { amount: formatPrice(maxSavings, flightsCurrency) })}
               </span>
             )}
           </div>
@@ -168,7 +165,7 @@ const OriginComparePanel = memo(({
             {viewToggle}
             {selectedOrigin && (
               <button onClick={() => onSelectOrigin(null)} className="text-[11px] text-primary hover:underline">
-                Show all
+                {t("compare.show_all")}
               </button>
             )}
           </div>
@@ -178,30 +175,28 @@ const OriginComparePanel = memo(({
     );
   }
 
-  /* ── Desktop ── */
   return (
     <div className="mb-4 p-4 bg-card/60 border border-border/60 rounded-xl backdrop-blur-sm">
-      {/* Header row */}
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           <Plane className="w-4 h-4 text-primary shrink-0" />
-          <h3 className="text-sm font-semibold text-foreground">Compare departure airports</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("compare.compare_departure")}</h3>
           {cheapestOrigin && (
             <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px] px-2 py-0 gap-1">
               <TrendingDown className="w-3 h-3" />
-              {cheapestOrigin.origin} cheapest
+              {cheapestOrigin.origin} {t("compare.cheapest").toLowerCase()}
             </Badge>
           )}
         </div>
         <div className="flex items-center gap-3">
           {maxSavings > 0 && (
             <span className="text-xs text-emerald-400 font-medium whitespace-nowrap">
-              Save up to {formatPrice(maxSavings, flightsCurrency)}
+              {t("compare.save_up_to", { amount: formatPrice(maxSavings, flightsCurrency) })}
             </span>
           )}
           {selectedOrigin && (
             <button onClick={() => onSelectOrigin(null)} className="text-[11px] text-primary hover:underline">
-              Show all
+              {t("compare.show_all")}
             </button>
           )}
           {viewToggle}
