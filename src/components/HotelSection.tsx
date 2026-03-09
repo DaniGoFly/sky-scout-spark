@@ -51,7 +51,7 @@ const HotelSection = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <h3 className="text-lg font-bold text-white">{destination.city}</h3>
-                <p className="text-white/70 text-sm">{t("hotel.hotels_count", { count: destination.count })}</p>
+                <p className="text-white/70 text-sm">{destination.count}+ {t("hotel.title").toLowerCase()}</p>
               </div>
             </div>
           ))}
