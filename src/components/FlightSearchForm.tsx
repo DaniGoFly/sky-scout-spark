@@ -418,7 +418,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <div className="mt-1.5">{anywhere ? (
                 <div className="flex items-center gap-1.5">
                   <Globe className="w-4 h-4 text-primary shrink-0" />
-                  <span className={SEG_VALUE}>Everywhere</span>
+                  <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
                 </div>
               ) : (
                 <MultiOriginInput
