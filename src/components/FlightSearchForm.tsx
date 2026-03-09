@@ -78,7 +78,16 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
 
   /* ── Calendar panel open state (lifted) ── */
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarInitialTab, setCalendarInitialTab] = useState<"specific" | "flexible" | undefined>(undefined);
   const [tripTypeOpen, setTripTypeOpen] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    openFlexDates: () => {
+      setIsAnyDay(false);
+      setCalendarInitialTab("flexible");
+      setCalendarOpen(true);
+    },
+  }));
 
   // Refs for trip type dropdown
   const tripTypeButtonRef = useRef<HTMLButtonElement | null>(null);
