@@ -243,6 +243,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
 
   const handleCloseCalendar = useCallback(() => {
     setCalendarOpen(false);
+    setCalendarInitialTab(undefined);
   }, []);
 
   const handleMultiCitySearch = useCallback((segments: any[], travelersData: TravelersData) => {
