@@ -143,7 +143,7 @@
     "back_to_search": "Zurück zur Suche",
     "select_route": "Route zum Suchen auswählen",
     "select_route_sub": "Wählen Sie Abflugort, Ziel und Daten, um die besten Flüge zu finden.",
-    "explore_estimates": "Explore-Preise sind flexible „ab"-Schätzungen.",
+    "explore_estimates": "Explore-Preise sind flexible Ab-Schätzungen.",
     "exact_prices_update": "Genaue Preise werden nach Datumsauswahl aktualisiert.",
     "searching_combinations": "Suche {{completed}}/{{total}} Routenkombinationen…",
     "searching_airports": "Suche {{completed}}/{{total}} Abflughäfen…",
