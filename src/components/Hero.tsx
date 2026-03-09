@@ -155,10 +155,10 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
               const isAI = tool.titleKey === "hero_section.ai_travel_guide";
               return (
                 <button
-                  key={tool.title}
+                  key={tool.titleKey}
                   onClick={() => {
                     if (isAI) setShowAIGuide(!showAIGuide);
-                    else if (tool.title === "Flexible Dates") {
+                    else if (tool.titleKey === "hero_section.flexible_dates_title") {
                       searchRef?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
                       setTimeout(() => searchFormRef.current?.openFlexDates(), 400);
                     }
