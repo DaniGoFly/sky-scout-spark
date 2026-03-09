@@ -316,7 +316,7 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
           calendarOpen ? "rounded-t-2xl" : "rounded-2xl"
         )}>
           {/* Desktop: fixed slot grid */}
-          <div className="hidden lg:grid h-full items-stretch grid-cols-[minmax(180px,205px)_40px_minmax(180px,205px)_minmax(280px,320px)_minmax(190px,220px)_minmax(150px,170px)]">
+          <div className="hidden lg:grid h-full items-stretch grid-cols-[minmax(180px,205px)_40px_minmax(180px,205px)_minmax(280px,320px)_minmax(190px,220px)_minmax(150px,170px)] overflow-visible">
             {/* FROM */}
             <div className={`min-w-0 px-5 py-3 rounded-l-2xl transition-colors hover:bg-secondary/60 flex flex-col justify-center ${errRing(!!errors.from)}`}>
               <span className={SEG_LABEL}>{t("search.from")}</span>
