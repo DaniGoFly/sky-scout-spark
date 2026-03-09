@@ -258,13 +258,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const totalPax = travelers.adults + travelers.children + travelers.infantsSeat;
   const travelersDisplay = `${totalPax} traveller${totalPax !== 1 ? "s" : ""}`;
 
-  // Flex badge
-  const hasFlexValues = departFlexBefore > 0 || departFlexAfter > 0 || returnFlexBefore > 0 || returnFlexAfter > 0;
-  const flexBadge = hasFlexValues ? (() => {
-    const dLabel = `${departFlexBefore > 0 ? `-${departFlexBefore}` : ""}${departFlexAfter > 0 ? `+${departFlexAfter}` : ""}`;
-    const rLabel = tripType === "roundtrip" && (returnFlexBefore > 0 || returnFlexAfter > 0) ? ` R${returnFlexBefore > 0 ? `-${returnFlexBefore}` : ""}${returnFlexAfter > 0 ? `+${returnFlexAfter}` : ""}` : "";
-    return dLabel + rLabel;
-  })() : null;
 
   // ── Multi-city mode ──
   if (tripType === "multicity") {
