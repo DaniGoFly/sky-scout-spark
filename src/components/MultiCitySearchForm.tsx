@@ -149,7 +149,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
                   </span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0" align="start" side="bottom" avoidCollisions={false}>
                 <CalendarComponent
                   mode="single"
                   selected={segment.date || undefined}
