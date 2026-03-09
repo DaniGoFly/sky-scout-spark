@@ -1,6 +1,7 @@
 import React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import i18n from "@/i18n/config";
 
 export default class FlightResultsErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -24,11 +25,11 @@ export default class FlightResultsErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <Alert className="border-destructive/30 bg-destructive/5">
-          <AlertTitle>Something went wrong</AlertTitle>
+          <AlertTitle>{i18n.t("error_boundary.something_went_wrong")}</AlertTitle>
           <AlertDescription className="flex items-center justify-between gap-3">
-            <span>Some offers were malformed. Please try again.</span>
+            <span>{i18n.t("error_boundary.offers_malformed")}</span>
             <Button variant="outline" size="sm" onClick={this.reset}>
-              Try again
+              {i18n.t("error_boundary.try_again")}
             </Button>
           </AlertDescription>
         </Alert>
