@@ -193,7 +193,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
       <section className="relative z-0 px-4 sm:px-6 lg:px-8 mt-14 sm:mt-18 pb-10 animate-fade-in">
         <div className="mx-auto max-w-[1100px]">
           <h3 className="text-xs font-semibold text-muted-foreground/60 mb-5 uppercase tracking-[0.15em] text-center sm:text-left">
-            Popular destinations right now
+            {t("hero_section.popular_destinations")}
           </h3>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
             {POPULAR_DESTINATIONS.map((dest) => (
