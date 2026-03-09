@@ -30,6 +30,26 @@ export interface SavedFlight {
     durationMinutes: number;
     stopsCount: number;
   };
+  // Search context for full restoration
+  tripType?: "oneway" | "roundtrip";
+  adults?: number;
+  children?: number;
+  infants?: number;
+  travelClass?: string;
+  currency?: string;
+  market?: string;
+  sortBy?: "best" | "cheapest" | "fastest";
+}
+
+export interface SearchContext {
+  tripType?: "oneway" | "roundtrip";
+  adults?: number;
+  children?: number;
+  infants?: number;
+  travelClass?: string;
+  currency?: string;
+  market?: string;
+  sortBy?: "best" | "cheapest" | "fastest";
 }
 
 function readStore(): SavedFlight[] {
