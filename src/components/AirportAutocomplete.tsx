@@ -36,7 +36,8 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside (handles por() => {
+  // Close dropdown when clicking outside
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       const insideWrapper = wrapperRef.current?.contains(target);
