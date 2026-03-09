@@ -121,6 +121,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
   tripType, onTripTypeChange, onDone,
   departFlexBefore, departFlexAfter, returnFlexBefore, returnFlexAfter,
   onDepartFlexBeforeChange, onDepartFlexAfterChange, onReturnFlexBeforeChange, onReturnFlexAfterChange,
+  initialTab,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(() => departDate ? startOfMonth(departDate) : startOfMonth(new Date()));
   const [selectingReturn, setSelectingReturn] = useState(() => !!departDate && !returnDate && tripType === "roundtrip");
