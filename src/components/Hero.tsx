@@ -24,14 +24,14 @@ const MODE_PILLS = [
 ] as const;
 
 const POPULAR_DESTINATIONS = [
-  { city: "Bali", price: "€420", emoji: "🌴" },
-  { city: "Mallorca", price: "€89", emoji: "☀️" },
-  { city: "New York", price: "€390", emoji: "🗽" },
-  { city: "Dubai", price: "€310", emoji: "🏙️" },
-  { city: "Tokyo", price: "€480", emoji: "🗼" },
-  { city: "London", price: "€120", emoji: "🇬🇧" },
-  { city: "Barcelona", price: "€95", emoji: "🇪🇸" },
-  { city: "Paris", price: "€110", emoji: "🗼" },
+  { city: "Bali", code: "DPS", price: "€420", emoji: "🌴" },
+  { city: "Mallorca", code: "PMI", price: "€89", emoji: "☀️" },
+  { city: "New York", code: "JFK", price: "€390", emoji: "🗽" },
+  { city: "Dubai", code: "DXB", price: "€310", emoji: "🏙️" },
+  { city: "Tokyo", code: "TYO", price: "€480", emoji: "🗼" },
+  { city: "London", code: "LHR", price: "€120", emoji: "🇬🇧" },
+  { city: "Barcelona", code: "BCN", price: "€95", emoji: "🇪🇸" },
+  { city: "Paris", code: "CDG", price: "€110", emoji: "🗼" },
 ];
 
 const SMART_TOOLS = [
@@ -202,16 +202,22 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           </h3>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
             {POPULAR_DESTINATIONS.map((dest) => (
-              <div
+              <button
                 key={dest.city}
-                className="shrink-0 flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-card/30 border border-border/20 hover:border-border/40 hover:bg-card/50 transition-all cursor-pointer group"
+                onClick={() => {
+                  searchRef?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  setTimeout(() => {
+                    handleDestinationSelect({ destinationName: dest.city, destinationCode: dest.code });
+                  }, 300);
+                }}
+                className="shrink-0 flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-card/30 border border-border/20 hover:border-primary/40 hover:bg-card/50 transition-all cursor-pointer group"
               >
                 <span className="text-xl">{dest.emoji}</span>
-                <div>
+                <div className="text-left">
                   <span className="text-sm font-medium text-foreground block leading-tight group-hover:text-primary transition-colors">{dest.city}</span>
                   <span className="text-xs text-muted-foreground/60 font-medium">from {dest.price}</span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
