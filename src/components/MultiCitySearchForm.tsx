@@ -104,6 +104,11 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
     return Object.keys(newErrors).length === 0;
   }, [segments]);
 
+  const handleSearch = () => {
+    if (!validate()) return;
+    onSearch(segments, travelers);
+  };
+
   /* Style tokens matching the standard search bar */
   const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
 
