@@ -627,6 +627,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               onDepartFlexAfterChange={setDepartFlexAfter}
               onReturnFlexBeforeChange={setReturnFlexBefore}
               onReturnFlexAfterChange={setReturnFlexAfter}
+              initialTab={calendarInitialTab}
             />
           </div>
         )}
