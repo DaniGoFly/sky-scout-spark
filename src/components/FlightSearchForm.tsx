@@ -282,7 +282,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
             <button
               ref={tripTypeButtonRef}
               onClick={() => setTripTypeOpen(!tripTypeOpen)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/60 bg-secondary/60 text-sm font-medium text-foreground hover:border-primary/40 transition-all"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-border/30 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
             >
               {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
