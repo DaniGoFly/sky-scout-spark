@@ -124,6 +124,12 @@ const LiveFlightResults = () => {
   const exploreFromPrice = searchParams.get("explore_from_price");
   const isRoundtrip = tripType === "roundtrip";
 
+  // Saved restore hints (for exact itinerary prioritization)
+  const savedTripType = searchParams.get("saved_trip");
+  const savedFlightId = searchParams.get("saved_flight_id") || "";
+  const savedOutboundSig = searchParams.get("saved_outbound_sig") || "";
+  const savedInboundSig = searchParams.get("saved_inbound_sig") || "";
+
   // Flex dates from URL
   const dfb = Number(searchParams.get("dfb")) || 0;
   const dfa = Number(searchParams.get("dfa")) || 0;
