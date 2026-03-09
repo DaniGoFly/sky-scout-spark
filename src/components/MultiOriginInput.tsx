@@ -96,6 +96,13 @@ const MultiOriginInput = ({
   const addActionText = "Add +";
   const reservedInputWidth = MIN_INPUT_WIDTH_PX;
 
+  const dropdownOverlay = useAnchoredOverlay({
+    open: isOpen,
+    anchorRef: wrapperRef,
+    offset: 8,
+    matchWidth: true,
+  });
+
   /* Close on outside click */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
