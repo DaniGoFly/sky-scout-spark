@@ -114,6 +114,22 @@ export function saveFlight(flight: Flight, context?: SearchContext): void {
   const store = readStore();
   if (store.some(f => f.id === flight.id)) return;
 
+  const inferredDepartDate =
+    context?.departDate ||
+    context?.searchParams?.depart ||
+    extractIsoDate((flight as any).depart_date) ||
+    extractIsoDate(flight.departureTime);
+
+  const inferredReturnDate =
+    context?.returnDate ||
+    context?.searchParams?.return ||
+    extractIsoDate((flight as any).return_date) ||
+    extractIsoDate(flight.return?.departureTime) ||
+    null;
+
+  const resolvedTripType: "oneway" | "roundtrip" =
+    context?.tripType || inferredReturnDate || flight.return ? "roundtrip" : "oneway";
+
   const saved: SavedFlight = {
     id: flight.id,
     origin: flight.origin,
@@ -140,7 +156,9 @@ export function saveFlight(flight: Flight, context?: SearchContext): void {
       },
     } : {}),
     // Search context
-    tripType: context?.tripType || (flight.return ? "roundtrip" : "oneway"),
+    tripType: resolvedTripType,
+    departDate: inferredDepartDate || undefined,
+    returnDate: resolvedTripType === "roundtrip" ? inferredReturnDate : null,
     adults: context?.adults ?? 1,
     children: context?.children ?? 0,
     infants: context?.infants ?? 0,
@@ -148,7 +166,29 @@ export function saveFlight(flight: Flight, context?: SearchContext): void {
     currency: context?.currency,
     market: context?.market,
     sortBy: context?.sortBy,
+    searchParams: context?.searchParams,
+    filters: context?.filters,
+    selection: {
+      itineraryId: context?.selection?.itineraryId || flight.id,
+      outboundItineraryId: context?.selection?.outboundItineraryId || flight.id,
+      inboundItineraryId: context?.selection?.inboundItineraryId,
+      outboundFingerprint: context?.selection?.outboundFingerprint,
+      inboundFingerprint: context?.selection?.inboundFingerprint,
+      proposalId: context?.selection?.proposalId || flight.proposalId || flight.click_id,
+      searchId: context?.selection?.searchId || flight.searchId || flight.search_id,
+      resultsBase: context?.selection?.resultsBase || flight.resultsBase || flight.results_base,
+    },
   };
+
+  if (saved.tripType === "roundtrip") {
+    console.debug("[saved-flights][save-roundtrip]", {
+      tripType: saved.tripType,
+      departDate: saved.departDate,
+      returnDate: saved.returnDate,
+      outboundItineraryId: saved.selection?.outboundItineraryId,
+      inboundItineraryId: saved.selection?.inboundItineraryId,
+    });
+  }
 
   store.unshift(saved);
   // Cap at 50 saved flights
