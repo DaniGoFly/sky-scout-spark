@@ -72,31 +72,14 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
   const [returnFlexBefore, setReturnFlexBefore] = useState(0);
   const [returnFlexAfter, setReturnFlexAfter] = useState(0);
 
-  const [tripTypeOpen, setTripTypeOpen] = useState(false);
-
   /* ── Calendar panel open state (lifted) ── */
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Portal anchors (escape all local stacking contexts)
-  const searchBarRef = useRef<HTMLDivElement | null>(null);
+  // Refs for trip type dropdown
   const tripTypeButtonRef = useRef<HTMLButtonElement | null>(null);
   const tripTypeMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const calendarOverlay = useAnchoredOverlay({
-    open: calendarOpen && !isAnyDay,
-    anchorRef: searchBarRef,
-    offset: 8,
-    matchWidth: true,
-  });
-
-  const tripTypeOverlay = useAnchoredOverlay({
-    open: tripTypeOpen,
-    anchorRef: tripTypeButtonRef,
-    offset: 6,
-    matchWidth: false,
-  });
-
-  // Close trip type menu on outside click (menu is portaled)
+  // Close trip type menu on outside click
   useEffect(() => {
     if (!tripTypeOpen) return;
     const onDown = (e: MouseEvent) => {
