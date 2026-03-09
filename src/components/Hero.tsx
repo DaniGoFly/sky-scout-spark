@@ -209,7 +209,6 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                   setTimeout(() => {
                     handleDestinationSelect({ destinationName: dest.city, destinationCode: dest.code });
                   }, 300);
-                  }, 300);
                 }}
                 className="shrink-0 flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-card/30 border border-border/20 hover:border-primary/40 hover:bg-card/50 transition-all cursor-pointer group"
               >
