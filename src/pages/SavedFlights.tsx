@@ -27,19 +27,33 @@ const SavedFlights = () => {
   }, []);
 
   const handleOpenFlight = useCallback((flight: SavedFlight) => {
-    const departDate = flight.departureTime?.split(" ")[0] || flight.departureTime?.split("T")[0] || "";
-    const returnDate = flight.return?.departureTime?.split(" ")[0] || flight.return?.departureTime?.split("T")[0] || "";
+    // Extract clean YYYY-MM-DD dates from stored timestamps
+    const extractDate = (dt?: string) => {
+      if (!dt) return "";
+      // Handle "2026-05-18 17:35" or "2026-05-18T17:35:00"
+      return dt.split(" ")[0]?.split("T")[0] || "";
+    };
+
+    const departDate = extractDate(flight.departureTime);
+    const returnDate = extractDate(flight.return?.departureTime);
     const hasReturn = !!returnDate;
+    const tripType = flight.tripType || (hasReturn ? "roundtrip" : "oneway");
 
     const params = new URLSearchParams({
       from: flight.origin,
       to: flight.destination,
       ...(departDate && { depart: departDate }),
       ...(hasReturn && { return: returnDate }),
-      adults: "1",
-      trip: hasReturn ? "roundtrip" : "oneway",
-      class: "economy",
+      adults: String(flight.adults ?? 1),
+      children: String(flight.children ?? 0),
+      infants: String(flight.infants ?? 0),
+      trip: tripType,
+      class: flight.travelClass || "economy",
     });
+
+    // Include currency/market if stored
+    if (flight.currency) params.set("currency", flight.currency);
+    if (flight.market) params.set("market", flight.market);
 
     navigate(`/search?${params.toString()}`);
   }, [navigate]);
