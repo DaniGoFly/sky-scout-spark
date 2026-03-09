@@ -7,6 +7,26 @@ import type { Flight } from "./flightNormalizer";
 
 const STORAGE_KEY = "gofly_saved_flights";
 
+export interface SavedFilters {
+  stopsMode?: "any" | "direct" | "1" | "2plus";
+  airlines?: string[];
+  priceRange?: [number, number];
+  departureTime?: string[];
+  selectedOrigin?: string;
+  hideLongLayovers?: boolean;
+}
+
+export interface SavedSelection {
+  itineraryId?: string;
+  outboundItineraryId?: string;
+  inboundItineraryId?: string;
+  outboundFingerprint?: string;
+  inboundFingerprint?: string;
+  proposalId?: string;
+  searchId?: string;
+  resultsBase?: string;
+}
+
 export interface SavedFlight {
   id: string;
   origin: string;
@@ -32,6 +52,8 @@ export interface SavedFlight {
   };
   // Search context for full restoration
   tripType?: "oneway" | "roundtrip";
+  departDate?: string;
+  returnDate?: string | null;
   adults?: number;
   children?: number;
   infants?: number;
@@ -39,10 +61,15 @@ export interface SavedFlight {
   currency?: string;
   market?: string;
   sortBy?: "best" | "cheapest" | "fastest";
+  searchParams?: Record<string, string>;
+  filters?: SavedFilters;
+  selection?: SavedSelection;
 }
 
 export interface SearchContext {
   tripType?: "oneway" | "roundtrip";
+  departDate?: string;
+  returnDate?: string | null;
   adults?: number;
   children?: number;
   infants?: number;
@@ -50,6 +77,9 @@ export interface SearchContext {
   currency?: string;
   market?: string;
   sortBy?: "best" | "cheapest" | "fastest";
+  searchParams?: Record<string, string>;
+  filters?: SavedFilters;
+  selection?: SavedSelection;
 }
 
 function readStore(): SavedFlight[] {
