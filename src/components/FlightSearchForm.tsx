@@ -45,7 +45,7 @@ const TRUST_KEYS = [
   { icon: Wifi, key: "trust.live_updates" },
 ];
 
-const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchFormProps) => {
+const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProps>(({ aiSearchParams, onParamsConsumed }, ref) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { currency, marketCode } = useLocale();
