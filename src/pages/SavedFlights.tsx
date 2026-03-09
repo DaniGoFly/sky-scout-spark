@@ -78,6 +78,9 @@ const SavedFlights = () => {
       params.set("saved_price_max", String(flight.filters.priceRange[1]));
     }
     if (flight.filters?.selectedOrigin) params.set("saved_origin", flight.filters.selectedOrigin);
+    if (typeof flight.filters?.hideLongLayovers === "boolean") {
+      params.set("saved_hide_long_layovers", String(flight.filters.hideLongLayovers));
+    }
 
     params.set("saved_trip", restoredTripType);
     params.set("saved_flight_id", flight.selection?.itineraryId || flight.id);

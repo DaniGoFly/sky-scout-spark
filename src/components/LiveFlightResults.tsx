@@ -170,6 +170,7 @@ const LiveFlightResults = () => {
     setSelectedOrigin(searchParams.get("saved_origin") || null);
     setOriginViewMode("all");
     setNearbyAlertDismissed(false);
+    setHideLongLayovers(searchParams.get("saved_hide_long_layovers") !== "false");
 
     if (isCartesian) {
       // Cartesian: multi-destination and/or flex dates
