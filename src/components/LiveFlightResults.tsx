@@ -697,7 +697,7 @@ const LiveFlightResults = () => {
               {failedOrigins.length > 0 && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-400">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span className="flex-1">No results from: {failedOrigins.join(", ")}</span>
+                  <span className="flex-1">{t("results.no_results_from", { origins: failedOrigins.join(", ") })}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -706,7 +706,7 @@ const LiveFlightResults = () => {
                     className="h-6 px-2 text-[11px] text-amber-400 hover:text-amber-300 gap-1"
                   >
                     <RotateCcw className="w-3 h-3" />
-                    Retry
+                    {t("results.retry")}
                   </Button>
                 </div>
               )}
