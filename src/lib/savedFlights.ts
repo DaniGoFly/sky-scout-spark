@@ -30,6 +30,26 @@ export interface SavedFlight {
     durationMinutes: number;
     stopsCount: number;
   };
+  // Search context for full restoration
+  tripType?: "oneway" | "roundtrip";
+  adults?: number;
+  children?: number;
+  infants?: number;
+  travelClass?: string;
+  currency?: string;
+  market?: string;
+  sortBy?: "best" | "cheapest" | "fastest";
+}
+
+export interface SearchContext {
+  tripType?: "oneway" | "roundtrip";
+  adults?: number;
+  children?: number;
+  infants?: number;
+  travelClass?: string;
+  currency?: string;
+  market?: string;
+  sortBy?: "best" | "cheapest" | "fastest";
 }
 
 function readStore(): SavedFlight[] {
@@ -54,7 +74,7 @@ export function isFlightSaved(flightId: string): boolean {
   return readStore().some(f => f.id === flightId);
 }
 
-export function saveFlight(flight: Flight): void {
+export function saveFlight(flight: Flight, context?: SearchContext): void {
   const store = readStore();
   if (store.some(f => f.id === flight.id)) return;
 
@@ -83,6 +103,15 @@ export function saveFlight(flight: Flight): void {
         stopsCount: flight.return.stopsCount,
       },
     } : {}),
+    // Search context
+    tripType: context?.tripType || (flight.return ? "roundtrip" : "oneway"),
+    adults: context?.adults ?? 1,
+    children: context?.children ?? 0,
+    infants: context?.infants ?? 0,
+    travelClass: context?.travelClass || "economy",
+    currency: context?.currency,
+    market: context?.market,
+    sortBy: context?.sortBy,
   };
 
   store.unshift(saved);
@@ -95,11 +124,11 @@ export function unsaveFlight(flightId: string): void {
   writeStore(store);
 }
 
-export function toggleSavedFlight(flight: Flight): boolean {
+export function toggleSavedFlight(flight: Flight, context?: SearchContext): boolean {
   if (isFlightSaved(flight.id)) {
     unsaveFlight(flight.id);
     return false;
   }
-  saveFlight(flight);
+  saveFlight(flight, context);
   return true;
 }
