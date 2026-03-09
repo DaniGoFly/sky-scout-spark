@@ -507,10 +507,21 @@ const LiveFlightResults = () => {
           priceIntel={intel}
           originSource={isMultiOrigin ? originSource : undefined}
           totalPassengers={totalPassengers}
+          savedContext={{
+            sortBy,
+            filters: {
+              stopsMode: filters.stopsMode,
+              airlines: filters.airlines,
+              priceRange: filters.priceRange,
+              departureTime: filters.departureTime,
+              selectedOrigin: selectedOrigin || undefined,
+              hideLongLayovers,
+            },
+          }}
         />
       </div>
     );
-  }, [pinnedLabels, dedupedFlights, depart, returnDate, isMultiOrigin, totalPassengers]);
+  }, [pinnedLabels, dedupedFlights, depart, returnDate, isMultiOrigin, totalPassengers, sortBy, filters, selectedOrigin, hideLongLayovers]);
 
   return (
     <div className="min-h-screen bg-background pt-16" style={{ paddingTop: "calc(4rem + env(safe-area-inset-top))" }}>
