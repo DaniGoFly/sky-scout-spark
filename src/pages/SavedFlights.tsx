@@ -152,7 +152,7 @@ const SavedFlights = () => {
                 const airlineLogo = getAirlineLogo(flight.airlines?.[0] || "");
                 const savedDate = new Date(flight.savedAt);
                 const daysAgo = Math.floor((Date.now() - savedDate.getTime()) / 86400000);
-                const savedLabel = daysAgo === 0 ? "Today" : daysAgo === 1 ? "Yesterday" : `${daysAgo}d ago`;
+                const savedLabel = daysAgo === 0 ? t("saved.today") : daysAgo === 1 ? t("saved.yesterday") : t("saved.days_ago", { count: daysAgo });
 
                 return (
                   <div
