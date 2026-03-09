@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AirportAutocomplete from "@/components/AirportAutocomplete";
 import ExploreMap from "@/components/explore/ExploreMap";
 import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
-import { detectGeo } from "@/lib/priceApi";
+// detectGeo removed — no auto-origin detection
 import { useLocale } from "@/hooks/useLocale";
 import { AIRPORTS, type AirportData } from "@/lib/airports";
 import { requestNearestAirport } from "@/lib/nearestAirport";
