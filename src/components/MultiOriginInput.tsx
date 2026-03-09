@@ -36,8 +36,6 @@ const MAX_VISIBLE_CHIPS = 1;
 const MIN_INPUT_WIDTH_PX = 112;
 const COMPACT_ADD_THRESHOLD_PX = 106;
 
-/* ── Dropdown panel is rendered absolutely under this field wrapper (stable + anchored) ── */
-
 /* ── Chip component ── */
 const AirportChip = ({
   airport,
