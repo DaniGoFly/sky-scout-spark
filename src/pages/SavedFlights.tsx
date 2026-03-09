@@ -123,16 +123,16 @@ const SavedFlights = () => {
             <div>
               <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
                 <Heart className="w-5 h-5 text-red-500 fill-current" />
-                Saved Flights
+                {t("saved.title")}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                {flights.length} {flights.length === 1 ? "flight" : "flights"} saved
+                {flights.length === 1 ? t("saved.flights_count", { count: flights.length }) : t("saved.flights_count_plural", { count: flights.length })}
               </p>
             </div>
             {flights.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearAll} className="text-muted-foreground hover:text-destructive text-xs gap-1">
                 <Trash2 className="w-3.5 h-3.5" />
-                Clear all
+                {t("saved.clear_all")}
               </Button>
             )}
           </div>
