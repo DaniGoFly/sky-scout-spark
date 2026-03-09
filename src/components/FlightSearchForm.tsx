@@ -74,9 +74,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
 
   const [tripTypeOpen, setTripTypeOpen] = useState(false);
 
-  const searchBarRef = useRef<HTMLDivElement>(null);
-  const [calendarPos, setCalendarPos] = useState<{ top: number; left: number; width: number } | null>(null);
-
   /* ── Calendar panel open state (lifted) ── */
   const [calendarOpen, setCalendarOpen] = useState(false);
 
