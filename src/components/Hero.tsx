@@ -1,7 +1,7 @@
-import { useState, forwardRef, useImperativeHandle, RefObject } from "react";
+import { useState, forwardRef, useImperativeHandle, RefObject, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import FlightSearchForm from "./FlightSearchForm";
+import FlightSearchForm, { type FlightSearchFormHandle } from "./FlightSearchForm";
 import TravelAssistant from "./TravelAssistant";
 import { Plane, Building2, Car, Package, Sparkles, MapPin, CalendarSearch } from "lucide-react";
 import { toast } from "sonner";
