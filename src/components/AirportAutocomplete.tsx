@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useReft";
 import { Plane, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -36,8 +36,7 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside (handles portal-rendered dropdown)
-  useEffect(() => {
+  // Close dropdown when clicking outside (handles por() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       const insideWrapper = wrapperRef.current?.contains(target);
