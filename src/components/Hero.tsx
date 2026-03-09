@@ -152,7 +152,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {SMART_TOOLS.map((tool) => {
               const Icon = tool.icon;
-              const isAI = tool.title === "AI Travel Guide";
+              const isAI = tool.titleKey === "hero_section.ai_travel_guide";
               return (
                 <button
                   key={tool.title}
