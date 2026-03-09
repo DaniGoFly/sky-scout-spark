@@ -767,7 +767,7 @@ const LiveFlightResults = () => {
                 )}
               </div>
               <p className="text-[11px] text-muted-foreground/60 px-1 italic">
-                Prices may differ from other platforms depending on agency availability and fare rules.
+                {t("results.prices_may_differ")}
               </p>
               {/* Nearby airport savings suggestion — only in single-origin mode */}
               {!isMultiOrigin && !nearbyAlertDismissed && enrichedFlights.length > 0 && (
