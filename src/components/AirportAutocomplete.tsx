@@ -140,6 +140,13 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
   const showSuggestions = isOpen && suggestions.length > 0;
   const showEmpty = isOpen && query.length >= 2 && suggestions.length === 0 && !isLoading;
 
+  const dropdownOverlay = useAnchoredOverlay({
+    open: isOpen,
+    anchorRef: wrapperRef,
+    offset: 8,
+    matchWidth: true,
+  });
+
   return (
     <div ref={wrapperRef} className="relative min-w-0">
       <div className="relative group min-w-0">
