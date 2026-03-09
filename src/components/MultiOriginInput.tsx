@@ -395,11 +395,11 @@ const MultiOriginInput = ({
 
       {/* ── Autocomplete dropdown ── */}
       {showSuggestions && (
-        <PortalDropdown anchorRef={inputAreaRef}>
+        <PortalDropdown anchorRef={wrapperRef}>
           <div
             ref={dropdownRef}
             className="bg-card border border-border/60 rounded-xl shadow-2xl overflow-hidden overflow-y-auto"
-            style={{ maxHeight: "inherit" }}
+            style={{ maxHeight: "inherit", minWidth: "280px" }}
           >
             {suggestions.map((place, index) => (
               <button
@@ -416,7 +416,7 @@ const MultiOriginInput = ({
                     selectingRef.current = false;
                   });
                 }}
-                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors cursor-pointer ${
+                className={`w-full px-4 py-3 text-left flex items-center justify-between gap-3 transition-colors cursor-pointer ${
                   index === highlightedIndex
                     ? "bg-primary/10"
                     : "hover:bg-secondary/50"
@@ -435,7 +435,9 @@ const MultiOriginInput = ({
                 </div>
 
                 {/* Add icon */}
-                <Plus className="w-4 h-4 text-primary/50 shrink-0" />
+                <div className="flex-[0_0_auto]">
+                  <Plus className="w-4 h-4 text-primary/50" />
+                </div>
               </button>
             ))}
           </div>
