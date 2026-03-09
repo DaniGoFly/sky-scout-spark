@@ -61,13 +61,11 @@ const Explore = () => {
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const isMobile = useIsMobile();
-  // Auto-detect origin from geo — only once on mount
-  // Parse origin from URL params (Anywhere mode from SearchForm) or geo-detect
+  // Parse origin from URL params only (e.g. Anywhere mode from SearchForm)
   useEffect(() => {
     if (geoInitDone) return;
     setGeoInitDone(true);
 
-    // Check URL params first (from SearchForm Anywhere mode)
     const params = new URLSearchParams(window.location.search);
     const fromCode = params.get("from");
     if (fromCode) {
@@ -75,19 +73,9 @@ const Explore = () => {
       const airport = AIRPORTS.find(a => a.code === code);
       if (airport) {
         setOrigin({ code: airport.code, display: `${airport.city} (${airport.code})` });
-        return;
       }
     }
-
-    detectGeo().then(geo => {
-      if (!geo) return;
-      setOrigin(prev => {
-        if (prev) return prev;
-        const airport = getDefaultAirportByCountry(geo.country);
-        if (airport) return { code: airport.code, display: `${airport.city} (${airport.code})` };
-        return prev;
-      });
-    });
+    // No auto-detection — page stays blank until user picks an origin
   }, [geoInitDone]);
 
   // Fetch explore data
