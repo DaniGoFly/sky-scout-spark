@@ -34,6 +34,7 @@ interface FlightCardProps {
   priceIntel?: PriceIntelligence | null;
   originSource?: string;
   totalPassengers?: number;
+  savedContext?: Pick<SearchContext, "sortBy" | "filters">;
 }
 
 /** Type guard to check if flight has enriched stop data */
