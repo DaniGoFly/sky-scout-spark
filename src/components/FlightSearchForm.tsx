@@ -267,10 +267,10 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
   const tripTypeLabel = tripType === "roundtrip" ? t("search.roundtrip") : tripType === "oneway" ? t("search.oneway") : t("search.multicity");
 
   // Display values
-  const departDisplay = isAnyDay ? "Any day" : departDate ? format(departDate, "d MMM") : "Select date";
-  const returnDisplay = isAnyDay ? "Any day" : returnDate ? format(returnDate, "d MMM") : "Select date";
+  const departDisplay = isAnyDay ? t("search.any_day") : departDate ? format(departDate, "d MMM") : t("search_form.select_date");
+  const returnDisplay = isAnyDay ? t("search.any_day") : returnDate ? format(returnDate, "d MMM") : t("search_form.select_date");
   const totalPax = travelers.adults + travelers.children + travelers.infantsSeat;
-  const travelersDisplay = `${totalPax} traveller${totalPax !== 1 ? "s" : ""}`;
+  const travelersDisplay = totalPax === 1 ? t("search_form.travelers_count", { count: totalPax }) : t("search_form.travelers_count_plural", { count: totalPax });
 
 
   // ── Multi-city mode ──
