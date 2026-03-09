@@ -639,17 +639,6 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
         </label>
 
         <div className="flex items-center gap-4 pt-1">
-          <button onClick={async () => {
-            const result = await requestNearestAirport();
-            if (result) {
-              userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
-              setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
-              setErrors(e => ({ ...e, from: undefined }));
-            }
-          }} className="flex items-center gap-1.5 text-[12px] text-muted-foreground/60 hover:text-primary transition-colors cursor-pointer whitespace-nowrap font-medium">
-            <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
-          </button>
-
           <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap">
             <Checkbox
               checked={isAnyDay}
@@ -671,6 +660,17 @@ const FlightSearchForm = ({ aiSearchParams, onParamsConsumed }: FlightSearchForm
               <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
             </span>
           </label>
+
+          <button onClick={async () => {
+            const result = await requestNearestAirport();
+            if (result) {
+              userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
+              setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
+              setErrors(e => ({ ...e, from: undefined }));
+            }
+          }} className="flex items-center gap-1.5 text-[12px] text-muted-foreground/60 hover:text-primary transition-colors cursor-pointer whitespace-nowrap font-medium">
+            <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
+          </button>
         </div>
       </div>
 
