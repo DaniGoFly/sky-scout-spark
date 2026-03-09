@@ -20,7 +20,7 @@ const MODE_PILLS = [
   { id: "flights", label: "nav.flights", icon: Plane, active: true },
   { id: "hotels", label: "nav.hotels", icon: Building2, active: false, comingSoon: true },
   { id: "cars", label: "hero.car_rental", icon: Car, active: false, comingSoon: true },
-  { id: "packages", label: "hero.packages", icon: Package, active: false, badge: "New", comingSoon: true },
+  { id: "packages", label: "hero.packages", icon: Package, active: false, comingSoon: true },
 ] as const;
 
 const POPULAR_DESTINATIONS = [
