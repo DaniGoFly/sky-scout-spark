@@ -242,8 +242,9 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
       {/* Mobile: fixed full-screen calendar modal */}
       {isMobile && openCalendarSegmentId && activeSegment && (
+        <OverlayPortal>
         <div
-          className="fixed inset-0 z-[1000] bg-background flex flex-col"
+          className="fixed inset-0 z-[9999] bg-background flex flex-col"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           {/* Header */}
