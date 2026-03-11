@@ -1,13 +1,11 @@
 import { Plane, Heart } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import LocaleSelector from "./LocaleSelector";
 import { HOTELS_ENABLED } from "@/lib/featureFlags";
 
 const Header = () => {
-  const location = useLocation();
   const location = useLocation();
   const { t } = useTranslation();
   const isHome = location.pathname === "/";
