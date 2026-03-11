@@ -519,7 +519,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
           </div>
 
           {/* Mobile: stacked layout */}
-          <div className="lg:hidden flex flex-col">
+          <div className="xl:hidden flex flex-col">
             {/* FROM */}
             <div className={`px-5 py-4 ${errRing(!!errors.from)}`}>
               <span className={SEG_LABEL}>{t("search.from")}</span>
