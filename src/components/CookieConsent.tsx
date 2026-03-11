@@ -28,6 +28,8 @@ export function useCookieSettings() {
 
 export default function CookieConsent() {
   const { t } = useTranslation();
+  const privacyUrl = useLegalUrl("privacy-policy");
+  const cookiesUrl = useLegalUrl("cookies");
   const [visible, setVisible] = useState(false);
   const [showPrefs, setShowPrefs] = useState(false);
   const [analytics, setAnalytics] = useState(false);
