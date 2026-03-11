@@ -378,13 +378,13 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
         {/* Search bar */}
         <div
           className={cn(
-            "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm lg:h-[94px] overflow-visible",
+            "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm xl:h-[94px] overflow-visible",
             calendarOpen ? "rounded-t-2xl" : "rounded-2xl",
           )}
         >
           {/* Desktop: fixed slot grid */}
           <div className={cn(
-            "hidden lg:grid h-full items-stretch overflow-visible",
+            "hidden xl:grid h-full items-stretch overflow-visible",
             tripType === "oneway"
               ? "grid-cols-[minmax(200px,1.2fr)_40px_minmax(200px,1.2fr)_minmax(160px,0.8fr)_minmax(200px,1fr)_minmax(150px,170px)]"
               : "grid-cols-[minmax(180px,205px)_40px_minmax(180px,205px)_minmax(280px,320px)_minmax(190px,220px)_minmax(150px,170px)]"
@@ -519,7 +519,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
           </div>
 
           {/* Mobile: stacked layout */}
-          <div className="lg:hidden flex flex-col">
+          <div className="xl:hidden flex flex-col">
             {/* FROM */}
             <div className={`px-5 py-4 ${errRing(!!errors.from)}`}>
               <span className={SEG_LABEL}>{t("search.from")}</span>
@@ -653,7 +653,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
       {/* ═══════════════════════════════════════════
           OPTIONS ROW — clean, secondary
           ═══════════════════════════════════════════ */}
-      <div className="lg:hidden flex flex-col gap-2.5 px-1">
+      <div className="xl:hidden flex flex-col gap-2.5 px-1">
         <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
 
@@ -699,7 +699,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
       </div>
 
       {/* ── Desktop options row ── */}
-      <div className="hidden lg:flex w-full min-h-[44px] items-start justify-between gap-4 px-2 pr-6">
+      <div className="hidden xl:flex w-full min-h-[44px] items-start justify-between gap-4 px-2 pr-6">
         {/* LEFT GROUP */}
         <div className="flex items-start gap-5 min-w-0 shrink">
           <div className="w-[200px] shrink-0">

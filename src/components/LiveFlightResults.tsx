@@ -599,7 +599,7 @@ const LiveFlightResults = () => {
                 {isMultiOrigin && ` · ${origins.length} airports`}
               </p>
             </div>
-            <div className="lg:hidden shrink-0">
+            <div className="xl:hidden shrink-0">
               <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={dedupedFlights.length} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </div>
           </div>
@@ -674,8 +674,8 @@ const LiveFlightResults = () => {
         )}
 
         {hasResults && !showSkeleton && (
-            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
-              <aside className="hidden lg:block sticky top-24 h-fit self-start">
+            <div className="grid grid-cols-1 xl:grid-cols-[260px_1fr] gap-6 items-start">
+              <aside className="hidden xl:block sticky top-24 h-fit self-start">
               <FlightFilters onFiltersChange={handleFiltersChange} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </aside>
             <div className="min-w-0 space-y-3">

@@ -120,7 +120,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
 
             {/* ── Headline ── */}
             <div className="mb-12 text-left animate-fade-in">
-              <h1 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-bold leading-[1.12] tracking-tight text-foreground">
+              <h1 className="text-3xl sm:text-4xl xl:text-[2.85rem] font-bold leading-[1.12] tracking-tight text-foreground">
                 {t("hero.headline_1")}{" "}
                 <span className="text-primary">{t("hero.headline_2")}</span>
               </h1>
