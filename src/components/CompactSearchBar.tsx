@@ -283,7 +283,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
           type="button"
           onClick={handleSearch}
           disabled={isSearching}
-          className="h-10 sm:h-10 gap-2 shrink-0 w-full sm:w-auto sm:min-w-[80px]"
+          className="h-10 gap-2 shrink-0 w-full md:w-auto md:min-w-[80px]"
         >
           {isSearching ? (
             <Loader2 className="w-4 h-4 animate-spin" />
