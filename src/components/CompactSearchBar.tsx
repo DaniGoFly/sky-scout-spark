@@ -193,7 +193,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
         )}
 
         {/* To */}
-        <div className="flex-1 min-w-[120px] max-w-[200px]">
+        <div className="flex-1 min-w-0 md:min-w-[120px] md:max-w-[200px]">
           <AirportAutocomplete
             value={to}
             onChange={setTo}
