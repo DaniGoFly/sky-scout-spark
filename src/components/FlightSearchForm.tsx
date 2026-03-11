@@ -536,7 +536,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               MOBILE/TABLET: Clean stacked search card
               ═══════════════════════════════════════════ */}
           <div className="xl:hidden flex flex-col gap-0">
-            <div className="rounded-2xl border border-border/20 bg-card/40 backdrop-blur-sm overflow-hidden">
+            <div className="rounded-2xl border border-border/20 bg-card/40 backdrop-blur-sm overflow-visible">
               {/* FROM row */}
               <div className={`relative flex items-center gap-3 px-4 min-h-[52px] ${errRing(!!errors.from)}`}>
                 <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
