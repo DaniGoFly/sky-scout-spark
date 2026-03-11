@@ -2,10 +2,15 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Plane } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLegalUrl } from "@/hooks/useLegalUrl";
 
 const Footer = React.forwardRef<HTMLElement>((_, ref) => {
   const { t } = useTranslation();
-
+  const privacyUrl = useLegalUrl("privacy-policy");
+  const cookiesUrl = useLegalUrl("cookies");
+  const termsUrl = useLegalUrl("terms-and-conditions");
+  const affiliateUrl = useLegalUrl("affiliate-disclosure");
+  const impressumUrl = useLegalUrl("impressum");
   return (
     <footer ref={ref} className="bg-card/50 border-t border-border/40 py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
       <div className="mx-auto max-w-[1100px] relative z-10">
