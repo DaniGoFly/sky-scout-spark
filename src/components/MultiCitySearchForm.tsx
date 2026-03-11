@@ -306,6 +306,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
             </Button>
           </div>
         </div>
+        </OverlayPortal>
       )}
 
       {/* Add flight button */}
