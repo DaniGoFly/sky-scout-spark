@@ -317,7 +317,7 @@ export function sanitizePrice(amount: number): number {
   if (!amount || amount <= 0 || !Number.isFinite(amount)) return amount;
   if (amount > 50000) {
     // Likely cents/minor units — convert to major
-    if (process.env.NODE_ENV !== "production") {
+    if (import.meta.env.DEV) {
       console.warn(`[sanitizePrice] Suspicious price ${amount}, converting from minor units → ${amount / 100}`);
     }
     return Math.round(amount / 100);
