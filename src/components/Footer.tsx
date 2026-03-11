@@ -48,11 +48,11 @@ const Footer = React.forwardRef<HTMLElement>((_, ref) => {
           <div>
             <h4 className="font-semibold text-foreground text-sm mb-4">{t("footer.legal")}</h4>
             <ul className="space-y-2.5">
-              <li><Link to="/privacy-policy" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.privacy")}</Link></li>
-              <li><Link to="/cookies" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.cookies")}</Link></li>
-              <li><Link to="/terms-and-conditions" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.terms")}</Link></li>
-              <li><Link to="/affiliate-disclosure" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.affiliate")}</Link></li>
-              <li><Link to="/impressum" className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.impressum")}</Link></li>
+              <li><Link to={privacyUrl} className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.privacy")}</Link></li>
+              <li><Link to={cookiesUrl} className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.cookies")}</Link></li>
+              <li><Link to={termsUrl} className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.terms")}</Link></li>
+              <li><Link to={affiliateUrl} className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.affiliate")}</Link></li>
+              <li><Link to={impressumUrl} className="text-muted-foreground hover:text-primary text-sm transition-colors">{t("footer.impressum")}</Link></li>
               <li>
                 <button
                   onClick={() => window.dispatchEvent(new Event("open-cookie-settings"))}
