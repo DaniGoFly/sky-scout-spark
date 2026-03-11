@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import NotFound from "@/pages/NotFound";
 import {
   resolvePageId,
   getLegalContent,
