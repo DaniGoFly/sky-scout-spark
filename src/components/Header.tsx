@@ -1,10 +1,8 @@
-import { Plane, Menu, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Plane, Heart } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import LocaleSelector from "./LocaleSelector";
 import { HOTELS_ENABLED } from "@/lib/featureFlags";
 
