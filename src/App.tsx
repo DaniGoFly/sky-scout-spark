@@ -80,14 +80,18 @@ const App = () => (
           <Route path="/signup" element={<AuthComingSoon />} />
           <Route path="/register" element={<AuthComingSoon />} />
           
-          {/* Legal pages */}
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/cookies" element={<Cookies />} />
-          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-          <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
+          {/* Locale-prefixed legal pages */}
+          <Route path="/:locale/:slug" element={<LegalPage />} />
+
+          {/* Legacy legal redirects → locale-prefixed */}
+          <Route path="/privacy-policy" element={<LegalRedirect pageId="privacy-policy" />} />
+          <Route path="/cookies" element={<LegalRedirect pageId="cookies" />} />
+          <Route path="/terms-and-conditions" element={<LegalRedirect pageId="terms-and-conditions" />} />
+          <Route path="/affiliate-disclosure" element={<LegalRedirect pageId="affiliate-disclosure" />} />
+          <Route path="/impressum" element={<LegalRedirect pageId="impressum" />} />
+
           <Route path="/contact" element={<Contact />} />
           <Route path="/price-disclaimer" element={<PriceDisclaimer />} />
-          <Route path="/impressum" element={<Impressum />} />
           
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
