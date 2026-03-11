@@ -168,7 +168,7 @@ const AirportAutocomplete = ({ value, onChange, placeholder, icon = "from", comp
       {showSuggestions && (
         <div
           ref={dropdownRef}
-          className="absolute left-0 right-0 z-50 mt-2 min-w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto max-h-[360px]"
+          className="absolute left-0 right-0 z-[200] mt-2 min-w-[280px] bg-card border border-border rounded-xl shadow-lg overflow-hidden overflow-y-auto max-h-[360px]"
         >
           {suggestions.map((place, index) => (
             <button
