@@ -6,6 +6,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import AirportAutocomplete from "./AirportAutocomplete";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AirportSelection {
   code: string;
@@ -26,6 +27,7 @@ interface MultiCitySearchFormProps {
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
+  const isMobile = useIsMobile();
   const [segments, setSegments] = useState<FlightSegment[]>([
     { id: generateId(), from: null, to: null, date: null },
     { id: generateId(), from: null, to: null, date: null },
@@ -43,6 +45,8 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
   useEffect(() => {
     if (!openCalendarSegmentId) return;
+    // On mobile, calendar is a fixed modal — no outside-click dismiss needed
+    if (isMobile) return;
 
     const onDown = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -53,7 +57,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
     document.addEventListener("mousedown", onDown, true);
     return () => document.removeEventListener("mousedown", onDown, true);
-  }, [openCalendarSegmentId]);
+  }, [openCalendarSegmentId, isMobile]);
 
   const addSegment = () => {
     if (segments.length >= 5) return;
@@ -108,6 +112,14 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
     if (!validate()) return;
     onSearch(segments, travelers);
   };
+
+  // Find the active segment for the mobile calendar modal
+  const activeSegment = openCalendarSegmentId
+    ? segments.find((s) => s.id === openCalendarSegmentId)
+    : null;
+  const activeSegmentIndex = activeSegment
+    ? segments.indexOf(activeSegment)
+    : -1;
 
   /* Style tokens matching the standard search bar */
   const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
@@ -183,7 +195,8 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
                 </span>
               </button>
 
-              {openCalendarSegmentId === segment.id && (
+              {/* Desktop: inline absolute calendar */}
+              {!isMobile && openCalendarSegmentId === segment.id && (
                 <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-auto rounded-xl border border-border bg-[hsl(222_40%_12%)] p-0 shadow-xl isolation-auto" style={{ backdropFilter: 'none' }}>
                   <CalendarComponent
                     mode="single"
@@ -224,6 +237,73 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
           </div>
         </div>
       ))}
+
+      {/* Mobile: fixed full-screen calendar modal */}
+      {isMobile && openCalendarSegmentId && activeSegment && (
+        <div
+          className="fixed inset-0 z-[1000] bg-background flex flex-col"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
+            <button
+              type="button"
+              onClick={() => setOpenCalendarSegmentId(null)}
+              className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5 text-foreground" />
+            </button>
+            <span className="text-sm font-semibold text-foreground">
+              Flight {activeSegmentIndex + 1} — Select date
+            </span>
+            <div className="w-9" />
+          </div>
+
+          {/* Calendar */}
+          <div className="flex-1 flex items-start justify-center overflow-y-auto pt-4 px-4">
+            <CalendarComponent
+              mode="single"
+              selected={activeSegment.date || undefined}
+              onSelect={(date) => {
+                updateSegment(openCalendarSegmentId, "date", date);
+                if (date) setOpenCalendarSegmentId(null);
+              }}
+              disabled={(date) => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (date < today) return true;
+                if (activeSegmentIndex > 0 && segments[activeSegmentIndex - 1].date) {
+                  return date < segments[activeSegmentIndex - 1].date!;
+                }
+                return false;
+              }}
+              className="w-full max-w-[340px]"
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border/30 shrink-0">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                updateSegment(openCalendarSegmentId, "date", null);
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setOpenCalendarSegmentId(null)}
+              className="px-8 rounded-full"
+            >
+              Done
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Add flight button */}
       {segments.length < 5 && (
