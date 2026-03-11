@@ -66,7 +66,7 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
             >
               <div className="flex items-center gap-1 min-w-0">
                 <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? iconActiveClass : "text-muted-foreground"}`} />
-                <span className={`font-bold text-xs sm:text-sm truncate ${isActive ? activeColor : "text-foreground/75"}`}>{label}</span>
+                <span className={`font-bold text-[11px] sm:text-sm truncate ${isActive ? activeColor : "text-foreground/75"}`}>{label}</span>
               </div>
               <span className={`text-[10px] sm:text-xs truncate max-w-full leading-tight font-semibold ${isActive ? activeColor : "text-muted-foreground"}`}>
                 {sublabel}
