@@ -518,55 +518,58 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
             </button>
           </div>
 
-          {/* Mobile: stacked layout */}
+          {/* Mobile/Tablet: stacked layout — app-like full-width fields */}
           <div className="xl:hidden flex flex-col">
             {/* FROM */}
-            <div className={`px-5 py-4 ${errRing(!!errors.from)}`}>
+            <div className={`px-5 min-h-[56px] flex flex-col justify-center ${errRing(!!errors.from)}`}>
               <span className={SEG_LABEL}>{t("search.from")}</span>
-              <MultiOriginInput
-                values={origins}
-                onChange={handleOriginsChange}
-                placeholder={t("search_form.placeholder_airport")}
-                bare
-              />
-            </div>
-
-            {/* Mobile swap */}
-            <div className="flex justify-center -my-3 relative z-30">
-              <button type="button" onClick={swapLocations}
-                disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-                className="w-8 h-8 rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm">
-                <ArrowRightLeft className="w-3 h-3 rotate-90" />
-              </button>
-            </div>
-
-            {/* Separator */}
-            <div className="h-px mx-5 bg-border/15" />
-
-            {/* TO */}
-            <div className={`px-5 py-4 ${errRing(!!errors.to)}`}>
-              <span className={SEG_LABEL}>{t("search.to")}</span>
-              {anywhere ? (
-                <div className="flex items-center gap-1.5 min-h-[36px]">
-                  <Globe className="w-4 h-4 text-primary shrink-0" />
-                  <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
-                </div>
-              ) : (
+              <div className="mt-1">
                 <MultiOriginInput
-                  values={destinations}
-                  onChange={handleDestinationsChange}
+                  values={origins}
+                  onChange={handleOriginsChange}
                   placeholder={t("search_form.placeholder_airport")}
-                  multiLabel={t("search_form.multi_destination")}
                   bare
                 />
-              )}
+              </div>
             </div>
 
-            <div className="h-px mx-5 bg-border/15" />
+            {/* Swap button overlapping separator */}
+            <div className="relative h-px mx-5 bg-border/20">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30">
+                <button type="button" onClick={swapLocations}
+                  disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+                  className="w-9 h-9 rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm active:scale-95">
+                  <ArrowRightLeft className="w-3.5 h-3.5 rotate-90" />
+                </button>
+              </div>
+            </div>
 
-            {/* DATES SECTION — mobile */}
+            {/* TO */}
+            <div className={`px-5 min-h-[56px] flex flex-col justify-center ${errRing(!!errors.to)}`}>
+              <span className={SEG_LABEL}>{t("search.to")}</span>
+              <div className="mt-1">
+                {anywhere ? (
+                  <div className="flex items-center gap-1.5 min-h-[28px]">
+                    <Globe className="w-4 h-4 text-primary shrink-0" />
+                    <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
+                  </div>
+                ) : (
+                  <MultiOriginInput
+                    values={destinations}
+                    onChange={handleDestinationsChange}
+                    placeholder={t("search_form.placeholder_airport")}
+                    multiLabel={t("search_form.multi_destination")}
+                    bare
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="h-px mx-5 bg-border/20" />
+
+            {/* DATES — mobile: side-by-side for roundtrip, full-width for one-way */}
             {isAnyDay ? (
-              <div className={`px-5 py-4 ${errRing(!!errors.dates)}`}>
+              <div className={`px-5 min-h-[56px] flex flex-col justify-center ${errRing(!!errors.dates)}`}>
                 <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
                 {tripType === "roundtrip" ? (
                   <TripLengthSlider value={tripLength} onChange={setTripLength} />
@@ -574,53 +577,62 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                   <span className={`${SEG_PLACEHOLDER} text-[13px]`}>{t("search_form.flexible_departure")}</span>
                 )}
               </div>
-            ) : (
-              <>
-                {/* DEPART */}
-                <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
+            ) : tripType === "roundtrip" ? (
+              <div className={`grid grid-cols-2 ${errRing(!!errors.dates)}`}>
+                <div className="px-5 min-h-[56px] flex flex-col justify-center cursor-pointer border-r border-border/20">
                   <FlightDateRangePicker
                     departDate={departDate} returnDate={returnDate}
                     onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                    tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                    tripType={tripType} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
                     bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
                     onOpenCalendar={handleOpenCalendar}
                   />
                 </div>
-
-                {/* RETURN */}
-                {tripType === "roundtrip" && (
-                  <>
-                    <div className="h-px mx-5 bg-border/15" />
-                    <div className={`px-5 py-4 cursor-pointer ${errRing(!!errors.dates)}`}>
-                      <FlightDateRangePicker
-                        departDate={departDate} returnDate={returnDate}
-                        onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                        tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                        bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
-                        onOpenCalendar={handleOpenCalendar}
-                      />
-                    </div>
-                  </>
-                )}
-              </>
+                <div className="px-5 min-h-[56px] flex flex-col justify-center cursor-pointer">
+                  <FlightDateRangePicker
+                    departDate={departDate} returnDate={returnDate}
+                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                    tripType={tripType} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                    bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
+                    onOpenCalendar={handleOpenCalendar}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className={`px-5 min-h-[56px] flex flex-col justify-center cursor-pointer ${errRing(!!errors.dates)}`}>
+                <FlightDateRangePicker
+                  departDate={departDate} returnDate={returnDate}
+                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                  bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
+                  onOpenCalendar={handleOpenCalendar}
+                />
+              </div>
             )}
 
-            <div className="h-px mx-5 bg-border/15" />
+            <div className="h-px mx-5 bg-border/20" />
 
-            {/* TRAVELERS */}
-            <div className="px-5 py-4 cursor-pointer">
+            {/* TRAVELERS + CABIN */}
+            <div className="px-5 min-h-[56px] flex flex-col justify-center cursor-pointer">
               <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
             </div>
 
-            {/* SEARCH BUTTON — full width mobile */}
-            <button type="button" onClick={handleSearch}
-              className={cn(
-                "flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-base active:scale-[0.98] transition-all cursor-pointer",
-                calendarOpen ? "" : "rounded-b-2xl"
-              )}>
-              <Search className="w-5 h-5" />
-              <span>{t("search.search_flights")}</span>
-            </button>
+            {/* Direct flights toggle — inline on mobile */}
+            <div className="px-5 pb-2 pt-1">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none min-h-[40px]">
+                <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-5 w-5 rounded-[5px]" />
+                <span className="text-[13px] text-muted-foreground font-medium">{t("search.direct_flights_only")}</span>
+              </label>
+            </div>
+
+            {/* SEARCH BUTTON — large, thumb-friendly */}
+            <div className="px-4 pb-4 pt-1">
+              <button type="button" onClick={handleSearch}
+                className="w-full flex items-center justify-center gap-2.5 min-h-[52px] rounded-xl bg-gradient-to-r from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-[16px] active:scale-[0.97] transition-all cursor-pointer shadow-lg">
+                <Search className="w-5 h-5" />
+                <span>{t("search.search_flights")}</span>
+              </button>
+            </div>
           </div>
         </div>
 
