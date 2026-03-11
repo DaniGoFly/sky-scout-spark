@@ -7,7 +7,7 @@ import LocaleSelector from "./LocaleSelector";
 import { HOTELS_ENABLED } from "@/lib/featureFlags";
 
 const Header = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
   const location = useLocation();
   const { t } = useTranslation();
   const isHome = location.pathname === "/";
