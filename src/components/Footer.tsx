@@ -14,7 +14,7 @@ const Footer = React.forwardRef<HTMLElement>((_, ref) => {
   return (
     <footer ref={ref} className="bg-card/50 border-t border-border/40 py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
       <div className="mx-auto max-w-[1100px] relative z-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10 mb-14">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-10 mb-14">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2.5 mb-4 group">

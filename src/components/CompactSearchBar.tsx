@@ -140,8 +140,8 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
   const originsKey = origins.map(o => o.code).join(",");
 
   return (
-    <div className="bg-card border border-border rounded-2xl shadow-card p-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="bg-card border border-border rounded-2xl shadow-card p-3 md:p-4">
+      <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-2.5 md:gap-3">
         {/* Trip Type */}
         <div className="flex gap-1 shrink-0">
           <button
@@ -167,7 +167,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
         </div>
 
         {/* From — Multi-Origin */}
-        <div className="flex-1 min-w-[140px] max-w-[260px]">
+        <div className="flex-1 min-w-0 md:min-w-[140px] md:max-w-[260px]">
           <MultiOriginInput
             values={origins}
             onChange={setOrigins}
@@ -178,7 +178,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
 
         {/* Swap */}
         {origins.length > 1 ? (
-          <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 opacity-30 cursor-not-allowed" title="Swap isn't available in multi-origin mode">
+          <div className="hidden md:flex h-10 w-10 rounded-full items-center justify-center shrink-0 opacity-30 cursor-not-allowed" title="Swap isn't available in multi-origin mode">
             <ArrowRightLeft className="w-4 h-4 text-muted-foreground" />
           </div>
         ) : (
@@ -186,14 +186,14 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
             variant="ghost"
             size="icon"
             onClick={swapLocations}
-            className="h-10 w-10 rounded-full hover:bg-secondary shrink-0"
+            className="hidden md:flex h-10 w-10 rounded-full hover:bg-secondary shrink-0"
           >
             <ArrowRightLeft className="w-4 h-4" />
           </Button>
         )}
 
         {/* To */}
-        <div className="flex-1 min-w-[120px] max-w-[200px]">
+        <div className="flex-1 min-w-0 md:min-w-[120px] md:max-w-[200px]">
           <AirportAutocomplete
             value={to}
             onChange={setTo}
@@ -283,14 +283,14 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
           type="button"
           onClick={handleSearch}
           disabled={isSearching}
-          className="h-10 gap-2 shrink-0 min-w-[80px]"
+          className="h-10 gap-2 shrink-0 w-full md:w-auto md:min-w-[80px]"
         >
           {isSearching ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <Search className="w-4 h-4" />
           )}
-          <span className="hidden sm:inline">{isSearching ? t("search.searching") : t("search.search")}</span>
+          <span>{isSearching ? t("search.searching") : t("search.search")}</span>
         </Button>
       </div>
     </div>

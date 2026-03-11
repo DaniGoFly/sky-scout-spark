@@ -51,14 +51,14 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
 
   return (
     <div className="w-full mt-5 mb-4">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {tabs.map(({ key, label, icon: Icon, description, sublabel, activeColor, iconActiveClass }) => {
           const isActive = sortBy === key;
           return (
             <button
               key={key}
               onClick={() => onSortChange(key)}
-              className={`flex flex-col gap-0 py-2.5 px-3 rounded-[14px] min-w-0 transition-all border text-left ${
+              className={`flex flex-col gap-0 py-2.5 sm:py-2.5 px-2.5 sm:px-3 rounded-[14px] min-w-0 transition-all border text-left ${
                 isActive
                   ? "bg-primary/[0.12] border-white/[0.15]"
                   : "bg-transparent border-white/[0.06] hover:bg-white/[0.04]"
@@ -66,7 +66,7 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
             >
               <div className="flex items-center gap-1 min-w-0">
                 <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? iconActiveClass : "text-muted-foreground"}`} />
-                <span className={`font-bold text-xs sm:text-sm truncate ${isActive ? activeColor : "text-foreground/75"}`}>{label}</span>
+                <span className={`font-bold text-[11px] sm:text-sm truncate ${isActive ? activeColor : "text-foreground/75"}`}>{label}</span>
               </div>
               <span className={`text-[10px] sm:text-xs truncate max-w-full leading-tight font-semibold ${isActive ? activeColor : "text-muted-foreground"}`}>
                 {sublabel}
