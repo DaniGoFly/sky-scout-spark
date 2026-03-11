@@ -19,6 +19,7 @@ import type { AISearchParams } from "./FlightSearchHero";
 import { useLocale } from "@/hooks/useLocale";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { OverlayPortal } from "./overlays/OverlayPortal";
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
