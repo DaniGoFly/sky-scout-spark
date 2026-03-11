@@ -829,7 +829,7 @@ const LiveFlightResults = () => {
         )}
 
       </div>
-      {status === "complete" && isMobile && <div className="h-20 md:hidden" />}
+      {status === "complete" && isMobile && <div className="h-6 md:hidden" />}
     </div>
   );
 };

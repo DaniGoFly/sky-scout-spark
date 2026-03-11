@@ -541,49 +541,96 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     airlineName, flight.origin || "", flight.destination || ""
   ), [airlineName, flight.origin, flight.destination]);
 
-  /* ═══════ MOBILE LAYOUT ═══════ */
+  /* ═══════ MOBILE LAYOUT — Redesigned for scanning ═══════ */
   if (isMobile) {
     return (
-      <div className={`relative bg-card rounded-xl w-full box-border transition-all duration-200 ease-out active:scale-[0.995] focus-within:ring-2 focus-within:ring-primary/60 ${isBestValue ? `border-[1.5px] ${badgeColors.border}` : "border border-border/50"}`}
+      <div className={`relative bg-card rounded-2xl w-full box-border transition-all duration-200 ease-out active:scale-[0.995] ${isBestValue ? `border-[1.5px] ${badgeColors.border}` : "border border-border/40"}`}
         style={{ contain: "layout style" }}>
         <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
-        <div className="p-4 flex flex-col gap-3">
-          <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={isBestValue} isMobile bestLabel={t("card.best")} badgeOverride={badgeLabel} />
+        
+        {/* Top row: badge + save */}
+        {isBestValue && (
+          <div className="px-4 pt-3 flex items-center justify-between">
+            <Badge
+              className="text-[10px] px-3 py-0.5 font-semibold rounded-full border-0"
+              style={(() => {
+                const lower = (badgeLabel || "").toLowerCase();
+                if (lower.includes("cheapest")) return { background: "#22c55e", color: "#ffffff", boxShadow: "0 4px 12px rgba(34,197,94,0.25)" };
+                return { background: "#3b82f6", color: "#ffffff", boxShadow: "0 4px 12px rgba(59,130,246,0.25)" };
+              })()}
+            >{badgeLabel || t("card.best_price", "Best Price")}</Badge>
+            {saveButton}
+          </div>
+        )}
+
+        <div className="p-4 pt-3 flex flex-col gap-2.5">
+          {/* Airline + Price row — most important info first */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                {airlineLogo ? (
+                  <img src={airlineLogo} alt={airlineName} className="w-7 h-7 object-contain" loading="lazy" width={28} height={28}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                ) : (
+                  <Plane className="w-4 h-4 text-muted-foreground" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-foreground text-sm truncate">{airlineName || "Airline"}</p>
+                {flightNumber && <p className="text-[10px] text-muted-foreground truncate">{flightNumber}</p>}
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className={`text-xl font-bold text-foreground leading-tight ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
+              <p className="text-[10px] text-muted-foreground">{t("card.per_person")}</p>
+            </div>
+          </div>
+
           {originSource && (
             <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-primary/30 bg-primary/5 w-fit">
               <Plane className="w-3 h-3 text-primary" />
-              <span className="text-[11px] text-muted-foreground">{t("card.departing_from")} <span className="font-semibold text-foreground">{originSource}</span></span>
+              <span className="text-[10px] text-muted-foreground">{t("card.departing_from")} <span className="font-semibold text-foreground">{originSource}</span></span>
             </div>
           )}
+
+          {/* Outbound leg */}
           <LegComponent label={outboundLabel} origin={flight.origin} destination={flight.destination} departureTime={outData.departureTime} arrivalTime={outData.arrivalTime} durationMinutes={flight.durationMinutes} stopsCount={flight.stopsCount} stopsAirports={flight.stopsAirports} stopsLabel={outboundStops} layoverMinutes={outboundLayoverMinutes} dateLabel={outData.dateLabel} />
+
+          {/* Return leg */}
           {retData && (
-            <div className="pt-2 border-t border-border/40">
+            <div className="pt-1.5 border-t border-border/30">
               <LegComponent label={t("card.return")} origin={retData.origin} destination={retData.destination} departureTime={retData.departureTime} arrivalTime={retData.arrivalTime} durationMinutes={retData.durationMinutes} stopsCount={retData.stopsCount} stopsAirports={retData.stopsAirports} stopsLabel={returnStops} layoverMinutes={returnLayoverMinutes} dateLabel={retData.dateLabel} />
             </div>
           )}
+
+          {/* Extra legs (multi-city) */}
           {extraLegs.map((leg, i) => (
-            <div key={i} className="pt-2 border-t border-border/40">
+            <div key={i} className="pt-1.5 border-t border-border/30">
               <LegComponent label={leg.label} origin={leg.origin} destination={leg.destination} departureTime={leg.departureTime} arrivalTime={leg.arrivalTime} durationMinutes={leg.durationMinutes} stopsCount={leg.stopsCount} stopsAirports={leg.stopsAirports} stopsLabel={getLocalizedStopsLabel(leg.stopsCount, leg.stopsAirports, leg.durationMinutes)} dateLabel={leg.dateLabel} />
             </div>
           ))}
-          <div className="flex items-center justify-between pt-2 border-t border-border/40">
-            <div>
-              <p className={`text-2xl font-bold text-foreground leading-tight ${isBestValue ? "price-pulse" : ""}`}>{formatPrice(flight.price.amount, apiCurrency)}</p>
-              <p className="text-[11px] text-muted-foreground">{t("card.per_person")}</p>
+
+          {/* Price details + intel */}
+          {(totalPassengers > 1 || priceIntel || showScarcity) && (
+            <div className="flex items-center gap-2 flex-wrap">
               {totalPassengers > 1 && (
-                <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+                <span className="text-[10px] text-muted-foreground/70">
                   {formatPrice(flight.price.amount * totalPassengers, apiCurrency)} {t("card.total_for", { count: totalPassengers })}
-                </p>
+                </span>
               )}
-              {priceIntel && <div className="mt-1"><PriceIntelBadge intel={priceIntel} /></div>}
+              {priceIntel && <PriceIntelBadge intel={priceIntel} />}
               {showScarcity && (
-                <p className="text-[10px] text-amber-500 font-medium mt-0.5">{t("card.scarcity", "Only a few seats left at this price")}</p>
+                <span className="text-[10px] text-amber-500 font-medium">{t("card.scarcity", "Only a few seats left at this price")}</span>
               )}
             </div>
-            {saveButton}
+          )}
+
+          {/* CTA row */}
+          <div className="flex items-center gap-2 pt-1">
+            {!isBestValue && <div className="shrink-0">{saveButton}</div>}
+            <div className="flex-1">{ctaButton}</div>
           </div>
-          {ctaButton}
-          <p className="text-[10px] text-muted-foreground/60 text-center leading-tight">{t("card.opens_partner", "Opens partner booking – price may change")}</p>
+          <p className="text-[9px] text-muted-foreground/50 text-center leading-tight -mt-1">{t("card.opens_partner", "Opens partner booking – price may change")}</p>
         </div>
       </div>
     );

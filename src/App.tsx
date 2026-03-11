@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LocaleProvider } from "@/hooks/useLocale";
+import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import Index from "./pages/Index";
 import SavedFlights from "./pages/SavedFlights";
 import Results from "./pages/Results";
@@ -96,6 +97,7 @@ const App = () => (
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <MobileBottomNav />
         <CookieConsent />
       </BrowserRouter>
     </TooltipProvider>
