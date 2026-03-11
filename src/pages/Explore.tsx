@@ -175,9 +175,9 @@ const Explore = () => {
     <div className="min-h-screen bg-background flex flex-col overflow-hidden">
       <Header />
       <main className="flex-1 pt-16 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] h-[calc(100vh-64px)] overflow-hidden">
+        <div className="flex flex-col lg:grid lg:grid-cols-[360px_1fr] h-[calc(100vh-64px)] overflow-hidden">
           {/* ── Left Sidebar ── */}
-          <div className="explore-sidebar-panel flex flex-col relative z-10 overflow-hidden bg-background">
+          <div className="explore-sidebar-panel flex flex-col relative z-10 overflow-hidden bg-background shrink-0 lg:shrink lg:max-h-none max-h-[45vh] lg:max-h-full">
             {/* ── Sticky Controls ── */}
             <div className="shrink-0 explore-sidebar-controls">
               {/* FROM section */}
