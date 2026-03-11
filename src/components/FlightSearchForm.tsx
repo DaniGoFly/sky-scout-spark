@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { useNavigate } from "react-router-dom";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ArrowRightLeft, Search, Globe, CalendarOff, ChevronDown, Navigation, MapPin, Zap, Plane, Shield, CheckCircle2, Wifi, Minus, Plus, Calendar, Users } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
@@ -19,6 +18,7 @@ import { toast } from "sonner";
 import type { AISearchParams } from "./FlightSearchHero";
 import { useLocale } from "@/hooks/useLocale";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
@@ -49,6 +49,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { currency, marketCode } = useLocale();
+  const isMobile = useIsMobile();
 
   const [tripType, setTripType] = useState<TripType>("roundtrip");
   const [origins, setOrigins] = useState<AirportSelection[]>([]);
@@ -328,6 +329,16 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
   const SEG_VALUE = "text-[14px] font-semibold text-foreground leading-[20px] whitespace-nowrap";
   const SEG_PLACEHOLDER = "text-[14px] font-normal text-muted-foreground/40 leading-[20px] whitespace-nowrap";
 
+  /* ── My location handler ── */
+  const handleUseMyLocation = useCallback(async () => {
+    const result = await requestNearestAirport();
+    if (result) {
+      userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
+      setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
+      setErrors(e => ({ ...e, from: undefined }));
+    }
+  }, []);
+
   return (
     <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-visible">
       {/* ── Trip type pill ── */}
@@ -518,14 +529,15 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
             </button>
           </div>
 
-          {/* Mobile/Tablet: Kiwi/Skyscanner hybrid — clean stacked fields */}
+          {/* ═══════════════════════════════════════════
+              MOBILE/TABLET: Clean stacked search card
+              ═══════════════════════════════════════════ */}
           <div className="xl:hidden flex flex-col gap-0">
-            {/* ── Search card — each field a distinct row ── */}
             <div className="rounded-2xl border border-border/20 bg-card/40 backdrop-blur-sm overflow-hidden">
               {/* FROM row */}
-              <div className={`relative flex items-center gap-3 px-4 min-h-[56px] ${errRing(!!errors.from)}`}>
-                <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
-                <div className="flex-1 min-w-0 pr-12">
+              <div className={`relative flex items-center gap-3 px-4 min-h-[52px] ${errRing(!!errors.from)}`}>
+                <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                <div className="flex-1 min-w-0 pr-10">
                   <MultiOriginInput
                     values={origins}
                     onChange={handleOriginsChange}
@@ -533,22 +545,22 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                     bare
                   />
                 </div>
-                {/* Swap button — overlapping FROM/TO separator */}
+                {/* Swap button */}
                 <button type="button" onClick={swapLocations}
                   disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-                  className="absolute right-3 top-1/2 translate-y-[calc(-50%+0.5px)] z-30 w-10 h-10 rounded-full border border-border/30 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm active:scale-95"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full border border-border/30 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm active:scale-95"
                   aria-label="Swap"
                 >
-                  <ArrowRightLeft className="w-4 h-4 rotate-90" />
+                  <ArrowRightLeft className="w-3.5 h-3.5 rotate-90" />
                 </button>
               </div>
 
               <div className="h-px bg-border/15 mx-4" />
 
               {/* TO row */}
-              <div className={`flex items-center gap-3 px-4 min-h-[56px] ${errRing(!!errors.to)}`}>
-                <MapPin className="w-5 h-5 text-muted-foreground/30 shrink-0" />
-                <div className="flex-1 min-w-0 pr-12">
+              <div className={`flex items-center gap-3 px-4 min-h-[52px] ${errRing(!!errors.to)}`}>
+                <MapPin className="w-4 h-4 text-muted-foreground/30 shrink-0" />
+                <div className="flex-1 min-w-0 pr-10">
                   {anywhere ? (
                     <div className="flex items-center gap-1.5 min-h-[28px]">
                       <Globe className="w-4 h-4 text-primary shrink-0" />
@@ -570,7 +582,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
 
               {/* DATES row */}
               {isAnyDay ? (
-                <div className={`px-4 min-h-[56px] flex flex-col justify-center ${errRing(!!errors.dates)}`}>
+                <div className={`px-4 min-h-[52px] flex flex-col justify-center ${errRing(!!errors.dates)}`}>
                   <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
                   {tripType === "roundtrip" ? (
                     <TripLengthSlider value={tripLength} onChange={setTripLength} />
@@ -580,8 +592,8 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                 </div>
               ) : (
                 <div className={tripType === "roundtrip" ? "grid grid-cols-2" : ""}>
-                  <div className={`flex items-center gap-3 px-4 min-h-[56px] cursor-pointer ${tripType === "roundtrip" ? "border-r border-border/15" : ""} ${errRing(!!errors.dates)}`}>
-                    <Calendar className="w-[18px] h-[18px] text-muted-foreground/30 shrink-0" />
+                  <div className={`flex items-center gap-3 px-4 min-h-[52px] cursor-pointer ${tripType === "roundtrip" ? "border-r border-border/15" : ""} ${errRing(!!errors.dates)}`}>
+                    <Calendar className="w-4 h-4 text-muted-foreground/30 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <FlightDateRangePicker
                         departDate={departDate} returnDate={returnDate}
@@ -593,7 +605,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                     </div>
                   </div>
                   {tripType === "roundtrip" && (
-                    <div className={`flex items-center gap-3 px-4 min-h-[56px] cursor-pointer ${errRing(!!errors.dates)}`}>
+                    <div className={`flex items-center gap-3 px-4 min-h-[52px] cursor-pointer ${errRing(!!errors.dates)}`}>
                       <div className="min-w-0 flex-1">
                         <FlightDateRangePicker
                           departDate={departDate} returnDate={returnDate}
@@ -611,26 +623,63 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <div className="h-px bg-border/15 mx-4" />
 
               {/* TRAVELERS row */}
-              <div className="flex items-center gap-3 px-4 min-h-[56px] cursor-pointer">
-                <Users className="w-[18px] h-[18px] text-muted-foreground/30 shrink-0" />
+              <div className="flex items-center gap-3 px-4 min-h-[52px] cursor-pointer">
+                <Users className="w-4 h-4 text-muted-foreground/30 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
                 </div>
               </div>
             </div>
 
-            {/* ── Options — clean Kiwi-style ── */}
-            <div className="px-4 pt-4 pb-1 space-y-2.5">
-              <label className="flex items-center gap-3 cursor-pointer select-none min-h-[40px]">
-                <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-[18px] w-[18px] rounded-[4px] border-muted-foreground/30" />
-                <span className="text-[14px] text-foreground/80 font-medium">{t("search.direct_flights_only")}</span>
-              </label>
+            {/* ── Utility options — grouped cleanly ── */}
+            <div className="px-1 pt-3 pb-1 space-y-2">
+              {/* Row 1: Direct flights + My location */}
+              <div className="flex items-center gap-4 flex-wrap">
+                <label className="flex items-center gap-2 cursor-pointer select-none min-h-[36px]">
+                  <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px] border-muted-foreground/30" />
+                  <span className="text-[12px] text-muted-foreground font-medium">{t("search.direct_flights_only")}</span>
+                </label>
+                <button onClick={handleUseMyLocation} className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-primary transition-colors cursor-pointer font-medium min-h-[36px]">
+                  <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
+                </button>
+              </div>
+
+              {/* Row 2: Nearby airports */}
+              <div className="flex items-start gap-4 flex-wrap">
+                <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
+                {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
+              </div>
+
+              {/* Row 3: Any day + Anywhere */}
+              <div className="flex items-center gap-4 flex-wrap">
+                <label className="flex items-center gap-2 cursor-pointer select-none min-h-[36px]">
+                  <Checkbox
+                    checked={isAnyDay}
+                    onCheckedChange={checked => {
+                      const on = checked === true;
+                      setIsAnyDay(on);
+                      if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); setCalendarOpen(false); }
+                    }}
+                    className="h-4 w-4 rounded-[4px]"
+                  />
+                  <span className="text-[12px] text-muted-foreground font-medium flex items-center gap-1">
+                    <CalendarOff className="w-3 h-3" /> {t("search.any_day", "Any day")}
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none min-h-[36px]">
+                  <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-4 w-4 rounded-[4px]" />
+                  <span className="text-[12px] text-muted-foreground font-medium flex items-center gap-1">
+                    <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
+                  </span>
+                </label>
+              </div>
             </div>
 
-            {/* ── Search CTA — full width prominent button ── */}
-            <div className="px-4 pb-4 pt-3">
+            {/* ── Search CTA ── */}
+            <div className="pt-2 pb-1">
               <button type="button" onClick={handleSearch}
-                className="w-full flex items-center justify-center gap-2.5 min-h-[52px] rounded-2xl bg-primary text-primary-foreground font-semibold text-[16px] active:scale-[0.97] active:brightness-90 transition-all cursor-pointer shadow-lg shadow-primary/20">
+                className="w-full flex items-center justify-center gap-2.5 min-h-[50px] rounded-2xl bg-primary text-primary-foreground font-semibold text-[15px] active:scale-[0.97] active:brightness-90 transition-all cursor-pointer shadow-lg shadow-primary/20">
                 <Search className="w-5 h-5" />
                 <span>{t("search.search_flights", t("search.search"))}</span>
               </button>
@@ -638,76 +687,58 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
           </div>
         </div>
 
-        {/* Calendar panel (inline absolute positioning, scrolls with search bar) */}
+        {/* Calendar panel — full-screen overlay on mobile, inline on desktop */}
         {calendarOpen && !isAnyDay && (
-          <div className="absolute left-0 right-0 top-full z-[100]">
-            <CalendarPanel
-              departDate={departDate}
-              returnDate={returnDate}
-              onDepartChange={handleDepartChange}
-              onReturnChange={handleReturnChange}
-              tripType={tripType as "roundtrip" | "oneway"}
-              onTripTypeChange={handleTripTypeChange}
-              onDone={handleCloseCalendar}
-              departFlexBefore={departFlexBefore}
-              departFlexAfter={departFlexAfter}
-              returnFlexBefore={returnFlexBefore}
-              returnFlexAfter={returnFlexAfter}
-              onDepartFlexBeforeChange={setDepartFlexBefore}
-              onDepartFlexAfterChange={setDepartFlexAfter}
-              onReturnFlexBeforeChange={setReturnFlexBefore}
-              onReturnFlexAfterChange={setReturnFlexAfter}
-              initialTab={calendarInitialTab}
-            />
-          </div>
+          isMobile ? (
+            <div className="fixed inset-0 z-[1000] bg-background/95 backdrop-blur-sm overflow-y-auto" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+              <CalendarPanel
+                departDate={departDate}
+                returnDate={returnDate}
+                onDepartChange={handleDepartChange}
+                onReturnChange={handleReturnChange}
+                tripType={tripType as "roundtrip" | "oneway"}
+                onTripTypeChange={handleTripTypeChange}
+                onDone={handleCloseCalendar}
+                departFlexBefore={departFlexBefore}
+                departFlexAfter={departFlexAfter}
+                returnFlexBefore={returnFlexBefore}
+                returnFlexAfter={returnFlexAfter}
+                onDepartFlexBeforeChange={setDepartFlexBefore}
+                onDepartFlexAfterChange={setDepartFlexAfter}
+                onReturnFlexBeforeChange={setReturnFlexBefore}
+                onReturnFlexAfterChange={setReturnFlexAfter}
+                initialTab={calendarInitialTab}
+              />
+            </div>
+          ) : (
+            <div className="absolute left-0 right-0 top-full z-[100]">
+              <CalendarPanel
+                departDate={departDate}
+                returnDate={returnDate}
+                onDepartChange={handleDepartChange}
+                onReturnChange={handleReturnChange}
+                tripType={tripType as "roundtrip" | "oneway"}
+                onTripTypeChange={handleTripTypeChange}
+                onDone={handleCloseCalendar}
+                departFlexBefore={departFlexBefore}
+                departFlexAfter={departFlexAfter}
+                returnFlexBefore={returnFlexBefore}
+                returnFlexAfter={returnFlexAfter}
+                onDepartFlexBeforeChange={setDepartFlexBefore}
+                onDepartFlexAfterChange={setDepartFlexAfter}
+                onReturnFlexBeforeChange={setReturnFlexBefore}
+                onReturnFlexAfterChange={setReturnFlexAfter}
+                initialTab={calendarInitialTab}
+              />
+            </div>
+          )
         )}
 
       </div>
 
       {/* ═══════════════════════════════════════════
-          OPTIONS ROW — clean, secondary
+          DESKTOP OPTIONS ROW — UNCHANGED
           ═══════════════════════════════════════════ */}
-      <div className="xl:hidden flex flex-wrap items-center gap-x-5 gap-y-2.5 px-1">
-        <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
-        {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
-
-        <div className="flex items-center gap-4 flex-wrap">
-          <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap min-h-[40px]">
-            <Checkbox
-              checked={isAnyDay}
-              onCheckedChange={checked => {
-                const on = checked === true;
-                setIsAnyDay(on);
-                if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); setCalendarOpen(false); }
-              }}
-              className="h-5 w-5 rounded-[5px]"
-            />
-            <span className="text-[13px] text-muted-foreground font-medium flex items-center gap-1">
-              <CalendarOff className="w-3.5 h-3.5" /> {t("search.any_day", "Any day")}
-            </span>
-          </label>
-
-          <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap min-h-[40px]">
-            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-5 w-5 rounded-[5px]" />
-            <span className="text-[13px] text-muted-foreground font-medium flex items-center gap-1">
-              <Globe className="w-3.5 h-3.5" /> {t("search.anywhere", "Anywhere")}
-            </span>
-          </label>
-
-          <button onClick={async () => {
-            const result = await requestNearestAirport();
-            if (result) {
-              userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
-              setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
-              setErrors(e => ({ ...e, from: undefined }));
-            }
-          }} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap font-medium min-h-[40px]">
-            <Navigation className="w-4 h-4" /> {t("search.use_location")}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Desktop options row ── */}
       <div className="hidden xl:flex w-full min-h-[44px] items-start justify-between gap-4 px-2 pr-6">
         {/* LEFT GROUP */}
         <div className="flex items-start gap-5 min-w-0 shrink">
@@ -747,10 +778,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
             </span>
           </label>
 
-          <button onClick={async () => {
-              const result = await requestNearestAirport();
-              if (result) { userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon }; setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]); setErrors(e => ({ ...e, from: undefined })); }
-            }}
+          <button onClick={handleUseMyLocation}
             className="flex h-5 items-center gap-1.5 text-[12px] text-muted-foreground/60 hover:text-primary transition-colors cursor-pointer whitespace-nowrap shrink-0 font-medium">
             <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
           </button>
