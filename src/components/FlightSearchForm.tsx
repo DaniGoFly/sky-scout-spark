@@ -699,7 +699,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
       </div>
 
       {/* ── Desktop options row ── */}
-      <div className="hidden lg:flex w-full min-h-[44px] items-start justify-between gap-4 px-2 pr-6">
+      <div className="hidden xl:flex w-full min-h-[44px] items-start justify-between gap-4 px-2 pr-6">
         {/* LEFT GROUP */}
         <div className="flex items-start gap-5 min-w-0 shrink">
           <div className="w-[200px] shrink-0">

@@ -674,8 +674,8 @@ const LiveFlightResults = () => {
         )}
 
         {hasResults && !showSkeleton && (
-            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
-              <aside className="hidden lg:block sticky top-24 h-fit self-start">
+            <div className="grid grid-cols-1 xl:grid-cols-[260px_1fr] gap-6 items-start">
+              <aside className="hidden xl:block sticky top-24 h-fit self-start">
               <FlightFilters onFiltersChange={handleFiltersChange} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </aside>
             <div className="min-w-0 space-y-3">
