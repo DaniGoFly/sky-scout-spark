@@ -653,7 +653,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
       {/* ═══════════════════════════════════════════
           OPTIONS ROW — clean, secondary
           ═══════════════════════════════════════════ */}
-      <div className="lg:hidden flex flex-col gap-2.5 px-1">
+      <div className="xl:hidden flex flex-col gap-2.5 px-1">
         <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
 
