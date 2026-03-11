@@ -14,7 +14,6 @@ export interface CalendarPanelProps {
   tripType: "roundtrip" | "oneway";
   onTripTypeChange: (type: "roundtrip" | "oneway") => void;
   onDone: () => void;
-  /* Flex dates state */
   departFlexBefore: number;
   departFlexAfter: number;
   returnFlexBefore: number;
@@ -23,7 +22,6 @@ export interface CalendarPanelProps {
   onDepartFlexAfterChange: (v: number) => void;
   onReturnFlexBeforeChange: (v: number) => void;
   onReturnFlexAfterChange: (v: number) => void;
-  /** Override the initial active tab when the panel mounts */
   initialTab?: "specific" | "flexible";
 }
 
@@ -42,10 +40,10 @@ const DayCell = React.memo(({
     className={cn(
       "relative h-10 w-10 text-sm font-medium transition-all rounded-full",
       "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1",
-      isDisabled && "text-gray-300 cursor-not-allowed",
-      !isDisabled && !isStart && !isEnd && !isInRange && "text-gray-700 hover:bg-primary/10",
-      isInRange && !isStart && !isEnd && "bg-primary/10 text-gray-800 rounded-none",
-      (isStart || isEnd) && "bg-primary text-white font-semibold shadow-sm",
+      isDisabled && "text-muted-foreground/30 cursor-not-allowed",
+      !isDisabled && !isStart && !isEnd && !isInRange && "text-foreground/80 hover:bg-primary/10",
+      isInRange && !isStart && !isEnd && "bg-primary/10 text-foreground rounded-none",
+      (isStart || isEnd) && "bg-primary text-primary-foreground font-semibold shadow-sm",
       isStart && isInRange && "rounded-l-full rounded-r-none",
       isEnd && isInRange && "rounded-r-full rounded-l-none",
       isStart && !isInRange && "rounded-full",
@@ -70,10 +68,10 @@ const MonthGrid = React.memo(({
 
   return (
     <div className="flex-1 min-w-0">
-      <h3 className="text-center font-semibold text-gray-900 text-base mb-4">{format(month, "MMMM yyyy")}</h3>
+      <h3 className="text-center font-semibold text-foreground text-base mb-3">{format(month, "MMMM yyyy")}</h3>
       <div className="grid grid-cols-7 gap-0 mb-2">
         {WEEKDAYS.map((d) => (
-          <div key={d} className="h-8 flex items-center justify-center text-xs font-medium text-gray-400 uppercase tracking-wider">{d}</div>
+          <div key={d} className="h-8 flex items-center justify-center text-xs font-medium text-muted-foreground uppercase tracking-wider">{d}</div>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-0">
@@ -98,15 +96,15 @@ MonthGrid.displayName = "MonthGrid";
 /* ─── Flex Stepper ─── */
 const FlexStepper = ({ label, value, onChange, max = 10 }: { label: string; value: number; onChange: (v: number) => void; max?: number }) => (
   <div className="flex items-center justify-between">
-    <span className="text-sm text-gray-600">{label}</span>
+    <span className="text-sm text-muted-foreground">{label}</span>
     <div className="flex items-center gap-2">
       <button type="button" onClick={() => onChange(Math.max(0, value - 1))} disabled={value <= 0}
-        className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-30 transition-colors">
+        className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
         <Minus className="w-3.5 h-3.5" />
       </button>
-      <span className="w-6 text-center text-sm font-semibold text-gray-900 tabular-nums">{value}</span>
+      <span className="w-6 text-center text-sm font-semibold text-foreground tabular-nums">{value}</span>
       <button type="button" onClick={() => onChange(Math.min(max, value + 1))} disabled={value >= max}
-        className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 disabled:opacity-30 transition-colors">
+        className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary/80 text-muted-foreground disabled:opacity-30 transition-colors">
         <Plus className="w-3.5 h-3.5" />
       </button>
     </div>
@@ -114,7 +112,7 @@ const FlexStepper = ({ label, value, onChange, max = 10 }: { label: string; valu
 );
 
 /* ═══════════════════════════════════════════
-   CALENDAR PANEL — Skyscanner-style attached
+   CALENDAR PANEL
    ═══════════════════════════════════════════ */
 export const CalendarPanel: React.FC<CalendarPanelProps> = ({
   departDate, returnDate, onDepartChange, onReturnChange,
@@ -169,14 +167,120 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
     onReturnFlexAfterChange(0);
   }, [onDepartFlexBeforeChange, onDepartFlexAfterChange, onReturnFlexBeforeChange, onReturnFlexAfterChange]);
 
+  /* ── Mobile: full-screen calendar ── */
+  if (isMobile) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
+          <button type="button" onClick={onDone} className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors" aria-label="Close">
+            <X className="h-5 w-5 text-foreground" />
+          </button>
+          <span className="text-sm font-semibold text-foreground">Select dates</span>
+          <div className="w-9" />
+        </div>
+
+        {/* Trip type pills */}
+        <div className="flex gap-1.5 px-4 pt-3 pb-2 shrink-0">
+          <button type="button" onClick={() => onTripTypeChange("roundtrip")}
+            className={cn("px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+              tripType === "roundtrip" ? "bg-primary text-primary-foreground" : "text-muted-foreground bg-secondary hover:bg-secondary/80")}>
+            Round trip
+          </button>
+          <button type="button" onClick={() => onTripTypeChange("oneway")}
+            className={cn("px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+              tripType === "oneway" ? "bg-primary text-primary-foreground" : "text-muted-foreground bg-secondary hover:bg-secondary/80")}>
+            One way
+          </button>
+        </div>
+
+        {/* Tab switcher */}
+        <div className="flex mx-4 mb-3 bg-secondary rounded-full p-0.5 shrink-0">
+          <button type="button" onClick={() => setActiveTab("specific")}
+            className={cn("flex-1 px-4 py-1.5 rounded-full text-sm font-medium transition-all text-center",
+              activeTab === "specific" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>
+            Specific dates
+          </button>
+          <button type="button" onClick={() => setActiveTab("flexible")}
+            className={cn("flex-1 px-4 py-1.5 rounded-full text-sm font-medium transition-all text-center",
+              activeTab === "flexible" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>
+            Flexible dates
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-4">
+          {activeTab === "specific" ? (
+            <>
+              <p className="text-sm text-center text-muted-foreground py-2">
+                {tripType === "roundtrip"
+                  ? (selectingReturn ? "Select return date" : "Select departure date")
+                  : "Select departure date"}
+              </p>
+              {/* Month nav + single month grid */}
+              <div className="flex items-center gap-2 mb-2">
+                <button type="button" onClick={() => setCurrentMonth(prev => subMonths(prev, 1))} disabled={!canGoPrev}
+                  className={cn("p-2 rounded-full hover:bg-secondary transition-colors shrink-0",
+                    !canGoPrev && "opacity-20 cursor-not-allowed")} aria-label="Previous month">
+                  <ChevronLeft className="h-5 w-5 text-foreground" />
+                </button>
+                <div className="flex-1 min-w-0">
+                  <MonthGrid month={currentMonth} departDate={departDate} returnDate={returnDate} tripType={tripType} onDayClick={handleDayClick} today={today} />
+                </div>
+                <button type="button" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+                  className="p-2 rounded-full hover:bg-secondary transition-colors shrink-0" aria-label="Next month">
+                  <ChevronRight className="h-5 w-5 text-foreground" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="py-4 space-y-5 max-w-sm mx-auto">
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-3">Departure flexibility</p>
+                <div className="space-y-2.5">
+                  <FlexStepper label="Days before" value={departFlexBefore} onChange={onDepartFlexBeforeChange} />
+                  <FlexStepper label="Days after" value={departFlexAfter} onChange={onDepartFlexAfterChange} />
+                </div>
+              </div>
+              {tripType === "roundtrip" && (
+                <div>
+                  <div className="h-px bg-border/30 mb-4" />
+                  <p className="text-sm font-semibold text-foreground mb-3">Return flexibility</p>
+                  <div className="space-y-2.5">
+                    <FlexStepper label="Days before" value={returnFlexBefore} onChange={onReturnFlexBeforeChange} />
+                    <FlexStepper label="Days after" value={returnFlexAfter} onChange={onReturnFlexAfterChange} />
+                  </div>
+                </div>
+              )}
+              <button type="button" onClick={handleResetFlex}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Reset all
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Footer — sticky at bottom */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border/30 bg-background shrink-0" style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom))" }}>
+          <Button type="button" variant="ghost" onClick={handleClear} className="text-sm text-muted-foreground hover:text-foreground">
+            Clear dates
+          </Button>
+          <Button type="button" onClick={onDone} className="px-8 rounded-full">
+            Done
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Desktop: inline panel (unchanged) ── */
   return (
     <div
       className="w-full bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden pointer-events-auto z-[9999] relative isolate opacity-100 mix-blend-normal"
       onClick={(e) => e.stopPropagation()}
     >
-      {/* ── Header: Trip type + Tabs + Close ── */}
+      {/* Header: Trip type + Tabs + Close */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white">
-        {/* Trip type */}
         <div className="flex gap-1">
           <button type="button" onClick={() => onTripTypeChange("roundtrip")}
             className={cn("px-4 py-1.5 rounded-full text-sm font-medium transition-all",
@@ -190,7 +294,6 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
           </button>
         </div>
 
-        {/* Tab switcher */}
         <div className="flex bg-gray-100 rounded-full p-0.5">
           <button type="button" onClick={() => setActiveTab("specific")}
             className={cn("px-5 py-1.5 rounded-full text-sm font-medium transition-all",
@@ -204,40 +307,34 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
           </button>
         </div>
 
-        {/* Close */}
         <button type="button" onClick={onDone}
           className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600" aria-label="Close calendar">
           <X className="h-5 w-5" />
         </button>
       </div>
 
-      {/* ── Content ── */}
+      {/* Content */}
       {activeTab === "specific" ? (
         <>
-          {/* Selection hint */}
           <div className="px-6 py-2.5 text-sm text-center text-gray-400 bg-white border-b border-gray-100">
             {tripType === "roundtrip"
               ? (selectingReturn ? "Select return date" : "Select departure date")
               : "Select departure date"}
           </div>
 
-          {/* Month navigation + Calendars */}
           <div className="px-6 pt-2 pb-4">
             <div className="flex items-start gap-8">
-              {/* Prev arrow */}
               <button type="button" onClick={() => setCurrentMonth(prev => subMonths(prev, 1))} disabled={!canGoPrev}
                 className={cn("mt-1 p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0",
                   !canGoPrev && "opacity-20 cursor-not-allowed")} aria-label="Previous month">
                 <ChevronLeft className="h-5 w-5 text-gray-600" />
               </button>
 
-              {/* Month grids */}
-              <div className={cn("flex-1 min-w-0", isMobile ? "flex flex-col gap-6" : "flex gap-10")}>
+              <div className="flex-1 min-w-0 flex gap-10">
                 <MonthGrid month={currentMonth} departDate={departDate} returnDate={returnDate} tripType={tripType} onDayClick={handleDayClick} today={today} />
-                {!isMobile && <MonthGrid month={nextMonth} departDate={departDate} returnDate={returnDate} tripType={tripType} onDayClick={handleDayClick} today={today} />}
+                <MonthGrid month={nextMonth} departDate={departDate} returnDate={returnDate} tripType={tripType} onDayClick={handleDayClick} today={today} />
               </div>
 
-              {/* Next arrow */}
               <button type="button" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
                 className="mt-1 p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0" aria-label="Next month">
                 <ChevronRight className="h-5 w-5 text-gray-600" />
@@ -246,7 +343,6 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
           </div>
         </>
       ) : (
-        /* ── Flexible dates tab ── */
         <div className="px-6 py-6 max-w-md mx-auto space-y-5">
           <div>
             <p className="text-sm font-semibold text-gray-900 mb-3">Departure flexibility</p>
@@ -272,7 +368,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
         </div>
       )}
 
-      {/* ── Footer ── */}
+      {/* Footer */}
       <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-white">
         <Button type="button" variant="ghost" onClick={handleClear} className="text-sm text-gray-500 hover:text-gray-800">
           Clear dates
@@ -286,8 +382,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
 };
 
 /* ═══════════════════════════════════════════
-   DEFAULT EXPORT — kept for backward compat
-   (Trigger-only component for segment mode)
+   DEFAULT EXPORT — trigger-only component
    ═══════════════════════════════════════════ */
 interface FlightDateRangePickerProps {
   departDate: Date | null;
