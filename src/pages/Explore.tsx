@@ -53,8 +53,8 @@ const Explore = () => {
   
   const [selectedDest, setSelectedDest] = useState<ExploreResult | null>(null);
   const [maxPrice, setMaxPrice] = useState<number>(2000);
-  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
   const isMobile = useIsMobile();
   // Parse origin from URL params only (e.g. Anywhere mode from SearchForm)
   useEffect(() => {
