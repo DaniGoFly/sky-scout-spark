@@ -591,9 +591,9 @@ const LiveFlightResults = () => {
             <Button variant="ghost" size="icon" onClick={() => navigate("/flights")} className="h-9 w-9 shrink-0" aria-label={t("results.back_to_search")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-sm sm:text-base md:text-lg font-semibold text-foreground break-words">{headerTitle}</h1>
-              <p className="text-xs md:text-sm text-muted-foreground break-words">
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <h1 className="text-sm sm:text-base md:text-lg font-semibold text-foreground truncate">{headerTitle}</h1>
+              <p className="text-[11px] sm:text-xs md:text-sm text-muted-foreground truncate">
                 {formatDate(depart)}
                 {returnDate && ` – ${formatDate(returnDate)}`} · {totalPassengers} {totalPassengers > 1 ? t("results.travelers") : t("results.traveler")}
                 {isMultiOrigin && ` · ${origins.length} airports`}
