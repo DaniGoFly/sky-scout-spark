@@ -7,7 +7,7 @@ import AirportAutocomplete from "./AirportAutocomplete";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { OverlayPortal } from "./overlays/OverlayPortal";
+import { MobileCalendarModal } from "./overlays/MobileCalendarModal";
 
 
 interface AirportSelection {
@@ -242,11 +242,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
       {/* Mobile: fixed full-screen calendar modal */}
       {isMobile && openCalendarSegmentId && activeSegment && (
-        <OverlayPortal>
-        <div
-          className="fixed inset-0 z-[9999] bg-background flex flex-col"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-        >
+        <MobileCalendarModal onClose={() => setOpenCalendarSegmentId(null)}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
             <button
@@ -264,7 +260,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
           </div>
 
           {/* Calendar */}
-          <div className="flex-1 flex items-start justify-center overflow-y-auto pt-4 px-4">
+          <div className="flex-1 flex items-start justify-center overflow-y-auto pt-4 px-4" style={{ touchAction: "pan-y" }}>
             <CalendarComponent
               mode="single"
               selected={activeSegment.date || undefined}
@@ -305,8 +301,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
               Done
             </Button>
           </div>
-        </div>
-        </OverlayPortal>
+        </MobileCalendarModal>
       )}
 
       {/* Add flight button */}
