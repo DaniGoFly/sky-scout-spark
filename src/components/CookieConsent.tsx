@@ -140,11 +140,11 @@ export default function CookieConsent() {
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                     {t("cookie.banner_text")}{" "}
-                    <Link to="/privacy-policy" className="text-primary hover:underline">
+                    <Link to={privacyUrl} className="text-primary hover:underline">
                       {t("footer.privacy")}
                     </Link>
                     {" · "}
-                    <Link to="/cookies" className="text-primary hover:underline">
+                    <Link to={cookiesUrl} className="text-primary hover:underline">
                       {t("cookie.cookie_policy")}
                     </Link>
                   </p>
