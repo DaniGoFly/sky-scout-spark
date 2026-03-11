@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addDays } from "date-fns";
-import { Loader2, Navigation, Plane, MapPin, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Navigation, Plane, MapPin, ArrowRight, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
