@@ -32,7 +32,7 @@ const MobileFiltersDrawer = ({
   const [airlines, setAirlines] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>(DEFAULT_PRICE_RANGE);
   const [departureTime, setDepartureTime] = useState<string[]>([]);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const DEPARTURE_TIMES = useMemo(() => [
     { value: "morning", label: t("filters.morning") },
