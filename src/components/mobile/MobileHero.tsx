@@ -1,12 +1,14 @@
 /**
  * MobileHero — App-like mobile homepage hero
- * Inspired by major travel platforms: category icons, clean search, quick destinations
+ * Structure: Logo → Headline → Category icons → Search form → Quick destinations → Smart tools
+ * Uses GoFlyFinder's dark fade gradient, NOT solid blocks.
  * Only rendered on mobile (<768px). Desktop hero renders separately.
  */
 import { memo, forwardRef, useImperativeHandle, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plane, Search, MapPin, Sparkles, CalendarSearch, ChevronRight, Hotel, Compass } from "lucide-react";
+import { Plane, Sparkles, MapPin, CalendarSearch, ChevronRight, Building2, Compass, Car, Package } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import FlightSearchForm, { type FlightSearchFormHandle } from "../FlightSearchForm";
 import TravelAssistant from "../TravelAssistant";
 import type { AISearchParams } from "../FlightSearchHero";
@@ -25,11 +27,14 @@ const QUICK_DESTINATIONS = [
   { city: "London", code: "LHR", emoji: "🇬🇧", price: "€120" },
 ];
 
-const CATEGORY_ICONS = [
-  { icon: Plane, labelKey: "nav.flights", path: null, active: true },
-  { icon: Hotel, labelKey: "nav.hotels", path: "/hotels", active: false },
-  { icon: Compass, labelKey: "nav.explore", path: "/explore", active: false },
-];
+/** Service category pills — matches desktop Hero behavior.
+ *  Flights = active, others trigger "Coming soon" toast. */
+const SERVICE_PILLS = [
+  { id: "flights", labelKey: "nav.flights", icon: Plane, active: true },
+  { id: "hotels", labelKey: "nav.hotels", icon: Building2, active: false, comingSoon: true },
+  { id: "cars", labelKey: "hero.car_rental", icon: Car, active: false, comingSoon: true },
+  { id: "packages", labelKey: "hero.packages", icon: Package, active: false, comingSoon: true },
+] as const;
 
 const TOOLS = [
   { icon: Sparkles, titleKey: "hero_section.ai_travel_guide", descKey: "hero_section.ai_travel_desc", action: "ai" as const },
@@ -59,6 +64,13 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
     searchRef?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const handlePillClick = (pill: typeof SERVICE_PILLS[number]) => {
+    if (pill.active) return;
+    if ("comingSoon" in pill && pill.comingSoon) {
+      toast.info(t("hero.coming_soon"), { duration: 3000 });
+    }
+  };
+
   const handleToolClick = (action: "ai" | "explore" | "flex") => {
     if (action === "ai") setShowAIGuide(!showAIGuide);
     else if (action === "explore") navigate("/explore");
@@ -68,71 +80,85 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
     }
   };
 
-  const handleCategoryClick = (path: string | null) => {
-    if (path) navigate(path);
-  };
-
   return (
     <div className="md:hidden">
-      {/* ── Logo area + greeting ── */}
-      <section className="pt-20 px-5 pb-4 bg-background relative">
+      {/* ═══════════════════════════════════════════════
+          HERO ZONE — with GoFlyFinder atmospheric gradient
+          ═══════════════════════════════════════════════ */}
+      <section className="relative overflow-visible bg-background">
+        {/* Atmospheric light sweep — matching desktop hero */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div
             className="absolute top-0 left-0 w-full h-full"
-            style={{ background: "linear-gradient(180deg, hsl(215 50% 80% / 0.07) 0%, transparent 60%)" }}
+            style={{ background: "linear-gradient(180deg, hsl(215 50% 80% / 0.09) 0%, hsl(215 55% 82% / 0.06) 30%, hsl(220 50% 75% / 0.03) 60%, transparent 100%)" }}
+          />
+          <div
+            className="absolute top-0 left-0 w-full h-full"
+            style={{ background: "radial-gradient(ellipse 120% 80% at 30% 40%, hsl(215 50% 88% / 0.05), transparent 70%)" }}
           />
         </div>
 
-        <div className="relative z-10">
-          <h1 className="text-[22px] font-bold text-foreground leading-snug">
+        <div className="relative z-10 pt-20 pb-6 px-5">
+          {/* ── 1. Brand + Logo ── */}
+          <div className="flex items-center gap-2.5 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Plane className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-lg font-bold text-foreground tracking-tight">
+              GoFlyFinder
+            </span>
+          </div>
+
+          {/* ── 2. Headline ── */}
+          <h1 className="text-[22px] font-bold text-foreground leading-[1.2] tracking-tight mb-2">
             {t("hero.headline_1")}{" "}
             <span className="text-primary">{t("hero.headline_2")}</span>
           </h1>
-          <p className="mt-1.5 text-[13px] text-muted-foreground leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed mb-6 max-w-[320px]">
             {t("hero.tagline")}
           </p>
+
+          {/* ── 3. Service category pills — horizontal scroll ── */}
+          <div className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+            {SERVICE_PILLS.map((pill) => {
+              const Icon = pill.icon;
+              return (
+                <button
+                  key={pill.id}
+                  onClick={() => handlePillClick(pill)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-all shrink-0
+                    ${pill.active
+                      ? "bg-primary/15 text-primary border border-primary/25"
+                      : "text-muted-foreground/50 active:text-muted-foreground"
+                    }
+                  `}
+                >
+                  <Icon className="w-4 h-4" />
+                  {t(pill.labelKey)}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── 4. Search form ── */}
+          <div ref={searchRef} className="overflow-visible">
+            <FlightSearchForm
+              ref={searchFormRef}
+              aiSearchParams={aiSearchParams}
+              onParamsConsumed={handleParamsConsumed}
+            />
+          </div>
         </div>
       </section>
 
-      {/* ── Category icons row (Skyscanner-inspired) ── */}
-      <section className="px-5 pb-4 bg-background">
-        <div className="flex items-center gap-6">
-          {CATEGORY_ICONS.map((cat) => {
-            const Icon = cat.icon;
-            return (
-              <button
-                key={cat.labelKey}
-                onClick={() => handleCategoryClick(cat.path)}
-                className="flex flex-col items-center gap-1.5 min-w-[60px]"
-              >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
-                  cat.active
-                    ? "bg-primary/15 ring-2 ring-primary/30"
-                    : "bg-secondary/60 active:bg-secondary"
-                }`}>
-                  <Icon className={`w-6 h-6 ${cat.active ? "text-primary" : "text-muted-foreground"}`} />
-                </div>
-                <span className={`text-[11px] font-semibold ${cat.active ? "text-primary" : "text-muted-foreground"}`}>
-                  {t(cat.labelKey)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* ═══════════════════════════════════════════════
+          BELOW HERO — Discovery content
+          ═══════════════════════════════════════════════ */}
 
-      {/* ── Search form — full mobile layout ── */}
-      <section ref={searchRef} className="px-4 pt-2 pb-4 bg-background relative z-10">
-        <FlightSearchForm
-          ref={searchFormRef}
-          aiSearchParams={aiSearchParams}
-          onParamsConsumed={handleParamsConsumed}
-        />
-      </section>
-
-      {/* ── Quick destinations — horizontal scroll ── */}
-      <section className="px-4 pt-4 pb-2 bg-background">
-        <h3 className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] mb-3">
+      {/* ── Quick destinations — horizontal snap scroll ── */}
+      <section className="px-4 pt-8 pb-2 bg-background">
+        <h3 className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] mb-3 px-1">
           {t("hero_section.popular_destinations")}
         </h3>
         <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1 snap-x snap-mandatory">
@@ -140,7 +166,7 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
             <button
               key={dest.city}
               onClick={() => handleDestinationSelect(dest)}
-              className="shrink-0 snap-start flex items-center gap-2.5 px-4 py-3.5 rounded-xl bg-card/40 border border-border/20 active:scale-[0.97] transition-all min-w-[140px]"
+              className="shrink-0 snap-start flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-card/30 border border-border/20 active:scale-[0.97] active:bg-card/50 transition-all min-w-[148px]"
             >
               <span className="text-xl">{dest.emoji}</span>
               <div className="text-left">
@@ -153,8 +179,8 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
       </section>
 
       {/* ── Smart tools — card-based ── */}
-      <section className="px-4 pt-6 pb-6 bg-background">
-        <h3 className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] mb-3">
+      <section className="px-4 pt-8 pb-8 bg-background">
+        <h3 className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] mb-3 px-1">
           {t("hero_section.smart_tools")}
         </h3>
         <div className="space-y-2.5">
