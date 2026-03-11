@@ -167,7 +167,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
         </div>
 
         {/* From — Multi-Origin */}
-        <div className="flex-1 min-w-[140px] max-w-[260px]">
+        <div className="flex-1 min-w-0 md:min-w-[140px] md:max-w-[260px]">
           <MultiOriginInput
             values={origins}
             onChange={setOrigins}
