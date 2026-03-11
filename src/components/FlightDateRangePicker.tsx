@@ -209,7 +209,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4">
+        <div className="flex-1 overflow-y-auto px-4" style={{ touchAction: "pan-y" }}>
           {activeTab === "specific" ? (
             <>
               <p className="text-sm text-center text-muted-foreground py-2">
