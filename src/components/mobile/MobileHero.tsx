@@ -1,7 +1,7 @@
 /**
- * MobileHero — App-like mobile homepage hero
- * Structure: Logo → Headline → Category icons → Search form → Quick destinations → Smart tools
- * Uses GoFlyFinder's dark fade gradient, NOT solid blocks.
+ * MobileHero — Skyscanner-inspired mobile homepage
+ * Structure: Brand → Headline → Service pills → Trip type → Search card → Options → CTA → Feature cards → Destinations
+ * Uses GoFlyFinder's dark atmospheric gradient, NOT solid blocks.
  * Only rendered on mobile (<768px). Desktop hero renders separately.
  */
 import { memo, forwardRef, useImperativeHandle, useState, useRef } from "react";
@@ -27,8 +27,7 @@ const QUICK_DESTINATIONS = [
   { city: "London", code: "LHR", emoji: "🇬🇧", price: "€120" },
 ];
 
-/** Service category pills — matches desktop Hero behavior.
- *  Flights = active, others trigger "Coming soon" toast. */
+/** Service category pills — Flights active, others show "Coming soon" toast */
 const SERVICE_PILLS = [
   { id: "flights", labelKey: "nav.flights", icon: Plane, active: true },
   { id: "hotels", labelKey: "nav.hotels", icon: Building2, active: false, comingSoon: true },
@@ -36,8 +35,14 @@ const SERVICE_PILLS = [
   { id: "packages", labelKey: "hero.packages", icon: Package, active: false, comingSoon: true },
 ] as const;
 
+/** Feature cards below search — horizontal scroll */
+const FEATURE_CARDS = [
+  { icon: Building2, labelKey: "nav.hotels", path: "/hotels" },
+  { icon: Compass, labelKey: "nav.explore", path: "/explore" },
+  { icon: Sparkles, labelKey: "hero_section.ai_travel_guide", action: "ai" as const },
+];
+
 const TOOLS = [
-  { icon: Sparkles, titleKey: "hero_section.ai_travel_guide", descKey: "hero_section.ai_travel_desc", action: "ai" as const },
   { icon: MapPin, titleKey: "hero_section.explore_map", descKey: "hero_section.explore_map_desc", action: "explore" as const },
   { icon: CalendarSearch, titleKey: "hero_section.flexible_dates_title", descKey: "hero_section.flexible_dates_desc", action: "flex" as const },
 ];
@@ -71,9 +76,16 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
     }
   };
 
-  const handleToolClick = (action: "ai" | "explore" | "flex") => {
-    if (action === "ai") setShowAIGuide(!showAIGuide);
-    else if (action === "explore") navigate("/explore");
+  const handleFeatureClick = (card: typeof FEATURE_CARDS[number]) => {
+    if ("action" in card && card.action === "ai") {
+      setShowAIGuide(!showAIGuide);
+    } else if ("path" in card && card.path) {
+      navigate(card.path);
+    }
+  };
+
+  const handleToolClick = (action: "explore" | "flex") => {
+    if (action === "explore") navigate("/explore");
     else if (action === "flex") {
       searchRef?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       setTimeout(() => searchFormRef.current?.openFlexDates(), 400);
@@ -83,10 +95,10 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
   return (
     <div className="md:hidden">
       {/* ═══════════════════════════════════════════════
-          HERO ZONE — with GoFlyFinder atmospheric gradient
+          HERO ZONE — GoFlyFinder atmospheric dark gradient
           ═══════════════════════════════════════════════ */}
       <section className="relative overflow-visible bg-background">
-        {/* Atmospheric light sweep — matching desktop hero */}
+        {/* Atmospheric light sweep */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div
             className="absolute top-0 left-0 w-full h-full"
@@ -98,9 +110,9 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
           />
         </div>
 
-        <div className="relative z-10 pt-20 pb-6 px-5">
-          {/* ── 1. Brand + Logo ── */}
-          <div className="flex items-center gap-2.5 mb-6">
+        <div className="relative z-10 pt-20 pb-2 px-5">
+          {/* ── 1. Brand Logo ── */}
+          <div className="flex items-center gap-2.5 mb-5">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
               <Plane className="w-5 h-5 text-white" />
             </div>
@@ -109,17 +121,8 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
             </span>
           </div>
 
-          {/* ── 2. Headline ── */}
-          <h1 className="text-[22px] font-bold text-foreground leading-[1.2] tracking-tight mb-2">
-            {t("hero.headline_1")}{" "}
-            <span className="text-primary">{t("hero.headline_2")}</span>
-          </h1>
-          <p className="text-[13px] text-muted-foreground leading-relaxed mb-6 max-w-[320px]">
-            {t("hero.tagline")}
-          </p>
-
-          {/* ── 3. Service category pills — horizontal scroll ── */}
-          <div className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+          {/* ── 2. Service category pills — horizontal scroll (Skyscanner-style) ── */}
+          <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide pb-5 -mx-1 px-1">
             {SERVICE_PILLS.map((pill) => {
               const Icon = pill.icon;
               return (
@@ -127,21 +130,21 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
                   key={pill.id}
                   onClick={() => handlePillClick(pill)}
                   className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-all shrink-0
+                    shrink-0 flex flex-col items-center justify-center gap-1.5 rounded-2xl transition-all min-w-[76px] py-3 px-4
                     ${pill.active
-                      ? "bg-primary/15 text-primary border border-primary/25"
-                      : "text-muted-foreground/50 active:text-muted-foreground"
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                      : "bg-card/50 border border-border/20 text-muted-foreground active:bg-card/80"
                     }
                   `}
                 >
-                  <Icon className="w-4 h-4" />
-                  {t(pill.labelKey)}
+                  <Icon className="w-6 h-6" />
+                  <span className="text-[11px] font-semibold leading-none">{t(pill.labelKey)}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* ── 4. Search form ── */}
+          {/* ── 3. Search form with card ── */}
           <div ref={searchRef} className="overflow-visible">
             <FlightSearchForm
               ref={searchFormRef}
@@ -153,11 +156,43 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
       </section>
 
       {/* ═══════════════════════════════════════════════
-          BELOW HERO — Discovery content
+          BELOW HERO — Feature cards + Discovery
           ═══════════════════════════════════════════════ */}
 
-      {/* ── Quick destinations — horizontal snap scroll ── */}
-      <section className="px-4 pt-8 pb-2 bg-background">
+      {/* ── Feature cards — Skyscanner-style horizontal scroll ── */}
+      <section className="px-4 pt-6 pb-2 bg-background">
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1 snap-x snap-mandatory">
+          {FEATURE_CARDS.map((card) => {
+            const Icon = card.icon;
+            return (
+              <button
+                key={card.labelKey}
+                onClick={() => handleFeatureClick(card)}
+                className="shrink-0 snap-start flex flex-col items-start gap-3 p-4 rounded-2xl bg-card/50 border border-border/20 active:bg-card/70 transition-all min-w-[140px] min-h-[100px]"
+              >
+                <div className="w-10 h-10 rounded-xl bg-secondary/60 flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <span className="text-[13px] font-semibold text-foreground leading-tight">{t(card.labelKey)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* AI Guide expandable */}
+      {showAIGuide && (
+        <section className="px-4 pb-4 bg-background">
+          <div className="rounded-2xl border border-border/30 bg-card/40 p-4 animate-fade-in">
+            <TravelAssistant
+              onDestinationSelect={(params) => setAiSearchParams(params)}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* ── Quick destinations ── */}
+      <section className="px-4 pt-4 pb-2 bg-background">
         <h3 className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] mb-3 px-1">
           {t("hero_section.popular_destinations")}
         </h3>
@@ -178,8 +213,8 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
         </div>
       </section>
 
-      {/* ── Smart tools — card-based ── */}
-      <section className="px-4 pt-8 pb-8 bg-background">
+      {/* ── Smart tools ── */}
+      <section className="px-4 pt-6 pb-8 bg-background">
         <h3 className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] mb-3 px-1">
           {t("hero_section.smart_tools")}
         </h3>
@@ -204,15 +239,6 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
             );
           })}
         </div>
-
-        {/* AI Guide expandable */}
-        {showAIGuide && (
-          <div className="mt-3 rounded-2xl border border-border/30 bg-card/40 p-4 animate-fade-in">
-            <TravelAssistant
-              onDestinationSelect={(params) => setAiSearchParams(params)}
-            />
-          </div>
-        )}
       </section>
     </div>
   );
