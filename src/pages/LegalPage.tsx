@@ -16,9 +16,15 @@ const LegalPage = () => {
   const { locale, slug } = useParams<{ locale: string; slug: string }>();
   const { i18n } = useTranslation();
 
-  // If no locale/slug, redirect based on current language
+  // If no locale/slug or locale not a legal locale, show NotFound
   if (!locale || !slug) {
-    return <Navigate to="/" replace />;
+    return <NotFound />;
+  }
+
+  // Check if locale is a supported legal locale (en, de, fr, es)
+  // If not, this route isn't meant for us — show NotFound
+  if (!supportedLegalLocales.includes(locale)) {
+    return <NotFound />;
   }
 
   // Resolve page ID from locale + slug
