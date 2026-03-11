@@ -665,17 +665,12 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
       {/* ═══════════════════════════════════════════
           OPTIONS ROW — clean, secondary
           ═══════════════════════════════════════════ */}
-      <div className="xl:hidden flex flex-col gap-2.5 px-1">
+      <div className="xl:hidden flex flex-wrap items-center gap-x-5 gap-y-2.5 px-1">
         <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
         {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
 
-        <label className="flex h-5 items-center gap-2 cursor-pointer select-none">
-          <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
-          <span className="text-[12px] text-muted-foreground/60 font-medium whitespace-nowrap">{t("search.direct_flights_only")}</span>
-        </label>
-
-        <div className="flex items-center gap-4 pt-1">
-          <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap">
+        <div className="flex items-center gap-4 flex-wrap">
+          <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap min-h-[40px]">
             <Checkbox
               checked={isAnyDay}
               onCheckedChange={checked => {
@@ -683,17 +678,17 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                 setIsAnyDay(on);
                 if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); setCalendarOpen(false); }
               }}
-              className="h-4 w-4 rounded-[4px]"
+              className="h-5 w-5 rounded-[5px]"
             />
-            <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
-              <CalendarOff className="w-3 h-3" /> {t("search.any_day", "Any day")}
+            <span className="text-[13px] text-muted-foreground font-medium flex items-center gap-1">
+              <CalendarOff className="w-3.5 h-3.5" /> {t("search.any_day", "Any day")}
             </span>
           </label>
 
-          <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap">
-            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-4 w-4 rounded-[4px]" />
-            <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
-              <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
+          <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap min-h-[40px]">
+            <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-5 w-5 rounded-[5px]" />
+            <span className="text-[13px] text-muted-foreground font-medium flex items-center gap-1">
+              <Globe className="w-3.5 h-3.5" /> {t("search.anywhere", "Anywhere")}
             </span>
           </label>
 
@@ -704,8 +699,8 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
               setErrors(e => ({ ...e, from: undefined }));
             }
-          }} className="flex items-center gap-1.5 text-[12px] text-muted-foreground/60 hover:text-primary transition-colors cursor-pointer whitespace-nowrap font-medium">
-            <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
+          }} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap font-medium min-h-[40px]">
+            <Navigation className="w-4 h-4" /> {t("search.use_location")}
           </button>
         </div>
       </div>
