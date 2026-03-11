@@ -43,7 +43,7 @@ const LegalPage = () => {
       const targetSlug = legalSlugs[targetLocale]?.[pageId] || slug;
       return <Navigate to={`/${targetLocale}/${targetSlug}`} replace />;
     }
-    return <Navigate to="/404" replace />;
+    return <NotFound />;
   }
 
   const content = getLegalContent(locale, pageId);
