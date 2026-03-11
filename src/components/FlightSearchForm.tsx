@@ -384,7 +384,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
         >
           {/* Desktop: fixed slot grid */}
           <div className={cn(
-            "hidden lg:grid h-full items-stretch overflow-visible",
+            "hidden xl:grid h-full items-stretch overflow-visible",
             tripType === "oneway"
               ? "grid-cols-[minmax(200px,1.2fr)_40px_minmax(200px,1.2fr)_minmax(160px,0.8fr)_minmax(200px,1fr)_minmax(150px,170px)]"
               : "grid-cols-[minmax(180px,205px)_40px_minmax(180px,205px)_minmax(280px,320px)_minmax(190px,220px)_minmax(150px,170px)]"
