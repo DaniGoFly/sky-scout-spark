@@ -265,6 +265,16 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
     navigate(`/flights/multicity?${params.toString()}`);
   }, [navigate]);
 
+  /* ── My location handler — must be before early return ── */
+  const handleUseMyLocation = useCallback(async () => {
+    const result = await requestNearestAirport();
+    if (result) {
+      userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
+      setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
+      setErrors(e => ({ ...e, from: undefined }));
+    }
+  }, []);
+
   const tripTypeLabel = tripType === "roundtrip" ? t("search.roundtrip") : tripType === "oneway" ? t("search.oneway") : t("search.multicity");
 
   // Display values
@@ -329,15 +339,6 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
   const SEG_VALUE = "text-[14px] font-semibold text-foreground leading-[20px] whitespace-nowrap";
   const SEG_PLACEHOLDER = "text-[14px] font-normal text-muted-foreground/40 leading-[20px] whitespace-nowrap";
 
-  /* ── My location handler ── */
-  const handleUseMyLocation = useCallback(async () => {
-    const result = await requestNearestAirport();
-    if (result) {
-      userCoordsRef.current = { lat: result.airport.lat, lon: result.airport.lon };
-      setOrigins([{ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` }]);
-      setErrors(e => ({ ...e, from: undefined }));
-    }
-  }, []);
 
   return (
     <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-visible">
