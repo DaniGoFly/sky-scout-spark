@@ -27,8 +27,8 @@ const Header = () => {
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
+        {/* Desktop Navigation — unchanged */}
+        <nav className="hidden xl:flex items-center gap-1">
           {isHome ? (
             <span className="px-4 py-2 rounded-lg text-sm font-medium text-primary bg-primary/10 cursor-default">
               {t("nav.flights")}
@@ -85,6 +85,39 @@ const Header = () => {
             {t("nav.saved")}
           </Link>
 
+          <LocaleSelector />
+        </nav>
+
+        {/* Tablet Navigation (md–xl) — simplified row with key links */}
+        <nav className="hidden md:flex xl:hidden items-center gap-1">
+          {isHome ? (
+            <span className="px-3 py-2 rounded-lg text-sm font-medium text-primary bg-primary/10 cursor-default">
+              {t("nav.flights")}
+            </span>
+          ) : (
+            <Link to="/" className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
+              {t("nav.flights")}
+            </Link>
+          )}
+          <Link
+            to="/explore"
+            className={cn(
+              "px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              location.pathname === "/explore" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            )}
+          >
+            {t("nav.explore")}
+          </Link>
+          <Link
+            to="/saved"
+            className={cn(
+              "px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5",
+              location.pathname === "/saved" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            )}
+          >
+            <Heart className="w-3.5 h-3.5" />
+            {t("nav.saved")}
+          </Link>
           <LocaleSelector />
         </nav>
 
