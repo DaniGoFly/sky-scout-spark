@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addDays } from "date-fns";
-import { Loader2, Navigation, Plane, MapPin, ArrowRight, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
+import { Loader2, Navigation, Plane, MapPin, ArrowRight, ChevronDown, ChevronUp, SlidersHorizontal, List } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,8 +53,8 @@ const Explore = () => {
   
   const [selectedDest, setSelectedDest] = useState<ExploreResult | null>(null);
   const [maxPrice, setMaxPrice] = useState<number>(2000);
-  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
   const isMobile = useIsMobile();
   // Parse origin from URL params only (e.g. Anywhere mode from SearchForm)
   useEffect(() => {
@@ -172,17 +172,207 @@ const Explore = () => {
     [origin]
   );
 
+  /* ── Mobile layout ── */
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 pt-16 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+          {/* ── Compact top controls ── */}
+          <div className="shrink-0 bg-background z-10">
+            {/* Origin field */}
+            <div className="px-4 pt-3 pb-2">
+              <div className="flex gap-2 items-center">
+                <div className="flex-1 min-w-0 relative">
+                  <AirportAutocomplete
+                    value={origin}
+                    onChange={setOrigin}
+                    placeholder="Where from?"
+                    icon="from"
+                  />
+                  {origin && (
+                    <button
+                      onClick={() => setOrigin(null)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted hover:bg-muted-foreground/20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-xs"
+                      aria-label="Clear origin"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                <Button variant="ghost" size="icon" onClick={handleUseMyLocation} className="h-10 w-10 shrink-0 text-muted-foreground hover:text-primary" title="Use my location">
+                  <Navigation className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Filter summary + results count row */}
+            <div className="px-4 pb-2 flex items-center gap-2">
+              <button
+                onClick={() => setMobileFiltersOpen(v => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/40 border border-border/20 text-[11px] text-muted-foreground hover:bg-secondary/60 transition-colors"
+              >
+                <SlidersHorizontal className="w-3 h-3" />
+                <span className="font-medium text-foreground">{tripLength[0]}–{tripLength[1]}d</span>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="font-medium text-foreground">≤{formatPrice(maxPrice)}</span>
+                <ChevronDown className={cn("w-3 h-3 transition-transform ml-0.5", mobileFiltersOpen && "rotate-180")} />
+              </button>
+              <div className="flex-1" />
+              {!isLoading && sortedDestinations.length > 0 && (
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  <span className="text-foreground font-semibold">{sortedDestinations.length}</span> found
+                </span>
+              )}
+            </div>
+
+            {/* Expandable filters */}
+            {mobileFiltersOpen && (
+              <div className="px-4 pb-3 space-y-4 border-t border-border/10 pt-3">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>Trip length</span>
+                    <span className="font-semibold text-foreground tabular-nums">{tripLength[0]}–{tripLength[1]} days</span>
+                  </div>
+                  <Slider value={tripLength} onValueChange={(v) => setTripLength([v[0], v[1]])} min={1} max={21} step={1} minStepsBetweenThumbs={1} className="w-full" />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>Max price</span>
+                    <span className="font-semibold text-foreground tabular-nums">{formatPrice(maxPrice)}</span>
+                  </div>
+                  <Slider value={[maxPrice]} onValueChange={(v) => setMaxPrice(v[0])} min={50} max={priceMax} step={25} className="w-full" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Map area (fills remaining space) ── */}
+          <div className="flex-1 relative z-0 overflow-hidden min-h-0">
+            {isLoading && (
+              <div className="absolute inset-0 z-20 bg-background/40 backdrop-blur-sm flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2 bg-card/90 rounded-xl px-6 py-4 border border-border">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <span className="text-xs text-muted-foreground">Finding destinations…</span>
+                </div>
+              </div>
+            )}
+            <ExploreMap
+              destinations={sortedDestinations}
+              originAirport={originAirport}
+              onSelect={handleSelectDestination}
+              hoveredIata={hoveredIata}
+              onHover={setHoveredIata}
+              formatPrice={formatPrice}
+            />
+
+            {/* ── Floating results button ── */}
+            {!isLoading && sortedDestinations.length > 0 && !mobileResultsOpen && (
+              <button
+                onClick={() => setMobileResultsOpen(true)}
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/30 hover:bg-primary/90 transition-colors"
+              >
+                <List className="w-4 h-4" />
+                {sortedDestinations.length} Destinations
+              </button>
+            )}
+
+            {/* ── Bottom sheet results panel ── */}
+            {mobileResultsOpen && (
+              <div className="absolute inset-0 z-30 flex flex-col">
+                {/* Backdrop */}
+                <div className="flex-1 min-h-[60px]" onClick={() => setMobileResultsOpen(false)} />
+                {/* Sheet */}
+                <div className="bg-background rounded-t-2xl border-t border-border/30 max-h-[70vh] flex flex-col shadow-2xl">
+                  {/* Handle + header */}
+                  <div className="shrink-0 pt-2 pb-3 px-4">
+                    <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-semibold text-foreground">
+                        {sortedDestinations.length} destinations
+                        {origin ? <span className="text-muted-foreground font-normal"> from {origin.display.split("(")[0].trim()}</span> : null}
+                      </h2>
+                      <button onClick={() => setMobileResultsOpen(false)} className="text-muted-foreground hover:text-foreground text-xs px-2 py-1 rounded-md hover:bg-secondary/40 transition-colors">
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                  {/* Scrollable list */}
+                  <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-6 space-y-2">
+                    {sortedDestinations.map((dest, i) => (
+                      <button
+                        key={dest.destinationIata}
+                        onClick={() => handleSelectDestination(dest)}
+                        className="w-full rounded-xl border border-border/20 bg-secondary/20 hover:border-primary/30 hover:bg-secondary/40 transition-all text-left"
+                      >
+                        <div className="px-4 py-3 flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <MapPin className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-[14px] text-foreground leading-tight">
+                                {dest.destinationName || dest.destinationIata}
+                              </h3>
+                              {i === 0 && (
+                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-emerald-500/40 text-emerald-400 shrink-0 font-semibold">
+                                  Cheapest
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {dest.country && <span className="text-[12px] text-muted-foreground/70">{dest.country}</span>}
+                              {dest.departDate && (
+                                <span className="text-[11px] text-muted-foreground/50">{formatDateRange(dest.departDate, dest.returnDate)}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-[15px] font-bold text-foreground tabular-nums">{formatPrice(dest.price)}</p>
+                            <p className="text-[10px] text-muted-foreground/60">round trip</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Empty state overlay */}
+            {!isLoading && sortedDestinations.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                <div className="bg-card/90 backdrop-blur rounded-2xl px-8 py-6 text-center border border-border/30 max-w-[260px]">
+                  <div className="w-12 h-12 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-3">
+                    {!origin ? <MapPin className="w-5 h-5 text-muted-foreground" /> : <Plane className="w-5 h-5 text-muted-foreground" />}
+                  </div>
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    {!origin ? "Explore destinations" : "No destinations found"}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {!origin ? "Choose a departure airport to explore." : "Try widening the trip length or increasing the price limit."}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  /* ── Desktop layout (unchanged) ── */
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-hidden">
       <Header />
       <main className="flex-1 pt-16 overflow-hidden">
-        <div className="flex flex-col lg:grid lg:grid-cols-[360px_1fr] h-[calc(100vh-64px)] overflow-hidden">
+        <div className="lg:grid lg:grid-cols-[360px_1fr] h-[calc(100vh-64px)] overflow-hidden">
           {/* ── Left Sidebar ── */}
-          <div className="explore-sidebar-panel flex flex-col relative z-10 overflow-hidden bg-background shrink-0 lg:shrink lg:max-h-none max-h-[45vh] lg:max-h-full">
+          <div className="explore-sidebar-panel flex flex-col relative z-10 overflow-hidden bg-background">
             {/* ── Sticky Controls ── */}
             <div className="shrink-0 explore-sidebar-controls">
               {/* FROM section */}
-              <div className="px-4 pt-3 lg:pt-4 pb-2 lg:pb-3">
+              <div className="px-4 pt-4 pb-3">
                 <label className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground mb-2 uppercase tracking-[0.08em]">
                   <Plane className="w-3 h-3" />
                   From
@@ -211,97 +401,40 @@ const Explore = () => {
                 </div>
               </div>
 
-              {/* Mobile: compact filter toggle + summary */}
-              {isMobile ? (
-                <>
-                  <div className="h-px bg-border/10 mx-4" />
-                  <button
-                    onClick={() => setMobileFiltersOpen(v => !v)}
-                    className="w-full px-4 py-2 flex items-center justify-between text-[11px] text-muted-foreground hover:bg-secondary/30 transition-colors"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <SlidersHorizontal className="w-3 h-3" />
-                      <span className="font-medium">{tripLength[0]}–{tripLength[1]} days</span>
-                      <span className="text-muted-foreground/50">·</span>
-                      <span className="font-medium">Up to {formatPrice(maxPrice)}</span>
-                    </span>
-                    <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", mobileFiltersOpen && "rotate-180")} />
-                  </button>
-                  {mobileFiltersOpen && (
-                    <div className="px-4 py-3 space-y-4 border-t border-border/10">
-                      <div className="space-y-1.5 w-full">
-                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                          <span>Trip length</span>
-                          <span className="font-semibold text-foreground tabular-nums">{tripLength[0]}–{tripLength[1]} days</span>
-                        </div>
-                        <Slider
-                          value={tripLength}
-                          onValueChange={(v) => setTripLength([v[0], v[1]])}
-                          min={1}
-                          max={21}
-                          step={1}
-                          minStepsBetweenThumbs={1}
-                          className="w-full"
-                        />
-                      </div>
-                      <div className="space-y-1.5 w-full">
-                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                          <span>Max price</span>
-                          <span className="font-semibold text-foreground tabular-nums">{formatPrice(maxPrice)}</span>
-                        </div>
-                        <Slider
-                          value={[maxPrice]}
-                          onValueChange={(v) => setMaxPrice(v[0])}
-                          min={50}
-                          max={priceMax}
-                          step={25}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  {/* Desktop: always-visible filters */}
-                  <div className="h-px bg-[rgba(255,255,255,0.06)] mx-4" />
-                  <div className="px-4 py-3 space-y-4">
-                    <div className="space-y-1.5 w-full">
-                      <div className="flex justify-between text-[11px] text-muted-foreground">
-                        <span>Trip length</span>
-                        <span className="font-semibold text-foreground tabular-nums">{tripLength[0]}–{tripLength[1]} days</span>
-                      </div>
-                      <Slider
-                        value={tripLength}
-                        onValueChange={(v) => setTripLength([v[0], v[1]])}
-                        min={1}
-                        max={21}
-                        step={1}
-                        minStepsBetweenThumbs={1}
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="space-y-1.5 w-full">
-                      <div className="flex justify-between text-[11px] text-muted-foreground">
-                        <span>Max price</span>
-                        <span className="font-semibold text-foreground tabular-nums">{formatPrice(maxPrice)}</span>
-                      </div>
-                      <Slider
-                        value={[maxPrice]}
-                        onValueChange={(v) => setMaxPrice(v[0])}
-                        min={50}
-                        max={priceMax}
-                        step={25}
-                        className="w-full"
-                      />
-                    </div>
+              <div className="h-px bg-[rgba(255,255,255,0.06)] mx-4" />
+
+              {/* Filters */}
+              <div className="px-4 py-3 space-y-4">
+                <div className="space-y-1.5 w-full">
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>Trip length</span>
+                    <span className="font-semibold text-foreground tabular-nums">{tripLength[0]}–{tripLength[1]} days</span>
                   </div>
-                  <div className="h-px bg-[rgba(255,255,255,0.06)] mx-4" />
-                </>
-              )}
+                  <Slider
+                    value={tripLength}
+                    onValueChange={(v) => setTripLength([v[0], v[1]])}
+                    min={1} max={21} step={1} minStepsBetweenThumbs={1}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-1.5 w-full">
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>Max price</span>
+                    <span className="font-semibold text-foreground tabular-nums">{formatPrice(maxPrice)}</span>
+                  </div>
+                  <Slider
+                    value={[maxPrice]}
+                    onValueChange={(v) => setMaxPrice(v[0])}
+                    min={50} max={priceMax} step={25}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="h-px bg-[rgba(255,255,255,0.06)] mx-4" />
 
               {/* Results header */}
-              <div className="px-4 py-2 flex items-center justify-between">
+              <div className="px-4 py-2.5 flex items-center justify-between">
                 <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                   {isLoading ? "Searching…" : (
                     <>
@@ -315,7 +448,6 @@ const Explore = () => {
                 )}
               </div>
 
-              {/* Divider */}
               <div className="h-px bg-[rgba(255,255,255,0.06)]" />
             </div>
 
@@ -356,111 +488,65 @@ const Explore = () => {
                   </p>
                 </div>
               ) : (
-                <>
-                  {/* Mobile: horizontal scroll or expanded grid */}
-                  {isMobile ? (
-                    <div className="p-2 space-y-3">
-                      <div className={isMobileExpanded
-                        ? "grid grid-cols-2 gap-3"
-                        : "flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-hide"
-                      }>
-                        {(isMobileExpanded ? sortedDestinations : sortedDestinations.slice(0, 10)).map((dest, i) => (
-                          <button
-                            key={dest.destinationIata}
-                            onClick={() => handleSelectDestination(dest)}
-                            className={cn(
-                              "rounded-xl border transition-all text-left",
-                              isMobileExpanded ? "" : "min-w-[260px] snap-start flex-shrink-0",
-                              "border-border/30 bg-secondary/20 hover:border-primary/40 hover:bg-secondary/40"
-                            )}
-                          >
-                            <div className="px-3 py-2.5 flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-secondary/50">
-                                <MapPin className="w-3.5 h-3.5 text-muted-foreground/60" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <h3 className="font-semibold text-[13px] text-foreground truncate">{dest.destinationName || dest.destinationIata}</h3>
-                                {dest.departDate && <p className="text-[11px] text-muted-foreground/70">{formatDateRange(dest.departDate, dest.returnDate)}</p>}
-                              </div>
-                              <p className="text-sm font-bold text-foreground tabular-nums shrink-0">From {formatPrice(dest.price)}</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                      {sortedDestinations.length > 10 && (
-                        <button
-                          onClick={() => setIsMobileExpanded(!isMobileExpanded)}
-                          className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                        >
-                          {isMobileExpanded ? <><ChevronUp className="w-4 h-4" /> Show Less</> : <><ChevronDown className="w-4 h-4" /> Show More ({sortedDestinations.length - 10} more)</>}
-                        </button>
+                <div className="p-2 space-y-1">
+                  {sortedDestinations.map((dest, i) => (
+                    <button
+                      key={dest.destinationIata}
+                      onClick={() => handleSelectDestination(dest)}
+                      onMouseEnter={() => setHoveredIata(dest.destinationIata)}
+                      onMouseLeave={() => setHoveredIata(null)}
+                      className={cn(
+                        "w-full rounded-xl border transition-all duration-150 text-left explore-dest-card",
+                        hoveredIata === dest.destinationIata
+                          ? "border-primary/50 bg-primary/[0.07] shadow-[0_2px_12px_rgba(47,122,248,0.12)] -translate-y-px"
+                          : "border-[rgba(255,255,255,0.06)] bg-transparent hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]"
                       )}
-                    </div>
-                  ) : (
-                    /* Desktop: existing list */
-                    <div className="p-2 space-y-1">
-                      {sortedDestinations.map((dest, i) => (
-                        <button
-                          key={dest.destinationIata}
-                          onClick={() => handleSelectDestination(dest)}
-                          onMouseEnter={() => setHoveredIata(dest.destinationIata)}
-                          onMouseLeave={() => setHoveredIata(null)}
-                          className={cn(
-                            "w-full rounded-xl border transition-all duration-150 text-left explore-dest-card",
-                            hoveredIata === dest.destinationIata
-                              ? "border-primary/50 bg-primary/[0.07] shadow-[0_2px_12px_rgba(47,122,248,0.12)] -translate-y-px"
-                              : "border-[rgba(255,255,255,0.06)] bg-transparent hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]"
-                          )}
-                        >
-                          <div className="px-3 py-2.5 flex items-center gap-3">
-                            <div className={cn(
-                              "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                              hoveredIata === dest.destinationIata ? "bg-primary/15" : "bg-[rgba(255,255,255,0.04)]"
-                            )}>
-                              <MapPin className={cn("w-3.5 h-3.5", hoveredIata === dest.destinationIata ? "text-primary" : "text-muted-foreground/60")} />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <h3 className="font-semibold text-[13px] text-foreground truncate leading-tight">
-                                  {dest.destinationName || dest.destinationIata}
-                                </h3>
-                                {i === 0 && (
-                                  <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 border-emerald-500/40 text-emerald-400 shrink-0 font-semibold">
-                                    Cheapest
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                {dest.departDate && (
-                                  <p className="text-[11px] text-muted-foreground/70">
-                                    {formatDateRange(dest.departDate, dest.returnDate)}
-                                  </p>
-                                )}
-                                {(dest as any).transfers === 0 ? (
-                                  <span className="text-[10px] text-emerald-400/80 font-medium">Direct</span>
-                                ) : (dest as any).transfers !== undefined ? (
-                                  <span className="text-[10px] text-muted-foreground/50">{(dest as any).transfers} stop{(dest as any).transfers > 1 ? "s" : ""}</span>
-                                ) : null}
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0 flex items-center gap-1.5">
-                              <div>
-                                <p className="text-sm font-bold text-foreground tabular-nums">From {formatPrice(dest.price)}</p>
-                              </div>
-                              <ArrowRight className={cn("w-3.5 h-3.5 transition-all duration-150", hoveredIata === dest.destinationIata ? "text-primary translate-x-0.5" : "text-muted-foreground/20")} />
-                            </div>
+                    >
+                      <div className="px-3 py-2.5 flex items-center gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                          hoveredIata === dest.destinationIata ? "bg-primary/15" : "bg-[rgba(255,255,255,0.04)]"
+                        )}>
+                          <MapPin className={cn("w-3.5 h-3.5", hoveredIata === dest.destinationIata ? "text-primary" : "text-muted-foreground/60")} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="font-semibold text-[13px] text-foreground truncate leading-tight">
+                              {dest.destinationName || dest.destinationIata}
+                            </h3>
+                            {i === 0 && (
+                              <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 border-emerald-500/40 text-emerald-400 shrink-0 font-semibold">
+                                Cheapest
+                              </Badge>
+                            )}
                           </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {dest.departDate && (
+                              <p className="text-[11px] text-muted-foreground/70">
+                                {formatDateRange(dest.departDate, dest.returnDate)}
+                              </p>
+                            )}
+                            {(dest as any).transfers === 0 ? (
+                              <span className="text-[10px] text-emerald-400/80 font-medium">Direct</span>
+                            ) : (dest as any).transfers !== undefined ? (
+                              <span className="text-[10px] text-muted-foreground/50">{(dest as any).transfers} stop{(dest as any).transfers > 1 ? "s" : ""}</span>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 flex items-center gap-1.5">
+                          <p className="text-sm font-bold text-foreground tabular-nums">From {formatPrice(dest.price)}</p>
+                          <ArrowRight className={cn("w-3.5 h-3.5 transition-all duration-150", hoveredIata === dest.destinationIata ? "text-primary translate-x-0.5" : "text-muted-foreground/20")} />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           </div>
 
           {/* ── Map ── */}
-          <div className="relative z-0 overflow-hidden flex-1 min-h-[200px] lg:min-h-0">
+          <div className="relative z-0 overflow-hidden">
             {isLoading && (
               <div className="absolute inset-0 z-[1000] bg-background/40 backdrop-blur-sm flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2 bg-card/90 rounded-xl px-6 py-4 border border-border">
