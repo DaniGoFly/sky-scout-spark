@@ -460,7 +460,7 @@ const Explore = () => {
           </div>
 
           {/* ── Map ── */}
-          <div className="relative z-0 overflow-hidden min-h-[55vh] lg:min-h-0">
+          <div className="relative z-0 overflow-hidden flex-1 min-h-[200px] lg:min-h-0">
             {isLoading && (
               <div className="absolute inset-0 z-[1000] bg-background/40 backdrop-blur-sm flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2 bg-card/90 rounded-xl px-6 py-4 border border-border">
