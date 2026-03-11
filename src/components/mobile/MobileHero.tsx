@@ -1,12 +1,12 @@
 /**
- * MobileHero — Skyscanner-inspired mobile homepage
- * Structure: Brand → Headline → Service pills → Trip type → Search card → Options → CTA → Feature cards → Destinations
- * Uses GoFlyFinder's dark atmospheric gradient, NOT solid blocks.
+ * MobileHero — Hybrid Skyscanner/Kiwi-inspired mobile homepage
+ * Structure: Brand → Headline → Category pills → Search form → Discovery
+ * Styled with GoFlyFinder's dark premium gradient, NOT solid blocks.
  * Only rendered on mobile (<768px). Desktop hero renders separately.
  */
 import { memo, forwardRef, useImperativeHandle, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plane, Sparkles, MapPin, CalendarSearch, ChevronRight, Building2, Compass, Car, Package } from "lucide-react";
+import { Plane, Building2, Car, Package, Compass, Sparkles, MapPin, CalendarSearch, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import FlightSearchForm, { type FlightSearchFormHandle } from "../FlightSearchForm";
@@ -18,6 +18,15 @@ interface MobileHeroProps {
   searchRef?: React.RefObject<HTMLDivElement | null>;
 }
 
+/** Service category pills */
+const SERVICE_PILLS = [
+  { id: "flights", labelKey: "nav.flights", icon: Plane, active: true },
+  { id: "hotels", labelKey: "nav.hotels", icon: Building2, active: false, comingSoon: true },
+  { id: "cars", labelKey: "hero.car_rental", icon: Car, active: false, comingSoon: true },
+  { id: "packages", labelKey: "hero.packages", icon: Package, active: false, comingSoon: true },
+] as const;
+
+/** Quick destinations */
 const QUICK_DESTINATIONS = [
   { city: "Bali", code: "DPS", emoji: "🌴", price: "€420" },
   { city: "Mallorca", code: "PMI", emoji: "☀️", price: "€89" },
@@ -27,24 +36,11 @@ const QUICK_DESTINATIONS = [
   { city: "London", code: "LHR", emoji: "🇬🇧", price: "€120" },
 ];
 
-/** Service category pills — Flights active, others show "Coming soon" toast */
-const SERVICE_PILLS = [
-  { id: "flights", labelKey: "nav.flights", icon: Plane, active: true },
-  { id: "hotels", labelKey: "nav.hotels", icon: Building2, active: false, comingSoon: true },
-  { id: "cars", labelKey: "hero.car_rental", icon: Car, active: false, comingSoon: true },
-  { id: "packages", labelKey: "hero.packages", icon: Package, active: false, comingSoon: true },
-] as const;
-
-/** Feature cards below search — horizontal scroll */
-const FEATURE_CARDS = [
-  { icon: Building2, labelKey: "nav.hotels", path: "/hotels" },
-  { icon: Compass, labelKey: "nav.explore", path: "/explore" },
-  { icon: Sparkles, labelKey: "hero_section.ai_travel_guide", action: "ai" as const },
-];
-
+/** Discovery tools */
 const TOOLS = [
-  { icon: MapPin, titleKey: "hero_section.explore_map", descKey: "hero_section.explore_map_desc", action: "explore" as const },
+  { icon: Compass, titleKey: "nav.explore", descKey: "hero_section.explore_map_desc", action: "explore" as const },
   { icon: CalendarSearch, titleKey: "hero_section.flexible_dates_title", descKey: "hero_section.flexible_dates_desc", action: "flex" as const },
+  { icon: Sparkles, titleKey: "hero_section.ai_travel_guide", descKey: "hero_section.ai_travel_desc", action: "ai" as const },
 ];
 
 const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) => {
@@ -76,16 +72,9 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
     }
   };
 
-  const handleFeatureClick = (card: typeof FEATURE_CARDS[number]) => {
-    if ("action" in card && card.action === "ai") {
-      setShowAIGuide(!showAIGuide);
-    } else if ("path" in card && card.path) {
-      navigate(card.path);
-    }
-  };
-
-  const handleToolClick = (action: "explore" | "flex") => {
+  const handleToolClick = (action: "explore" | "flex" | "ai") => {
     if (action === "explore") navigate("/explore");
+    else if (action === "ai") setShowAIGuide(!showAIGuide);
     else if (action === "flex") {
       searchRef?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       setTimeout(() => searchFormRef.current?.openFlexDates(), 400);
@@ -98,31 +87,47 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
           HERO ZONE — GoFlyFinder atmospheric dark gradient
           ═══════════════════════════════════════════════ */}
       <section className="relative overflow-visible bg-background">
-        {/* Atmospheric light sweep */}
+        {/* Atmospheric gradient sweep */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div
-            className="absolute top-0 left-0 w-full h-full"
-            style={{ background: "linear-gradient(180deg, hsl(215 50% 80% / 0.09) 0%, hsl(215 55% 82% / 0.06) 30%, hsl(220 50% 75% / 0.03) 60%, transparent 100%)" }}
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, hsl(217 60% 50% / 0.08) 0%, hsl(217 55% 45% / 0.04) 40%, transparent 80%)",
+            }}
           />
           <div
-            className="absolute top-0 left-0 w-full h-full"
-            style={{ background: "radial-gradient(ellipse 120% 80% at 30% 40%, hsl(215 50% 88% / 0.05), transparent 70%)" }}
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 140% 60% at 20% 30%, hsl(217 60% 60% / 0.06), transparent 70%)",
+            }}
           />
         </div>
 
-        <div className="relative z-10 pt-20 pb-2 px-5">
-          {/* ── 1. Brand Logo ── */}
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Plane className="w-5 h-5 text-white" />
+        <div className="relative z-10 pt-16 pb-2 px-5">
+          {/* ── 1. Brand ── */}
+          <div className="flex items-center gap-2.5 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Plane className="w-[18px] h-[18px] text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold text-foreground tracking-tight">
+            <span className="text-[17px] font-bold text-foreground tracking-tight">
               GoFlyFinder
             </span>
           </div>
 
-          {/* ── 2. Service category pills — horizontal scroll (Skyscanner-style) ── */}
-          <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide pb-5 -mx-1 px-1">
+          {/* ── 2. Headline ── */}
+          <div className="mb-6">
+            <h1 className="text-[22px] font-bold text-foreground leading-[1.25] tracking-tight">
+              {t("hero.mobile_headline", "Find better flight deals.")}
+            </h1>
+            <p className="text-[14px] text-muted-foreground mt-1.5 leading-relaxed">
+              {t("hero.mobile_subtext", "Compare airlines & agencies. Book via verified partners.")}
+            </p>
+          </div>
+
+          {/* ── 3. Category pills — horizontal scroll ── */}
+          <div className="flex items-stretch gap-2.5 overflow-x-auto scrollbar-hide pb-5 -mx-1 px-1">
             {SERVICE_PILLS.map((pill) => {
               const Icon = pill.icon;
               return (
@@ -130,7 +135,7 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
                   key={pill.id}
                   onClick={() => handlePillClick(pill)}
                   className={`
-                    shrink-0 flex flex-col items-center justify-center gap-1.5 rounded-2xl transition-all min-w-[76px] py-3 px-4
+                    shrink-0 flex flex-col items-center justify-center gap-1.5 rounded-2xl transition-all min-w-[78px] py-3 px-4
                     ${pill.active
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                       : "bg-card/50 border border-border/20 text-muted-foreground active:bg-card/80"
@@ -144,7 +149,7 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
             })}
           </div>
 
-          {/* ── 3. Search form with card ── */}
+          {/* ── 4. Search form ── */}
           <div ref={searchRef} className="overflow-visible">
             <FlightSearchForm
               ref={searchFormRef}
@@ -156,33 +161,12 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
       </section>
 
       {/* ═══════════════════════════════════════════════
-          BELOW HERO — Feature cards + Discovery
+          BELOW HERO — Discovery content
           ═══════════════════════════════════════════════ */}
 
-      {/* ── Feature cards — Skyscanner-style horizontal scroll ── */}
-      <section className="px-4 pt-6 pb-2 bg-background">
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1 snap-x snap-mandatory">
-          {FEATURE_CARDS.map((card) => {
-            const Icon = card.icon;
-            return (
-              <button
-                key={card.labelKey}
-                onClick={() => handleFeatureClick(card)}
-                className="shrink-0 snap-start flex flex-col items-start gap-3 p-4 rounded-2xl bg-card/50 border border-border/20 active:bg-card/70 transition-all min-w-[140px] min-h-[100px]"
-              >
-                <div className="w-10 h-10 rounded-xl bg-secondary/60 flex items-center justify-center">
-                  <Icon className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <span className="text-[13px] font-semibold text-foreground leading-tight">{t(card.labelKey)}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* AI Guide expandable */}
+      {/* ── AI Guide (expandable) ── */}
       {showAIGuide && (
-        <section className="px-4 pb-4 bg-background">
+        <section className="px-5 pt-4 pb-2 bg-background">
           <div className="rounded-2xl border border-border/30 bg-card/40 p-4 animate-fade-in">
             <TravelAssistant
               onDestinationSelect={(params) => setAiSearchParams(params)}
@@ -192,8 +176,8 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
       )}
 
       {/* ── Quick destinations ── */}
-      <section className="px-4 pt-4 pb-2 bg-background">
-        <h3 className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] mb-3 px-1">
+      <section className="px-5 pt-6 pb-2 bg-background">
+        <h3 className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] mb-3">
           {t("hero_section.popular_destinations")}
         </h3>
         <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1 snap-x snap-mandatory">
@@ -201,21 +185,21 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
             <button
               key={dest.city}
               onClick={() => handleDestinationSelect(dest)}
-              className="shrink-0 snap-start flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-card/30 border border-border/20 active:scale-[0.97] active:bg-card/50 transition-all min-w-[148px]"
+              className="shrink-0 snap-start flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-card/30 border border-border/15 active:scale-[0.97] active:bg-card/50 transition-all min-w-[150px]"
             >
-              <span className="text-xl">{dest.emoji}</span>
+              <span className="text-xl leading-none">{dest.emoji}</span>
               <div className="text-left">
                 <span className="text-[13px] font-semibold text-foreground block leading-tight">{dest.city}</span>
-                <span className="text-[11px] text-muted-foreground/60">{t("hero_section.from_price", { price: dest.price })}</span>
+                <span className="text-[11px] text-muted-foreground/50">{t("hero_section.from_price", { price: dest.price })}</span>
               </div>
             </button>
           ))}
         </div>
       </section>
 
-      {/* ── Smart tools ── */}
-      <section className="px-4 pt-6 pb-8 bg-background">
-        <h3 className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] mb-3 px-1">
+      {/* ── Discovery tools ── */}
+      <section className="px-5 pt-6 pb-10 bg-background">
+        <h3 className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] mb-3">
           {t("hero_section.smart_tools")}
         </h3>
         <div className="space-y-2.5">
@@ -225,16 +209,16 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
               <button
                 key={tool.titleKey}
                 onClick={() => handleToolClick(tool.action)}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border/20 bg-card/30 active:bg-card/60 transition-all text-left min-h-[64px]"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border/15 bg-card/25 active:bg-card/50 transition-all text-left"
               >
                 <div className="w-11 h-11 rounded-xl bg-secondary/50 flex items-center justify-center shrink-0">
                   <Icon className="w-5 h-5 text-muted-foreground/70" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-[14px] font-semibold text-foreground block">{t(tool.titleKey)}</span>
-                  <span className="text-[12px] text-muted-foreground/60 leading-snug">{t(tool.descKey)}</span>
+                  <span className="text-[14px] font-semibold text-foreground block leading-tight">{t(tool.titleKey)}</span>
+                  <span className="text-[12px] text-muted-foreground/50 leading-snug">{t(tool.descKey)}</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/30 shrink-0" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground/25 shrink-0" />
               </button>
             );
           })}
