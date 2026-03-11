@@ -615,8 +615,8 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         </div>
       )}
       <a ref={anchorRef} className="hidden" target="_blank" rel="noopener noreferrer" />
-      <div className="p-4 lg:p-5">
-        <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: "1fr 220px" }}>
+      <div className="p-4 md:p-5">
+        <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: "1fr minmax(180px, 220px)" }}>
           <div className="flex flex-col gap-3 min-w-0">
             <AirlineHeader logo={airlineLogo} name={airlineName} flightNumber={flightNumber} isBestValue={false} isMobile={false} bestLabel={t("card.best")} />
             {originSource && (
