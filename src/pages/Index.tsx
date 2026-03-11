@@ -1,15 +1,17 @@
 import { useRef, useCallback } from "react";
 import Header from "@/components/Header";
 import Hero, { type HeroHandle } from "@/components/Hero";
+import MobileHero from "@/components/mobile/MobileHero";
 import PopularDestinations from "@/components/PopularDestinations";
 import WhyUseSection from "@/components/WhyUseSection";
-
 import Footer from "@/components/Footer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { AISearchParams } from "@/components/FlightSearchHero";
 
 const Index = () => {
   const heroRef = useRef<HeroHandle>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   const handleDestinationClick = useCallback((dest: { city: string; code: string }) => {
     searchRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -25,7 +27,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <Hero ref={heroRef} searchRef={searchRef} />
+      {isMobile ? (
+        <MobileHero ref={heroRef} searchRef={searchRef} />
+      ) : (
+        <Hero ref={heroRef} searchRef={searchRef} />
+      )}
       <PopularDestinations onDestinationClick={handleDestinationClick} />
       <WhyUseSection />
       <Footer />
