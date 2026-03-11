@@ -170,7 +170,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
   /* ── Mobile: full-screen calendar ── */
   if (isMobile) {
     return (
-      <div className="flex flex-col min-h-screen bg-background" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-col h-full bg-background" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
           <button type="button" onClick={onDone} className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors" aria-label="Close">
