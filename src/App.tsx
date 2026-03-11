@@ -14,14 +14,11 @@ import Hotels from "./pages/Hotels";
 import Explore from "./pages/Explore";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsAndConditions from "./pages/TermsAndConditions";
-import AffiliateDisclosure from "./pages/AffiliateDisclosure";
 import Contact from "./pages/Contact";
 import PriceDisclaimer from "./pages/PriceDisclaimer";
 import Out from "./pages/Out";
-import Cookies from "./pages/Cookies";
-import Impressum from "./pages/Impressum";
+import LegalPage from "./pages/LegalPage";
+import LegalRedirect from "./components/LegalRedirect";
 import FlightErrorBoundary from "./components/FlightErrorBoundary";
 import CookieConsent from "./components/CookieConsent";
 import { HOTELS_ENABLED } from "@/lib/featureFlags";
@@ -83,14 +80,18 @@ const App = () => (
           <Route path="/signup" element={<AuthComingSoon />} />
           <Route path="/register" element={<AuthComingSoon />} />
           
-          {/* Legal pages */}
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/cookies" element={<Cookies />} />
-          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-          <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
+          {/* Locale-prefixed legal pages */}
+          <Route path="/:locale/:slug" element={<LegalPage />} />
+
+          {/* Legacy legal redirects → locale-prefixed */}
+          <Route path="/privacy-policy" element={<LegalRedirect pageId="privacy-policy" />} />
+          <Route path="/cookies" element={<LegalRedirect pageId="cookies" />} />
+          <Route path="/terms-and-conditions" element={<LegalRedirect pageId="terms-and-conditions" />} />
+          <Route path="/affiliate-disclosure" element={<LegalRedirect pageId="affiliate-disclosure" />} />
+          <Route path="/impressum" element={<LegalRedirect pageId="impressum" />} />
+
           <Route path="/contact" element={<Contact />} />
           <Route path="/price-disclaimer" element={<PriceDisclaimer />} />
-          <Route path="/impressum" element={<Impressum />} />
           
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />

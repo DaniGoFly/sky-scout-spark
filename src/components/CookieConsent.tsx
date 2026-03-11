@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Shield, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { useLegalUrl } from "@/hooks/useLegalUrl";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,8 @@ export function useCookieSettings() {
 
 export default function CookieConsent() {
   const { t } = useTranslation();
+  const privacyUrl = useLegalUrl("privacy-policy");
+  const cookiesUrl = useLegalUrl("cookies");
   const [visible, setVisible] = useState(false);
   const [showPrefs, setShowPrefs] = useState(false);
   const [analytics, setAnalytics] = useState(false);
@@ -137,11 +140,11 @@ export default function CookieConsent() {
                   </p>
                   <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                     {t("cookie.banner_text")}{" "}
-                    <Link to="/privacy-policy" className="text-primary hover:underline">
+                    <Link to={privacyUrl} className="text-primary hover:underline">
                       {t("footer.privacy")}
                     </Link>
                     {" · "}
-                    <Link to="/cookies" className="text-primary hover:underline">
+                    <Link to={cookiesUrl} className="text-primary hover:underline">
                       {t("cookie.cookie_policy")}
                     </Link>
                   </p>
