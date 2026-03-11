@@ -20,6 +20,7 @@ import { useLocale } from "@/hooks/useLocale";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OverlayPortal } from "./overlays/OverlayPortal";
+import { MobileCalendarModal } from "./overlays/MobileCalendarModal";
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
