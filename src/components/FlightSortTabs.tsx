@@ -58,7 +58,7 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
             <button
               key={key}
               onClick={() => onSortChange(key)}
-              className={`flex flex-col gap-0 py-2.5 px-3 rounded-[14px] min-w-0 transition-all border text-left ${
+              className={`flex flex-col gap-0 py-2.5 sm:py-2.5 px-2.5 sm:px-3 rounded-[14px] min-w-0 transition-all border text-left ${
                 isActive
                   ? "bg-primary/[0.12] border-white/[0.15]"
                   : "bg-transparent border-white/[0.06] hover:bg-white/[0.04]"
