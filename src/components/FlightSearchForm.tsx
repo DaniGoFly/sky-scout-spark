@@ -518,119 +518,129 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
             </button>
           </div>
 
-          {/* Mobile/Tablet: stacked layout — app-like full-width fields */}
-          <div className="xl:hidden flex flex-col">
-            {/* FROM */}
-            <div className={`px-5 min-h-[56px] flex flex-col justify-center ${errRing(!!errors.from)}`}>
-              <span className={SEG_LABEL}>{t("search.from")}</span>
-              <div className="mt-1">
-                <MultiOriginInput
-                  values={origins}
-                  onChange={handleOriginsChange}
-                  placeholder={t("search_form.placeholder_airport")}
-                  bare
-                />
-              </div>
-            </div>
-
-            {/* Swap button overlapping separator */}
-            <div className="relative h-px mx-5 bg-border/20">
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30">
-                <button type="button" onClick={swapLocations}
-                  disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-                  className="w-9 h-9 rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm active:scale-95">
-                  <ArrowRightLeft className="w-3.5 h-3.5 rotate-90" />
-                </button>
-              </div>
-            </div>
-
-            {/* TO */}
-            <div className={`px-5 min-h-[56px] flex flex-col justify-center ${errRing(!!errors.to)}`}>
-              <span className={SEG_LABEL}>{t("search.to")}</span>
-              <div className="mt-1">
-                {anywhere ? (
-                  <div className="flex items-center gap-1.5 min-h-[28px]">
-                    <Globe className="w-4 h-4 text-primary shrink-0" />
-                    <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
-                  </div>
-                ) : (
+          {/* Mobile/Tablet: Skyscanner-inspired card layout */}
+          <div className="xl:hidden flex flex-col gap-0">
+            {/* ── Elevated search card ── */}
+            <div className="mx-1 rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm overflow-hidden">
+              {/* FROM row */}
+              <div className={`relative flex items-center gap-3 px-4 min-h-[54px] ${errRing(!!errors.from)}`}>
+                <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/40 shrink-0" />
+                <div className="flex-1 min-w-0">
                   <MultiOriginInput
-                    values={destinations}
-                    onChange={handleDestinationsChange}
+                    values={origins}
+                    onChange={handleOriginsChange}
                     placeholder={t("search_form.placeholder_airport")}
-                    multiLabel={t("search_form.multi_destination")}
                     bare
                   />
-                )}
-              </div>
-            </div>
-
-            <div className="h-px mx-5 bg-border/20" />
-
-            {/* DATES — mobile: side-by-side for roundtrip, full-width for one-way */}
-            {isAnyDay ? (
-              <div className={`px-5 min-h-[56px] flex flex-col justify-center ${errRing(!!errors.dates)}`}>
-                <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
-                {tripType === "roundtrip" ? (
-                  <TripLengthSlider value={tripLength} onChange={setTripLength} />
-                ) : (
-                  <span className={`${SEG_PLACEHOLDER} text-[13px]`}>{t("search_form.flexible_departure")}</span>
-                )}
-              </div>
-            ) : tripType === "roundtrip" ? (
-              <div className={`grid grid-cols-2 ${errRing(!!errors.dates)}`}>
-                <div className="px-5 min-h-[56px] flex flex-col justify-center cursor-pointer border-r border-border/20">
-                  <FlightDateRangePicker
-                    departDate={departDate} returnDate={returnDate}
-                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                    tripType={tripType} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                    bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
-                    onOpenCalendar={handleOpenCalendar}
-                  />
                 </div>
-                <div className="px-5 min-h-[56px] flex flex-col justify-center cursor-pointer">
-                  <FlightDateRangePicker
-                    departDate={departDate} returnDate={returnDate}
-                    onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                    tripType={tripType} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                    bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
-                    onOpenCalendar={handleOpenCalendar}
-                  />
+                {/* Swap button — positioned right, overlapping the separator */}
+                <button type="button" onClick={swapLocations}
+                  disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+                  className="absolute right-3 top-1/2 translate-y-[calc(-50%+0.5px)] z-30 w-10 h-10 rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm active:scale-95">
+                  <ArrowRightLeft className="w-4 h-4 rotate-90" />
+                </button>
+              </div>
+
+              {/* Separator */}
+              <div className="h-px bg-border/20 mx-4" />
+
+              {/* TO row */}
+              <div className={`flex items-center gap-3 px-4 min-h-[54px] ${errRing(!!errors.to)}`}>
+                <MapPin className="w-5 h-5 text-muted-foreground/40 shrink-0" />
+                <div className="flex-1 min-w-0 pr-12">
+                  {anywhere ? (
+                    <div className="flex items-center gap-1.5 min-h-[28px]">
+                      <Globe className="w-4 h-4 text-primary shrink-0" />
+                      <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
+                    </div>
+                  ) : (
+                    <MultiOriginInput
+                      values={destinations}
+                      onChange={handleDestinationsChange}
+                      placeholder={t("search_form.placeholder_destination", t("search_form.placeholder_airport"))}
+                      multiLabel={t("search_form.multi_destination")}
+                      bare
+                    />
+                  )}
                 </div>
               </div>
-            ) : (
-              <div className={`px-5 min-h-[56px] flex flex-col justify-center cursor-pointer ${errRing(!!errors.dates)}`}>
-                <FlightDateRangePicker
-                  departDate={departDate} returnDate={returnDate}
-                  onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
-                  tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
-                  bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
-                  onOpenCalendar={handleOpenCalendar}
-                />
-              </div>
-            )}
 
-            <div className="h-px mx-5 bg-border/20" />
+              {/* Separator */}
+              <div className="h-px bg-border/20 mx-4" />
 
-            {/* TRAVELERS + CABIN */}
-            <div className="px-5 min-h-[56px] flex flex-col justify-center cursor-pointer">
-              <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+              {/* DATES + TRAVELERS row — side by side */}
+              {isAnyDay ? (
+                <div className={`px-4 min-h-[54px] flex flex-col justify-center ${errRing(!!errors.dates)}`}>
+                  <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
+                  {tripType === "roundtrip" ? (
+                    <TripLengthSlider value={tripLength} onChange={setTripLength} />
+                  ) : (
+                    <span className={`${SEG_PLACEHOLDER} text-[13px]`}>{t("search_form.flexible_departure")}</span>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2">
+                  {/* Depart / dates */}
+                  <div className={`flex items-center gap-2.5 px-4 min-h-[54px] cursor-pointer border-r border-border/20 ${errRing(!!errors.dates)}`}>
+                    <Calendar className="w-4.5 h-4.5 text-muted-foreground/40 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <FlightDateRangePicker
+                        departDate={departDate} returnDate={returnDate}
+                        onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                        tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                        bare segmentMode segmentLabel={tripType === "roundtrip" ? t("calendar.depart") : t("calendar.depart")} segmentDisplay={departDisplay}
+                        onOpenCalendar={handleOpenCalendar}
+                      />
+                    </div>
+                  </div>
+                  {/* Return date or Travelers */}
+                  {tripType === "roundtrip" ? (
+                    <div className={`flex items-center gap-2.5 px-4 min-h-[54px] cursor-pointer ${errRing(!!errors.dates)}`}>
+                      <div className="min-w-0 flex-1">
+                        <FlightDateRangePicker
+                          departDate={departDate} returnDate={returnDate}
+                          onDepartChange={handleDepartChange} onReturnChange={handleReturnChange}
+                          tripType={tripType} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
+                          bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
+                          onOpenCalendar={handleOpenCalendar}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2.5 px-4 min-h-[54px] cursor-pointer">
+                      <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Travelers row — only for roundtrip (dates took both cols) */}
+              {tripType === "roundtrip" && !isAnyDay && (
+                <>
+                  <div className="h-px bg-border/20 mx-4" />
+                  <div className="flex items-center gap-2.5 px-4 min-h-[54px] cursor-pointer">
+                    <Users className="w-4.5 h-4.5 text-muted-foreground/40 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Direct flights toggle — inline on mobile */}
-            <div className="px-5 pb-2 pt-1">
-              <label className="flex items-center gap-2.5 cursor-pointer select-none min-h-[40px]">
-                <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-5 w-5 rounded-[5px]" />
-                <span className="text-[13px] text-muted-foreground font-medium">{t("search.direct_flights_only")}</span>
+            {/* ── Options below card ── */}
+            <div className="px-5 pt-4 pb-1 space-y-2">
+              <label className="flex items-center gap-3 cursor-pointer select-none min-h-[36px]">
+                <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-5 w-5 rounded-[5px] border-muted-foreground/40" />
+                <span className="text-[14px] text-foreground font-medium">{t("search.direct_flights_only")}</span>
               </label>
             </div>
 
-            {/* SEARCH BUTTON — large, thumb-friendly */}
-            <div className="px-4 pb-4 pt-1">
+            {/* ── Search button — outside card, full width ── */}
+            <div className="px-4 pb-4 pt-3">
               <button type="button" onClick={handleSearch}
-                className="w-full flex items-center justify-center gap-2.5 min-h-[52px] rounded-xl bg-gradient-to-r from-primary to-[hsl(220_80%_46%)] text-primary-foreground font-semibold text-[16px] active:scale-[0.97] transition-all cursor-pointer shadow-lg">
-                <Search className="w-5 h-5" />
-                <span>{t("search.search_flights")}</span>
+                className="w-full flex items-center justify-center gap-2.5 min-h-[52px] rounded-2xl bg-primary text-primary-foreground font-semibold text-[16px] active:scale-[0.97] active:brightness-90 transition-all cursor-pointer shadow-lg shadow-primary/20">
+                <span>{t("search.search_flights", t("search.search"))}</span>
               </button>
             </div>
           </div>
