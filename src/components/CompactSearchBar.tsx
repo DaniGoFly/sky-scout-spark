@@ -140,8 +140,8 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
   const originsKey = origins.map(o => o.code).join(",");
 
   return (
-    <div className="bg-card border border-border rounded-2xl shadow-card p-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="bg-card border border-border rounded-2xl shadow-card p-3 md:p-4">
+      <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-2.5 md:gap-3">
         {/* Trip Type */}
         <div className="flex gap-1 shrink-0">
           <button
