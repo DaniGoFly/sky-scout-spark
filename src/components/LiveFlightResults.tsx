@@ -599,7 +599,7 @@ const LiveFlightResults = () => {
                 {isMultiOrigin && ` · ${origins.length} airports`}
               </p>
             </div>
-            <div className="lg:hidden shrink-0">
+            <div className="xl:hidden shrink-0">
               <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={dedupedFlights.length} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </div>
           </div>
