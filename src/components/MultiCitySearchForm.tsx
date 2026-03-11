@@ -7,6 +7,8 @@ import AirportAutocomplete from "./AirportAutocomplete";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { OverlayPortal } from "./overlays/OverlayPortal";
+
 
 interface AirportSelection {
   code: string;
@@ -240,8 +242,9 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
 
       {/* Mobile: fixed full-screen calendar modal */}
       {isMobile && openCalendarSegmentId && activeSegment && (
+        <OverlayPortal>
         <div
-          className="fixed inset-0 z-[1000] bg-background flex flex-col"
+          className="fixed inset-0 z-[9999] bg-background flex flex-col"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           {/* Header */}
@@ -303,6 +306,7 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
             </Button>
           </div>
         </div>
+        </OverlayPortal>
       )}
 
       {/* Add flight button */}
