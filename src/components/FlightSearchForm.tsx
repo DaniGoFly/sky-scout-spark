@@ -689,31 +689,29 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
           </div>
         </div>
 
-        {/* Calendar panel — portal overlay on mobile, inline on desktop */}
+        {/* Calendar panel — portal modal on mobile, inline on desktop */}
         {calendarOpen && !isAnyDay && (
           isMobile ? (
-            <OverlayPortal>
-              <div className="fixed inset-0 z-[9999] bg-background overflow-y-auto" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-                <CalendarPanel
-                  departDate={departDate}
-                  returnDate={returnDate}
-                  onDepartChange={handleDepartChange}
-                  onReturnChange={handleReturnChange}
-                  tripType={tripType as "roundtrip" | "oneway"}
-                  onTripTypeChange={handleTripTypeChange}
-                  onDone={handleCloseCalendar}
-                  departFlexBefore={departFlexBefore}
-                  departFlexAfter={departFlexAfter}
-                  returnFlexBefore={returnFlexBefore}
-                  returnFlexAfter={returnFlexAfter}
-                  onDepartFlexBeforeChange={setDepartFlexBefore}
-                  onDepartFlexAfterChange={setDepartFlexAfter}
-                  onReturnFlexBeforeChange={setReturnFlexBefore}
-                  onReturnFlexAfterChange={setReturnFlexAfter}
-                  initialTab={calendarInitialTab}
-                />
-              </div>
-            </OverlayPortal>
+            <MobileCalendarModal onClose={handleCloseCalendar}>
+              <CalendarPanel
+                departDate={departDate}
+                returnDate={returnDate}
+                onDepartChange={handleDepartChange}
+                onReturnChange={handleReturnChange}
+                tripType={tripType as "roundtrip" | "oneway"}
+                onTripTypeChange={handleTripTypeChange}
+                onDone={handleCloseCalendar}
+                departFlexBefore={departFlexBefore}
+                departFlexAfter={departFlexAfter}
+                returnFlexBefore={returnFlexBefore}
+                returnFlexAfter={returnFlexAfter}
+                onDepartFlexBeforeChange={setDepartFlexBefore}
+                onDepartFlexAfterChange={setDepartFlexAfter}
+                onReturnFlexBeforeChange={setReturnFlexBefore}
+                onReturnFlexAfterChange={setReturnFlexAfter}
+                initialTab={calendarInitialTab}
+              />
+            </MobileCalendarModal>
           ) : (
             <div className="absolute left-0 right-0 top-full z-[100]">
               <CalendarPanel
