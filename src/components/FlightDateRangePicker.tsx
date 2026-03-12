@@ -58,9 +58,9 @@ DayCell.displayName = "DayCell";
 
 /* ─── Month Grid ─── */
 const MonthGrid = React.memo(({
-  month, departDate, returnDate, tripType, onDayClick, today
+  month, departDate, returnDate, tripType, onDayClick, today, hideTitle
 }: {
-  month: Date; departDate: Date | null; returnDate: Date | null; tripType: "roundtrip" | "oneway"; onDayClick: (day: Date) => void; today: Date;
+  month: Date; departDate: Date | null; returnDate: Date | null; tripType: "roundtrip" | "oneway"; onDayClick: (day: Date) => void; today: Date; hideTitle?: boolean;
 }) => {
   const days = useMemo(() => eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) }), [month]);
   const startDayOfWeek = useMemo(() => getDay(startOfMonth(month)), [month]);
@@ -68,7 +68,7 @@ const MonthGrid = React.memo(({
 
   return (
     <div className="flex-1 min-w-0">
-      <h3 className="text-center font-semibold text-foreground text-base mb-3">{format(month, "MMMM yyyy")}</h3>
+      {!hideTitle && <h3 className="text-center font-semibold text-foreground text-base mb-3">{format(month, "MMMM yyyy")}</h3>}
       <div className="grid grid-cols-7 gap-0 mb-2">
         {WEEKDAYS.map((d) => (
           <div key={d} className="h-8 flex items-center justify-center text-xs font-medium text-muted-foreground uppercase tracking-wider">{d}</div>
@@ -217,21 +217,23 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
                   ? (selectingReturn ? "Select return date" : "Select departure date")
                   : "Select departure date"}
               </p>
-              {/* Month nav + single month grid */}
-              <div className="flex items-center gap-2 mb-2">
+              {/* Month nav header — stable 3-column grid */}
+              <div className="grid grid-cols-[3rem_1fr_3rem] items-center mb-2 px-1">
                 <button type="button" onClick={() => setCurrentMonth(prev => subMonths(prev, 1))} disabled={!canGoPrev}
-                  className={cn("p-2 rounded-full hover:bg-secondary transition-colors shrink-0",
+                  className={cn("p-2 rounded-full hover:bg-secondary transition-colors justify-self-center",
                     !canGoPrev && "opacity-20 cursor-not-allowed")} aria-label="Previous month">
                   <ChevronLeft className="h-5 w-5 text-foreground" />
                 </button>
-                <div className="flex-1 min-w-0">
-                  <MonthGrid month={currentMonth} departDate={departDate} returnDate={returnDate} tripType={tripType} onDayClick={handleDayClick} today={today} />
-                </div>
+                <span className="text-center text-base font-semibold text-foreground truncate">
+                  {format(currentMonth, "MMMM yyyy")}
+                </span>
                 <button type="button" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
-                  className="p-2 rounded-full hover:bg-secondary transition-colors shrink-0" aria-label="Next month">
+                  className="p-2 rounded-full hover:bg-secondary transition-colors justify-self-center" aria-label="Next month">
                   <ChevronRight className="h-5 w-5 text-foreground" />
                 </button>
               </div>
+              {/* Month grid — full width, no side squeeze */}
+              <MonthGrid month={currentMonth} departDate={departDate} returnDate={returnDate} tripType={tripType} onDayClick={handleDayClick} today={today} hideTitle />
             </>
           ) : (
             <div className="py-4 space-y-5 max-w-sm mx-auto">
