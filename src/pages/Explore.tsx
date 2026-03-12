@@ -279,11 +279,14 @@ const Explore = () => {
 
             {/* ── Bottom sheet results panel ── */}
             {mobileResultsOpen && (
-              <div className="absolute inset-0 z-30 flex flex-col">
+              <div
+                className="absolute inset-0 z-30 flex flex-col"
+                style={{ paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom) + 0.5rem)" }}
+              >
                 {/* Backdrop */}
                 <div className="flex-1 min-h-[60px]" onClick={() => setMobileResultsOpen(false)} />
                 {/* Sheet */}
-                <div className="bg-background rounded-t-2xl border-t border-border/30 max-h-[70vh] flex flex-col shadow-2xl">
+                <div className="bg-background rounded-t-2xl border-t border-border/30 max-h-[70vh] flex flex-col shadow-2xl overflow-hidden">
                   {/* Handle + header */}
                   <div className="shrink-0 pt-2 pb-3 px-4">
                     <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
@@ -298,7 +301,10 @@ const Explore = () => {
                     </div>
                   </div>
                   {/* Scrollable list */}
-                  <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-6 space-y-2">
+                  <div
+                    className="flex-1 overflow-y-auto overscroll-contain px-4 pb-6 space-y-2"
+                    style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+                  >
                     {sortedDestinations.map((dest, i) => (
                       <button
                         key={dest.destinationIata}
