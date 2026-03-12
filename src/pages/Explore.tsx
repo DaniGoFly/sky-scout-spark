@@ -248,7 +248,7 @@ const Explore = () => {
           </div>
 
           {/* ── Map area (fills remaining space) ── */}
-          <div className="flex-1 relative z-0 overflow-hidden min-h-0">
+          <div className="flex-1 relative z-0 overflow-hidden min-h-0 explore-mobile-map-wrap">
             {isLoading && (
               <div className="absolute inset-0 z-20 bg-background/40 backdrop-blur-sm flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2 bg-card/90 rounded-xl px-6 py-4 border border-border">
