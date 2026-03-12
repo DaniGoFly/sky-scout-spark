@@ -217,21 +217,23 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
                   ? (selectingReturn ? "Select return date" : "Select departure date")
                   : "Select departure date"}
               </p>
-              {/* Month nav + single month grid */}
-              <div className="flex items-center gap-2 mb-2">
+              {/* Month nav header — stable 3-column grid */}
+              <div className="grid grid-cols-[3rem_1fr_3rem] items-center mb-2 px-1">
                 <button type="button" onClick={() => setCurrentMonth(prev => subMonths(prev, 1))} disabled={!canGoPrev}
-                  className={cn("p-2 rounded-full hover:bg-secondary transition-colors shrink-0",
+                  className={cn("p-2 rounded-full hover:bg-secondary transition-colors justify-self-center",
                     !canGoPrev && "opacity-20 cursor-not-allowed")} aria-label="Previous month">
                   <ChevronLeft className="h-5 w-5 text-foreground" />
                 </button>
-                <div className="flex-1 min-w-0">
-                  <MonthGrid month={currentMonth} departDate={departDate} returnDate={returnDate} tripType={tripType} onDayClick={handleDayClick} today={today} />
-                </div>
+                <span className="text-center text-base font-semibold text-foreground truncate">
+                  {format(currentMonth, "MMMM yyyy")}
+                </span>
                 <button type="button" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
-                  className="p-2 rounded-full hover:bg-secondary transition-colors shrink-0" aria-label="Next month">
+                  className="p-2 rounded-full hover:bg-secondary transition-colors justify-self-center" aria-label="Next month">
                   <ChevronRight className="h-5 w-5 text-foreground" />
                 </button>
               </div>
+              {/* Month grid — full width, no side squeeze */}
+              <MonthGrid month={currentMonth} departDate={departDate} returnDate={returnDate} tripType={tripType} onDayClick={handleDayClick} today={today} hideTitle />
             </>
           ) : (
             <div className="py-4 space-y-5 max-w-sm mx-auto">
