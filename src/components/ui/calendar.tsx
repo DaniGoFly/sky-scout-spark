@@ -17,7 +17,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         month: "space-y-4",
         caption: "grid grid-cols-[40px_1fr_40px] items-center pt-1 mb-2",
         // Month/year title — Flights Blue, no purple
-        caption_label: "text-base font-semibold text-primary text-center whitespace-nowrap",
+        caption_label: "text-base font-semibold text-primary text-center justify-self-center whitespace-nowrap",
         nav: "contents",
         // Nav chevrons — blue tint, blue on hover, no absolute positioning
         nav_button: cn(
