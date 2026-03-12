@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import LocaleSelector from "../LocaleSelector";
+import { HOTELS_ENABLED } from "@/lib/featureFlags";
+import { toast } from "sonner";
 
 const NAV_ITEMS = [
   { path: "/", icon: Plane, labelKey: "nav.flights", matchPaths: ["/", "/flights"] },
@@ -72,13 +74,25 @@ const MobileBottomNav = memo(() => {
                 >
                   {t("footer.contact")}
                 </Link>
-                <Link
-                  to="/hotels"
-                  onClick={() => setMoreOpen(false)}
-                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-secondary transition-colors"
-                >
-                  {t("nav.hotels")}
-                </Link>
+                {HOTELS_ENABLED ? (
+                  <Link
+                    to="/hotels"
+                    onClick={() => setMoreOpen(false)}
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                  >
+                    {t("nav.hotels")}
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => {
+                      toast.info(t("hero.coming_soon"), { duration: 3000 });
+                      setMoreOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors w-full text-left"
+                  >
+                    {t("nav.hotels")}
+                  </button>
+                )}
               </div>
               <div className="border-t border-border/40 pt-3">
                 <div className="flex items-center gap-3 px-3 py-2">
