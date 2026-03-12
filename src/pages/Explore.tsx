@@ -563,14 +563,16 @@ const Explore = () => {
                 </div>
               </div>
             )}
-            <ExploreMap
-              destinations={sortedDestinations}
-              originAirport={originAirport}
-              onSelect={handleSelectDestination}
-              hoveredIata={hoveredIata}
-              onHover={setHoveredIata}
-              formatPrice={formatPrice}
-            />
+            <Suspense fallback={<div className="flex-1 bg-background/50 animate-pulse rounded-xl" />}>
+              <ExploreMap
+                destinations={sortedDestinations}
+                originAirport={originAirport}
+                onSelect={handleSelectDestination}
+                hoveredIata={hoveredIata}
+                onHover={setHoveredIata}
+                formatPrice={formatPrice}
+              />
+            </Suspense>
           </div>
         </div>
       </main>
