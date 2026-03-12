@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, memo, lazy, Suspense } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, AlertCircle, Plane, Loader2, RefreshCw, RotateCcw } from "lucide-react";
@@ -12,8 +12,8 @@ import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
 import FlightResultsSkeleton from "./FlightResultsSkeleton";
 import ActiveFilterChips from "./ActiveFilterChips";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
-import PriceInsight from "./PriceInsight";
-import PriceGraph from "./PriceGraph";
+const PriceInsight = lazy(() => import("./PriceInsight"));
+const PriceGraph = lazy(() => import("./PriceGraph"));
 import TrustSignals from "./TrustSignals";
 import NearbyAirportAlert from "./NearbyAirportAlert";
 import { useCartesianSearch, type CartesianFlight } from "@/hooks/useCartesianSearch";
@@ -711,10 +711,12 @@ const LiveFlightResults = () => {
                 </div>
               )}
 
-              {sortedFlights.length > 0 && (
-                <PriceInsight origin={from} destination={to} currentPrice={sortedFlights[0].price.amount} priceCurrency={flightsCurrency} />
-              )}
-              <PriceGraph origin={from} destination={to} departDate={depart} returnDate={returnDate} cabinClass={tripClass} adults={adults} />
+              <Suspense fallback={null}>
+                {sortedFlights.length > 0 && (
+                  <PriceInsight origin={from} destination={to} currentPrice={sortedFlights[0].price.amount} priceCurrency={flightsCurrency} />
+                )}
+                <PriceGraph origin={from} destination={to} departDate={depart} returnDate={returnDate} cabinClass={tripClass} adults={adults} />
+              </Suspense>
               <MemoizedSortTabs flights={dedupedFlights} sortBy={sortBy} onSortChange={handleSortChange} />
               <div className="flex items-center gap-2 px-1 flex-wrap">
                 {isRevalidating && (

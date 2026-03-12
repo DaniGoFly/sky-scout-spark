@@ -3,7 +3,7 @@
  * GoFlyFinder dark + purple theme with premium interactions
  */
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addDays } from "date-fns";
 import { Loader2, Navigation, Plane, MapPin, ArrowRight, ChevronDown, ChevronUp, SlidersHorizontal, List } from "lucide-react";
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import AirportAutocomplete from "@/components/AirportAutocomplete";
-import ExploreMap from "@/components/explore/ExploreMap";
+const ExploreMap = lazy(() => import("@/components/explore/ExploreMap"));
 import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
 // detectGeo removed — no auto-origin detection
 import { useLocale } from "@/hooks/useLocale";
@@ -257,14 +257,16 @@ const Explore = () => {
                 </div>
               </div>
             )}
-            <ExploreMap
-              destinations={sortedDestinations}
-              originAirport={originAirport}
-              onSelect={handleSelectDestination}
-              hoveredIata={hoveredIata}
-              onHover={setHoveredIata}
-              formatPrice={formatPrice}
-            />
+            <Suspense fallback={<div className="flex-1 bg-background/50 animate-pulse rounded-xl" />}>
+              <ExploreMap
+                destinations={sortedDestinations}
+                originAirport={originAirport}
+                onSelect={handleSelectDestination}
+                hoveredIata={hoveredIata}
+                onHover={setHoveredIata}
+                formatPrice={formatPrice}
+              />
+            </Suspense>
 
             {/* ── Floating results button ── */}
             {!isLoading && sortedDestinations.length > 0 && !mobileResultsOpen && (
@@ -561,14 +563,16 @@ const Explore = () => {
                 </div>
               </div>
             )}
-            <ExploreMap
-              destinations={sortedDestinations}
-              originAirport={originAirport}
-              onSelect={handleSelectDestination}
-              hoveredIata={hoveredIata}
-              onHover={setHoveredIata}
-              formatPrice={formatPrice}
-            />
+            <Suspense fallback={<div className="flex-1 bg-background/50 animate-pulse rounded-xl" />}>
+              <ExploreMap
+                destinations={sortedDestinations}
+                originAirport={originAirport}
+                onSelect={handleSelectDestination}
+                hoveredIata={hoveredIata}
+                onHover={setHoveredIata}
+                formatPrice={formatPrice}
+              />
+            </Suspense>
           </div>
         </div>
       </main>
