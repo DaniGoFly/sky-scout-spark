@@ -211,9 +211,9 @@
 /* ── Mobile: lift map controls above bottom nav ── */
 @media (max-width: 767px) {
   .explore-mobile-map-wrap .maplibregl-ctrl-bottom-right {
-    bottom: 72px !important;
+    bottom: calc(72px + env(safe-area-inset-bottom)) !important;
   }
   .explore-mobile-map-wrap .maplibregl-ctrl-bottom-left {
-    bottom: 72px !important;
+    bottom: calc(72px + env(safe-area-inset-bottom)) !important;
   }
 }
