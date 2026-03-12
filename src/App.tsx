@@ -66,7 +66,7 @@ const App = () => (
           {/* Hotels — disabled when HOTELS_ENABLED is false */}
           {HOTELS_ENABLED
             ? <Route path="/hotels" element={<Hotels />} />
-            : <Route path="/hotels" element={<Navigate to="/flights" replace />} />
+            : <Route path="/hotels" element={<ComingSoon type="feature" />} />
           }
 
           <Route path="/explore" element={<Explore />} />
