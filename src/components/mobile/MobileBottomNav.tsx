@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import LocaleSelector from "../LocaleSelector";
+import { HOTELS_ENABLED } from "@/lib/featureFlags";
+import { toast } from "sonner";
 
 const NAV_ITEMS = [
   { path: "/", icon: Plane, labelKey: "nav.flights", matchPaths: ["/", "/flights"] },
