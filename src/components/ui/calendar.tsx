@@ -17,15 +17,15 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         month: "space-y-4",
         caption: "grid grid-cols-[40px_1fr_40px] items-center pt-1 mb-2",
         // Month/year title — Flights Blue, no purple
-        caption_label: "text-base font-semibold text-primary text-center justify-self-center whitespace-nowrap",
+        caption_label: "text-base font-semibold text-primary text-center justify-self-center whitespace-nowrap order-2 col-start-2",
         nav: "contents",
         // Nav chevrons — blue tint, blue on hover, no absolute positioning
         nav_button: cn(
           "h-8 w-8 bg-primary/10 p-0 opacity-70 hover:opacity-100 rounded-full transition-all duration-200",
           "hover:bg-primary/20 inline-flex items-center justify-center border border-primary/20 hover:border-primary/40",
         ),
-        nav_button_previous: "justify-self-center",
-        nav_button_next: "justify-self-center",
+        nav_button_previous: "justify-self-center order-1 col-start-1",
+        nav_button_next: "justify-self-center order-3 col-start-3",
         table: "w-full border-collapse",
         head_row: "flex",
         head_cell: "text-muted-foreground rounded-md w-10 sm:w-11 font-medium text-xs uppercase tracking-wider",
