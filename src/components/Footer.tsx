@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Plane } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLegalUrl } from "@/hooks/useLegalUrl";
+import { HOTELS_ENABLED } from "@/lib/featureFlags";
+import { toast } from "sonner";
 
 const Footer = React.forwardRef<HTMLElement>((_, ref) => {
   const { t } = useTranslation();
