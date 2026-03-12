@@ -58,9 +58,9 @@ DayCell.displayName = "DayCell";
 
 /* ─── Month Grid ─── */
 const MonthGrid = React.memo(({
-  month, departDate, returnDate, tripType, onDayClick, today
+  month, departDate, returnDate, tripType, onDayClick, today, hideTitle
 }: {
-  month: Date; departDate: Date | null; returnDate: Date | null; tripType: "roundtrip" | "oneway"; onDayClick: (day: Date) => void; today: Date;
+  month: Date; departDate: Date | null; returnDate: Date | null; tripType: "roundtrip" | "oneway"; onDayClick: (day: Date) => void; today: Date; hideTitle?: boolean;
 }) => {
   const days = useMemo(() => eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) }), [month]);
   const startDayOfWeek = useMemo(() => getDay(startOfMonth(month)), [month]);
@@ -68,7 +68,7 @@ const MonthGrid = React.memo(({
 
   return (
     <div className="flex-1 min-w-0">
-      <h3 className="text-center font-semibold text-foreground text-base mb-3">{format(month, "MMMM yyyy")}</h3>
+      {!hideTitle && <h3 className="text-center font-semibold text-foreground text-base mb-3">{format(month, "MMMM yyyy")}</h3>}
       <div className="grid grid-cols-7 gap-0 mb-2">
         {WEEKDAYS.map((d) => (
           <div key={d} className="h-8 flex items-center justify-center text-xs font-medium text-muted-foreground uppercase tracking-wider">{d}</div>
