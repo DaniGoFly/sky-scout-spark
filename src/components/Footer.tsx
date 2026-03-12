@@ -34,7 +34,11 @@ const Footer = React.forwardRef<HTMLElement>((_, ref) => {
               <h4 className="font-semibold text-foreground text-sm mb-3">{t("footer.products")}</h4>
               <ul className="space-y-2">
                 <li><Link to="/flights" className="text-muted-foreground hover:text-primary text-sm transition-colors py-1 block">{t("nav.flights")}</Link></li>
-                <li><Link to="/hotels" className="text-muted-foreground hover:text-primary text-sm transition-colors py-1 block">{t("nav.hotels")}</Link></li>
+                {HOTELS_ENABLED ? (
+                  <li><Link to="/hotels" className="text-muted-foreground hover:text-primary text-sm transition-colors py-1 block">{t("nav.hotels")}</Link></li>
+                ) : (
+                  <li><button onClick={() => toast.info(t("hero.coming_soon"), { duration: 3000 })} className="text-muted-foreground hover:text-primary text-sm transition-colors py-1 block">{t("nav.hotels")}</button></li>
+                )}
                 <li><Link to="/explore" className="text-muted-foreground hover:text-primary text-sm transition-colors py-1 block">{t("nav.explore")}</Link></li>
                 <li><Link to="/contact" className="text-muted-foreground hover:text-primary text-sm transition-colors py-1 block">{t("footer.contact")}</Link></li>
               </ul>
