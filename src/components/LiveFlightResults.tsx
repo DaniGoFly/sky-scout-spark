@@ -604,7 +604,7 @@ const LiveFlightResults = () => {
             </div>
           </div>
           <div className="hidden md:block"><CompactSearchBar isSearching={isSearching} onForceSearch={handleRefreshPrices} /></div>
-          <TrustSignals />
+          
         </div>
       </div>
 
