@@ -85,6 +85,28 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
     <div className="md:hidden">
       {/* ═══ HERO ZONE ═══ */}
       <section className="relative overflow-visible bg-background">
+        {/* Subtle tropical background texture */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <img
+            src={heroBgTropical}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{
+              opacity: 0.04,
+              filter: "blur(2px) saturate(0.15) brightness(0.5)",
+            }}
+            loading="eager"
+            decoding="async"
+          />
+          {/* Fade to background at bottom */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(to bottom, transparent 40%, hsl(var(--background)) 100%)",
+            }}
+          />
+        </div>
+
         {/* Atmospheric gradient sweep */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <div
