@@ -12,6 +12,7 @@ import FlightSearchForm, { type FlightSearchFormHandle } from "../FlightSearchFo
 import TravelAssistant from "../TravelAssistant";
 import type { AISearchParams } from "../FlightSearchHero";
 import type { HeroHandle } from "../Hero";
+import heroBgTropical from "@/assets/hero-bg-tropical.jpg";
 
 interface MobileHeroProps {
   searchRef?: React.RefObject<HTMLDivElement | null>;
