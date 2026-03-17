@@ -102,7 +102,7 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
           <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to bottom, transparent 40%, hsl(var(--background)) 100%)",
+              background: "linear-gradient(to bottom, transparent 15%, hsl(var(--background)) 55%)",
             }}
           />
         </div>
