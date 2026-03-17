@@ -131,8 +131,14 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
     if (!navigator.geolocation) { toast.error("Geolocation not supported."); setFromNearby(false); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => { userCoordsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude }; fillNearbyOrigins(pos.coords.latitude, pos.coords.longitude, fromRadius); },
-      () => { toast.error("Location permission denied."); setFromNearby(false); },
-      { enableHighAccuracy: true, timeout: 10000 }
+      (err) => {
+        console.warn("[GoFlyFinder] Nearby toggle geo error:", err.code, err.message);
+        if (err.code === err.PERMISSION_DENIED) toast.error("Location permission denied.");
+        else if (err.code === err.TIMEOUT) toast.error("Location request timed out — please try again.");
+        else toast.error("Could not get your location.");
+        setFromNearby(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
     );
   }, [fromRadius, fillNearbyOrigins]);
 

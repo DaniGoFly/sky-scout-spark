@@ -26,11 +26,34 @@ export function findNearestAirport(lat: number, lon: number): NearestAirportResu
 }
 
 /**
+ * Handle geolocation error with specific messages per error code.
+ */
+function handleGeoError(err: GeolocationPositionError): void {
+  console.warn("[GoFlyFinder] Geolocation error:", err.code, err.message);
+  switch (err.code) {
+    case err.PERMISSION_DENIED:
+      toast.error("Location permission denied — please type an airport.");
+      break;
+    case err.POSITION_UNAVAILABLE:
+      toast.error("Location unavailable — please type an airport.");
+      break;
+    case err.TIMEOUT:
+      toast.error("Location request timed out — please try again or type an airport.");
+      break;
+    default:
+      toast.error("Could not get your location — please type an airport.");
+  }
+}
+
+/**
  * Request geolocation and return the nearest airport.
- * Shows a toast if permission is denied.
+ * Uses getCurrentPosition directly (no navigator.permissions check)
+ * for maximum mobile Safari compatibility.
  */
 export function requestNearestAirport(): Promise<NearestAirportResult | null> {
   return new Promise((resolve) => {
+    console.log("[GoFlyFinder] Use my location tapped");
+
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser.");
       resolve(null);
@@ -39,14 +62,21 @@ export function requestNearestAirport(): Promise<NearestAirportResult | null> {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        console.log("[GoFlyFinder] Coordinates received:", pos.coords.latitude, pos.coords.longitude);
         const result = findNearestAirport(pos.coords.latitude, pos.coords.longitude);
+        if (result) {
+          console.log("[GoFlyFinder] Nearest airport found:", result.airport.code, result.distanceKm, "km");
+        } else {
+          console.warn("[GoFlyFinder] No nearby airport found for coordinates");
+          toast.error("We got your location, but couldn't find a nearby airport.");
+        }
         resolve(result);
       },
-      () => {
-        toast.error("Location permission denied — please type an airport.");
+      (err) => {
+        handleGeoError(err);
         resolve(null);
       },
-      { enableHighAccuracy: false, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
     );
   });
 }

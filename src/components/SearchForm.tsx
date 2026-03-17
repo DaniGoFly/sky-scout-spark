@@ -79,11 +79,14 @@ const SearchForm = () => {
           userCoordsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude };
           fillNearbyOrigins(pos.coords.latitude, pos.coords.longitude, fromRadius);
         },
-        () => {
-          toast.error("Location permission denied — please type an airport.");
+        (err) => {
+          console.warn("[GoFlyFinder] Nearby geo error:", err.code, err.message);
+          if (err.code === err.PERMISSION_DENIED) toast.error("Location permission denied — please type an airport.");
+          else if (err.code === err.TIMEOUT) toast.error("Location request timed out — please try again.");
+          else toast.error("Could not get your location — please type an airport.");
           setFromNearby(false);
         },
-        { enableHighAccuracy: false, timeout: 8000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
       );
     },
     [fromRadius, fillNearbyOrigins]
