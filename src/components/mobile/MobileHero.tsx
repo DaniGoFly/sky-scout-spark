@@ -86,7 +86,9 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
       {/* ═══ HERO ZONE ═══ */}
       <section className="relative overflow-visible bg-background">
         {/* Subtle tropical background texture */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-b-3xl" aria-hidden="true"
+          style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.3)" }}>
+
           <img
             src={heroBgTropical}
             alt=""
