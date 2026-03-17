@@ -92,8 +92,8 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
             style={{
-              opacity: 0.35,
-              filter: "blur(0px) saturate(0.4) brightness(0.7)",
+              opacity: 0.45,
+              filter: "saturate(0.35) brightness(0.75)",
             }}
             loading="eager"
             decoding="async"
