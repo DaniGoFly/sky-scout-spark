@@ -70,7 +70,6 @@ const SearchForm = () => {
         return;
       }
       if (!navigator.geolocation) {
-        toast.error("Geolocation not supported by your browser.");
         setFromNearby(false);
         return;
       }
