@@ -65,6 +65,7 @@ const Explore = () => {
   const [geoDebug, setGeoDebug] = useState<ExploreGeoDebug | null>(null);
   const [geoStepMessages, setGeoStepMessages] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
+  const [permissionHint, setPermissionHint] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
@@ -117,6 +118,7 @@ const Explore = () => {
     if (isLocating) return;
 
     setIsLocating(true);
+    setPermissionHint(null);
     setGeoStepMessages(["Step 1: location button clicked"]);
     setOrigin(null);
     setRawUserCoords(null);
@@ -124,6 +126,20 @@ const Explore = () => {
     setGeoDebug(null);
 
     try {
+      // Check permission state first (Safari-compatible — may not be supported)
+      try {
+        const perm = await navigator.permissions?.query({ name: "geolocation" as PermissionName });
+        if (perm?.state === "denied") {
+          appendGeoStep("Step 1b: permission state = denied");
+          setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
+          setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
+          return;
+        }
+        appendGeoStep(`Step 1b: permission state = ${perm?.state ?? "unknown"}`);
+      } catch {
+        appendGeoStep("Step 1b: Permissions API not supported, proceeding");
+      }
+
       appendGeoStep("Step 2: geolocation request started");
 
       if (!navigator.geolocation) {
@@ -134,11 +150,15 @@ const Explore = () => {
         navigator.geolocation.getCurrentPosition(
           (geoPosition) => resolve(geoPosition),
           (geoError) => {
-            let message = "Geolocation request failed";
-            if (geoError.code === 1) message = "Geolocation permission denied";
-            if (geoError.code === 2) message = "Geolocation position unavailable";
-            if (geoError.code === 3) message = "Geolocation timeout";
-            reject(new Error(message));
+            if (geoError.code === 1) {
+              reject(new Error("PERMISSION_DENIED"));
+            } else if (geoError.code === 2) {
+              reject(new Error("Geolocation position unavailable"));
+            } else if (geoError.code === 3) {
+              reject(new Error("Geolocation timeout"));
+            } else {
+              reject(new Error("Geolocation request failed"));
+            }
           },
           {
             enableHighAccuracy: true,
@@ -174,7 +194,12 @@ const Explore = () => {
       appendGeoStep(`Step 7: map updated: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      appendGeoStep(`Step X: error: ${message}`);
+      if (message === "PERMISSION_DENIED") {
+        appendGeoStep("Step X: permission denied by browser");
+        setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
+      } else {
+        appendGeoStep(`Step X: error: ${message}`);
+      }
       setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
     } finally {
       setIsLocating(false);
@@ -288,6 +313,18 @@ const Explore = () => {
                 </Button>
               </div>
             </div>
+
+            {permissionHint && (
+              <div className="px-4 pb-2">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] text-foreground leading-relaxed flex items-start gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <span>{permissionHint}</span>
+                    <button onClick={handleUseMyLocation} className="ml-2 underline text-primary font-medium">Retry</button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {showGeoDebug && (
               <div className="px-4 pb-2">
