@@ -108,54 +108,54 @@ const Explore = () => {
   }, [origin?.code, currency, directOnly]);
 
   const handleUseMyLocation = useCallback(async () => {
-    const cachedStorageKeys = [
-      ...Object.keys(localStorage).map((key) => `localStorage:${key}`),
-      ...Object.keys(sessionStorage).map((key) => `sessionStorage:${key}`),
-    ].filter((key) => /(airport|origin|from|location)/i.test(key));
+    if (isLocating) return;
+    console.log("[GoFlyFinder][Explore] Location button clicked");
 
-    console.log("[GoFlyFinder][Explore] Cached airport/location keys before fresh lookup:", cachedStorageKeys);
-
-    // Clear previous lookup state before every new attempt
+    // 1. Clear all previous state
+    setIsLocating(true);
     setOrigin(null);
     setRawUserCoords(null);
     setMapUserCoords(null);
     setGeoDebug(null);
 
-    const result = await requestNearestAirport();
+    try {
+      console.log("[GoFlyFinder][Explore] Geolocation request started");
+      const result = await requestNearestAirport();
 
-    if (!result) {
-      console.log("[GoFlyFinder][Explore] No coordinates available; origin remains empty for manual selection.");
-      return;
+      if (!result) {
+        console.log("[GoFlyFinder][Explore] Geolocation failed — no result. Field stays empty.");
+        setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
+        return;
+      }
+
+      // 2. Always store raw coords and show blue dot regardless of source
+      const coords = { lat: result.coords.lat, lon: result.coords.lon };
+      console.log(`[GoFlyFinder][Explore] Geolocation success: lat=${coords.lat}, lon=${coords.lon}, source=${result.source}`);
+      setRawUserCoords(coords);
+      setMapUserCoords(coords);
+
+      // 3. Always set the airport — GPS or IP fallback
+      const airportDisplay = `${result.airport.city} (${result.airport.code})`;
+      console.log(`[GoFlyFinder][Explore] Airport lookup result: ${result.airport.code} (${result.airport.name}) at ${result.distanceKm}km`);
+      console.log(`[GoFlyFinder][Explore] Updating From input field with: ${airportDisplay}`);
+      setOrigin({ code: result.airport.code, display: airportDisplay });
+
+      // 4. Update debug
+      setGeoDebug({
+        source: result.source,
+        selectedAirportCode: result.airport.code,
+        selectedAirportDistanceKm: result.distanceKm,
+      });
+
+      console.log(`[GoFlyFinder][Explore] Map center updated to: ${coords.lat}, ${coords.lon}`);
+    } catch (err) {
+      console.error("[GoFlyFinder][Explore] Location flow error:", err);
+      setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
+    } finally {
+      setIsLocating(false);
+      console.log("[GoFlyFinder][Explore] Loading state ended");
     }
-
-    setRawUserCoords({ lat: result.coords.lat, lon: result.coords.lon });
-
-    if (result.source === "gps") {
-      setMapUserCoords({ lat: result.coords.lat, lon: result.coords.lon });
-      setOrigin({ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` });
-    } else {
-      // Never auto-select airport from fallback location on Explore (avoids false major-hub selection)
-      setMapUserCoords(null);
-      console.log("[GoFlyFinder][Explore] Fallback path triggered; keeping departure empty to avoid inaccurate hub guess.");
-    }
-
-    setGeoDebug({
-      source: result.source,
-      selectedAirportCode: result.source === "gps" ? result.airport.code : null,
-      selectedAirportDistanceKm: result.source === "gps" ? result.distanceKm : null,
-    });
-
-    console.log(
-      `[GoFlyFinder][Explore] Final selected airport: ${
-        result.source === "gps" ? `${result.airport.code} (${result.distanceKm}km)` : "none"
-      }`,
-    );
-    console.log(
-      `[GoFlyFinder][Explore] Final blue-dot coordinates: ${
-        result.source === "gps" ? `${result.coords.lat}, ${result.coords.lon}` : "none"
-      }`,
-    );
-  }, []);
+  }, [isLocating]);
 
   // Enrich destinations with lat/lon from airports DB — only keep results with real price data
   const enrichedDestinations = useMemo(() => {
