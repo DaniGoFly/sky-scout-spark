@@ -10,21 +10,25 @@ export interface NearestAirportResult {
 }
 
 export function findNearestAirport(lat: number, lon: number): NearestAirportResult | null {
-  // Calculate distance from user to every airport
+  console.log(`[GoFlyFinder] findNearestAirport called with lat=${lat} lon=${lon}`);
+
   const ranked = AIRPORTS.map(a => ({
     airport: a,
     dist: calculateDistance(lat, lon, a.lat, a.lon),
   })).sort((a, b) => a.dist - b.dist);
 
-  // Debug: log top 5 candidates
+  // Debug: log top 10 candidates with exact distances
   console.log(
-    "[GoFlyFinder] Top 5 nearest airports:",
-    ranked.slice(0, 5).map(r => `${r.airport.code} (${r.airport.city}) ${Math.round(r.dist)}km`)
+    "[GoFlyFinder] Top 10 nearest airports:\n" +
+    ranked.slice(0, 10).map((r, i) =>
+      `  ${i + 1}. ${r.airport.code} (${r.airport.city}, ${r.airport.country}) — ${Math.round(r.dist)}km [lat=${r.airport.lat} lon=${r.airport.lon}]`
+    ).join("\n")
   );
 
   if (ranked.length === 0) return null;
 
   const winner = ranked[0];
+  console.log(`[GoFlyFinder] ★ Winner: ${winner.airport.code} (${winner.airport.city}) at ${Math.round(winner.dist)}km`);
   return { airport: winner.airport, distanceKm: Math.round(winner.dist) };
 }
 
@@ -97,7 +101,10 @@ function requestGeoPosition(): Promise<{ lat: number; lon: number; source: "gps"
  * NEVER shows error toasts/alerts. Always retryable.
  */
 export async function requestNearestAirport(): Promise<NearestAirportResult | null> {
-  console.log("[GoFlyFinder] === Use my location tapped (fresh lookup) ===");
+  console.log("[GoFlyFinder] ═══════════════════════════════════════");
+  console.log("[GoFlyFinder] 'Use my location' tapped — starting fresh lookup");
+  console.log("[GoFlyFinder] isSecureContext:", window.isSecureContext);
+  console.log("[GoFlyFinder] navigator.geolocation available:", !!navigator.geolocation);
 
   // Always try GPS first — directly from user gesture
   const gpsCoords = await requestGeoPosition();
@@ -106,23 +113,24 @@ export async function requestNearestAirport(): Promise<NearestAirportResult | nu
   let source = "none";
 
   if (gpsCoords) {
-    // GPS succeeded — use it, never override with IP
+    // GPS succeeded — use it, NEVER override with IP
     coords = { lat: gpsCoords.lat, lon: gpsCoords.lon };
     source = "gps";
-    console.log("[GoFlyFinder] Using GPS coordinates");
+    console.log(`[GoFlyFinder] ✅ Using GPS coordinates: lat=${coords.lat} lon=${coords.lon}`);
   } else {
     // GPS failed — fallback to IP
-    console.log("[GoFlyFinder] GPS failed, trying IP fallback...");
+    console.log("[GoFlyFinder] ⚠️ GPS failed, trying IP fallback...");
     const ipCoords = await ipFallbackLocation();
     if (ipCoords) {
       coords = ipCoords;
       source = "ip-fallback";
-      console.log("[GoFlyFinder] Using IP fallback coordinates");
+      console.log(`[GoFlyFinder] ⚠️ Using IP fallback coordinates: lat=${coords.lat} lon=${coords.lon}`);
+      console.log("[GoFlyFinder] ⚠️ IP location is approximate — airport may not be truly nearest");
     }
   }
 
   if (!coords) {
-    console.log("[GoFlyFinder] All location methods failed — user can type manually");
+    console.log("[GoFlyFinder] ❌ All location methods failed — user can type manually");
     return null;
   }
 
@@ -135,6 +143,7 @@ export async function requestNearestAirport(): Promise<NearestAirportResult | nu
     } else {
       console.log("[GoFlyFinder] No airport found for coordinates");
     }
+    console.log("[GoFlyFinder] ═══════════════════════════════════════");
     return result;
   } catch (err) {
     console.log("[GoFlyFinder] Airport lookup error:", err);
