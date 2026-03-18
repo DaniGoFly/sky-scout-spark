@@ -18,7 +18,7 @@ import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
 // detectGeo removed — no auto-origin detection
 import { useLocale } from "@/hooks/useLocale";
 import { AIRPORTS, type AirportData } from "@/lib/airports";
-import { findNearestAirport, type LocationSource } from "@/lib/nearestAirport";
+import { findBestAirport, type LocationSource, type RankedAirport } from "@/lib/nearestAirport";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
