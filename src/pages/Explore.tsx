@@ -18,7 +18,7 @@ import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
 // detectGeo removed — no auto-origin detection
 import { useLocale } from "@/hooks/useLocale";
 import { AIRPORTS, type AirportData } from "@/lib/airports";
-import { requestNearestAirport, type LocationSource } from "@/lib/nearestAirport";
+import { findNearestAirport, type LocationSource } from "@/lib/nearestAirport";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -63,12 +63,18 @@ const Explore = () => {
   const [rawUserCoords, setRawUserCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [mapUserCoords, setMapUserCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [geoDebug, setGeoDebug] = useState<ExploreGeoDebug | null>(null);
+  const [geoStepMessages, setGeoStepMessages] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
   const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
     if (typeof window === "undefined") return false;
-    return import.meta.env.DEV || new URLSearchParams(window.location.search).has("geoDebug");
+    return isMobile || import.meta.env.DEV || new URLSearchParams(window.location.search).has("geoDebug");
+  }, [isMobile]);
+
+  const appendGeoStep = useCallback((message: string) => {
+    console.log(`[GoFlyFinder][Explore] ${message}`);
+    setGeoStepMessages((prev) => [...prev.slice(-9), message]);
   }, []);
 
   // Parse origin from URL params only (e.g. Anywhere mode from SearchForm)
@@ -109,53 +115,72 @@ const Explore = () => {
 
   const handleUseMyLocation = useCallback(async () => {
     if (isLocating) return;
-    console.log("[GoFlyFinder][Explore] Location button clicked");
 
-    // 1. Clear all previous state
     setIsLocating(true);
+    setGeoStepMessages(["Step 1: location button clicked"]);
     setOrigin(null);
     setRawUserCoords(null);
     setMapUserCoords(null);
     setGeoDebug(null);
 
     try {
-      console.log("[GoFlyFinder][Explore] Geolocation request started");
-      const result = await requestNearestAirport();
+      appendGeoStep("Step 2: geolocation request started");
 
-      if (!result) {
-        console.log("[GoFlyFinder][Explore] Geolocation failed — no result. Field stays empty.");
-        setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
-        return;
+      if (!navigator.geolocation) {
+        throw new Error("Geolocation API unavailable");
       }
 
-      // 2. Always store raw coords and show blue dot regardless of source
-      const coords = { lat: result.coords.lat, lon: result.coords.lon };
-      console.log(`[GoFlyFinder][Explore] Geolocation success: lat=${coords.lat}, lon=${coords.lon}, source=${result.source}`);
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (geoPosition) => resolve(geoPosition),
+          (geoError) => {
+            let message = "Geolocation request failed";
+            if (geoError.code === 1) message = "Geolocation permission denied";
+            if (geoError.code === 2) message = "Geolocation position unavailable";
+            if (geoError.code === 3) message = "Geolocation timeout";
+            reject(new Error(message));
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          },
+        );
+      });
+
+      const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
+      appendGeoStep(`Step 3: geolocation success: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}`);
+
       setRawUserCoords(coords);
       setMapUserCoords(coords);
 
-      // 3. Always set the airport — GPS or IP fallback
-      const airportDisplay = `${result.airport.city} (${result.airport.code})`;
-      console.log(`[GoFlyFinder][Explore] Airport lookup result: ${result.airport.code} (${result.airport.name}) at ${result.distanceKm}km`);
-      console.log(`[GoFlyFinder][Explore] Updating From input field with: ${airportDisplay}`);
-      setOrigin({ code: result.airport.code, display: airportDisplay });
+      appendGeoStep("Step 4: airport lookup started");
+      const nearestAirport = findNearestAirport(coords.lat, coords.lon);
+      appendGeoStep(`Step 5: airport lookup result: ${nearestAirport ? nearestAirport.airport.code : "none"}`);
 
-      // 4. Update debug
+      if (!nearestAirport) {
+        throw new Error("Coordinates received but no airport found");
+      }
+
+      const airportDisplay = `${nearestAirport.airport.city} (${nearestAirport.airport.code})`;
+      setOrigin({ code: nearestAirport.airport.code, display: airportDisplay });
       setGeoDebug({
-        source: result.source,
-        selectedAirportCode: result.airport.code,
-        selectedAirportDistanceKm: result.distanceKm,
+        source: "gps",
+        selectedAirportCode: nearestAirport.airport.code,
+        selectedAirportDistanceKm: nearestAirport.distanceKm,
       });
 
-      console.log(`[GoFlyFinder][Explore] Map center updated to: ${coords.lat}, ${coords.lon}`);
+      appendGeoStep(`Step 6: input updated: ${airportDisplay}`);
+      appendGeoStep(`Step 7: map updated: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}`);
     } catch (err) {
-      console.error("[GoFlyFinder][Explore] Location flow error:", err);
+      const message = err instanceof Error ? err.message : "Unknown error";
+      appendGeoStep(`Step X: error: ${message}`);
       setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
     } finally {
       setIsLocating(false);
-      console.log("[GoFlyFinder][Explore] Loading state ended");
+      appendGeoStep("Step 8: loading state ended");
     }
-  }, [isLocating]);
+  }, [appendGeoStep, isLocating]);
 
   // Enrich destinations with lat/lon from airports DB — only keep results with real price data
   const enrichedDestinations = useMemo(() => {
@@ -266,11 +291,24 @@ const Explore = () => {
 
             {showGeoDebug && (
               <div className="px-4 pb-2">
-                <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1 text-[10px] text-muted-foreground tabular-nums">
-                  GPS: {rawUserCoords ? `${rawUserCoords.lat.toFixed(5)}, ${rawUserCoords.lon.toFixed(5)}` : "—"}
-                  {" "}| source: {geoDebug?.source?.toUpperCase() ?? "—"}
-                  {" "}| selected airport: {geoDebug?.selectedAirportCode ?? "—"}
-                  {" "}| distance: {geoDebug?.selectedAirportDistanceKm !== null && geoDebug?.selectedAirportDistanceKm !== undefined ? `${geoDebug.selectedAirportDistanceKm} km` : "—"}
+                <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground tabular-nums space-y-1">
+                  <div>
+                    GPS: {rawUserCoords ? `${rawUserCoords.lat.toFixed(5)}, ${rawUserCoords.lon.toFixed(5)}` : "—"}
+                    {" "}| source: {geoDebug?.source?.toUpperCase() ?? "—"}
+                    {" "}| selected airport: {geoDebug?.selectedAirportCode ?? "—"}
+                    {" "}| distance: {geoDebug?.selectedAirportDistanceKm !== null && geoDebug?.selectedAirportDistanceKm !== undefined ? `${geoDebug.selectedAirportDistanceKm} km` : "—"}
+                  </div>
+                  <div className="max-h-24 overflow-y-auto space-y-0.5">
+                    {geoStepMessages.length > 0 ? (
+                      geoStepMessages.map((step, index) => (
+                        <div key={`${step}-${index}`} className="text-[10px] leading-tight text-muted-foreground/90">
+                          {step}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-[10px] leading-tight text-muted-foreground/80">Step 0: waiting for location tap</div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -478,6 +516,30 @@ const Explore = () => {
                   </Button>
                 </div>
               </div>
+
+              {showGeoDebug && (
+                <div className="px-4 pb-2">
+                  <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground tabular-nums space-y-1">
+                    <div>
+                      GPS: {rawUserCoords ? `${rawUserCoords.lat.toFixed(5)}, ${rawUserCoords.lon.toFixed(5)}` : "—"}
+                      {" "}| source: {geoDebug?.source?.toUpperCase() ?? "—"}
+                      {" "}| selected airport: {geoDebug?.selectedAirportCode ?? "—"}
+                      {" "}| distance: {geoDebug?.selectedAirportDistanceKm !== null && geoDebug?.selectedAirportDistanceKm !== undefined ? `${geoDebug.selectedAirportDistanceKm} km` : "—"}
+                    </div>
+                    <div className="max-h-24 overflow-y-auto space-y-0.5">
+                      {geoStepMessages.length > 0 ? (
+                        geoStepMessages.map((step, index) => (
+                          <div key={`${step}-${index}`} className="text-[10px] leading-tight text-muted-foreground/90">
+                            {step}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-[10px] leading-tight text-muted-foreground/80">Step 0: waiting for location tap</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="h-px bg-[rgba(255,255,255,0.06)] mx-4" />
 
