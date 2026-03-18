@@ -174,20 +174,23 @@ const Explore = () => {
       setRawUserCoords(coords);
       setMapUserCoords(coords);
 
-      appendGeoStep("Step 4: airport lookup started");
-      const nearestAirport = findNearestAirport(coords.lat, coords.lon);
-      appendGeoStep(`Step 5: airport lookup result: ${nearestAirport ? nearestAirport.airport.code : "none"}`);
-
-      if (!nearestAirport) {
+      appendGeoStep("Step 4: airport lookup started (scored ranking)");
+      const result = findBestAirport(coords.lat, coords.lon);
+      if (!result) {
         throw new Error("Coordinates received but no airport found");
       }
+      const { best, candidates } = result;
+      appendGeoStep(
+        `Step 5: best=${best.airport.code}(score=${best.score},${best.distanceKm}km) | ` +
+        candidates.map(c => `${c.airport.code}:${c.score}`).join(", ")
+      );
 
-      const airportDisplay = `${nearestAirport.airport.city} (${nearestAirport.airport.code})`;
-      setOrigin({ code: nearestAirport.airport.code, display: airportDisplay });
+      const airportDisplay = `${best.airport.city} (${best.airport.code})`;
+      setOrigin({ code: best.airport.code, display: airportDisplay });
       setGeoDebug({
         source: "gps",
-        selectedAirportCode: nearestAirport.airport.code,
-        selectedAirportDistanceKm: nearestAirport.distanceKm,
+        selectedAirportCode: best.airport.code,
+        selectedAirportDistanceKm: best.distanceKm,
       });
 
       appendGeoStep(`Step 6: input updated: ${airportDisplay}`);
