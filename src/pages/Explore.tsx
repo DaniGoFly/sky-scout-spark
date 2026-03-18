@@ -63,6 +63,7 @@ const Explore = () => {
   const [rawUserCoords, setRawUserCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [mapUserCoords, setMapUserCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [geoDebug, setGeoDebug] = useState<ExploreGeoDebug | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
   const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
