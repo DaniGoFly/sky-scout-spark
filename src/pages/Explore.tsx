@@ -473,8 +473,8 @@ const Explore = () => {
                       </button>
                     )}
                   </div>
-                  <Button variant="ghost" size="icon" onClick={handleUseMyLocation} className="h-10 w-10 shrink-0 text-muted-foreground hover:text-primary" title="Use my location">
-                    <Navigation className="w-4 h-4" />
+                  <Button variant="ghost" size="icon" onClick={handleUseMyLocation} disabled={isLocating} className="h-10 w-10 shrink-0 text-muted-foreground hover:text-primary" title="Use my location">
+                    {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>
