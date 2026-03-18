@@ -221,17 +221,21 @@ const Explore = () => {
       if (ipCoords) {
         setRawUserCoords(ipCoords);
         setMapUserCoords(ipCoords);
-        appendGeoStep("Step 4b: airport lookup from IP coords");
-        const nearestAirport = findNearestAirport(ipCoords.lat, ipCoords.lon);
-        if (nearestAirport) {
-          const airportDisplay = `${nearestAirport.airport.city} (${nearestAirport.airport.code})`;
-          setOrigin({ code: nearestAirport.airport.code, display: airportDisplay });
+        appendGeoStep("Step 4b: airport lookup from IP coords (scored)");
+        const ipResult = findBestAirport(ipCoords.lat, ipCoords.lon);
+        if (ipResult) {
+          const { best, candidates } = ipResult;
+          const airportDisplay = `${best.airport.city} (${best.airport.code})`;
+          setOrigin({ code: best.airport.code, display: airportDisplay });
           setGeoDebug({
             source: "ip-fallback",
-            selectedAirportCode: nearestAirport.airport.code,
-            selectedAirportDistanceKm: nearestAirport.distanceKm,
+            selectedAirportCode: best.airport.code,
+            selectedAirportDistanceKm: best.distanceKm,
           });
-          appendGeoStep(`Step 5b: IP airport found: ${nearestAirport.airport.code} (${nearestAirport.distanceKm}km)`);
+          appendGeoStep(
+            `Step 5b: best=${best.airport.code}(score=${best.score},${best.distanceKm}km) | ` +
+            candidates.map(c => `${c.airport.code}:${c.score}`).join(", ")
+          );
           appendGeoStep("Step 6b: input updated via IP fallback");
         } else {
           appendGeoStep("Step 5b: no airport found from IP coords");
