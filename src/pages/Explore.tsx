@@ -636,6 +636,7 @@ const Explore = () => {
               <ExploreMap
                 destinations={sortedDestinations}
                 originAirport={originAirport}
+                userPosition={mapUserCoords}
                 onSelect={handleSelectDestination}
                 hoveredIata={hoveredIata}
                 onHover={setHoveredIata}
