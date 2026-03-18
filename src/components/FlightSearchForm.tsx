@@ -128,17 +128,14 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
     setFromNearby(enabled);
     if (!enabled) return;
     if (userCoordsRef.current) { fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius); return; }
-    if (!navigator.geolocation) { toast.error("Geolocation not supported."); setFromNearby(false); return; }
+    if (!navigator.geolocation) { setFromNearby(false); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => { userCoordsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude }; fillNearbyOrigins(pos.coords.latitude, pos.coords.longitude, fromRadius); },
       (err) => {
-        console.warn("[GoFlyFinder] Nearby toggle geo error:", err.code, err.message);
-        if (err.code === err.PERMISSION_DENIED) toast.error("Location permission denied.");
-        else if (err.code === err.TIMEOUT) toast.error("Location request timed out — please try again.");
-        else toast.error("Could not get your location.");
+        console.log("[GoFlyFinder] Nearby toggle geo error:", err.code, err.message);
         setFromNearby(false);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   }, [fromRadius, fillNearbyOrigins]);
 
