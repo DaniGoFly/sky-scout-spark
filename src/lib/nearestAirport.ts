@@ -10,21 +10,25 @@ export interface NearestAirportResult {
 }
 
 export function findNearestAirport(lat: number, lon: number): NearestAirportResult | null {
-  // Calculate distance from user to every airport
+  console.log(`[GoFlyFinder] findNearestAirport called with lat=${lat} lon=${lon}`);
+
   const ranked = AIRPORTS.map(a => ({
     airport: a,
     dist: calculateDistance(lat, lon, a.lat, a.lon),
   })).sort((a, b) => a.dist - b.dist);
 
-  // Debug: log top 5 candidates
+  // Debug: log top 10 candidates with exact distances
   console.log(
-    "[GoFlyFinder] Top 5 nearest airports:",
-    ranked.slice(0, 5).map(r => `${r.airport.code} (${r.airport.city}) ${Math.round(r.dist)}km`)
+    "[GoFlyFinder] Top 10 nearest airports:\n" +
+    ranked.slice(0, 10).map((r, i) =>
+      `  ${i + 1}. ${r.airport.code} (${r.airport.city}, ${r.airport.country}) — ${Math.round(r.dist)}km [lat=${r.airport.lat} lon=${r.airport.lon}]`
+    ).join("\n")
   );
 
   if (ranked.length === 0) return null;
 
   const winner = ranked[0];
+  console.log(`[GoFlyFinder] ★ Winner: ${winner.airport.code} (${winner.airport.city}) at ${Math.round(winner.dist)}km`);
   return { airport: winner.airport, distanceKm: Math.round(winner.dist) };
 }
 
