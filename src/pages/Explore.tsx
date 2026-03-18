@@ -263,10 +263,21 @@ const Explore = () => {
               </div>
             </div>
 
+            {showGeoDebug && (
+              <div className="px-4 pb-2">
+                <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1 text-[10px] text-muted-foreground tabular-nums">
+                  GPS: {rawUserCoords ? `${rawUserCoords.lat.toFixed(5)}, ${rawUserCoords.lon.toFixed(5)}` : "—"}
+                  {" "}| source: {geoDebug?.source?.toUpperCase() ?? "—"}
+                  {" "}| selected airport: {geoDebug?.selectedAirportCode ?? "—"}
+                  {" "}| distance: {geoDebug?.selectedAirportDistanceKm !== null && geoDebug?.selectedAirportDistanceKm !== undefined ? `${geoDebug.selectedAirportDistanceKm} km` : "—"}
+                </div>
+              </div>
+            )}
+
             {/* Filter summary + results count row */}
             <div className="px-4 pb-2 flex items-center gap-2">
               <button
-                onClick={() => setMobileFiltersOpen(v => !v)}
+                onClick={() => setMobileFiltersOpen((v) => !v)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/40 border border-border/20 text-[11px] text-muted-foreground hover:bg-secondary/60 transition-colors"
               >
                 <SlidersHorizontal className="w-3 h-3" />
@@ -318,6 +329,7 @@ const Explore = () => {
               <ExploreMap
                 destinations={sortedDestinations}
                 originAirport={originAirport}
+                userPosition={mapUserCoords}
                 onSelect={handleSelectDestination}
                 hoveredIata={hoveredIata}
                 onHover={setHoveredIata}
