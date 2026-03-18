@@ -194,13 +194,53 @@ const Explore = () => {
       appendGeoStep(`Step 7: map updated: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      if (message === "PERMISSION_DENIED") {
-        appendGeoStep("Step X: permission denied by browser");
-        setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
-      } else {
-        appendGeoStep(`Step X: error: ${message}`);
+      appendGeoStep(`Step X: GPS failed: ${message}`);
+
+      // IP-based fallback — silent, no popup
+      appendGeoStep("Step 2b: trying IP fallback...");
+      let ipCoords: { lat: number; lon: number } | null = null;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+        clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.latitude === "number" && typeof data.longitude === "number") {
+            ipCoords = { lat: data.latitude, lon: data.longitude };
+            appendGeoStep(`Step 3b: IP location: ${ipCoords.lat.toFixed(3)}, ${ipCoords.lon.toFixed(3)} (${data.city ?? "unknown city"})`);
+          }
+        }
+      } catch {
+        appendGeoStep("Step 3b: IP fallback also failed");
       }
-      setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
+
+      if (ipCoords) {
+        setRawUserCoords(ipCoords);
+        setMapUserCoords(ipCoords);
+        appendGeoStep("Step 4b: airport lookup from IP coords");
+        const nearestAirport = findNearestAirport(ipCoords.lat, ipCoords.lon);
+        if (nearestAirport) {
+          const airportDisplay = `${nearestAirport.airport.city} (${nearestAirport.airport.code})`;
+          setOrigin({ code: nearestAirport.airport.code, display: airportDisplay });
+          setGeoDebug({
+            source: "ip-fallback",
+            selectedAirportCode: nearestAirport.airport.code,
+            selectedAirportDistanceKm: nearestAirport.distanceKm,
+          });
+          appendGeoStep(`Step 5b: IP airport found: ${nearestAirport.airport.code} (${nearestAirport.distanceKm}km)`);
+          appendGeoStep("Step 6b: input updated via IP fallback");
+        } else {
+          appendGeoStep("Step 5b: no airport found from IP coords");
+          setGeoDebug({ source: "ip-fallback", selectedAirportCode: null, selectedAirportDistanceKm: null });
+        }
+      } else {
+        // Both GPS and IP failed
+        if (message === "PERMISSION_DENIED") {
+          setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
+        }
+        setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
+      }
     } finally {
       setIsLocating(false);
       appendGeoStep("Step 8: loading state ended");
