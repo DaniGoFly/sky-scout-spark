@@ -314,6 +314,18 @@ const Explore = () => {
               </div>
             </div>
 
+            {permissionHint && (
+              <div className="px-4 pb-2">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] text-foreground leading-relaxed flex items-start gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <span>{permissionHint}</span>
+                    <button onClick={handleUseMyLocation} className="ml-2 underline text-primary font-medium">Retry</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {showGeoDebug && (
               <div className="px-4 pb-2">
                 <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground tabular-nums space-y-1">
