@@ -61,35 +61,120 @@ function readCachedAirportHints() {
   };
 }
 
-export function findNearestAirport(lat: number, lon: number): NearestAirportResult | null {
-  console.log(`[GoFlyFinder] findNearestAirport called with lat=${lat} lon=${lon}`);
+/**
+ * Airport importance tiers — major hubs get a big boost so they're preferred
+ * over small regional airports even when slightly further away.
+ * Tier 1 = global/continental hub, Tier 2 = national hub, Tier 3 = regional.
+ */
+const AIRPORT_TIER: Record<string, 1 | 2> = {
+  // Tier 1 — major international hubs
+  FRA: 1, MUC: 1, LHR: 1, CDG: 1, AMS: 1, IST: 1, MAD: 1, BCN: 1,
+  FCO: 1, ZRH: 1, VIE: 1, JFK: 1, LAX: 1, ORD: 1, ATL: 1, DFW: 1,
+  DEN: 1, SFO: 1, MIA: 1, SEA: 1, BOS: 1, DXB: 1, SIN: 1, HKG: 1,
+  NRT: 1, ICN: 1, SYD: 1, MEL: 1, YYZ: 1, LIS: 1, CPH: 1, OSL: 1,
+  ARN: 1, HEL: 1, BRU: 1, DUB: 1, MAN: 1,
+  // Tier 2 — national / large secondary
+  BER: 2, DUS: 2, HAM: 2, STR: 2, CGN: 2, HAJ: 2, MXP: 2, LIN: 2,
+  NAP: 2, ORY: 2, LYS: 2, NCE: 2, TXL: 2, EWR: 2, LGA: 2, OAK: 2,
+  SJC: 2, MDW: 2, FLL: 2, PHL: 2, IAD: 2, DCA: 2, BWI: 2, MSP: 2,
+  DTW: 2, CLT: 2, PHX: 2, IAH: 2, MCO: 2, TPA: 2, SAN: 2, PDX: 2,
+  EDI: 2, GLA: 2, BHX: 2, STN: 2, LGW: 2, LTN: 2, AGP: 2, PMI: 2,
+  PRG: 2, WAW: 2, BUD: 2, OTP: 2, SOF: 2, ATH: 2, SKG: 2,
+};
 
-  const ranked = AIRPORTS.map((airport) => ({
+function getAirportTier(code: string): 1 | 2 | 3 {
+  return AIRPORT_TIER[code] ?? 3;
+}
+
+/** Size score: tier 1 = 1.0, tier 2 = 0.7, tier 3 = 0.3 */
+function sizeScore(code: string): number {
+  const tier = getAirportTier(code);
+  if (tier === 1) return 1.0;
+  if (tier === 2) return 0.7;
+  return 0.3;
+}
+
+export interface RankedAirport {
+  airport: AirportData;
+  distanceKm: number;
+  score: number;
+  tier: 1 | 2 | 3;
+}
+
+/**
+ * Find the BEST nearby airport using distance + size scoring.
+ * Returns top candidates within 200 km, scored 50% distance + 50% size.
+ */
+export function findBestAirport(
+  lat: number,
+  lon: number,
+  radiusKm = 200,
+): { best: RankedAirport; candidates: RankedAirport[] } | null {
+  console.log(`[GoFlyFinder] findBestAirport lat=${lat} lon=${lon} radius=${radiusKm}km`);
+
+  const within = AIRPORTS.map((airport) => ({
     airport,
     dist: calculateDistance(lat, lon, airport.lat, airport.lon),
-  })).sort((a, b) => a.dist - b.dist);
+  }))
+    .filter((a) => a.dist <= radiusKm)
+    .sort((a, b) => a.dist - b.dist);
 
+  if (within.length === 0) {
+    // Fallback: take absolute closest regardless of radius
+    const all = AIRPORTS.map((a) => ({
+      airport: a,
+      dist: calculateDistance(lat, lon, a.lat, a.lon),
+    })).sort((a, b) => a.dist - b.dist);
+    if (all.length === 0) return null;
+    const closest = all[0];
+    const ranked: RankedAirport = {
+      airport: closest.airport,
+      distanceKm: Math.round(closest.dist),
+      score: 1,
+      tier: getAirportTier(closest.airport.code),
+    };
+    return { best: ranked, candidates: [ranked] };
+  }
+
+  // Normalize distance: closest = 1.0, furthest in radius = 0.0
+  const maxDist = Math.max(...within.map((a) => a.dist), 1);
+
+  const scored: RankedAirport[] = within.map((a) => {
+    const distNorm = 1 - a.dist / maxDist; // closer = higher
+    const size = sizeScore(a.airport.code);
+    const score = distNorm * 0.5 + size * 0.5;
+    return {
+      airport: a.airport,
+      distanceKm: Math.round(a.dist),
+      score: Math.round(score * 1000) / 1000,
+      tier: getAirportTier(a.airport.code),
+    };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+
+  const top3 = scored.slice(0, 3);
   console.log(
-    "[GoFlyFinder] Top 10 nearest airports:\n" +
-      ranked
-        .slice(0, 10)
+    "[GoFlyFinder] Top 3 scored airports:\n" +
+      top3
         .map(
-          (candidate, index) =>
-            `  ${index + 1}. ${candidate.airport.code} (${candidate.airport.name}) — ${candidate.dist.toFixed(2)}km [lat=${candidate.airport.lat} lon=${candidate.airport.lon}]`,
+          (c, i) =>
+            `  ${i + 1}. ${c.airport.code} (${c.airport.city}) — ${c.distanceKm}km, tier=${c.tier}, score=${c.score}`,
         )
         .join("\n"),
   );
 
-  if (ranked.length === 0) return null;
+  return { best: scored[0], candidates: top3 };
+}
 
-  const winner = ranked[0];
-  console.log(
-    `[GoFlyFinder] ★ Winner: ${winner.airport.code} (${winner.airport.city}) at ${winner.dist.toFixed(2)}km`,
-  );
+/** Legacy wrapper — still returns nearest by distance only */
+export function findNearestAirport(lat: number, lon: number): NearestAirportResult | null {
+  const result = findBestAirport(lat, lon);
+  if (!result) return null;
 
   return {
-    airport: winner.airport,
-    distanceKm: Math.round(winner.dist),
+    airport: result.best.airport,
+    distanceKm: result.best.distanceKm,
     coords: { lat, lon },
     source: "gps",
   };
