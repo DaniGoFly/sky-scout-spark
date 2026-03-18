@@ -3,7 +3,7 @@
  * Dark basemap via CARTO + premium price pill markers + route lines
  */
 
-import { useEffect, useRef, useMemo, useState, useCallback } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./explore-map.css";
@@ -14,6 +14,7 @@ import type { AirportData } from "@/lib/airports";
 interface ExploreMapProps {
   destinations: ExploreResult[];
   originAirport: AirportData | null | undefined;
+  userPosition: { lat: number; lon: number } | null;
   onSelect: (dest: ExploreResult) => void;
   hoveredIata: string | null;
   onHover: (iata: string | null) => void;
@@ -54,6 +55,7 @@ const DARK_STYLE: maplibregl.StyleSpecification = {
 const ExploreMap = ({
   destinations,
   originAirport,
+  userPosition,
   onSelect,
   hoveredIata,
   onHover,
@@ -63,6 +65,7 @@ const ExploreMap = ({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const originMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
   /* Cheapest IATA */
@@ -98,19 +101,32 @@ const ExploreMap = ({
       mapRef.current = null;
       markersRef.current.clear();
       originMarkerRef.current = null;
+      userMarkerRef.current = null;
       setMapReady(false);
     };
   }, []);
 
-  /* ── Fly to origin ── */
+  /* ── Fly to user position first, otherwise selected departure airport ── */
   useEffect(() => {
-    if (!mapRef.current || !originAirport) return;
+    if (!mapRef.current) return;
+
+    if (userPosition) {
+      mapRef.current.flyTo({
+        center: [userPosition.lon, userPosition.lat],
+        zoom: 7,
+        duration: 1200,
+      });
+      return;
+    }
+
+    if (!originAirport) return;
+
     mapRef.current.flyTo({
       center: [originAirport.lon, originAirport.lat],
       zoom: 5,
       duration: 1200,
     });
-  }, [originAirport]);
+  }, [userPosition, originAirport]);
 
   /* ── Route line ── */
   useEffect(() => {
@@ -156,7 +172,7 @@ const ExploreMap = ({
     });
   }, [hoveredIata, originAirport, destinations, mapReady]);
 
-  /* ── Origin marker ── */
+  /* ── Selected departure airport marker ── */
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -169,12 +185,36 @@ const ExploreMap = ({
     if (!originAirport) return;
 
     const el = document.createElement("div");
-    el.className = "xpin-origin";
+    el.className = userPosition ? "xpin-origin-airport" : "xpin-origin";
 
     originMarkerRef.current = new maplibregl.Marker({ element: el })
       .setLngLat([originAirport.lon, originAirport.lat])
       .addTo(map);
-  }, [originAirport]);
+  }, [originAirport, userPosition]);
+
+  /* ── User location marker (blue dot = raw user position) ── */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
+
+    if (!userPosition) return;
+
+    const el = document.createElement("div");
+    el.className = "xpin-origin";
+
+    userMarkerRef.current = new maplibregl.Marker({ element: el })
+      .setLngLat([userPosition.lon, userPosition.lat])
+      .addTo(map);
+
+    console.log(
+      `[GoFlyFinder][ExploreMap] Final blue-dot coordinates: lat=${userPosition.lat} lon=${userPosition.lon}`,
+    );
+  }, [userPosition]);
 
   /* ── Destination markers ── */
   useEffect(() => {

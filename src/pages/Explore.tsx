@@ -18,7 +18,7 @@ import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
 // detectGeo removed — no auto-origin detection
 import { useLocale } from "@/hooks/useLocale";
 import { AIRPORTS, type AirportData } from "@/lib/airports";
-import { requestNearestAirport } from "@/lib/nearestAirport";
+import { requestNearestAirport, type LocationSource } from "@/lib/nearestAirport";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -27,6 +27,11 @@ interface AirportSelection {
   display: string;
 }
 
+interface ExploreGeoDebug {
+  source: LocationSource;
+  selectedAirportCode: string | null;
+  selectedAirportDistanceKm: number | null;
+}
 
 function formatDateRange(depart?: string, ret?: string): string {
   if (!depart) return "";
@@ -50,12 +55,21 @@ const Explore = () => {
   const [tripLength, setTripLength] = useState<[number, number]>([3, 14]);
   const directOnly = false;
   const [hoveredIata, setHoveredIata] = useState<string | null>(null);
-  
+
   const [selectedDest, setSelectedDest] = useState<ExploreResult | null>(null);
   const [maxPrice, setMaxPrice] = useState<number>(2000);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileResultsOpen, setMobileResultsOpen] = useState(false);
+  const [rawUserCoords, setRawUserCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [mapUserCoords, setMapUserCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [geoDebug, setGeoDebug] = useState<ExploreGeoDebug | null>(null);
   const isMobile = useIsMobile();
+
+  const showGeoDebug = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return import.meta.env.DEV || new URLSearchParams(window.location.search).has("geoDebug");
+  }, []);
+
   // Parse origin from URL params only (e.g. Anywhere mode from SearchForm)
   useEffect(() => {
     if (geoInitDone) return;
@@ -65,7 +79,7 @@ const Explore = () => {
     const fromCode = params.get("from");
     if (fromCode) {
       const code = fromCode.split(",")[0].toUpperCase();
-      const airport = AIRPORTS.find(a => a.code === code);
+      const airport = AIRPORTS.find((a) => a.code === code);
       if (airport) {
         setOrigin({ code: airport.code, display: `${airport.city} (${airport.code})` });
       }
@@ -85,7 +99,7 @@ const Explore = () => {
       direct: directOnly,
       period: "month",
     })
-      .then(res => {
+      .then((res) => {
         if (res.ok) setDestinations(res.results);
         else setDestinations([]);
       })
@@ -93,10 +107,53 @@ const Explore = () => {
   }, [origin?.code, currency, directOnly]);
 
   const handleUseMyLocation = useCallback(async () => {
+    const cachedStorageKeys = [
+      ...Object.keys(localStorage).map((key) => `localStorage:${key}`),
+      ...Object.keys(sessionStorage).map((key) => `sessionStorage:${key}`),
+    ].filter((key) => /(airport|origin|from|location)/i.test(key));
+
+    console.log("[GoFlyFinder][Explore] Cached airport/location keys before fresh lookup:", cachedStorageKeys);
+
+    // Clear previous lookup state before every new attempt
+    setOrigin(null);
+    setRawUserCoords(null);
+    setMapUserCoords(null);
+    setGeoDebug(null);
+
     const result = await requestNearestAirport();
-    if (result) {
-      setOrigin({ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` });
+
+    if (!result) {
+      console.log("[GoFlyFinder][Explore] No coordinates available; origin remains empty for manual selection.");
+      return;
     }
+
+    setRawUserCoords({ lat: result.coords.lat, lon: result.coords.lon });
+
+    if (result.source === "gps") {
+      setMapUserCoords({ lat: result.coords.lat, lon: result.coords.lon });
+      setOrigin({ code: result.airport.code, display: `${result.airport.city} (${result.airport.code})` });
+    } else {
+      // Never auto-select airport from fallback location on Explore (avoids false major-hub selection)
+      setMapUserCoords(null);
+      console.log("[GoFlyFinder][Explore] Fallback path triggered; keeping departure empty to avoid inaccurate hub guess.");
+    }
+
+    setGeoDebug({
+      source: result.source,
+      selectedAirportCode: result.source === "gps" ? result.airport.code : null,
+      selectedAirportDistanceKm: result.source === "gps" ? result.distanceKm : null,
+    });
+
+    console.log(
+      `[GoFlyFinder][Explore] Final selected airport: ${
+        result.source === "gps" ? `${result.airport.code} (${result.distanceKm}km)` : "none"
+      }`,
+    );
+    console.log(
+      `[GoFlyFinder][Explore] Final blue-dot coordinates: ${
+        result.source === "gps" ? `${result.coords.lat}, ${result.coords.lon}` : "none"
+      }`,
+    );
   }, []);
 
   // Enrich destinations with lat/lon from airports DB — only keep results with real price data
@@ -206,10 +263,21 @@ const Explore = () => {
               </div>
             </div>
 
+            {showGeoDebug && (
+              <div className="px-4 pb-2">
+                <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1 text-[10px] text-muted-foreground tabular-nums">
+                  GPS: {rawUserCoords ? `${rawUserCoords.lat.toFixed(5)}, ${rawUserCoords.lon.toFixed(5)}` : "—"}
+                  {" "}| source: {geoDebug?.source?.toUpperCase() ?? "—"}
+                  {" "}| selected airport: {geoDebug?.selectedAirportCode ?? "—"}
+                  {" "}| distance: {geoDebug?.selectedAirportDistanceKm !== null && geoDebug?.selectedAirportDistanceKm !== undefined ? `${geoDebug.selectedAirportDistanceKm} km` : "—"}
+                </div>
+              </div>
+            )}
+
             {/* Filter summary + results count row */}
             <div className="px-4 pb-2 flex items-center gap-2">
               <button
-                onClick={() => setMobileFiltersOpen(v => !v)}
+                onClick={() => setMobileFiltersOpen((v) => !v)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/40 border border-border/20 text-[11px] text-muted-foreground hover:bg-secondary/60 transition-colors"
               >
                 <SlidersHorizontal className="w-3 h-3" />
@@ -261,6 +329,7 @@ const Explore = () => {
               <ExploreMap
                 destinations={sortedDestinations}
                 originAirport={originAirport}
+                userPosition={mapUserCoords}
                 onSelect={handleSelectDestination}
                 hoveredIata={hoveredIata}
                 onHover={setHoveredIata}
@@ -567,6 +636,7 @@ const Explore = () => {
               <ExploreMap
                 destinations={sortedDestinations}
                 originAirport={originAirport}
+                userPosition={mapUserCoords}
                 onSelect={handleSelectDestination}
                 hoveredIata={hoveredIata}
                 onHover={setHoveredIata}
