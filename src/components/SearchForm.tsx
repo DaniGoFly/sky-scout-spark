@@ -70,7 +70,6 @@ const SearchForm = () => {
         return;
       }
       if (!navigator.geolocation) {
-        toast.error("Geolocation not supported by your browser.");
         setFromNearby(false);
         return;
       }
@@ -80,13 +79,10 @@ const SearchForm = () => {
           fillNearbyOrigins(pos.coords.latitude, pos.coords.longitude, fromRadius);
         },
         (err) => {
-          console.warn("[GoFlyFinder] Nearby geo error:", err.code, err.message);
-          if (err.code === err.PERMISSION_DENIED) toast.error("Location permission denied — please type an airport.");
-          else if (err.code === err.TIMEOUT) toast.error("Location request timed out — please try again.");
-          else toast.error("Could not get your location — please type an airport.");
+          console.log("[GoFlyFinder] Nearby geo error:", err.code, err.message);
           setFromNearby(false);
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     },
     [fromRadius, fillNearbyOrigins]
