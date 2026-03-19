@@ -68,6 +68,7 @@ const Explore = () => {
   const [geoStepMessages, setGeoStepMessages] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
   const [locationConfidence, setLocationConfidence] = useState<LocationConfidence>(null);
+  const [nearbyQuickPicks, setNearbyQuickPicks] = useState<QuickPickAirport[]>([]);
   const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
