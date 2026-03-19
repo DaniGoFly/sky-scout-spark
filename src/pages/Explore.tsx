@@ -127,15 +127,13 @@ const Explore = () => {
     setGeoDebug(null);
 
     try {
-      // Check permission state first (Safari-compatible — may not be supported)
+      // Check permission state (informational only — never block flow)
       try {
         const perm = await navigator.permissions?.query({ name: "geolocation" as PermissionName });
-        if (perm?.state === "denied") {
-          appendGeoStep("Step 1b: permission state = denied");
-          setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
-          setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
-          return;
-        }
+        appendGeoStep(`Step 1b: permission state = ${perm?.state ?? "unknown"}`);
+      } catch {
+        appendGeoStep("Step 1b: Permissions API not supported, proceeding");
+      }
         appendGeoStep(`Step 1b: permission state = ${perm?.state ?? "unknown"}`);
       } catch {
         appendGeoStep("Step 1b: Permissions API not supported, proceeding");
