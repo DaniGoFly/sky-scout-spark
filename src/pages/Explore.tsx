@@ -664,7 +664,29 @@ const Explore = () => {
                 </div>
               </div>
 
-              {showGeoDebug && (
+              {/* IP fallback: nearby airport suggestions (desktop) */}
+              {ipSuggestions.length > 0 && !origin && (
+                <div className="px-4 pb-2">
+                  <p className="text-[11px] text-muted-foreground mb-1.5">Nearby airports — click to select:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ipSuggestions.map((s) => (
+                      <button
+                        key={s.code}
+                        type="button"
+                        onClick={() => {
+                          setOrigin({ code: s.code, display: `${s.city} (${s.code})` });
+                          setIpSuggestions([]);
+                          appendGeoStep(`Step 7: user selected ${s.code} from suggestions`);
+                        }}
+                        className="px-3 py-1.5 rounded-full border border-border/40 bg-secondary/50 hover:bg-primary/10 hover:border-primary/40 text-xs font-medium text-foreground transition-colors"
+                      >
+                        {s.code} · {s.city} <span className="text-muted-foreground ml-0.5">~{s.distanceKm}km</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
                 <div className="px-4 pb-2">
                   <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground tabular-nums space-y-1">
                     <div>
