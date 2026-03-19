@@ -15,6 +15,7 @@ interface ExploreMapProps {
   destinations: ExploreResult[];
   originAirport: AirportData | null | undefined;
   userPosition: { lat: number; lon: number } | null;
+  locationConfidence?: "gps" | "network" | null;
   onSelect: (dest: ExploreResult) => void;
   hoveredIata: string | null;
   onHover: (iata: string | null) => void;
