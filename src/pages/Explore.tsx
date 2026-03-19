@@ -66,6 +66,7 @@ const Explore = () => {
   const [geoStepMessages, setGeoStepMessages] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
   const [permissionHint, setPermissionHint] = useState<string | null>(null);
+  const [ipSuggestions, setIpSuggestions] = useState<{ code: string; city: string; distanceKm: number }[]>([]);
   const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
