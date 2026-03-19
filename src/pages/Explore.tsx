@@ -242,48 +242,26 @@ const Explore = () => {
         const ipResult = findBestAirport(ipCoords.lat, ipCoords.lon);
         if (ipResult) {
           const { best, candidates } = ipResult;
-
-          // IP is approximate — only auto-select if best airport is very close (<50km)
-          if (best.distanceKm <= 50) {
-            const airportDisplay = `${best.airport.city} (${best.airport.code})`;
-            setOrigin({ code: best.airport.code, display: airportDisplay });
-            setGeoDebug({
-              source: "ip-fallback",
-              selectedAirportCode: best.airport.code,
-              selectedAirportDistanceKm: best.distanceKm,
-            });
-            appendGeoStep(`Step 5b: confidence HIGH — auto-selected ${best.airport.code} (${best.distanceKm}km)`);
-            appendGeoStep("Step 6b: input updated via IP fallback");
-          } else {
-            // LOW confidence — show suggestions, don't auto-fill
-            const suggestions = candidates.map(c => ({
-              code: c.airport.code,
-              city: c.airport.city,
-              distanceKm: c.distanceKm,
-            }));
-            setIpSuggestions(suggestions);
-            setGeoDebug({
-              source: "ip-fallback",
-              selectedAirportCode: null,
-              selectedAirportDistanceKm: best.distanceKm,
-            });
-            appendGeoStep(
-              `Step 5b: confidence LOW (best=${best.airport.code} at ${best.distanceKm}km) — showing ${suggestions.length} suggestions`
-            );
-            appendGeoStep("Step 6b: waiting for user to choose airport");
-          }
+          const airportDisplay = `${best.airport.city} (${best.airport.code})`;
+          setOrigin({ code: best.airport.code, display: airportDisplay });
+          setIpSuggestions([]);
+          setGeoDebug({
+            source: "ip-fallback",
+            selectedAirportCode: best.airport.code,
+            selectedAirportDistanceKm: best.distanceKm,
+          });
+          appendGeoStep(
+            `Step 5b: auto-selected ${best.airport.code}(score=${best.score},${best.distanceKm}km) | ` +
+            candidates.map(c => `${c.airport.code}:${c.score}`).join(", ")
+          );
+          appendGeoStep("Step 6b: input updated via IP fallback");
         } else {
           appendGeoStep("Step 5b: no airport found from IP coords");
           setGeoDebug({ source: "ip-fallback", selectedAirportCode: null, selectedAirportDistanceKm: null });
         }
       } else {
-        // Both GPS and backend IP failed
-        appendGeoStep("Step X: all location methods failed — choose manually");
-        if (message === "PERMISSION_DENIED") {
-          setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
-        } else {
-          setPermissionHint("Could not detect location. Please choose your departure airport manually.");
-        }
+        // Both GPS and backend IP failed — silent, no error banners
+        appendGeoStep("Step X: all location methods failed — user can type manually");
         setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
       }
     } finally {
