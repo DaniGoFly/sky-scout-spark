@@ -134,10 +134,6 @@ const Explore = () => {
       } catch {
         appendGeoStep("Step 1b: Permissions API not supported, proceeding");
       }
-        appendGeoStep(`Step 1b: permission state = ${perm?.state ?? "unknown"}`);
-      } catch {
-        appendGeoStep("Step 1b: Permissions API not supported, proceeding");
-      }
 
       appendGeoStep("Step 2: geolocation request started");
 
