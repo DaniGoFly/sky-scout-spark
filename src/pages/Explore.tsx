@@ -649,7 +649,7 @@ const Explore = () => {
                   <div className="flex-1 min-w-0 relative">
                     <AirportAutocomplete
                       value={origin}
-                      onChange={setOrigin}
+                      onChange={handleOriginChange}
                       placeholder="Select origin"
                       icon="from"
                     />
