@@ -66,6 +66,7 @@ const Explore = () => {
   const [geoStepMessages, setGeoStepMessages] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
   const [permissionHint, setPermissionHint] = useState<string | null>(null);
+  const [ipSuggestions, setIpSuggestions] = useState<{ code: string; city: string; distanceKm: number }[]>([]);
   const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
@@ -243,18 +244,36 @@ const Explore = () => {
         const ipResult = findBestAirport(ipCoords.lat, ipCoords.lon);
         if (ipResult) {
           const { best, candidates } = ipResult;
-          const airportDisplay = `${best.airport.city} (${best.airport.code})`;
-          setOrigin({ code: best.airport.code, display: airportDisplay });
-          setGeoDebug({
-            source: "ip-fallback",
-            selectedAirportCode: best.airport.code,
-            selectedAirportDistanceKm: best.distanceKm,
-          });
-          appendGeoStep(
-            `Step 5b: best=${best.airport.code}(score=${best.score},${best.distanceKm}km) | ` +
-            candidates.map(c => `${c.airport.code}:${c.score}`).join(", ")
-          );
-          appendGeoStep("Step 6b: input updated via IP fallback");
+
+          // IP is approximate — only auto-select if best airport is very close (<50km)
+          if (best.distanceKm <= 50) {
+            const airportDisplay = `${best.airport.city} (${best.airport.code})`;
+            setOrigin({ code: best.airport.code, display: airportDisplay });
+            setGeoDebug({
+              source: "ip-fallback",
+              selectedAirportCode: best.airport.code,
+              selectedAirportDistanceKm: best.distanceKm,
+            });
+            appendGeoStep(`Step 5b: confidence HIGH — auto-selected ${best.airport.code} (${best.distanceKm}km)`);
+            appendGeoStep("Step 6b: input updated via IP fallback");
+          } else {
+            // LOW confidence — show suggestions, don't auto-fill
+            const suggestions = candidates.map(c => ({
+              code: c.airport.code,
+              city: c.airport.city,
+              distanceKm: c.distanceKm,
+            }));
+            setIpSuggestions(suggestions);
+            setGeoDebug({
+              source: "ip-fallback",
+              selectedAirportCode: null,
+              selectedAirportDistanceKm: best.distanceKm,
+            });
+            appendGeoStep(
+              `Step 5b: confidence LOW (best=${best.airport.code} at ${best.distanceKm}km) — showing ${suggestions.length} suggestions`
+            );
+            appendGeoStep("Step 6b: waiting for user to choose airport");
+          }
         } else {
           appendGeoStep("Step 5b: no airport found from IP coords");
           setGeoDebug({ source: "ip-fallback", selectedAirportCode: null, selectedAirportDistanceKm: null });
@@ -343,6 +362,11 @@ const Explore = () => {
     navigate(`/flights/results?${params.toString()}`);
   }, [origin, navigate, currency]);
 
+  const handleOriginChange = useCallback((val: AirportSelection | null) => {
+    setOrigin(val);
+    if (val) setIpSuggestions([]);
+  }, []);
+
   const originAirport = useMemo(() =>
     origin ? AIRPORTS.find(a => a.code === origin.code) : null,
     [origin]
@@ -362,7 +386,7 @@ const Explore = () => {
                 <div className="flex-1 min-w-0 relative">
                   <AirportAutocomplete
                     value={origin}
-                    onChange={setOrigin}
+                    onChange={handleOriginChange}
                     placeholder="Where from?"
                     icon="from"
                   />
@@ -380,6 +404,29 @@ const Explore = () => {
                   {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                 </Button>
               </div>
+
+              {/* IP fallback: nearby airport suggestions */}
+              {ipSuggestions.length > 0 && !origin && (
+                <div className="px-0 pt-1.5">
+                  <p className="text-[11px] text-muted-foreground mb-1.5">Nearby airports — tap to select:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ipSuggestions.map((s) => (
+                      <button
+                        key={s.code}
+                        type="button"
+                        onClick={() => {
+                          setOrigin({ code: s.code, display: `${s.city} (${s.code})` });
+                          setIpSuggestions([]);
+                          appendGeoStep(`Step 7: user selected ${s.code} from suggestions`);
+                        }}
+                        className="px-3 py-1.5 rounded-full border border-border/40 bg-secondary/50 hover:bg-primary/10 hover:border-primary/40 text-xs font-medium text-foreground transition-colors"
+                      >
+                        {s.code} · {s.city} <span className="text-muted-foreground ml-0.5">~{s.distanceKm}km</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {permissionHint && (
@@ -602,7 +649,7 @@ const Explore = () => {
                   <div className="flex-1 min-w-0 relative">
                     <AirportAutocomplete
                       value={origin}
-                      onChange={setOrigin}
+                      onChange={handleOriginChange}
                       placeholder="Select origin"
                       icon="from"
                     />
@@ -621,6 +668,29 @@ const Explore = () => {
                   </Button>
                 </div>
               </div>
+
+              {/* IP fallback: nearby airport suggestions (desktop) */}
+              {ipSuggestions.length > 0 && !origin && (
+                <div className="px-4 pb-2">
+                  <p className="text-[11px] text-muted-foreground mb-1.5">Nearby airports — click to select:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ipSuggestions.map((s) => (
+                      <button
+                        key={s.code}
+                        type="button"
+                        onClick={() => {
+                          setOrigin({ code: s.code, display: `${s.city} (${s.code})` });
+                          setIpSuggestions([]);
+                          appendGeoStep(`Step 7: user selected ${s.code} from suggestions`);
+                        }}
+                        className="px-3 py-1.5 rounded-full border border-border/40 bg-secondary/50 hover:bg-primary/10 hover:border-primary/40 text-xs font-medium text-foreground transition-colors"
+                      >
+                        {s.code} · {s.city} <span className="text-muted-foreground ml-0.5">~{s.distanceKm}km</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {showGeoDebug && (
                 <div className="px-4 pb-2">
