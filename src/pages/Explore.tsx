@@ -199,48 +199,41 @@ const Explore = () => {
       const message = err instanceof Error ? err.message : "Unknown error";
       appendGeoStep(`Step X: GPS failed: ${message}`);
 
-      // IP-based fallback — dual API with timeout
-      appendGeoStep("Step 2b: trying IP fallback (primary: ipapi.co)...");
+      // IP-based fallback via backend proxy (Safari-safe)
+      appendGeoStep("Step 2b: trying IP fallback via backend...");
       let ipCoords: { lat: number; lon: number } | null = null;
       let ipSource = "";
+      let ipCity = "";
 
-      // Primary: ipapi.co
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "kvhykvuvsbmcselojbcn";
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/ip-location`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
+          }
+        );
         clearTimeout(timer);
+
         if (res.ok) {
           const data = await res.json();
           if (typeof data.latitude === "number" && typeof data.longitude === "number") {
             ipCoords = { lat: data.latitude, lon: data.longitude };
-            ipSource = "IP_PRIMARY";
-            appendGeoStep(`Step 3b: ipapi.co success: ${ipCoords.lat.toFixed(3)}, ${ipCoords.lon.toFixed(3)} (${data.city ?? "?"})`);
+            ipSource = data.source ?? "IP_BACKEND";
+            ipCity = data.city ?? "";
+            appendGeoStep(`Step 3b: backend IP success (${ipSource}): ${ipCoords.lat.toFixed(3)}, ${ipCoords.lon.toFixed(3)} (${ipCity || "?"})`);
+          } else {
+            appendGeoStep("Step 3b: backend returned no coordinates");
           }
+        } else {
+          appendGeoStep(`Step 3b: backend IP failed: HTTP ${res.status}`);
         }
       } catch (e) {
-        appendGeoStep(`Step 3b: ipapi.co failed: ${e instanceof Error ? e.message : "timeout"}`);
-      }
-
-      // Backup: ipwho.is
-      if (!ipCoords) {
-        appendGeoStep("Step 3b-2: trying backup API (ipwho.is)...");
-        try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 4000);
-          const res = await fetch("https://ipwho.is/", { signal: controller.signal });
-          clearTimeout(timer);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && typeof data.latitude === "number" && typeof data.longitude === "number") {
-              ipCoords = { lat: data.latitude, lon: data.longitude };
-              ipSource = "IP_BACKUP";
-              appendGeoStep(`Step 3b-2: ipwho.is success: ${ipCoords.lat.toFixed(3)}, ${ipCoords.lon.toFixed(3)} (${data.city ?? "?"})`);
-            }
-          }
-        } catch (e) {
-          appendGeoStep(`Step 3b-2: ipwho.is failed: ${e instanceof Error ? e.message : "timeout"}`);
-        }
+        appendGeoStep(`Step 3b: backend IP failed: ${e instanceof Error ? e.message : "timeout"}`);
       }
 
       if (ipCoords) {
@@ -267,7 +260,7 @@ const Explore = () => {
           setGeoDebug({ source: "ip-fallback", selectedAirportCode: null, selectedAirportDistanceKm: null });
         }
       } else {
-        // Both GPS and both IP APIs failed
+        // Both GPS and backend IP failed
         appendGeoStep("Step X: all location methods failed — choose manually");
         if (message === "PERMISSION_DENIED") {
           setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
