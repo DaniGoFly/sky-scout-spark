@@ -65,8 +65,6 @@ const Explore = () => {
   const [geoDebug, setGeoDebug] = useState<ExploreGeoDebug | null>(null);
   const [geoStepMessages, setGeoStepMessages] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
-  const [permissionHint, setPermissionHint] = useState<string | null>(null);
-  const [ipSuggestions, setIpSuggestions] = useState<{ code: string; city: string; distanceKm: number }[]>([]);
   const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
@@ -119,7 +117,7 @@ const Explore = () => {
     if (isLocating) return;
 
     setIsLocating(true);
-    setPermissionHint(null);
+    setGeoStepMessages(["Step 1: location button clicked (unified pipeline)"]);
     setGeoStepMessages(["Step 1: location button clicked"]);
     setOrigin(null);
     setRawUserCoords(null);
@@ -127,15 +125,9 @@ const Explore = () => {
     setGeoDebug(null);
 
     try {
-      // Check permission state first (Safari-compatible — may not be supported)
+      // Check permission state (informational only — never block flow)
       try {
         const perm = await navigator.permissions?.query({ name: "geolocation" as PermissionName });
-        if (perm?.state === "denied") {
-          appendGeoStep("Step 1b: permission state = denied");
-          setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
-          setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
-          return;
-        }
         appendGeoStep(`Step 1b: permission state = ${perm?.state ?? "unknown"}`);
       } catch {
         appendGeoStep("Step 1b: Permissions API not supported, proceeding");
@@ -244,48 +236,25 @@ const Explore = () => {
         const ipResult = findBestAirport(ipCoords.lat, ipCoords.lon);
         if (ipResult) {
           const { best, candidates } = ipResult;
-
-          // IP is approximate — only auto-select if best airport is very close (<50km)
-          if (best.distanceKm <= 50) {
-            const airportDisplay = `${best.airport.city} (${best.airport.code})`;
-            setOrigin({ code: best.airport.code, display: airportDisplay });
-            setGeoDebug({
-              source: "ip-fallback",
-              selectedAirportCode: best.airport.code,
-              selectedAirportDistanceKm: best.distanceKm,
-            });
-            appendGeoStep(`Step 5b: confidence HIGH — auto-selected ${best.airport.code} (${best.distanceKm}km)`);
-            appendGeoStep("Step 6b: input updated via IP fallback");
-          } else {
-            // LOW confidence — show suggestions, don't auto-fill
-            const suggestions = candidates.map(c => ({
-              code: c.airport.code,
-              city: c.airport.city,
-              distanceKm: c.distanceKm,
-            }));
-            setIpSuggestions(suggestions);
-            setGeoDebug({
-              source: "ip-fallback",
-              selectedAirportCode: null,
-              selectedAirportDistanceKm: best.distanceKm,
-            });
-            appendGeoStep(
-              `Step 5b: confidence LOW (best=${best.airport.code} at ${best.distanceKm}km) — showing ${suggestions.length} suggestions`
-            );
-            appendGeoStep("Step 6b: waiting for user to choose airport");
-          }
+          const airportDisplay = `${best.airport.city} (${best.airport.code})`;
+          setOrigin({ code: best.airport.code, display: airportDisplay });
+          setGeoDebug({
+            source: "ip-fallback",
+            selectedAirportCode: best.airport.code,
+            selectedAirportDistanceKm: best.distanceKm,
+          });
+          appendGeoStep(
+            `Step 5b: auto-selected ${best.airport.code}(score=${best.score},${best.distanceKm}km) | ` +
+            candidates.map(c => `${c.airport.code}:${c.score}`).join(", ")
+          );
+          appendGeoStep("Step 6b: input updated via IP fallback");
         } else {
           appendGeoStep("Step 5b: no airport found from IP coords");
           setGeoDebug({ source: "ip-fallback", selectedAirportCode: null, selectedAirportDistanceKm: null });
         }
       } else {
-        // Both GPS and backend IP failed
-        appendGeoStep("Step X: all location methods failed — choose manually");
-        if (message === "PERMISSION_DENIED") {
-          setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
-        } else {
-          setPermissionHint("Could not detect location. Please choose your departure airport manually.");
-        }
+        // Both GPS and backend IP failed — silent, no error banners
+        appendGeoStep("Step X: all location methods failed — user can type manually");
         setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
       }
     } finally {
@@ -364,7 +333,6 @@ const Explore = () => {
 
   const handleOriginChange = useCallback((val: AirportSelection | null) => {
     setOrigin(val);
-    if (val) setIpSuggestions([]);
   }, []);
 
   const originAirport = useMemo(() =>
@@ -405,43 +373,6 @@ const Explore = () => {
                 </Button>
               </div>
 
-              {/* Nearby airport suggestions */}
-              {ipSuggestions.length > 0 && !origin && (
-                <div className="px-0 pt-2">
-                  <p className="text-[12px] font-medium text-foreground mb-2">Airports near you</p>
-                  <div className="flex flex-col gap-1.5">
-                    {ipSuggestions.map((s, i) => (
-                      <button
-                        key={s.code}
-                        type="button"
-                        onClick={() => {
-                          setOrigin({ code: s.code, display: `${s.city} (${s.code})` });
-                          setIpSuggestions([]);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-colors",
-                          i === 0
-                            ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
-                            : "border-border/30 bg-secondary/30 hover:bg-secondary/50"
-                        )}
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                          <span className="text-[11px] font-bold text-foreground">{s.code}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[13px] font-medium text-foreground">{s.city}</span>
-                          <span className="text-[11px] text-muted-foreground ml-1.5">~{s.distanceKm} km</span>
-                        </div>
-                        {i === 0 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/40 text-primary shrink-0 font-semibold">
-                            Best
-                          </Badge>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {showGeoDebug && (
@@ -660,43 +591,6 @@ const Explore = () => {
                 </div>
               </div>
 
-              {/* Nearby airport suggestions (desktop) */}
-              {ipSuggestions.length > 0 && !origin && (
-                <div className="px-4 pb-2">
-                  <p className="text-[12px] font-medium text-foreground mb-2">Airports near you</p>
-                  <div className="flex flex-col gap-1.5">
-                    {ipSuggestions.map((s, i) => (
-                      <button
-                        key={s.code}
-                        type="button"
-                        onClick={() => {
-                          setOrigin({ code: s.code, display: `${s.city} (${s.code})` });
-                          setIpSuggestions([]);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2 rounded-xl border text-left transition-colors",
-                          i === 0
-                            ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
-                            : "border-border/30 bg-secondary/30 hover:bg-secondary/50"
-                        )}
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                          <span className="text-[11px] font-bold text-foreground">{s.code}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[13px] font-medium text-foreground">{s.city}</span>
-                          <span className="text-[11px] text-muted-foreground ml-1.5">~{s.distanceKm} km</span>
-                        </div>
-                        {i === 0 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/40 text-primary shrink-0 font-semibold">
-                            Best
-                          </Badge>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {showGeoDebug && (
                 <div className="px-4 pb-2">
