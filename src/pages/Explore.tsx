@@ -236,13 +236,15 @@ const Explore = () => {
 
       if (ipCoords) {
         setRawUserCoords(ipCoords);
-        setMapUserCoords(ipCoords);
+        // Don't show blue dot for IP — it's approximate
+        // setMapUserCoords not set so map won't render a "user position" pin
         appendGeoStep(`Step 4b: airport lookup from ${ipSource} coords (scored)`);
         const ipResult = findBestAirport(ipCoords.lat, ipCoords.lon);
         if (ipResult) {
           const { best, candidates } = ipResult;
           const airportDisplay = `${best.airport.city} (${best.airport.code})`;
           setOrigin({ code: best.airport.code, display: airportDisplay });
+          setLocationConfidence("network");
           setGeoDebug({
             source: "ip-fallback",
             selectedAirportCode: best.airport.code,
