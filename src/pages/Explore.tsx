@@ -27,6 +27,8 @@ interface AirportSelection {
   display: string;
 }
 
+type LocationConfidence = "gps" | "network" | null;
+
 interface ExploreGeoDebug {
   source: LocationSource;
   selectedAirportCode: string | null;
