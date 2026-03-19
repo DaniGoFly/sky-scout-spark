@@ -113,9 +113,10 @@ const ExploreMap = ({
     if (!mapRef.current) return;
 
     if (userPosition) {
+      const isApproximate = locationConfidence === "network";
       mapRef.current.flyTo({
         center: [userPosition.lon, userPosition.lat],
-        zoom: 7,
+        zoom: isApproximate ? 5 : 7,
         duration: 1200,
       });
       return;
@@ -128,7 +129,7 @@ const ExploreMap = ({
       zoom: 5,
       duration: 1200,
     });
-  }, [userPosition, originAirport]);
+  }, [userPosition, originAirport, locationConfidence]);
 
   /* ── Route line ── */
   useEffect(() => {
