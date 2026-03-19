@@ -442,8 +442,8 @@ const Explore = () => {
                   </div>
                 </div>
               )}
+            </div>
 
-            {showGeoDebug && (
               <div className="px-4 pb-2">
                 <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground tabular-nums space-y-1">
                   <div>
