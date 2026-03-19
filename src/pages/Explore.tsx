@@ -362,6 +362,11 @@ const Explore = () => {
     navigate(`/flights/results?${params.toString()}`);
   }, [origin, navigate, currency]);
 
+  const handleOriginChange = useCallback((val: AirportSelection | null) => {
+    setOrigin(val);
+    if (val) setIpSuggestions([]);
+  }, []);
+
   const originAirport = useMemo(() =>
     origin ? AIRPORTS.find(a => a.code === origin.code) : null,
     [origin]
