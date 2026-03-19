@@ -66,7 +66,6 @@ const Explore = () => {
   const [geoStepMessages, setGeoStepMessages] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
   const isMobile = useIsMobile();
-  const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
     if (typeof window === "undefined") return false;
