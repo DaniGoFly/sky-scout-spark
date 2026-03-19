@@ -86,12 +86,26 @@ function getAirportTier(code: string): 1 | 2 | 3 {
   return AIRPORT_TIER[code] ?? 3;
 }
 
-/** Size score: tier 1 = 1.0, tier 2 = 0.7, tier 3 = 0.3 */
-function sizeScore(code: string): number {
+/** Size bonus: tier 1 = 0.25, tier 2 = 0.15, tier 3 = 0 */
+function sizeBonus(code: string): number {
   const tier = getAirportTier(code);
-  if (tier === 1) return 1.0;
-  if (tier === 2) return 0.7;
-  return 0.3;
+  if (tier === 1) return 0.25;
+  if (tier === 2) return 0.15;
+  return 0;
+}
+
+/**
+ * Distance score: closer = higher, with steep penalty beyond 80 km.
+ * 0–80 km: gentle linear decay (1.0 → 0.6)
+ * 80–120 km: steeper decay (0.6 → 0.3)
+ * 120–200 km: harsh penalty zone (0.3 → 0.05)
+ * >200 km: near-zero (0.05 → 0)
+ */
+function distanceScore(km: number): number {
+  if (km <= 80) return 1.0 - (km / 80) * 0.4;           // 1.0 → 0.6
+  if (km <= 120) return 0.6 - ((km - 80) / 40) * 0.3;   // 0.6 → 0.3
+  if (km <= 200) return 0.3 - ((km - 120) / 80) * 0.25;  // 0.3 → 0.05
+  return Math.max(0, 0.05 - ((km - 200) / 300) * 0.05);  // ~0
 }
 
 export interface RankedAirport {
@@ -102,8 +116,9 @@ export interface RankedAirport {
 }
 
 /**
- * Find the BEST nearby airport using distance + size scoring.
- * Returns top candidates within 200 km, scored 50% distance + 50% size.
+ * Find the BEST nearby airport using distance-dominant scoring.
+ * Distance accounts for ~70-80% of final score via a penalty curve.
+ * Hub bonus can only tip the balance between airports at similar distances.
  */
 export function findBestAirport(
   lat: number,
@@ -120,7 +135,6 @@ export function findBestAirport(
     .sort((a, b) => a.dist - b.dist);
 
   if (within.length === 0) {
-    // Fallback: take absolute closest regardless of radius
     const all = AIRPORTS.map((a) => ({
       airport: a,
       dist: calculateDistance(lat, lon, a.lat, a.lon),
@@ -136,13 +150,11 @@ export function findBestAirport(
     return { best: ranked, candidates: [ranked] };
   }
 
-  // Normalize distance: closest = 1.0, furthest in radius = 0.0
-  const maxDist = Math.max(...within.map((a) => a.dist), 1);
-
   const scored: RankedAirport[] = within.map((a) => {
-    const distNorm = 1 - a.dist / maxDist; // closer = higher
-    const size = sizeScore(a.airport.code);
-    const score = distNorm * 0.5 + size * 0.5;
+    const dScore = distanceScore(a.dist);
+    const bonus = sizeBonus(a.airport.code);
+    // Distance-dominant: bonus only matters when distances are close
+    const score = dScore + bonus * dScore; // bonus scaled by distance quality
     return {
       airport: a.airport,
       distanceKm: Math.round(a.dist),
@@ -153,9 +165,9 @@ export function findBestAirport(
 
   scored.sort((a, b) => b.score - a.score);
 
-  const top3 = scored.slice(0, 3);
+  const top3 = scored.slice(0, 5);
   console.log(
-    "[GoFlyFinder] Top 3 scored airports:\n" +
+    "[GoFlyFinder] Top 5 scored airports:\n" +
       top3
         .map(
           (c, i) =>
@@ -164,7 +176,7 @@ export function findBestAirport(
         .join("\n"),
   );
 
-  return { best: scored[0], candidates: top3 };
+  return { best: scored[0], candidates: scored.slice(0, 3) };
 }
 
 /** Legacy wrapper — still returns nearest by distance only */
