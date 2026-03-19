@@ -126,6 +126,7 @@ const Explore = () => {
     setRawUserCoords(null);
     setMapUserCoords(null);
     setGeoDebug(null);
+    setLocationConfidence(null);
 
     try {
       // Check permission state (informational only — never block flow)
