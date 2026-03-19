@@ -15,6 +15,7 @@ interface ExploreMapProps {
   destinations: ExploreResult[];
   originAirport: AirportData | null | undefined;
   userPosition: { lat: number; lon: number } | null;
+  locationConfidence?: "gps" | "network" | null;
   onSelect: (dest: ExploreResult) => void;
   hoveredIata: string | null;
   onHover: (iata: string | null) => void;
@@ -56,6 +57,7 @@ const ExploreMap = ({
   destinations,
   originAirport,
   userPosition,
+  locationConfidence,
   onSelect,
   hoveredIata,
   onHover,
@@ -111,9 +113,10 @@ const ExploreMap = ({
     if (!mapRef.current) return;
 
     if (userPosition) {
+      const isApproximate = locationConfidence === "network";
       mapRef.current.flyTo({
         center: [userPosition.lon, userPosition.lat],
-        zoom: 7,
+        zoom: isApproximate ? 5 : 7,
         duration: 1200,
       });
       return;
@@ -126,7 +129,7 @@ const ExploreMap = ({
       zoom: 5,
       duration: 1200,
     });
-  }, [userPosition, originAirport]);
+  }, [userPosition, originAirport, locationConfidence]);
 
   /* ── Route line ── */
   useEffect(() => {
@@ -192,7 +195,7 @@ const ExploreMap = ({
       .addTo(map);
   }, [originAirport, userPosition]);
 
-  /* ── User location marker (blue dot = raw user position) ── */
+  /* ── User location marker ── */
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -204,17 +207,18 @@ const ExploreMap = ({
 
     if (!userPosition) return;
 
+    const isApproximate = locationConfidence === "network";
     const el = document.createElement("div");
-    el.className = "xpin-origin";
+    el.className = isApproximate ? "xpin-origin-approx" : "xpin-origin";
 
     userMarkerRef.current = new maplibregl.Marker({ element: el })
       .setLngLat([userPosition.lon, userPosition.lat])
       .addTo(map);
 
     console.log(
-      `[GoFlyFinder][ExploreMap] Final blue-dot coordinates: lat=${userPosition.lat} lon=${userPosition.lon}`,
+      `[GoFlyFinder][ExploreMap] Location marker: confidence=${locationConfidence} lat=${userPosition.lat} lon=${userPosition.lon}`,
     );
-  }, [userPosition]);
+  }, [userPosition, locationConfidence]);
 
   /* ── Destination markers ── */
   useEffect(() => {
