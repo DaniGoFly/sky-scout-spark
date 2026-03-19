@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
-import AirportAutocomplete from "@/components/AirportAutocomplete";
+import AirportAutocomplete, { type QuickPickAirport } from "@/components/AirportAutocomplete";
 const ExploreMap = lazy(() => import("@/components/explore/ExploreMap"));
 import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
 // detectGeo removed — no auto-origin detection
