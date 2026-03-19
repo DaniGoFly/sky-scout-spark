@@ -238,7 +238,6 @@ const Explore = () => {
           const { best, candidates } = ipResult;
           const airportDisplay = `${best.airport.city} (${best.airport.code})`;
           setOrigin({ code: best.airport.code, display: airportDisplay });
-          setIpSuggestions([]);
           setGeoDebug({
             source: "ip-fallback",
             selectedAirportCode: best.airport.code,
