@@ -186,6 +186,7 @@ const Explore = () => {
       const airportDisplay = `${best.airport.city} (${best.airport.code})`;
       setOrigin({ code: best.airport.code, display: airportDisplay });
       setLocationConfidence("gps");
+      setNearbyQuickPicks(candidates.slice(0, 5).map(c => ({ code: c.airport.code, city: c.airport.city })));
       setGeoDebug({
         source: "gps",
         selectedAirportCode: best.airport.code,
