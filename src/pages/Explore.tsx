@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
-import AirportAutocomplete from "@/components/AirportAutocomplete";
+import AirportAutocomplete, { type QuickPickAirport } from "@/components/AirportAutocomplete";
 const ExploreMap = lazy(() => import("@/components/explore/ExploreMap"));
 import { fetchExplorePrices, type ExploreResult } from "@/lib/exploreApi";
 // detectGeo removed — no auto-origin detection
@@ -68,6 +68,7 @@ const Explore = () => {
   const [geoStepMessages, setGeoStepMessages] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
   const [locationConfidence, setLocationConfidence] = useState<LocationConfidence>(null);
+  const [nearbyQuickPicks, setNearbyQuickPicks] = useState<QuickPickAirport[]>([]);
   const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
@@ -185,6 +186,7 @@ const Explore = () => {
       const airportDisplay = `${best.airport.city} (${best.airport.code})`;
       setOrigin({ code: best.airport.code, display: airportDisplay });
       setLocationConfidence("gps");
+      setNearbyQuickPicks(candidates.slice(0, 5).map(c => ({ code: c.airport.code, city: c.airport.city })));
       setGeoDebug({
         source: "gps",
         selectedAirportCode: best.airport.code,
@@ -245,6 +247,7 @@ const Explore = () => {
           const airportDisplay = `${best.airport.city} (${best.airport.code})`;
           setOrigin({ code: best.airport.code, display: airportDisplay });
           setLocationConfidence("network");
+          setNearbyQuickPicks(candidates.slice(0, 5).map(c => ({ code: c.airport.code, city: c.airport.city })));
           setGeoDebug({
             source: "ip-fallback",
             selectedAirportCode: best.airport.code,
@@ -365,10 +368,12 @@ const Explore = () => {
                     onChange={handleOriginChange}
                     placeholder="Where from?"
                     icon="from"
+                    quickPicks={nearbyQuickPicks}
+                    hint={locationConfidence === "network" && origin ? "Tap to change departure airport" : undefined}
                   />
                   {origin && (
                     <button
-                      onClick={() => setOrigin(null)}
+                      onClick={() => { setOrigin(null); setLocationConfidence(null); }}
                       className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted hover:bg-muted-foreground/20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-xs"
                       aria-label="Clear origin"
                     >
@@ -379,11 +384,8 @@ const Explore = () => {
                 <Button variant="ghost" size="icon" onClick={handleUseMyLocation} disabled={isLocating} className="h-10 w-10 shrink-0 text-muted-foreground hover:text-primary" title="Use my location">
                   {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                 </Button>
-                </div>
-                {locationConfidence === "network" && origin && (
-                  <p className="text-[10px] text-muted-foreground/60 mt-1 pl-1">Based on your network location · <button onClick={() => { setOrigin(null); setLocationConfidence(null); }} className="text-primary/70 hover:text-primary underline underline-offset-2">Change</button></p>
-                )}
               </div>
+            </div>
 
             {showGeoDebug && (
               <div className="px-4 pb-2">
@@ -584,10 +586,12 @@ const Explore = () => {
                       onChange={handleOriginChange}
                       placeholder="Select origin"
                       icon="from"
+                      quickPicks={nearbyQuickPicks}
+                      hint={locationConfidence === "network" && origin ? "Tap to change departure airport" : undefined}
                     />
                     {origin && (
                       <button
-                        onClick={() => setOrigin(null)}
+                        onClick={() => { setOrigin(null); setLocationConfidence(null); }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted hover:bg-muted-foreground/20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-xs"
                         aria-label="Clear origin"
                       >
@@ -599,9 +603,6 @@ const Explore = () => {
                     {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                   </Button>
                 </div>
-                {locationConfidence === "network" && origin && (
-                  <p className="text-[10px] text-muted-foreground/60 mt-1.5 pl-0.5">Based on your network location · <button onClick={() => { setOrigin(null); setLocationConfidence(null); }} className="text-primary/70 hover:text-primary underline underline-offset-2">Change</button></p>
-                )}
               </div>
 
               {showGeoDebug && (
