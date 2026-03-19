@@ -184,6 +184,7 @@ const Explore = () => {
 
       const airportDisplay = `${best.airport.city} (${best.airport.code})`;
       setOrigin({ code: best.airport.code, display: airportDisplay });
+      setLocationConfidence("gps");
       setGeoDebug({
         source: "gps",
         selectedAirportCode: best.airport.code,
