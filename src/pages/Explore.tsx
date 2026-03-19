@@ -444,24 +444,13 @@ const Explore = () => {
               )}
             </div>
 
+            {showGeoDebug && (
               <div className="px-4 pb-2">
                 <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground tabular-nums space-y-1">
                   <div>
                     GPS: {rawUserCoords ? `${rawUserCoords.lat.toFixed(5)}, ${rawUserCoords.lon.toFixed(5)}` : "—"}
                     {" "}| source: {geoDebug?.source?.toUpperCase() ?? "—"}
-                    {" "}| selected airport: {geoDebug?.selectedAirportCode ?? "—"}
-                    {" "}| distance: {geoDebug?.selectedAirportDistanceKm !== null && geoDebug?.selectedAirportDistanceKm !== undefined ? `${geoDebug.selectedAirportDistanceKm} km` : "—"}
-                  </div>
-                  <div className="max-h-24 overflow-y-auto space-y-0.5">
-                    {geoStepMessages.length > 0 ? (
-                      geoStepMessages.map((step, index) => (
-                        <div key={`${step}-${index}`} className="text-[10px] leading-tight text-muted-foreground/90">
-                          {step}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-[10px] leading-tight text-muted-foreground/80">Step 0: waiting for location tap</div>
-                    )}
+                    {" "}| airport: {geoDebug?.selectedAirportCode ?? "—"}
                   </div>
                 </div>
               </div>
