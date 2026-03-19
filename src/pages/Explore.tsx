@@ -333,7 +333,6 @@ const Explore = () => {
 
   const handleOriginChange = useCallback((val: AirportSelection | null) => {
     setOrigin(val);
-    if (val) setIpSuggestions([]);
   }, []);
 
   const originAirport = useMemo(() =>
