@@ -71,8 +71,8 @@ const Explore = () => {
 
   const showGeoDebug = useMemo(() => {
     if (typeof window === "undefined") return false;
-    return isMobile || import.meta.env.DEV || new URLSearchParams(window.location.search).has("geoDebug");
-  }, [isMobile]);
+    return new URLSearchParams(window.location.search).has("geoDebug");
+  }, []);
 
   const appendGeoStep = useCallback((message: string) => {
     console.log(`[GoFlyFinder][Explore] ${message}`);
@@ -405,23 +405,38 @@ const Explore = () => {
                 </Button>
               </div>
 
-              {/* IP fallback: nearby airport suggestions */}
+              {/* Nearby airport suggestions */}
               {ipSuggestions.length > 0 && !origin && (
-                <div className="px-0 pt-1.5">
-                  <p className="text-[11px] text-muted-foreground mb-1.5">Nearby airports — tap to select:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {ipSuggestions.map((s) => (
+                <div className="px-0 pt-2">
+                  <p className="text-[12px] font-medium text-foreground mb-2">Airports near you</p>
+                  <div className="flex flex-col gap-1.5">
+                    {ipSuggestions.map((s, i) => (
                       <button
                         key={s.code}
                         type="button"
                         onClick={() => {
                           setOrigin({ code: s.code, display: `${s.city} (${s.code})` });
                           setIpSuggestions([]);
-                          appendGeoStep(`Step 7: user selected ${s.code} from suggestions`);
                         }}
-                        className="px-3 py-1.5 rounded-full border border-border/40 bg-secondary/50 hover:bg-primary/10 hover:border-primary/40 text-xs font-medium text-foreground transition-colors"
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-colors",
+                          i === 0
+                            ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                            : "border-border/30 bg-secondary/30 hover:bg-secondary/50"
+                        )}
                       >
-                        {s.code} · {s.city} <span className="text-muted-foreground ml-0.5">~{s.distanceKm}km</span>
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                          <span className="text-[11px] font-bold text-foreground">{s.code}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[13px] font-medium text-foreground">{s.city}</span>
+                          <span className="text-[11px] text-muted-foreground ml-1.5">~{s.distanceKm} km</span>
+                        </div>
+                        {i === 0 && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/40 text-primary shrink-0 font-semibold">
+                            Best
+                          </Badge>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -429,37 +444,13 @@ const Explore = () => {
               )}
             </div>
 
-            {permissionHint && (
-              <div className="px-4 pb-2">
-                <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] text-foreground leading-relaxed flex items-start gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
-                  <div>
-                    <span>{permissionHint}</span>
-                    <button onClick={handleUseMyLocation} className="ml-2 underline text-primary font-medium">Retry</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {showGeoDebug && (
               <div className="px-4 pb-2">
                 <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground tabular-nums space-y-1">
                   <div>
                     GPS: {rawUserCoords ? `${rawUserCoords.lat.toFixed(5)}, ${rawUserCoords.lon.toFixed(5)}` : "—"}
                     {" "}| source: {geoDebug?.source?.toUpperCase() ?? "—"}
-                    {" "}| selected airport: {geoDebug?.selectedAirportCode ?? "—"}
-                    {" "}| distance: {geoDebug?.selectedAirportDistanceKm !== null && geoDebug?.selectedAirportDistanceKm !== undefined ? `${geoDebug.selectedAirportDistanceKm} km` : "—"}
-                  </div>
-                  <div className="max-h-24 overflow-y-auto space-y-0.5">
-                    {geoStepMessages.length > 0 ? (
-                      geoStepMessages.map((step, index) => (
-                        <div key={`${step}-${index}`} className="text-[10px] leading-tight text-muted-foreground/90">
-                          {step}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-[10px] leading-tight text-muted-foreground/80">Step 0: waiting for location tap</div>
-                    )}
+                    {" "}| airport: {geoDebug?.selectedAirportCode ?? "—"}
                   </div>
                 </div>
               </div>
@@ -669,23 +660,38 @@ const Explore = () => {
                 </div>
               </div>
 
-              {/* IP fallback: nearby airport suggestions (desktop) */}
+              {/* Nearby airport suggestions (desktop) */}
               {ipSuggestions.length > 0 && !origin && (
                 <div className="px-4 pb-2">
-                  <p className="text-[11px] text-muted-foreground mb-1.5">Nearby airports — click to select:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {ipSuggestions.map((s) => (
+                  <p className="text-[12px] font-medium text-foreground mb-2">Airports near you</p>
+                  <div className="flex flex-col gap-1.5">
+                    {ipSuggestions.map((s, i) => (
                       <button
                         key={s.code}
                         type="button"
                         onClick={() => {
                           setOrigin({ code: s.code, display: `${s.city} (${s.code})` });
                           setIpSuggestions([]);
-                          appendGeoStep(`Step 7: user selected ${s.code} from suggestions`);
                         }}
-                        className="px-3 py-1.5 rounded-full border border-border/40 bg-secondary/50 hover:bg-primary/10 hover:border-primary/40 text-xs font-medium text-foreground transition-colors"
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2 rounded-xl border text-left transition-colors",
+                          i === 0
+                            ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                            : "border-border/30 bg-secondary/30 hover:bg-secondary/50"
+                        )}
                       >
-                        {s.code} · {s.city} <span className="text-muted-foreground ml-0.5">~{s.distanceKm}km</span>
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                          <span className="text-[11px] font-bold text-foreground">{s.code}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[13px] font-medium text-foreground">{s.city}</span>
+                          <span className="text-[11px] text-muted-foreground ml-1.5">~{s.distanceKm} km</span>
+                        </div>
+                        {i === 0 && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/40 text-primary shrink-0 font-semibold">
+                            Best
+                          </Badge>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -694,24 +700,8 @@ const Explore = () => {
 
               {showGeoDebug && (
                 <div className="px-4 pb-2">
-                  <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground tabular-nums space-y-1">
-                    <div>
-                      GPS: {rawUserCoords ? `${rawUserCoords.lat.toFixed(5)}, ${rawUserCoords.lon.toFixed(5)}` : "—"}
-                      {" "}| source: {geoDebug?.source?.toUpperCase() ?? "—"}
-                      {" "}| selected airport: {geoDebug?.selectedAirportCode ?? "—"}
-                      {" "}| distance: {geoDebug?.selectedAirportDistanceKm !== null && geoDebug?.selectedAirportDistanceKm !== undefined ? `${geoDebug.selectedAirportDistanceKm} km` : "—"}
-                    </div>
-                    <div className="max-h-24 overflow-y-auto space-y-0.5">
-                      {geoStepMessages.length > 0 ? (
-                        geoStepMessages.map((step, index) => (
-                          <div key={`${step}-${index}`} className="text-[10px] leading-tight text-muted-foreground/90">
-                            {step}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-[10px] leading-tight text-muted-foreground/80">Step 0: waiting for location tap</div>
-                      )}
-                    </div>
+                  <div className="rounded-md border border-border/40 bg-muted/40 px-2 py-1.5 text-[10px] text-muted-foreground tabular-nums">
+                    source: {geoDebug?.source?.toUpperCase() ?? "—"} | airport: {geoDebug?.selectedAirportCode ?? "—"}
                   </div>
                 </div>
               )}
