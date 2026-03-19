@@ -117,7 +117,7 @@ const Explore = () => {
     if (isLocating) return;
 
     setIsLocating(true);
-    setPermissionHint(null);
+    setGeoStepMessages(["Step 1: location button clicked (unified pipeline)"]);
     setGeoStepMessages(["Step 1: location button clicked"]);
     setOrigin(null);
     setRawUserCoords(null);
