@@ -27,6 +27,8 @@ interface AirportSelection {
   display: string;
 }
 
+type LocationConfidence = "gps" | "network" | null;
+
 interface ExploreGeoDebug {
   source: LocationSource;
   selectedAirportCode: string | null;
@@ -65,6 +67,7 @@ const Explore = () => {
   const [geoDebug, setGeoDebug] = useState<ExploreGeoDebug | null>(null);
   const [geoStepMessages, setGeoStepMessages] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
+  const [locationConfidence, setLocationConfidence] = useState<LocationConfidence>(null);
   const isMobile = useIsMobile();
 
   const showGeoDebug = useMemo(() => {
@@ -123,6 +126,7 @@ const Explore = () => {
     setRawUserCoords(null);
     setMapUserCoords(null);
     setGeoDebug(null);
+    setLocationConfidence(null);
 
     try {
       // Check permission state (informational only — never block flow)
@@ -180,6 +184,7 @@ const Explore = () => {
 
       const airportDisplay = `${best.airport.city} (${best.airport.code})`;
       setOrigin({ code: best.airport.code, display: airportDisplay });
+      setLocationConfidence("gps");
       setGeoDebug({
         source: "gps",
         selectedAirportCode: best.airport.code,
@@ -231,13 +236,15 @@ const Explore = () => {
 
       if (ipCoords) {
         setRawUserCoords(ipCoords);
-        setMapUserCoords(ipCoords);
+        // Don't show blue dot for IP — it's approximate
+        // setMapUserCoords not set so map won't render a "user position" pin
         appendGeoStep(`Step 4b: airport lookup from ${ipSource} coords (scored)`);
         const ipResult = findBestAirport(ipCoords.lat, ipCoords.lon);
         if (ipResult) {
           const { best, candidates } = ipResult;
           const airportDisplay = `${best.airport.city} (${best.airport.code})`;
           setOrigin({ code: best.airport.code, display: airportDisplay });
+          setLocationConfidence("network");
           setGeoDebug({
             source: "ip-fallback",
             selectedAirportCode: best.airport.code,
@@ -333,6 +340,7 @@ const Explore = () => {
 
   const handleOriginChange = useCallback((val: AirportSelection | null) => {
     setOrigin(val);
+    if (!val) setLocationConfidence(null);
   }, []);
 
   const originAirport = useMemo(() =>
@@ -371,9 +379,11 @@ const Explore = () => {
                 <Button variant="ghost" size="icon" onClick={handleUseMyLocation} disabled={isLocating} className="h-10 w-10 shrink-0 text-muted-foreground hover:text-primary" title="Use my location">
                   {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                 </Button>
+                </div>
+                {locationConfidence === "network" && origin && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-1 pl-1">Based on your network location · <button onClick={() => { setOrigin(null); setLocationConfidence(null); }} className="text-primary/70 hover:text-primary underline underline-offset-2">Change</button></p>
+                )}
               </div>
-
-            </div>
 
             {showGeoDebug && (
               <div className="px-4 pb-2">
@@ -589,8 +599,10 @@ const Explore = () => {
                     {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                   </Button>
                 </div>
+                {locationConfidence === "network" && origin && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-1.5 pl-0.5">Based on your network location · <button onClick={() => { setOrigin(null); setLocationConfidence(null); }} className="text-primary/70 hover:text-primary underline underline-offset-2">Change</button></p>
+                )}
               </div>
-
 
               {showGeoDebug && (
                 <div className="px-4 pb-2">
