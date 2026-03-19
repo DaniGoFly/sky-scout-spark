@@ -199,29 +199,54 @@ const Explore = () => {
       const message = err instanceof Error ? err.message : "Unknown error";
       appendGeoStep(`Step X: GPS failed: ${message}`);
 
-      // IP-based fallback — silent, no popup
-      appendGeoStep("Step 2b: trying IP fallback...");
+      // IP-based fallback — dual API with timeout
+      appendGeoStep("Step 2b: trying IP fallback (primary: ipapi.co)...");
       let ipCoords: { lat: number; lon: number } | null = null;
+      let ipSource = "";
+
+      // Primary: ipapi.co
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5000);
+        const timer = setTimeout(() => controller.abort(), 4000);
         const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
         clearTimeout(timer);
         if (res.ok) {
           const data = await res.json();
           if (typeof data.latitude === "number" && typeof data.longitude === "number") {
             ipCoords = { lat: data.latitude, lon: data.longitude };
-            appendGeoStep(`Step 3b: IP location: ${ipCoords.lat.toFixed(3)}, ${ipCoords.lon.toFixed(3)} (${data.city ?? "unknown city"})`);
+            ipSource = "IP_PRIMARY";
+            appendGeoStep(`Step 3b: ipapi.co success: ${ipCoords.lat.toFixed(3)}, ${ipCoords.lon.toFixed(3)} (${data.city ?? "?"})`);
           }
         }
-      } catch {
-        appendGeoStep("Step 3b: IP fallback also failed");
+      } catch (e) {
+        appendGeoStep(`Step 3b: ipapi.co failed: ${e instanceof Error ? e.message : "timeout"}`);
+      }
+
+      // Backup: ipwho.is
+      if (!ipCoords) {
+        appendGeoStep("Step 3b-2: trying backup API (ipwho.is)...");
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 4000);
+          const res = await fetch("https://ipwho.is/", { signal: controller.signal });
+          clearTimeout(timer);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && typeof data.latitude === "number" && typeof data.longitude === "number") {
+              ipCoords = { lat: data.latitude, lon: data.longitude };
+              ipSource = "IP_BACKUP";
+              appendGeoStep(`Step 3b-2: ipwho.is success: ${ipCoords.lat.toFixed(3)}, ${ipCoords.lon.toFixed(3)} (${data.city ?? "?"})`);
+            }
+          }
+        } catch (e) {
+          appendGeoStep(`Step 3b-2: ipwho.is failed: ${e instanceof Error ? e.message : "timeout"}`);
+        }
       }
 
       if (ipCoords) {
         setRawUserCoords(ipCoords);
         setMapUserCoords(ipCoords);
-        appendGeoStep("Step 4b: airport lookup from IP coords (scored)");
+        appendGeoStep(`Step 4b: airport lookup from ${ipSource} coords (scored)`);
         const ipResult = findBestAirport(ipCoords.lat, ipCoords.lon);
         if (ipResult) {
           const { best, candidates } = ipResult;
@@ -242,9 +267,12 @@ const Explore = () => {
           setGeoDebug({ source: "ip-fallback", selectedAirportCode: null, selectedAirportDistanceKm: null });
         }
       } else {
-        // Both GPS and IP failed
+        // Both GPS and both IP APIs failed
+        appendGeoStep("Step X: all location methods failed — choose manually");
         if (message === "PERMISSION_DENIED") {
           setPermissionHint("Location blocked. On iOS: Settings → Safari → Location → Allow. Then tap again.");
+        } else {
+          setPermissionHint("Could not detect location. Please choose your departure airport manually.");
         }
         setGeoDebug({ source: "gps", selectedAirportCode: null, selectedAirportDistanceKm: null });
       }
