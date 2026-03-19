@@ -71,8 +71,8 @@ const Explore = () => {
 
   const showGeoDebug = useMemo(() => {
     if (typeof window === "undefined") return false;
-    return isMobile || import.meta.env.DEV || new URLSearchParams(window.location.search).has("geoDebug");
-  }, [isMobile]);
+    return new URLSearchParams(window.location.search).has("geoDebug");
+  }, []);
 
   const appendGeoStep = useCallback((message: string) => {
     console.log(`[GoFlyFinder][Explore] ${message}`);
