@@ -671,23 +671,38 @@ const Explore = () => {
                 </div>
               </div>
 
-              {/* IP fallback: nearby airport suggestions (desktop) */}
+              {/* Nearby airport suggestions (desktop) */}
               {ipSuggestions.length > 0 && !origin && (
                 <div className="px-4 pb-2">
-                  <p className="text-[11px] text-muted-foreground mb-1.5">Nearby airports — click to select:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {ipSuggestions.map((s) => (
+                  <p className="text-[12px] font-medium text-foreground mb-2">Airports near you</p>
+                  <div className="flex flex-col gap-1.5">
+                    {ipSuggestions.map((s, i) => (
                       <button
                         key={s.code}
                         type="button"
                         onClick={() => {
                           setOrigin({ code: s.code, display: `${s.city} (${s.code})` });
                           setIpSuggestions([]);
-                          appendGeoStep(`Step 7: user selected ${s.code} from suggestions`);
                         }}
-                        className="px-3 py-1.5 rounded-full border border-border/40 bg-secondary/50 hover:bg-primary/10 hover:border-primary/40 text-xs font-medium text-foreground transition-colors"
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2 rounded-xl border text-left transition-colors",
+                          i === 0
+                            ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                            : "border-border/30 bg-secondary/30 hover:bg-secondary/50"
+                        )}
                       >
-                        {s.code} · {s.city} <span className="text-muted-foreground ml-0.5">~{s.distanceKm}km</span>
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                          <span className="text-[11px] font-bold text-foreground">{s.code}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[13px] font-medium text-foreground">{s.city}</span>
+                          <span className="text-[11px] text-muted-foreground ml-1.5">~{s.distanceKm} km</span>
+                        </div>
+                        {i === 0 && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/40 text-primary shrink-0 font-semibold">
+                            Best
+                          </Badge>
+                        )}
                       </button>
                     ))}
                   </div>
