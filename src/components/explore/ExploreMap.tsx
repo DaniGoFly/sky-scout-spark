@@ -57,6 +57,7 @@ const ExploreMap = ({
   destinations,
   originAirport,
   userPosition,
+  locationConfidence,
   onSelect,
   hoveredIata,
   onHover,
