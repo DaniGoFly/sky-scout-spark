@@ -195,7 +195,7 @@ const ExploreMap = ({
       .addTo(map);
   }, [originAirport, userPosition]);
 
-  /* ── User location marker (blue dot = raw user position) ── */
+  /* ── User location marker ── */
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -207,17 +207,18 @@ const ExploreMap = ({
 
     if (!userPosition) return;
 
+    const isApproximate = locationConfidence === "network";
     const el = document.createElement("div");
-    el.className = "xpin-origin";
+    el.className = isApproximate ? "xpin-origin-approx" : "xpin-origin";
 
     userMarkerRef.current = new maplibregl.Marker({ element: el })
       .setLngLat([userPosition.lon, userPosition.lat])
       .addTo(map);
 
     console.log(
-      `[GoFlyFinder][ExploreMap] Final blue-dot coordinates: lat=${userPosition.lat} lon=${userPosition.lon}`,
+      `[GoFlyFinder][ExploreMap] Location marker: confidence=${locationConfidence} lat=${userPosition.lat} lon=${userPosition.lon}`,
     );
-  }, [userPosition]);
+  }, [userPosition, locationConfidence]);
 
   /* ── Destination markers ── */
   useEffect(() => {

@@ -772,6 +772,7 @@ const Explore = () => {
                 destinations={sortedDestinations}
                 originAirport={originAirport}
                 userPosition={mapUserCoords}
+                locationConfidence={locationConfidence}
                 onSelect={handleSelectDestination}
                 hoveredIata={hoveredIata}
                 onHover={setHoveredIata}
