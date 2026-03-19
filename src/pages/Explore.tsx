@@ -238,8 +238,7 @@ const Explore = () => {
 
       if (ipCoords) {
         setRawUserCoords(ipCoords);
-        // Don't show blue dot for IP — it's approximate
-        // setMapUserCoords not set so map won't render a "user position" pin
+        setMapUserCoords(ipCoords); // Show approximate area on map
         appendGeoStep(`Step 4b: airport lookup from ${ipSource} coords (scored)`);
         const ipResult = findBestAirport(ipCoords.lat, ipCoords.lon);
         if (ipResult) {
