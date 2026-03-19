@@ -399,6 +399,29 @@ const Explore = () => {
                   {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                 </Button>
               </div>
+
+              {/* IP fallback: nearby airport suggestions */}
+              {ipSuggestions.length > 0 && !origin && (
+                <div className="px-0 pt-1.5">
+                  <p className="text-[11px] text-muted-foreground mb-1.5">Nearby airports — tap to select:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ipSuggestions.map((s) => (
+                      <button
+                        key={s.code}
+                        type="button"
+                        onClick={() => {
+                          setOrigin({ code: s.code, display: `${s.city} (${s.code})` });
+                          setIpSuggestions([]);
+                          appendGeoStep(`Step 7: user selected ${s.code} from suggestions`);
+                        }}
+                        className="px-3 py-1.5 rounded-full border border-border/40 bg-secondary/50 hover:bg-primary/10 hover:border-primary/40 text-xs font-medium text-foreground transition-colors"
+                      >
+                        {s.code} · {s.city} <span className="text-muted-foreground ml-0.5">~{s.distanceKm}km</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {permissionHint && (
