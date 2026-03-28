@@ -17,6 +17,7 @@ import { AIRPORTS, getAirportsInRadius } from "@/lib/airports";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const SearchForm = () => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [tripType, setTripType] = useState<"roundtrip" | "oneway">("roundtrip");
