@@ -440,7 +440,7 @@ const Explore = () => {
           </div>
 
           {/* ── Map area (fills remaining space) ── */}
-          <div className="flex-1 relative z-0 overflow-hidden min-h-0 explore-mobile-map-wrap">
+          <div className="flex-1 relative z-0 overflow-hidden min-h-0 explore-mobile-map-wrap" style={{ touchAction: "none" }}>
             {isLoading && (
               <div className="absolute inset-0 z-20 bg-background/40 backdrop-blur-sm flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2 bg-card/90 rounded-xl px-6 py-4 border border-border">
@@ -466,7 +466,7 @@ const Explore = () => {
             {!isLoading && sortedDestinations.length > 0 && !mobileResultsOpen && (
               <button
                 onClick={() => setMobileResultsOpen(true)}
-                className="absolute bottom-[5.5rem] left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/30 hover:bg-primary/90 transition-colors"
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/30 hover:bg-primary/90 transition-colors"
               >
                 <List className="w-4 h-4" />
                 {sortedDestinations.length} Destinations
