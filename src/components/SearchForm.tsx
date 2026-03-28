@@ -112,10 +112,20 @@ const SearchForm = () => {
   );
 
   useEffect(() => {
-    if (fromNearby && userCoordsRef.current) {
+    if (!fromNearby) return;
+    if (isMobile) {
+      if (origins.length > 0) {
+        const originAirport = AIRPORTS.find(
+          (a) => a.code.toUpperCase() === origins[0].code.toUpperCase()
+        );
+        if (originAirport) {
+          fillNearbyOrigins(originAirport.lat, originAirport.lon, fromRadius);
+        }
+      }
+    } else if (userCoordsRef.current) {
       fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius);
     }
-  }, [fromRadius, fromNearby, fillNearbyOrigins]);
+  }, [fromRadius, fromNearby, fillNearbyOrigins, isMobile, origins]);
 
   /* ── Nearby: To ── */
   const expandToNearby = useCallback(
