@@ -235,12 +235,22 @@
   }
 }
 
-/* ── Mobile: lift map controls above bottom nav ── */
+/* ── Mobile: map controls spacing ── */
 @media (max-width: 767px) {
+  .exploreMapWrap {
+    min-height: 0 !important;
+  }
   .explore-mobile-map-wrap .maplibregl-ctrl-bottom-right {
-    bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+    bottom: 12px !important;
   }
   .explore-mobile-map-wrap .maplibregl-ctrl-bottom-left {
-    bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+    bottom: 12px !important;
+  }
+}
+
+/* Desktop: restore min-height */
+@media (min-width: 768px) {
+  .exploreMapWrap {
+    min-height: 420px;
   }
 }
