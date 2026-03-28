@@ -353,9 +353,9 @@ const Explore = () => {
   /* ── Mobile layout ── */
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background flex flex-col overflow-hidden">
+      <div className="fixed inset-0 bg-background flex flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 pt-16 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+        <main className="flex-1 pt-16 pb-[calc(3.5rem+env(safe-area-inset-bottom))] flex flex-col overflow-hidden min-h-0">
           {/* ── Compact top controls ── */}
           <div className="shrink-0 bg-background z-10">
             {/* Origin field */}
