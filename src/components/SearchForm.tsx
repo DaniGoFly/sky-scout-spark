@@ -14,6 +14,7 @@ import NearbyToggle from "./search/NearbyToggle";
 import FlexDateControls from "./search/FlexDateControls";
 import { getDefaultDates } from "@/lib/dateUtils";
 import { AIRPORTS, getAirportsInRadius } from "@/lib/airports";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const SearchForm = () => {
   const navigate = useNavigate();
