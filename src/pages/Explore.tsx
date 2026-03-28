@@ -477,7 +477,6 @@ const Explore = () => {
             {mobileResultsOpen && (
               <div
                 className="absolute inset-0 z-30 flex flex-col"
-                style={{ paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom) + 0.5rem)" }}
               >
                 {/* Backdrop */}
                 <div className="flex-1 min-h-[60px]" onClick={() => setMobileResultsOpen(false)} />
