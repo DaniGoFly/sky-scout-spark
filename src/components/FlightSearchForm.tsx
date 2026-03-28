@@ -159,8 +159,16 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
   }, [fromRadius, fillNearbyOrigins, isMobile, origins, t]);
 
   useEffect(() => {
-    if (fromNearby && userCoordsRef.current) fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius);
-  }, [fromRadius, fromNearby, fillNearbyOrigins]);
+    if (!fromNearby) return;
+    if (isMobile) {
+      if (origins.length > 0) {
+        const originAirport = AIRPORTS.find(a => a.code.toUpperCase() === origins[0].code.toUpperCase());
+        if (originAirport) fillNearbyOrigins(originAirport.lat, originAirport.lon, fromRadius);
+      }
+    } else if (userCoordsRef.current) {
+      fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius);
+    }
+  }, [fromRadius, fromNearby, fillNearbyOrigins, isMobile, origins]);
 
   // ── Nearby: To ──
   const expandToNearby = useCallback((centers: AirportSelection[], radius: number) => {
