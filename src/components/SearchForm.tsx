@@ -67,6 +67,27 @@ const SearchForm = () => {
     async (enabled: boolean) => {
       setFromNearby(enabled);
       if (!enabled) return;
+
+      // On mobile: use the selected origin airport's coordinates instead of GPS
+      if (isMobile) {
+        if (origins.length === 0) {
+          toast.info(t("old_search.select_departure_first", "Please enter a departure airport first"));
+          setFromNearby(false);
+          return;
+        }
+        const originAirport = AIRPORTS.find(
+          (a) => a.code.toUpperCase() === origins[0].code.toUpperCase()
+        );
+        if (originAirport) {
+          fillNearbyOrigins(originAirport.lat, originAirport.lon, fromRadius);
+        } else {
+          toast.info(t("old_search.select_departure_first", "Please enter a departure airport first"));
+          setFromNearby(false);
+        }
+        return;
+      }
+
+      // Desktop: use GPS as before
       if (userCoordsRef.current) {
         fillNearbyOrigins(userCoordsRef.current.lat, userCoordsRef.current.lon, fromRadius);
         return;
@@ -87,7 +108,7 @@ const SearchForm = () => {
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     },
-    [fromRadius, fillNearbyOrigins]
+    [fromRadius, fillNearbyOrigins, isMobile, origins, t]
   );
 
   useEffect(() => {
