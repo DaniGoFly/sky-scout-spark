@@ -275,42 +275,42 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
     );
   }
 
-  /* ── Desktop: inline panel (unchanged) ── */
+  /* ── Desktop: inline panel (unchanged layout) ── */
   return (
     <div
-      className="w-full bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-gray-200 overflow-hidden pointer-events-auto z-[9999] relative isolate opacity-100 mix-blend-normal"
+      className="w-full bg-card rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-border overflow-hidden pointer-events-auto z-[9999] relative isolate opacity-100 mix-blend-normal"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header: Trip type + Tabs + Close */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border/30 bg-card">
         <div className="flex gap-1">
           <button type="button" onClick={() => onTripTypeChange("roundtrip")}
             className={cn("px-4 py-1.5 rounded-full text-sm font-medium transition-all",
-              tripType === "roundtrip" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100")}>
+              tripType === "roundtrip" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>
             Round trip
           </button>
           <button type="button" onClick={() => onTripTypeChange("oneway")}
             className={cn("px-4 py-1.5 rounded-full text-sm font-medium transition-all",
-              tripType === "oneway" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-100")}>
+              tripType === "oneway" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary")}>
             One way
           </button>
         </div>
 
-        <div className="flex bg-gray-100 rounded-full p-0.5">
+        <div className="flex bg-secondary rounded-full p-0.5">
           <button type="button" onClick={() => setActiveTab("specific")}
             className={cn("px-5 py-1.5 rounded-full text-sm font-medium transition-all",
-              activeTab === "specific" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
+              activeTab === "specific" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
             Specific dates
           </button>
           <button type="button" onClick={() => setActiveTab("flexible")}
             className={cn("px-5 py-1.5 rounded-full text-sm font-medium transition-all",
-              activeTab === "flexible" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700")}>
+              activeTab === "flexible" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
             Flexible dates
           </button>
         </div>
 
         <button type="button" onClick={onDone}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600" aria-label="Close calendar">
+          className="p-2 rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" aria-label="Close calendar">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -318,7 +318,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
       {/* Content */}
       {activeTab === "specific" ? (
         <>
-          <div className="px-6 py-2.5 text-sm text-center text-gray-400 bg-white border-b border-gray-100">
+          <div className="px-6 py-2.5 text-sm text-center text-muted-foreground bg-card border-b border-border/30">
             {tripType === "roundtrip"
               ? (selectingReturn ? "Select return date" : "Select departure date")
               : "Select departure date"}
@@ -327,9 +327,9 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
           <div className="px-6 pt-2 pb-4">
             <div className="flex items-start gap-8">
               <button type="button" onClick={() => setCurrentMonth(prev => subMonths(prev, 1))} disabled={!canGoPrev}
-                className={cn("mt-1 p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0",
+                className={cn("mt-1 p-2 rounded-full hover:bg-secondary transition-colors flex-shrink-0",
                   !canGoPrev && "opacity-20 cursor-not-allowed")} aria-label="Previous month">
-                <ChevronLeft className="h-5 w-5 text-gray-600" />
+                <ChevronLeft className="h-5 w-5 text-muted-foreground" />
               </button>
 
               <div className="flex-1 min-w-0 flex gap-10">
@@ -338,8 +338,8 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
               </div>
 
               <button type="button" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
-                className="mt-1 p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0" aria-label="Next month">
-                <ChevronRight className="h-5 w-5 text-gray-600" />
+                className="mt-1 p-2 rounded-full hover:bg-secondary transition-colors flex-shrink-0" aria-label="Next month">
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
             </div>
           </div>
@@ -347,7 +347,7 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
       ) : (
         <div className="px-6 py-6 max-w-md mx-auto space-y-5">
           <div>
-            <p className="text-sm font-semibold text-gray-900 mb-3">Departure flexibility</p>
+            <p className="text-sm font-semibold text-foreground mb-3">Departure flexibility</p>
             <div className="space-y-2.5">
               <FlexStepper label="Days before" value={departFlexBefore} onChange={onDepartFlexBeforeChange} />
               <FlexStepper label="Days after" value={departFlexAfter} onChange={onDepartFlexAfterChange} />
@@ -355,8 +355,8 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
           </div>
           {tripType === "roundtrip" && (
             <div>
-              <div className="h-px bg-gray-200 mb-4" />
-              <p className="text-sm font-semibold text-gray-900 mb-3">Return flexibility</p>
+              <div className="h-px bg-border/30 mb-4" />
+              <p className="text-sm font-semibold text-foreground mb-3">Return flexibility</p>
               <div className="space-y-2.5">
                 <FlexStepper label="Days before" value={returnFlexBefore} onChange={onReturnFlexBeforeChange} />
                 <FlexStepper label="Days after" value={returnFlexAfter} onChange={onReturnFlexAfterChange} />
@@ -364,15 +364,15 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
             </div>
           )}
           <button type="button" onClick={handleResetFlex}
-            className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Reset all
           </button>
         </div>
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-white">
-        <Button type="button" variant="ghost" onClick={handleClear} className="text-sm text-gray-500 hover:text-gray-800">
+      <div className="flex items-center justify-between px-6 py-3 border-t border-border/30 bg-card">
+        <Button type="button" variant="ghost" onClick={handleClear} className="text-sm text-muted-foreground hover:text-foreground">
           Clear dates
         </Button>
         <Button type="button" onClick={onDone} className="px-8 rounded-full">
