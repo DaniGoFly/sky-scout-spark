@@ -129,7 +129,7 @@ export default function CookieConsent() {
     <>
       {prefsModal}
       {visible && (
-        <div className="fixed bottom-0 left-0 right-0 z-[60] p-4 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] p-4 pb-[calc(1rem+3.5rem+env(safe-area-inset-bottom))] md:pb-4 animate-in slide-in-from-bottom-4 duration-300">
           <div className="container mx-auto max-w-3xl">
             <div className="bg-card border border-border rounded-2xl p-5 shadow-2xl shadow-black/20">
               <div className="flex items-start gap-3">
