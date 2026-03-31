@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSortTabs from "./FlightSortTabs";
 import CompactSearchBar from "./CompactSearchBar";
+import MobileSearchEditor from "./MobileSearchEditor";
 import FlightCard from "./SkyscannerFlightCard";
 import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
 import FlightResultsSkeleton from "./FlightResultsSkeleton";
@@ -588,7 +589,7 @@ const LiveFlightResults = () => {
       <div className="sticky top-16 z-40 bg-card/95 backdrop-blur-sm border-b border-border" style={{ top: "calc(4rem + env(safe-area-inset-top))" }}>
         <div className="container mx-auto px-3 sm:px-4 py-3 w-full max-w-full box-border overflow-hidden">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-nowrap justify-between">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/flights")} className="h-9 w-9 shrink-0" aria-label={t("results.back_to_search")}>
+            <Button variant="ghost" size="icon" onClick={() => { window.history.length > 1 ? navigate(-1) : navigate("/"); }} className="h-9 w-9 shrink-0" aria-label={t("results.back_to_search")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex-1 min-w-0 overflow-hidden">
@@ -603,6 +604,7 @@ const LiveFlightResults = () => {
               <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={dedupedFlights.length} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </div>
           </div>
+          <MobileSearchEditor isSearching={isSearching} onSearch={(params) => navigate(`/flights/results?${params.toString()}`)} />
           <div className="hidden md:block"><CompactSearchBar isSearching={isSearching} onForceSearch={handleRefreshPrices} /></div>
           
         </div>
@@ -646,7 +648,7 @@ const LiveFlightResults = () => {
             <p className="text-sm text-muted-foreground mb-6 max-w-md">{error || t("results.error_default")}</p>
             <div className="flex gap-3">
               <Button onClick={handleRetry}>{t("results.try_again")}</Button>
-              <Button variant="outline" onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
+              <Button variant="outline" onClick={() => navigate("/")}>{t("results.new_search")}</Button>
             </div>
           </div>
         )}
@@ -658,7 +660,7 @@ const LiveFlightResults = () => {
             </div>
             <p className="text-lg font-semibold text-foreground mb-2">{t("results.select_route")}</p>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">{t("results.select_route_sub")}</p>
-            <Button onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
+            <Button onClick={() => navigate("/")}>{t("results.new_search")}</Button>
           </div>
         )}
 
@@ -669,7 +671,7 @@ const LiveFlightResults = () => {
             </div>
             <p className="text-lg font-semibold text-foreground mb-2">{t("results.no_flights", "No flights found")}</p>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">{t("results.no_flights_sub", "Try nearby dates, different airports, or adjusting your filters.")}</p>
-            <Button onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
+            <Button onClick={() => navigate("/")}>{t("results.new_search")}</Button>
           </div>
         )}
 
