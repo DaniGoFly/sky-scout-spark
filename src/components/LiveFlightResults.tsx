@@ -648,7 +648,7 @@ const LiveFlightResults = () => {
             <p className="text-sm text-muted-foreground mb-6 max-w-md">{error || t("results.error_default")}</p>
             <div className="flex gap-3">
               <Button onClick={handleRetry}>{t("results.try_again")}</Button>
-              <Button variant="outline" onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
+              <Button variant="outline" onClick={() => navigate("/")}>{t("results.new_search")}</Button>
             </div>
           </div>
         )}
