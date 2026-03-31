@@ -370,16 +370,15 @@ const Explore = () => {
                   hint={locationConfidence === "network" && origin ? "Tap to change departure airport" : undefined}
                 />
                 <div className="explore-departure-actions">
-                  {origin && (
-                    <button
-                      type="button"
-                      onClick={() => { setOrigin(null); setLocationConfidence(null); }}
-                      className="rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors text-xs"
-                      aria-label="Clear origin"
-                    >
-                      ✕
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setOrigin(null); setLocationConfidence(null); }}
+                    className={`rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors text-xs ${origin ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                    aria-label="Clear origin"
+                    tabIndex={origin ? 0 : -1}
+                  >
+                    ✕
+                  </button>
                   <button
                     type="button"
                     onClick={handleUseMyLocation}
