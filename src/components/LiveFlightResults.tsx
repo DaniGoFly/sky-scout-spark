@@ -589,7 +589,7 @@ const LiveFlightResults = () => {
       <div className="sticky top-16 z-40 bg-card/95 backdrop-blur-sm border-b border-border" style={{ top: "calc(4rem + env(safe-area-inset-top))" }}>
         <div className="container mx-auto px-3 sm:px-4 py-3 w-full max-w-full box-border overflow-hidden">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-nowrap justify-between">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/flights")} className="h-9 w-9 shrink-0" aria-label={t("results.back_to_search")}>
+            <Button variant="ghost" size="icon" onClick={() => { window.history.length > 1 ? navigate(-1) : navigate("/"); }} className="h-9 w-9 shrink-0" aria-label={t("results.back_to_search")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex-1 min-w-0 overflow-hidden">
