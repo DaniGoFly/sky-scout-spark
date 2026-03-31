@@ -243,4 +243,36 @@ button:active:not(:disabled) {
   input, textarea, select, button {
     font-size: 16px !important;
   }
+
+  /* Mobile departure input icon alignment */
+  .departure-input-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .departure-input-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+  }
+
+  .departure-input-actions button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    padding: 0;
+  }
+
+  .departure-input-actions svg {
+    display: block;
+    margin: auto;
+  }
+
+  .departure-input-container * {
+    line-height: normal;
+  }
 }
