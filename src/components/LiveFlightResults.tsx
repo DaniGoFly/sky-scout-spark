@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import FlightFilters, { FilterState } from "./FlightFilters";
 import FlightSortTabs from "./FlightSortTabs";
 import CompactSearchBar from "./CompactSearchBar";
+import MobileSearchEditor from "./MobileSearchEditor";
 import FlightCard from "./SkyscannerFlightCard";
 import FlightResultsErrorBoundary from "./FlightResultsErrorBoundary";
 import FlightResultsSkeleton from "./FlightResultsSkeleton";
