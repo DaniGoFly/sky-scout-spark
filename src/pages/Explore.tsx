@@ -372,16 +372,23 @@ const Explore = () => {
                 <div className="explore-departure-actions">
                   {origin && (
                     <button
+                      type="button"
                       onClick={() => { setOrigin(null); setLocationConfidence(null); }}
-                      className="w-8 h-8 rounded-full bg-muted hover:bg-muted-foreground/20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-xs"
+                      className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-muted hover:bg-muted-foreground/20 inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-xs p-0 leading-none"
                       aria-label="Clear origin"
                     >
                       ✕
                     </button>
                   )}
-                  <Button variant="ghost" size="icon" onClick={handleUseMyLocation} disabled={isLocating} className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary p-0" title="Use my location">
+                  <button
+                    type="button"
+                    onClick={handleUseMyLocation}
+                    disabled={isLocating}
+                    className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors p-0 leading-none disabled:opacity-50"
+                    title="Use my location"
+                  >
                     {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
