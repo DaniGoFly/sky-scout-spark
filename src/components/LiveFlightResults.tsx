@@ -671,7 +671,7 @@ const LiveFlightResults = () => {
             </div>
             <p className="text-lg font-semibold text-foreground mb-2">{t("results.no_flights", "No flights found")}</p>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">{t("results.no_flights_sub", "Try nearby dates, different airports, or adjusting your filters.")}</p>
-            <Button onClick={() => navigate("/flights")}>{t("results.new_search")}</Button>
+            <Button onClick={() => navigate("/")}>{t("results.new_search")}</Button>
           </div>
         )}
 
