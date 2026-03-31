@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Plane, Loader2, Clock, Navigation } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface Place {
   name: string;
@@ -24,6 +25,10 @@ interface AirportAutocompleteProps {
   icon?: "from" | "to";
   compact?: boolean;
   hasError?: boolean;
+  controlClassName?: string;
+  inputClassName?: string;
+  endAdornment?: React.ReactNode;
+  hideLoadingIndicator?: boolean;
   /** Quick-pick airports shown when focused with empty query */
   quickPicks?: QuickPickAirport[];
   /** Hint text shown below the input */
@@ -43,6 +48,10 @@ const AirportAutocomplete = ({
   icon = "from",
   compact = false,
   hasError = false,
+  controlClassName,
+  inputClassName,
+  endAdornment,
+  hideLoadingIndicator = false,
   quickPicks,
   hint,
   onHintAction,
@@ -176,7 +185,7 @@ const AirportAutocomplete = ({
 
   return (
     <div ref={wrapperRef} className="relative min-w-0">
-      <div className="relative group min-w-0">
+      <div className={cn("relative group min-w-0", controlClassName)}>
         <Plane 
           className={`absolute top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors shrink-0 ${
             icon === "to" ? "rotate-90" : ""
@@ -189,17 +198,18 @@ const AirportAutocomplete = ({
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
           className={compact 
-            ? `pl-9 h-10 bg-secondary/50 border-transparent rounded-xl text-sm truncate focus:ring-0 focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:ring-offset-0 ${hasError ? "border border-destructive/50" : ""}`
-            : `pl-12 h-12 bg-secondary/50 border-2 rounded-xl focus:bg-card focus:ring-0 focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:ring-offset-0 text-sm sm:text-base font-medium transition-all truncate ${
+            ? cn(`pl-9 h-10 bg-secondary/50 border-transparent rounded-xl text-sm truncate focus:ring-0 focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:ring-offset-0 ${hasError ? "border border-destructive/50" : ""}`, inputClassName)
+            : cn(`pl-12 h-12 bg-secondary/50 border-2 rounded-xl focus:bg-card focus:ring-0 focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:ring-offset-0 text-sm sm:text-base font-medium transition-all truncate ${
                 hasError ? "border-destructive/50 focus:border-destructive" : "border-transparent focus:border-primary/60"
-              }`
+              }`, inputClassName)
           }
           placeholder={placeholder}
           autoComplete="off"
         />
-        {isLoading && (
+        {!hideLoadingIndicator && isLoading && (
           <Loader2 className={`absolute top-1/2 -translate-y-1/2 animate-spin text-muted-foreground shrink-0 ${compact ? "right-3 w-3 h-3" : "right-4 w-4 h-4"}`} />
         )}
+        {endAdornment}
       </div>
 
       {/* Hint text below input */}

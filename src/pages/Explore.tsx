@@ -366,29 +366,34 @@ const Explore = () => {
                   onChange={handleOriginChange}
                   placeholder="Where from?"
                   icon="from"
+                  controlClassName="explore-departure-control"
+                  inputClassName="explore-departure-input"
+                  hideLoadingIndicator
+                  endAdornment={
+                    <div className="explore-departure-actions">
+                      <button
+                        type="button"
+                        onClick={() => { setOrigin(null); setLocationConfidence(null); }}
+                        className={`rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors text-xs ${origin ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        aria-label="Clear origin"
+                        tabIndex={origin ? 0 : -1}
+                      >
+                        ✕
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUseMyLocation}
+                        disabled={isLocating}
+                        className="rounded-full text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                        title="Use my location"
+                      >
+                        {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  }
                   quickPicks={nearbyQuickPicks}
                   hint={locationConfidence === "network" && origin ? "Tap to change departure airport" : undefined}
                 />
-                <div className="explore-departure-actions">
-                  <button
-                    type="button"
-                    onClick={() => { setOrigin(null); setLocationConfidence(null); }}
-                    className={`rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-colors text-xs ${origin ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                    aria-label="Clear origin"
-                    tabIndex={origin ? 0 : -1}
-                  >
-                    ✕
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleUseMyLocation}
-                    disabled={isLocating}
-                    className="rounded-full text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                    title="Use my location"
-                  >
-                    {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
-                  </button>
-                </div>
               </div>
             </div>
 

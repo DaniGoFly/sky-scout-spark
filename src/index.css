@@ -281,29 +281,45 @@ button:active:not(:disabled) {
     position: relative !important;
   }
 
-  .explore-departure-field input {
-    padding-right: 108px !important;
+  .explore-departure-control {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+  }
+
+  .explore-departure-input {
+    height: 56px !important;
+    padding-right: 90px !important;
+    line-height: normal !important;
   }
 
   .explore-departure-actions {
     position: absolute !important;
     right: 12px !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    transform: none !important;
+    top: 50% !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: translateY(-50%) !important;
     display: flex !important;
-    flex-direction: row !important;
     align-items: center !important;
     gap: 10px !important;
-    height: 100% !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-    flex-shrink: 0 !important;
-    z-index: 10;
-    pointer-events: auto;
+    line-height: normal !important;
+    z-index: 10 !important;
+    pointer-events: auto !important;
   }
 
   .explore-departure-actions button {
+    position: relative !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -315,8 +331,9 @@ button:active:not(:disabled) {
     max-height: 36px !important;
     flex: 0 0 36px !important;
     margin: 0 !important;
+    margin-top: 0 !important;
     padding: 0 !important;
-    line-height: 1 !important;
+    line-height: normal !important;
     box-sizing: border-box !important;
   }
 
@@ -324,18 +341,7 @@ button:active:not(:disabled) {
     display: block !important;
     width: 16px !important;
     height: 16px !important;
-    margin: 0 !important;
+    margin: auto !important;
     flex-shrink: 0 !important;
-  }
-
-  .explore-departure-field.location-active .explore-departure-actions,
-  .explore-departure-field.filled .explore-departure-actions,
-  .explore-departure-field:focus-within .explore-departure-actions {
-    top: 0 !important;
-    bottom: 0 !important;
-    transform: none !important;
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
   }
 }
