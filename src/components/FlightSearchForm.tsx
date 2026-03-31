@@ -568,9 +568,9 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
           <div className="xl:hidden flex flex-col gap-0">
             <div className="rounded-2xl border border-border/20 bg-card/40 backdrop-blur-sm overflow-visible">
               {/* FROM row */}
-              <div className={`relative flex items-center gap-3 px-4 min-h-[52px] ${errRing(!!errors.from)}`}>
+              <div className={`departure-input-container flex items-center gap-3 px-4 min-h-[52px] ${errRing(!!errors.from)}`}>
                 <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
-                <div className="flex-1 min-w-0 pr-10">
+                <div className="flex-1 min-w-0">
                   <MultiOriginInput
                     values={origins}
                     onChange={handleOriginsChange}
@@ -579,13 +579,15 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                   />
                 </div>
                 {/* Swap button */}
-                <button type="button" onClick={swapLocations}
-                  disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full border border-border/30 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm active:scale-95"
-                  aria-label="Swap"
-                >
-                  <ArrowRightLeft className="w-3.5 h-3.5 rotate-90" />
-                </button>
+                <div className="departure-input-actions flex items-center shrink-0">
+                  <button type="button" onClick={swapLocations}
+                    disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
+                    className="w-9 h-9 rounded-full border border-border/30 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm active:scale-95"
+                    aria-label="Swap"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5 rotate-90" />
+                  </button>
+                </div>
               </div>
 
               <div className="h-px bg-border/15 mx-4" />
