@@ -604,6 +604,7 @@ const LiveFlightResults = () => {
               <MemoizedMobileDrawer onFiltersChange={handleFiltersChange} activeFiltersCount={activeFiltersCount} flightCount={dedupedFlights.length} flights={displayFlights} flightsCurrency={flightsCurrency} currentFilters={filters} />
             </div>
           </div>
+          <MobileSearchEditor isSearching={isSearching} onSearch={(params) => navigate(`/flights/results?${params.toString()}`)} />
           <div className="hidden md:block"><CompactSearchBar isSearching={isSearching} onForceSearch={handleRefreshPrices} /></div>
           
         </div>
