@@ -282,7 +282,7 @@ button:active:not(:disabled) {
   }
 
   .explore-departure-field input {
-    padding-right: 100px !important;
+    padding-right: 108px !important;
   }
 
   .explore-departure-actions {
@@ -293,9 +293,8 @@ button:active:not(:disabled) {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: center !important;
-    gap: 6px !important;
-    height: 36px !important;
+    gap: 10px !important;
+    height: 40px !important;
     margin: 0 !important;
     padding: 0 !important;
     flex-shrink: 0 !important;
@@ -307,13 +306,13 @@ button:active:not(:disabled) {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    min-height: 36px !important;
-    max-width: 36px !important;
-    max-height: 36px !important;
-    flex: 0 0 36px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px !important;
     margin: 0 !important;
     padding: 0 !important;
     line-height: 1 !important;
@@ -326,7 +325,7 @@ button:active:not(:disabled) {
     display: block !important;
     width: 16px !important;
     height: 16px !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     flex-shrink: 0 !important;
   }
 
@@ -335,7 +334,7 @@ button:active:not(:disabled) {
   .explore-departure-field:focus-within .explore-departure-actions {
     top: 50% !important;
     transform: translateY(-50%) !important;
-    height: 36px !important;
+    height: 40px !important;
     margin: 0 !important;
     padding: 0 !important;
   }
