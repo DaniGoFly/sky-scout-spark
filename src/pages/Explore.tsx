@@ -360,29 +360,29 @@ const Explore = () => {
           <div className="shrink-0 bg-background z-10">
             {/* Origin field */}
             <div className="px-4 pt-3 pb-2">
-              <div className="flex gap-2 items-center">
-                <div className="flex-1 min-w-0 relative">
-                  <AirportAutocomplete
-                    value={origin}
-                    onChange={handleOriginChange}
-                    placeholder="Where from?"
-                    icon="from"
-                    quickPicks={nearbyQuickPicks}
-                    hint={locationConfidence === "network" && origin ? "Tap to change departure airport" : undefined}
-                  />
+              <div className="relative explore-departure-field">
+                <AirportAutocomplete
+                  value={origin}
+                  onChange={handleOriginChange}
+                  placeholder="Where from?"
+                  icon="from"
+                  quickPicks={nearbyQuickPicks}
+                  hint={locationConfidence === "network" && origin ? "Tap to change departure airport" : undefined}
+                />
+                <div className="explore-departure-actions">
                   {origin && (
                     <button
                       onClick={() => { setOrigin(null); setLocationConfidence(null); }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted hover:bg-muted-foreground/20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-xs"
+                      className="w-8 h-8 rounded-full bg-muted hover:bg-muted-foreground/20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors text-xs"
                       aria-label="Clear origin"
                     >
                       ✕
                     </button>
                   )}
+                  <Button variant="ghost" size="icon" onClick={handleUseMyLocation} disabled={isLocating} className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary p-0" title="Use my location">
+                    {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleUseMyLocation} disabled={isLocating} className="h-10 w-10 shrink-0 text-muted-foreground hover:text-primary" title="Use my location">
-                  {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
-                </Button>
               </div>
             </div>
 

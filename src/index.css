@@ -275,4 +275,57 @@ button:active:not(:disabled) {
   .departure-input-container * {
     line-height: normal;
   }
+
+  /* Explore page departure field — anchored right-side icons */
+  .explore-departure-field {
+    position: relative;
+  }
+
+  .explore-departure-field input {
+    padding-right: 96px !important;
+  }
+
+  .explore-departure-actions {
+    position: absolute !important;
+    right: 8px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+    z-index: 10;
+    pointer-events: auto;
+  }
+
+  .explore-departure-actions button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    flex: 0 0 32px !important;
+    align-self: center !important;
+  }
+
+  .explore-departure-actions svg {
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
+  .explore-departure-field.location-active .explore-departure-actions,
+  .explore-departure-field.filled .explore-departure-actions,
+  .explore-departure-field:focus-within .explore-departure-actions {
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 }
