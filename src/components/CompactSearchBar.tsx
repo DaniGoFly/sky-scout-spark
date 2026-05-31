@@ -12,6 +12,7 @@ import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import { getDefaultDates } from "@/lib/dateUtils";
 import { toast } from "sonner";
 import { useLocale } from "@/hooks/useLocale";
+import { trackFlightSearch } from "@/lib/metaPixel";
 
 interface CompactSearchBarProps {
   isSearching?: boolean;
@@ -105,6 +106,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
   const handleSearchNav = useCallback(() => {
     if (origins.length === 0 || !to) return;
     const params = buildParams();
+    trackFlightSearch(params);
     navigate(`/flights/results?${params.toString()}`);
   }, [origins, to, buildParams, navigate]);
 
@@ -133,6 +135,7 @@ const CompactSearchBar = ({ isSearching = false, onForceSearch }: CompactSearchB
       // Same params — force a fresh search without navigation
       onForceSearch?.();
     } else {
+      trackFlightSearch(newParams);
       navigate(`/flights/results?${newSearch}`);
     }
   }, [origins, to, buildParams, searchParams, navigate, onForceSearch]);

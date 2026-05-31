@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +9,7 @@ import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import FlightErrorBoundary from "./components/FlightErrorBoundary";
 import CookieConsent from "./components/CookieConsent";
 import { HOTELS_ENABLED } from "@/lib/featureFlags";
+import { metaPageView } from "@/lib/metaPixel";
 
 // Eager-load Index (landing page — must be instant)
 import Index from "./pages/Index";
@@ -74,6 +75,21 @@ const SuspensePage = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<PageFallback />}>{children}</Suspense>
 );
 
+// Fires Meta Pixel PageView on SPA route changes. The initial PageView
+// is already fired by the inline script in index.html, so we skip the first run.
+const MetaPixelRouteTracker = () => {
+  const location = useLocation();
+  const isFirst = useRef(true);
+  useEffect(() => {
+    if (isFirst.current) {
+      isFirst.current = false;
+      return;
+    }
+    metaPageView();
+  }, [location.pathname, location.search]);
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LocaleProvider>
@@ -81,6 +97,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <MetaPixelRouteTracker />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/saved" element={<SuspensePage><SavedFlights /></SuspensePage>} />

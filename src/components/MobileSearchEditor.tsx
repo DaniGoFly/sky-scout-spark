@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { getDefaultDates } from "@/lib/dateUtils";
 import { useLocale } from "@/hooks/useLocale";
+import { trackFlightSearch } from "@/lib/metaPixel";
 
 interface MobileSearchEditorProps {
   isSearching?: boolean;
@@ -102,6 +103,7 @@ const MobileSearchEditor = ({ isSearching = false, onSearch }: MobileSearchEdito
       ...(editTripType === "roundtrip" ? { return: format(editReturnDate, "yyyy-MM-dd") } : {}),
     });
     setOpen(false);
+    trackFlightSearch(params);
     onSearch(params);
   }, [editOrigins, editTo, editDepartDate, editReturnDate, editTravelers, editTripType, currency, marketCode, onSearch]);
 

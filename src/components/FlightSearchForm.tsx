@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OverlayPortal } from "./overlays/OverlayPortal";
 import { MobileCalendarModal } from "./overlays/MobileCalendarModal";
+import { trackFlightSearch } from "@/lib/metaPixel";
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
@@ -251,6 +252,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
         if (returnFlexAfter > 0) params.set("rfa", returnFlexAfter.toString());
       }
     }
+    trackFlightSearch(params);
     navigate(`/flights/results?${params.toString()}`);
   }, [validate, tripType, origins, destinations, anywhere, isAnyDay, departDate, tripLength, travelers, directOnly, returnDate, navigate, currency, marketCode, departFlexBefore, departFlexAfter, returnFlexBefore, returnFlexAfter]);
 
