@@ -8,6 +8,7 @@ import { Mail, Clock } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { metaTrack } from "@/lib/metaPixel";
 
 const Contact = () => {
   const { t } = useTranslation();
@@ -21,6 +22,10 @@ const Contact = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    metaTrack("Lead", {
+      content_category: "signup",
+      source: "goflyfinder",
+    });
     toast({
       title: t("contact.sent_title"),
       description: t("contact.sent_desc"),
