@@ -30,6 +30,7 @@ import { resolveDeal } from "@/lib/flightSearchApi";
 import { trackFlightClick } from "@/lib/clickTracking";
 import { useLocale } from "@/hooks/useLocale";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { metaTrack } from "@/lib/metaPixel";
 
 const DEFAULT_FILTERS: FilterState = {
   stopsMode: "any",
@@ -231,6 +232,23 @@ const LiveFlightResults = () => {
       prevResultsRef.current = enrichedFlights;
     }
   }, [enrichedFlights]);
+
+  // Meta Pixel: fire ViewContent once per successful results render
+  const viewContentFiredRef = useRef<string>("");
+  useEffect(() => {
+    if (status !== "complete") return;
+    if (enrichedFlights.length === 0) return;
+    const key = `${from}-${to}-${enrichedFlights.length}`;
+    if (viewContentFiredRef.current === key) return;
+    viewContentFiredRef.current = key;
+    metaTrack("ViewContent", {
+      content_type: "flight_results",
+      content_category: "flights",
+      route: `${from}-${to}`,
+      results_count: enrichedFlights.length,
+      currency: enrichedFlights[0]?.price?.currency || currency,
+    });
+  }, [status, enrichedFlights, from, to, currency]);
 
   const displayFlights = enrichedFlights.length > 0 ? enrichedFlights : prevResultsRef.current;
 
