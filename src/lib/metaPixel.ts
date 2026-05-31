@@ -43,3 +43,23 @@ export function metaTrackCustom(eventName: string, params?: Params): void {
 export function metaPageView(): void {
   metaTrack("PageView");
 }
+
+// Convenience: fire a "Search" event from a flight-search URLSearchParams.
+// Accepts any URLSearchParams-shaped value the search forms produce.
+export function trackFlightSearch(params: URLSearchParams): void {
+  const origin = params.get("from") || "";
+  const destination = params.get("to") || "";
+  metaTrack("Search", {
+    content_category: "flights",
+    search_string: `${origin}-${destination}`,
+    origin,
+    destination,
+    departure_date: params.get("depart") || "",
+    return_date: params.get("return") || null,
+    adults: Number(params.get("adults")) || 1,
+    children: Number(params.get("children")) || 0,
+    infants: Number(params.get("infants")) || 0,
+    cabin_class: params.get("class") || "economy",
+    currency: params.get("currency") || "EUR",
+  });
+}
