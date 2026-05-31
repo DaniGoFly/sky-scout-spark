@@ -18,6 +18,7 @@ import type { EnrichedFlight } from "@/lib/flightEnrichment";
 import type { PriceIntelligence } from "@/lib/priceIntelligence";
 import { resolveDeal } from "@/lib/flightSearchApi";
 import { trackFlightClick } from "@/lib/clickTracking";
+import { metaTrack } from "@/lib/metaPixel";
 import { shouldShowScarcity } from "@/lib/scarcityIndicator";
 import { sanitizeDealUrl } from "@/lib/urlSanitizer";
 import { isFlightSaved, toggleSavedFlight, type SearchContext } from "@/lib/savedFlights";
@@ -339,6 +340,16 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       currency: flight.price?.currency,
       origin: flight.origin,
       destination: flight.destination,
+    });
+
+    metaTrack("InitiateCheckout", {
+      content_type: "flight_offer",
+      content_category: "flights",
+      route: `${flight.origin}-${flight.destination}`,
+      value: flight.price?.amount || 0,
+      currency: flight.price?.currency || localeCurrency || "EUR",
+      airline: airlineName || "",
+      provider: (flight as any).provider || (flight as any).agent || "",
     });
 
     try {
