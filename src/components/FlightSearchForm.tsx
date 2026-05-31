@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OverlayPortal } from "./overlays/OverlayPortal";
 import { MobileCalendarModal } from "./overlays/MobileCalendarModal";
+import { trackFlightSearch } from "@/lib/metaPixel";
 
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
