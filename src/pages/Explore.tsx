@@ -21,6 +21,7 @@ import { AIRPORTS, type AirportData } from "@/lib/airports";
 import { findBestAirport, type LocationSource, type RankedAirport } from "@/lib/nearestAirport";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { trackFlightSearch } from "@/lib/metaPixel";
 
 interface AirportSelection {
   code: string;
@@ -337,6 +338,7 @@ const Explore = () => {
     if (!hasDates) {
       params.set("explore_from_price", String(Math.round(dest.price)));
     }
+    trackFlightSearch(params);
     navigate(`/flights/results?${params.toString()}`);
   }, [origin, navigate, currency]);
 
