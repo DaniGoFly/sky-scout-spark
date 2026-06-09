@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, Clock } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { metaTrack } from "@/lib/metaPixel";
@@ -22,8 +22,9 @@ const Contact = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    metaTrack("Contact");
     metaTrack("Lead", {
-      content_category: "signup",
+      content_category: "travel",
       source: "goflyfinder",
     });
     toast({
@@ -31,6 +32,10 @@ const Contact = () => {
       description: t("contact.sent_desc"),
     });
     setFormData({ name: "", email: "", subject: "", message: "" });
+  };
+
+  const handleEmailClick = () => {
+    metaTrack("Contact");
   };
 
   return (
@@ -116,7 +121,13 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">{t("contact.email_label")}</h3>
-                    <p className="text-muted-foreground">goflyfinder@gmail.com</p>
+                    <a
+                      href="mailto:goflyfinder@gmail.com"
+                      onClick={handleEmailClick}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      goflyfinder@gmail.com
+                    </a>
                   </div>
                 </div>
 

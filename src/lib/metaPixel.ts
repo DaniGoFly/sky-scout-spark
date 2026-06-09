@@ -44,6 +44,9 @@ export function metaPageView(): void {
   metaTrack("PageView");
 }
 
+// Generic alias matching spec naming: trackMetaEvent(name, params)
+export const trackMetaEvent = metaTrack;
+
 // Convenience: fire a "Search" event from a flight-search URLSearchParams.
 // Accepts any URLSearchParams-shaped value the search forms produce.
 export function trackFlightSearch(params: URLSearchParams): void {

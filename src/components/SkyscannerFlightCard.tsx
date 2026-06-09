@@ -325,6 +325,15 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
     const nowSaved = toggleSavedFlight(flight, ctx);
     setIsSaved(nowSaved);
+    if (nowSaved) {
+      metaTrack("AddToWishlist", {
+        content_type: "flight_offer",
+        content_category: "flights",
+        route: `${flight.origin}-${flight.destination}`,
+        value: flight.price?.amount || 0,
+        currency: flight.price?.currency || localeCurrency || "EUR",
+      });
+    }
   }, [flight, searchParams, localeCurrency, marketCode, departDate, returnDateProp, savedContext]);
 
   const handleViewDeal = useCallback(async () => {
