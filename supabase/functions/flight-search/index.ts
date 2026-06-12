@@ -180,14 +180,14 @@ serve(async (req) => {
     }
 
     const base = rb && rb.startsWith("http") ? rb.replace(/\/$/, "") : "https://tickets-api.travelpayouts.com";
-    const clickUrl = `${base}/searches/${encodeURIComponent(search_id)}/clicks/${encodeURIComponent(proposal_id)}?marker=${encodeURIComponent(marker)}`;
+    const urlWithMarker = `${base}/searches/${encodeURIComponent(search_id)}/clicks/${encodeURIComponent(proposal_id)}?marker=${encodeURIComponent(marker)}`;
 
     // Return the Travelpayouts click URL directly so the BROWSER opens it.
     // TP must receive the click from the user's browser (with real IP/UA/cookies)
     // and perform its own tracking redirect to the airline/OTA. Any server-side
     // fetch here would bypass TP tracking and result in 0 clicks in Reports.
-    console.log("[flight-search] click URL (browser will open):", clickUrl.slice(0, 160));
-    return json({ ok: true, deal_url: clickUrl, booking_url: clickUrl });
+    console.log("[flight-search] click URL (browser will open):", urlWithMarker.slice(0, 160));
+    return json({ ok: true, step: "click", deal_url: urlWithMarker });
   }
 
   // ============ ACTION: results (poll only) ============
