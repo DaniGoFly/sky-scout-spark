@@ -182,58 +182,12 @@ serve(async (req) => {
     const base = rb && rb.startsWith("http") ? rb.replace(/\/$/, "") : "https://tickets-api.travelpayouts.com";
     const clickUrl = `${base}/searches/${encodeURIComponent(search_id)}/clicks/${encodeURIComponent(proposal_id)}?marker=${encodeURIComponent(marker)}`;
 
-    console.log("[flight-search] click URL:", clickUrl.slice(0, 120));
-
-    try {
-      // Forward real user context so Travelpayouts credits the click in affiliate reports.
-      // Without these, TP sees Deno/Supabase as the client and discards the click as bot traffic.
-      const fwdUserIp = userIp;
-      const fwdUserAgent =
-        req.headers.get("user-agent") || "Mozilla/5.0 (compatible; GoFlyFinder/1.0)";
-      const fwdReferer = req.headers.get("referer") || "https://goflyfinder.com/";
-      const fwdAcceptLang = req.headers.get("accept-language") || "en-US,en;q=0.9";
-
-      const resp = await fetch(clickUrl, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "x-affiliate-user-id": token,
-          "x-forwarded-for": fwdUserIp,
-          "x-real-ip": fwdUserIp,
-          "x-user-ip": fwdUserIp,
-          "User-Agent": fwdUserAgent,
-          "Referer": fwdReferer,
-          "Accept-Language": fwdAcceptLang,
-        },
-      });
-      const text = await resp.text();
-      if (!resp.ok) {
-        console.error("[flight-search] click failed", resp.status, text.slice(0, 300));
-        return json({ ok: false, error: `click failed (${resp.status})` }, 502);
-      }
-
-      let data: any;
-      try { data = JSON.parse(text); } catch {
-        return json({ ok: false, error: "invalid click response" }, 502);
-      }
-
-      const bookingUrl = data?.url ?? data?.booking_url ?? data?.redirect_url ?? null;
-      if (!bookingUrl || typeof bookingUrl !== "string" || !bookingUrl.startsWith("http")) {
-        return json({ ok: false, error: "no booking url returned" }, 502);
-      }
-
-      console.log(
-        "[flight-search] click resolved:",
-        bookingUrl.slice(0, 120),
-        "| fwd_ip:", fwdUserIp,
-        "| marker:", marker
-      );
-      return json({ ok: true, deal_url: bookingUrl, booking_url: bookingUrl });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("[flight-search] click error:", msg);
-      return json({ ok: false, error: msg }, 502);
-    }
+    // Return the Travelpayouts click URL directly so the BROWSER opens it.
+    // TP must receive the click from the user's browser (with real IP/UA/cookies)
+    // and perform its own tracking redirect to the airline/OTA. Any server-side
+    // fetch here would bypass TP tracking and result in 0 clicks in Reports.
+    console.log("[flight-search] click URL (browser will open):", clickUrl.slice(0, 160));
+    return json({ ok: true, deal_url: clickUrl, booking_url: clickUrl });
   }
 
   // ============ ACTION: results (poll only) ============
