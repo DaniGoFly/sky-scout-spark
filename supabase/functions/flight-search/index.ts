@@ -185,9 +185,26 @@ serve(async (req) => {
     console.log("[flight-search] click URL:", clickUrl.slice(0, 120));
 
     try {
+      // Forward real user context so Travelpayouts credits the click in affiliate reports.
+      // Without these, TP sees Deno/Supabase as the client and discards the click as bot traffic.
+      const fwdUserIp = userIp;
+      const fwdUserAgent =
+        req.headers.get("user-agent") || "Mozilla/5.0 (compatible; GoFlyFinder/1.0)";
+      const fwdReferer = req.headers.get("referer") || "https://goflyfinder.com/";
+      const fwdAcceptLang = req.headers.get("accept-language") || "en-US,en;q=0.9";
+
       const resp = await fetch(clickUrl, {
         method: "GET",
-        headers: { Accept: "application/json", "x-affiliate-user-id": token },
+        headers: {
+          Accept: "application/json",
+          "x-affiliate-user-id": token,
+          "x-forwarded-for": fwdUserIp,
+          "x-real-ip": fwdUserIp,
+          "x-user-ip": fwdUserIp,
+          "User-Agent": fwdUserAgent,
+          "Referer": fwdReferer,
+          "Accept-Language": fwdAcceptLang,
+        },
       });
       const text = await resp.text();
       if (!resp.ok) {
@@ -205,7 +222,12 @@ serve(async (req) => {
         return json({ ok: false, error: "no booking url returned" }, 502);
       }
 
-      console.log("[flight-search] click resolved:", bookingUrl.slice(0, 100));
+      console.log(
+        "[flight-search] click resolved:",
+        bookingUrl.slice(0, 120),
+        "| fwd_ip:", fwdUserIp,
+        "| marker:", marker
+      );
       return json({ ok: true, deal_url: bookingUrl, booking_url: bookingUrl });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
