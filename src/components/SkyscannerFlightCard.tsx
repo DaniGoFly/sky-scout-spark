@@ -377,6 +377,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             const data = await r.json();
             console.log("[handleViewDeal] tickets-api JSON:", data);
             if (data && typeof data.url === "string" && data.url) {
+              console.log("[handleViewDeal] data.url:", data.url);
               finalUrl = data.url;
             }
           } catch (err) {
@@ -384,6 +385,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
           }
         }
         const safeUrl = sanitizeDealUrl(finalUrl) || finalUrl;
+        console.log("[handleViewDeal] OPENING URL:", safeUrl);
         if (pendingWindow && !pendingWindow.closed) {
           pendingWindow.opener = null;
           pendingWindow.location.href = safeUrl;
