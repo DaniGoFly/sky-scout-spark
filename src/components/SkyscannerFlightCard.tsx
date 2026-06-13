@@ -340,6 +340,12 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     if (!canResolve || isResolving) return;
     setIsResolving(true);
 
+    const debugValue = (label: string, value: string | number) => {
+      const message = `${label} ${String(value)}`;
+      console.log(message);
+      alert(message);
+    };
+
     // Open a placeholder tab synchronously to bypass popup blockers,
     // then redirect it once we have the final airline/OTA URL.
     const pendingWindow = window.open("about:blank", "_blank");
@@ -366,27 +372,45 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
     try {
       const result = await resolveDeal({ search_id: searchId, proposal_id: proposalId, results_base: resultsBase });
-      if (result.ok && result.deal_url) {
-        let finalUrl = result.deal_url;
+      const dealUrl = result.deal_url || "";
+      debugValue("[handleViewDeal] deal_url from Supabase:", dealUrl || "(empty)");
+
+      if (result.ok && dealUrl) {
+        let finalUrl: string | null = dealUrl;
         // If Supabase returned the raw tickets-api click URL, fetch it in the
         // browser, parse the JSON, and use the `url` field (the affiliate
         // tracking/airline URL). Fallback to the raw URL if anything fails.
-        if (/^https:\/\/tickets-api\.[^/]*travelpayouts\.com\//i.test(finalUrl)) {
+        if (/^https:\/\/tickets-api\.[^/]*travelpayouts\.com\//i.test(dealUrl)) {
+          let ticketsApiStatus: number | string = "fetch failed";
           try {
-            const r = await fetch(finalUrl, { credentials: "omit" });
+            const r = await fetch(dealUrl, { credentials: "omit" });
+            ticketsApiStatus = r.status;
+            debugValue("[handleViewDeal] tickets-api fetch status:", ticketsApiStatus);
+            if (!r.ok) {
+              throw new Error(`tickets-api request failed (${r.status})`);
+            }
             const data = await r.json();
-            console.log("[handleViewDeal] tickets-api JSON:", data);
             if (data && typeof data.url === "string" && data.url) {
-              console.log("[handleViewDeal] data.url:", data.url);
-              alert(data.url);
+              debugValue("[handleViewDeal] parsed data.url:", data.url);
               finalUrl = data.url;
+            } else {
+              throw new Error("tickets-api response missing data.url");
             }
           } catch (err) {
+            if (ticketsApiStatus === "fetch failed") {
+              debugValue("[handleViewDeal] tickets-api fetch status:", ticketsApiStatus);
+            }
             console.warn("[handleViewDeal] tickets-api fetch failed, falling back:", err);
+            finalUrl = dealUrl;
           }
         }
         const safeUrl = sanitizeDealUrl(finalUrl) || finalUrl;
-        console.log("[handleViewDeal] OPENING URL:", safeUrl);
+        if (!safeUrl) {
+          if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+          toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
+          return;
+        }
+        debugValue("[handleViewDeal] final URL assigned to pendingTab.location.href:", safeUrl);
         if (pendingWindow && !pendingWindow.closed) {
           pendingWindow.opener = null;
           pendingWindow.location.href = safeUrl;
