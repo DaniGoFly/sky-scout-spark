@@ -208,6 +208,7 @@ serve(async (req) => {
         console.error("[flight-search] click response not JSON:", clickText.slice(0, 200));
         return json({ ok: false, step: "click", error: "invalid click response" }, 502);
       }
+      console.log("[flight-search] click FULL JSON:", JSON.stringify(clickData));
       const trackingUrl: string | null =
         clickData?.url ||
         clickData?.redirect_url ||
