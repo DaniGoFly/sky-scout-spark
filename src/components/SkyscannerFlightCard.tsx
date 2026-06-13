@@ -341,9 +341,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     setIsResolving(true);
 
     const debugValue = (label: string, value: string | number) => {
-      const message = `${label} ${String(value)}`;
-      console.log(message);
-      alert(message);
+      console.log(`${label} ${String(value)}`);
     };
 
     // Open a placeholder tab synchronously to bypass popup blockers,
@@ -410,21 +408,29 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
           toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
           return;
         }
-        debugValue("[handleViewDeal] final URL assigned to pendingTab.location.href:", safeUrl);
+        console.log("[handleViewDeal] pendingTab.closed", pendingWindow?.closed);
+        console.log("[handleViewDeal] data.url", safeUrl);
+
+        let navigated = false;
         if (pendingWindow && !pendingWindow.closed) {
-          pendingWindow.opener = null;
-          pendingWindow.location.href = safeUrl;
-        } else {
-          const opened = window.open(safeUrl, "_blank", "noopener,noreferrer");
-          if (!opened) {
-            const a = document.createElement("a");
-            a.href = safeUrl;
-            a.target = "_blank";
-            a.rel = "noopener noreferrer";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+          try {
+            pendingWindow.opener = null;
+            pendingWindow.location.replace(safeUrl);
+            navigated = true;
+          } catch (err) {
+            console.warn("[handleViewDeal] location.replace failed:", err);
           }
+        }
+        if (!navigated) {
+          const opened = window.open(safeUrl, "_blank", "noopener,noreferrer");
+          if (opened) {
+            navigated = true;
+            if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+          }
+        }
+        if (!navigated) {
+          if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+          window.location.assign(safeUrl);
         }
       } else {
         if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
