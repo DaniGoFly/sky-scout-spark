@@ -340,6 +340,10 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     if (!canResolve || isResolving) return;
     setIsResolving(true);
 
+    // Open a placeholder tab synchronously to bypass popup blockers,
+    // then redirect it once we have the final airline/OTA URL.
+    const pendingWindow = window.open("about:blank", "_blank");
+
     trackFlightClick({
       search_id: searchId,
       proposal_id: proposalId,
@@ -363,10 +367,29 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     try {
       const result = await resolveDeal({ search_id: searchId, proposal_id: proposalId, results_base: resultsBase });
       if (result.ok && result.deal_url) {
-        const safeUrl = sanitizeDealUrl(result.deal_url);
-        if (safeUrl) {
-          const openedWindow = window.open(safeUrl, "_blank", "noopener,noreferrer");
-          if (!openedWindow) {
+        let finalUrl = result.deal_url;
+        // If Supabase returned the raw tickets-api click URL, fetch it in the
+        // browser, parse the JSON, and use the `url` field (the affiliate
+        // tracking/airline URL). Fallback to the raw URL if anything fails.
+        if (/^https:\/\/tickets-api\.[^/]*travelpayouts\.com\//i.test(finalUrl)) {
+          try {
+            const r = await fetch(finalUrl, { credentials: "omit" });
+            const data = await r.json();
+            console.log("[handleViewDeal] tickets-api JSON:", data);
+            if (data && typeof data.url === "string" && data.url) {
+              finalUrl = data.url;
+            }
+          } catch (err) {
+            console.warn("[handleViewDeal] tickets-api fetch failed, falling back:", err);
+          }
+        }
+        const safeUrl = sanitizeDealUrl(finalUrl) || finalUrl;
+        if (pendingWindow && !pendingWindow.closed) {
+          pendingWindow.opener = null;
+          pendingWindow.location.href = safeUrl;
+        } else {
+          const opened = window.open(safeUrl, "_blank", "noopener,noreferrer");
+          if (!opened) {
             const a = document.createElement("a");
             a.href = safeUrl;
             a.target = "_blank";
@@ -375,16 +398,13 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             a.click();
             document.body.removeChild(a);
           }
-        } else {
-          toast.error("Link may not be secure", {
-            description: "The booking link could not be verified. You can copy it manually.",
-            action: { label: "Copy link", onClick: () => { navigator.clipboard.writeText(result.deal_url || ""); toast.success("Link copied"); } },
-          });
         }
       } else {
+        if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
         toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
       }
     } catch {
+      if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
       toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
     } finally { setIsResolving(false); }
   }, [canResolve, isResolving, searchId, proposalId, resultsBase, t, airlineName, flight]);

@@ -182,50 +182,11 @@ serve(async (req) => {
     const base = rb && rb.startsWith("http") ? rb.replace(/\/$/, "") : "https://tickets-api.travelpayouts.com";
     const urlWithMarker = `${base}/searches/${encodeURIComponent(search_id)}/clicks/${encodeURIComponent(proposal_id)}?marker=${encodeURIComponent(marker)}`;
 
-    // Fetch the Travelpayouts click endpoint server-side. It returns JSON
-    // containing a `url` field — the tracking URL (e.g. track.connect.travel-audience.com)
-    // that the BROWSER must open so the affiliate tracking pixel fires and
-    // the user is redirected to the airline/OTA.
-    console.log("[flight-search] click fetching:", urlWithMarker.slice(0, 160));
-    try {
-      const clickResp = await fetch(urlWithMarker, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "x-affiliate-user-id": token,
-          "User-Agent": req.headers.get("user-agent") || "GoFlyFinder/1.0",
-        },
-      });
-      const clickText = await clickResp.text();
-      if (!clickResp.ok) {
-        console.error("[flight-search] click failed:", clickResp.status, clickText.slice(0, 300));
-        return json({ ok: false, step: "click", error: `click failed (${clickResp.status})` }, 502);
-      }
-      let clickData: any;
-      try {
-        clickData = JSON.parse(clickText);
-      } catch {
-        console.error("[flight-search] click response not JSON:", clickText.slice(0, 200));
-        return json({ ok: false, step: "click", error: "invalid click response" }, 502);
-      }
-      console.log("[flight-search] click FULL JSON:", JSON.stringify(clickData));
-      const trackingUrl: string | null =
-        clickData?.url ||
-        clickData?.redirect_url ||
-        clickData?.tracking_url ||
-        clickData?.click_url ||
-        null;
-      if (!trackingUrl) {
-        console.error("[flight-search] click missing url field:", JSON.stringify(clickData).slice(0, 300));
-        return json({ ok: false, step: "click", error: "no tracking url returned" }, 502);
-      }
-      console.log("[flight-search] click tracking URL:", trackingUrl.slice(0, 160));
-      return json({ ok: true, step: "click", deal_url: trackingUrl });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("[flight-search] click error:", msg);
-      return json({ ok: false, step: "click", error: msg }, 502);
-    }
+    // Travelpayouts rejects server-side fetches from the Edge runtime (HTTP 403).
+    // Return the raw tickets-api click URL; the BROWSER will fetch it, parse the
+    // JSON `url` field, and navigate the user to the airline/OTA.
+    console.log("[flight-search] click returning raw tickets-api URL:", urlWithMarker.slice(0, 160));
+    return json({ ok: true, step: "click", deal_url: urlWithMarker });
   }
 
   // ============ ACTION: results (poll only) ============
