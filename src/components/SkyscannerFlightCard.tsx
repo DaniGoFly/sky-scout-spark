@@ -378,6 +378,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             console.log("[handleViewDeal] tickets-api JSON:", data);
             if (data && typeof data.url === "string" && data.url) {
               console.log("[handleViewDeal] data.url:", data.url);
+              alert(data.url);
               finalUrl = data.url;
             }
           } catch (err) {
