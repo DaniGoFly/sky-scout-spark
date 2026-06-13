@@ -182,12 +182,49 @@ serve(async (req) => {
     const base = rb && rb.startsWith("http") ? rb.replace(/\/$/, "") : "https://tickets-api.travelpayouts.com";
     const urlWithMarker = `${base}/searches/${encodeURIComponent(search_id)}/clicks/${encodeURIComponent(proposal_id)}?marker=${encodeURIComponent(marker)}`;
 
-    // Return the Travelpayouts click URL directly so the BROWSER opens it.
-    // TP must receive the click from the user's browser (with real IP/UA/cookies)
-    // and perform its own tracking redirect to the airline/OTA. Any server-side
-    // fetch here would bypass TP tracking and result in 0 clicks in Reports.
-    console.log("[flight-search] click URL (browser will open):", urlWithMarker.slice(0, 160));
-    return json({ ok: true, step: "click", deal_url: urlWithMarker });
+    // Fetch the Travelpayouts click endpoint server-side. It returns JSON
+    // containing a `url` field — the tracking URL (e.g. track.connect.travel-audience.com)
+    // that the BROWSER must open so the affiliate tracking pixel fires and
+    // the user is redirected to the airline/OTA.
+    console.log("[flight-search] click fetching:", urlWithMarker.slice(0, 160));
+    try {
+      const clickResp = await fetch(urlWithMarker, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "x-affiliate-user-id": token,
+          "User-Agent": req.headers.get("user-agent") || "GoFlyFinder/1.0",
+        },
+      });
+      const clickText = await clickResp.text();
+      if (!clickResp.ok) {
+        console.error("[flight-search] click failed:", clickResp.status, clickText.slice(0, 300));
+        return json({ ok: false, step: "click", error: `click failed (${clickResp.status})` }, 502);
+      }
+      let clickData: any;
+      try {
+        clickData = JSON.parse(clickText);
+      } catch {
+        console.error("[flight-search] click response not JSON:", clickText.slice(0, 200));
+        return json({ ok: false, step: "click", error: "invalid click response" }, 502);
+      }
+      const trackingUrl: string | null =
+        clickData?.url ||
+        clickData?.redirect_url ||
+        clickData?.tracking_url ||
+        clickData?.click_url ||
+        null;
+      if (!trackingUrl) {
+        console.error("[flight-search] click missing url field:", JSON.stringify(clickData).slice(0, 300));
+        return json({ ok: false, step: "click", error: "no tracking url returned" }, 502);
+      }
+      console.log("[flight-search] click tracking URL:", trackingUrl.slice(0, 160));
+      return json({ ok: true, step: "click", deal_url: trackingUrl });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[flight-search] click error:", msg);
+      return json({ ok: false, step: "click", error: msg }, 502);
+    }
   }
 
   // ============ ACTION: results (poll only) ============
