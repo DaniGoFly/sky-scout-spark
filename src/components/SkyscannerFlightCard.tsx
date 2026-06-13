@@ -338,7 +338,6 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   const handleViewDeal = useCallback(async () => {
     if (!canResolve || isResolving) return;
-    const newTab = window.open("about:blank", "_blank");
     setIsResolving(true);
 
     trackFlightClick({
@@ -366,22 +365,26 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       if (result.ok && result.deal_url) {
         const safeUrl = sanitizeDealUrl(result.deal_url);
         if (safeUrl) {
-          if (newTab && !newTab.closed) { newTab.location.href = safeUrl; }
-          else { const a = document.createElement("a"); a.href = safeUrl; a.target = "_blank"; a.rel = "noopener noreferrer"; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+          const openedWindow = window.open(safeUrl, "_blank", "noopener,noreferrer");
+          if (!openedWindow) {
+            const a = document.createElement("a");
+            a.href = safeUrl;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
         } else {
-          // Malformed URL — offer to copy
-          if (newTab && !newTab.closed) newTab.close();
           toast.error("Link may not be secure", {
             description: "The booking link could not be verified. You can copy it manually.",
             action: { label: "Copy link", onClick: () => { navigator.clipboard.writeText(result.deal_url || ""); toast.success("Link copied"); } },
           });
         }
       } else {
-        if (newTab && !newTab.closed) newTab.close();
         toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
       }
     } catch {
-      if (newTab && !newTab.closed) newTab.close();
       toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
     } finally { setIsResolving(false); }
   }, [canResolve, isResolving, searchId, proposalId, resultsBase, t, airlineName, flight]);
