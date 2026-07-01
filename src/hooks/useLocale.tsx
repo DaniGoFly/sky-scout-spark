@@ -99,6 +99,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CURRENCY_KEY, upper);
     localStorage.setItem(CURRENCY_LOCKED_KEY, "true");
     console.log("[locale] currency changed →", upper);
+    // Force rate refetch/prefetch for the new currency pair.
+    ensureFxRates().then((r) => { if (r) console.log("[fx] rates ready for", upper); });
   }, []);
 
   /** Reset to auto mode — re-derive from current language */
