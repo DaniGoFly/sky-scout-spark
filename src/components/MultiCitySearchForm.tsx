@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Plus, X, Search, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import AirportAutocomplete from "./AirportAutocomplete";
 import TravelersPicker, { TravelersData } from "./TravelersPicker";
 import { cn } from "@/lib/utils";
@@ -43,23 +44,6 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [openCalendarSegmentId, setOpenCalendarSegmentId] = useState<string | null>(null);
-  const calendarWrapRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  useEffect(() => {
-    if (!openCalendarSegmentId) return;
-    // On mobile, calendar is a fixed modal — no outside-click dismiss needed
-    if (isMobile) return;
-
-    const onDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const activeWrapper = calendarWrapRefs.current[openCalendarSegmentId];
-      if (activeWrapper?.contains(target)) return;
-      setOpenCalendarSegmentId(null);
-    };
-
-    document.addEventListener("mousedown", onDown, true);
-    return () => document.removeEventListener("mousedown", onDown, true);
-  }, [openCalendarSegmentId, isMobile]);
 
   const addSegment = () => {
     if (segments.length >= 5) return;
