@@ -86,7 +86,14 @@ export const aviasalesProvider: FlightProvider = {
     const results_base = String(context?.results_base ?? "");
 
     return data.flights.map((f: any): NormalizedFlight => {
-      const localId = String(f.id ?? `${f.click_id ?? "x"}`);
+      // Upstream may emit `id` as "SEARCHID-PROPOSALID" or just the proposal UUID.
+      // Prefer explicit click_id; else extract from id; else fall back to id.
+      const rawId = String(f.id ?? "");
+      const clickId = String(
+        f.click_id ??
+          (rawId.includes("-") && rawId.length > 36 ? rawId.split("-").slice(-5).join("-") : rawId),
+      );
+      const localId = rawId || clickId || crypto.randomUUID();
       const airline = String(f.airlines?.[0] ?? "XX");
       const segments = Array.isArray(f.segments) ? f.segments : [];
       const legs = segments.map((s: any, i: number) => ({
@@ -124,9 +131,9 @@ export const aviasalesProvider: FlightProvider = {
         stopsAirports: f.stopsAirports,
         airlines: f.airlines,
         flightNumbers: f.flightNumbers,
-        search_id: f.search_id ?? search_id,
-        click_id: f.click_id,
-        results_base: f.results_base ?? results_base,
+        search_id: String(f.search_id ?? search_id ?? ""),
+        click_id: clickId,
+        results_base: String(f.results_base ?? results_base ?? ""),
         booking_url: f.booking_url ?? "",
         origin: f.origin,
         destination: f.destination,

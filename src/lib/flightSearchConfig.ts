@@ -15,7 +15,7 @@ const YCP_ANON_KEY =
 // keeps working. Default false to preserve the current Aviasales-direct path
 // until the aggregator has been smoke-tested; flip to true to activate merged
 // multi-provider search.
-export const USE_PROVIDER_AGGREGATOR = false;
+export const USE_PROVIDER_AGGREGATOR = true;
 
 const PRIMARY_SUPABASE_URL = "https://kvhykvuvsbmcselojbcn.supabase.co";
 const PRIMARY_ANON_KEY =
