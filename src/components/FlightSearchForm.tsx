@@ -311,43 +311,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
     return (
       <div className="w-full">
         <div className="flex items-center gap-2 mb-4">
-          <div className="relative">
-            <button
-              ref={tripTypeButtonRef}
-              onClick={() => setTripTypeOpen(!tripTypeOpen)}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-border/30 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
-            >
-              {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-
-            {tripTypeOpen && (
-              <div
-                ref={tripTypeMenuRef}
-                className="absolute left-0 top-full mt-2 z-50 min-w-[160px] bg-card border border-border rounded-xl shadow-xl overflow-hidden"
-              >
-                {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => {
-                      setTripType(type);
-                      setTripTypeOpen(false);
-                    }}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
-                      tripType === type
-                        ? "bg-primary/15 text-primary font-medium"
-                        : "text-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    {type === "roundtrip"
-                      ? t("search.roundtrip")
-                      : type === "oneway"
-                        ? t("search.oneway")
-                        : t("search.multicity")}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} />
         </div>
         <MultiCitySearchForm onSearch={handleMultiCitySearch} />
       </div>
@@ -366,43 +330,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
     <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-visible">
       {/* ── Trip type pill ── */}
       <div className="flex items-center justify-start gap-3">
-        <div className="relative">
-          <button
-            ref={tripTypeButtonRef}
-            onClick={() => setTripTypeOpen(!tripTypeOpen)}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-border/30 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
-          >
-            {tripTypeLabel} <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-
-          {tripTypeOpen && (
-            <div
-              ref={tripTypeMenuRef}
-              className="absolute left-0 top-full mt-2 z-50 min-w-[160px] bg-card border border-border rounded-xl shadow-xl overflow-hidden"
-            >
-              {(["roundtrip", "oneway", "multicity"] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => {
-                    setTripType(type);
-                    setTripTypeOpen(false);
-                  }}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
-                    tripType === type
-                      ? "bg-primary/15 text-primary font-medium"
-                      : "text-foreground hover:bg-secondary"
-                  }`}
-                >
-                  {type === "roundtrip"
-                    ? t("search.roundtrip")
-                    : type === "oneway"
-                      ? t("search.oneway")
-                      : t("search.multicity")}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} />
       </div>
 
       {/* ═══════════════════════════════════════════
