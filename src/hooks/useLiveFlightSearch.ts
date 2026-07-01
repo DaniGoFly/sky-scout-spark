@@ -209,6 +209,7 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
         });
       }
       console.log("[flight-search] POST directions", params.directions.map(d => `${d.origin}→${d.destination} ${d.date}`).join(", "));
+      console.log("[currency] sending to backend:", apiParams.currency);
 
       const data: SearchResponse = await apiSearchFlights(apiParams, controller.signal);
       if (controller.signal.aborted) return;
@@ -299,6 +300,11 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       setDebugData(debug);
       setFlights(flightResults);
       setStatus("complete");
+      console.log(
+        "[currency] provider returned:",
+        flightResults[0]?.price?.currency,
+        "(requested:", apiParams.currency, ")",
+      );
       storePriceHistory(params, flightResults);
     } catch (err) {
       if (controller.signal.aborted) return;
