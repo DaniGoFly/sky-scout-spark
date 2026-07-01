@@ -351,11 +351,15 @@ export function sortFlights(
       break;
     case "best":
     default:
-      // Weighted score: price + stops penalty + duration penalty
-      // Ties broken by price → duration → departureTime for stability
+      // Weighted score: price + stops penalty + duration penalty.
+      // Small reliability nudge: single-marketing-carrier itineraries
+      // (no interline mix across segments) get a tiny discount, so when
+      // prices are close a direct-airline offer ranks above an OTA-mixed
+      // one. Cheap offers are NEVER hidden — this only breaks near-ties.
+      // Ties broken by price → duration → departureTime for stability.
       sorted.sort((a, b) => {
-        const scoreA = a.price.amount + a.stopsCount * 80 + a.durationMinutes * 0.5;
-        const scoreB = b.price.amount + b.stopsCount * 80 + b.durationMinutes * 0.5;
+        const scoreA = bestScore(a);
+        const scoreB = bestScore(b);
         if (scoreA !== scoreB) return scoreA - scoreB;
         if (a.price.amount !== b.price.amount) return a.price.amount - b.price.amount;
         if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
@@ -365,6 +369,39 @@ export function sortFlights(
   }
 
   return sorted;
+}
+
+/**
+ * Count unique marketing carriers across all segments of a flight.
+ * Interline/OTA-mixed itineraries typically show >1 distinct code.
+ */
+function uniqueCarrierCount(f: Flight): number {
+  const anyF = f as any;
+  const codes = new Set<string>();
+  const segs: any[] = Array.isArray(anyF.segments) ? anyF.segments : [];
+  for (const s of segs) {
+    const list: string[] = Array.isArray(s?.airlines) ? s.airlines : [];
+    for (const c of list) if (c) codes.add(String(c).toUpperCase());
+    const single = s?.airlineCode ?? s?.marketing_carrier ?? s?.carrier;
+    if (single) codes.add(String(single).toUpperCase());
+  }
+  if (codes.size === 0 && Array.isArray(anyF.airlines)) {
+    for (const c of anyF.airlines) if (c) codes.add(String(c).toUpperCase());
+  }
+  if (codes.size === 0 && anyF.airline) codes.add(String(anyF.airline).toUpperCase());
+  return codes.size;
+}
+
+/**
+ * Best-sort composite score. Lower = better.
+ * Reliability bonus: up to 4% of price (capped at 25) for single-carrier
+ * itineraries. Kept small on purpose — must never eclipse real price gaps.
+ */
+function bestScore(f: Flight): number {
+  const base = f.price.amount + f.stopsCount * 80 + f.durationMinutes * 0.5;
+  const carriers = uniqueCarrierCount(f);
+  const singleCarrierBonus = carriers === 1 ? Math.min(25, f.price.amount * 0.04) : 0;
+  return base - singleCarrierBonus;
 }
 
 /**
@@ -378,12 +415,8 @@ export function getFlightStats(flights: Flight[]) {
   const fastest = flights.reduce((min, f) => 
     (f.durationMinutes < min.durationMinutes ? f : min), flights[0]);
 
-  // Best = lowest weighted score
-  const best = flights.reduce((best, f) => {
-    const scoreA = f.price.amount + f.stopsCount * 80 + f.durationMinutes * 0.5;
-    const scoreB = best.price.amount + best.stopsCount * 80 + best.durationMinutes * 0.5;
-    return scoreA < scoreB ? f : best;
-  }, flights[0]);
+  // Best = lowest weighted score (same scoring as sortFlights "best").
+  const best = flights.reduce((cur, f) => (bestScore(f) < bestScore(cur) ? f : cur), flights[0]);
 
   return { cheapest, fastest, best };
 }
