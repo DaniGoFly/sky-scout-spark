@@ -17,6 +17,7 @@ const PriceInsight = lazy(() => import("./PriceInsight"));
 const PriceGraph = lazy(() => import("./PriceGraph"));
 import TrustSignals from "./TrustSignals";
 import NearbyAirportAlert from "./NearbyAirportAlert";
+import ExpiredDealBanner from "./ExpiredDealBanner";
 import { useCartesianSearch, type CartesianFlight } from "@/hooks/useCartesianSearch";
 import { generateSearchCombos, expandFlexDates } from "@/lib/searchCombos";
 
