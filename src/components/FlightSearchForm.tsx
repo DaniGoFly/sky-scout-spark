@@ -29,6 +29,49 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
+type TripTypeMenuProps = {
+  tripType: "roundtrip" | "oneway" | "multicity";
+  setTripType: (t: "roundtrip" | "oneway" | "multicity") => void;
+  label: string;
+  t: (key: string, fallback?: string) => string;
+};
+
+function TripTypeMenu({ tripType, setTripType, label, t }: TripTypeMenuProps) {
+  const options = ["roundtrip", "oneway", "multicity"] as const;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-border/30 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
+        >
+          {label} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" sideOffset={8} className="min-w-[160px] bg-card border border-border rounded-xl shadow-xl overflow-hidden p-0">
+        {options.map((type) => (
+          <DropdownMenuItem
+            key={type}
+            onSelect={() => setTripType(type)}
+            className={cn(
+              "px-4 py-2.5 text-sm rounded-none cursor-pointer",
+              tripType === type
+                ? "bg-primary/15 text-primary font-medium focus:bg-primary/20"
+                : "text-foreground focus:bg-secondary"
+            )}
+          >
+            {type === "roundtrip"
+              ? t("search.roundtrip")
+              : type === "oneway"
+                ? t("search.oneway")
+                : t("search.multicity")}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
   onParamsConsumed?: () => void;
