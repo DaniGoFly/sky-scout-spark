@@ -161,29 +161,39 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
                 "min-w-0 relative overflow-visible px-5 py-3 transition-colors hover:bg-secondary/60 flex flex-col justify-center border-l border-border/20",
                 errors[`${segment.id}-date`] && "ring-2 ring-destructive/40"
               )}
-              ref={(el) => {
-                calendarWrapRefs.current[segment.id] = el;
-              }}
             >
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenCalendarSegmentId((prev) => (prev === segment.id ? null : segment.id))
-                }
-                className="w-full text-left focus:outline-none cursor-pointer"
+              <Popover
+                open={!isMobile && openCalendarSegmentId === segment.id}
+                onOpenChange={(open) => {
+                  if (isMobile) return;
+                  setOpenCalendarSegmentId(open ? segment.id : null);
+                }}
               >
-                <span className={SEG_LABEL}>Date</span>
-                <span className={cn(
-                  "block text-[14px] leading-[20px] mt-1.5 font-semibold whitespace-nowrap",
-                  segment.date ? "text-foreground" : "text-muted-foreground/40 font-normal"
-                )}>
-                  {segment.date ? format(segment.date, "d MMM yyyy") : "Select date"}
-                </span>
-              </button>
-
-              {/* Desktop: inline absolute calendar */}
-              {!isMobile && openCalendarSegmentId === segment.id && (
-                <div className="absolute left-0 top-[calc(100%+8px)] z-[100] w-auto rounded-xl border border-border bg-[hsl(222_40%_12%)] p-0 shadow-xl isolation-auto" style={{ backdropFilter: 'none' }}>
+                <PopoverAnchor asChild>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenCalendarSegmentId((prev) => (prev === segment.id ? null : segment.id))
+                    }
+                    className="w-full text-left focus:outline-none cursor-pointer"
+                  >
+                    <span className={SEG_LABEL}>Date</span>
+                    <span className={cn(
+                      "block text-[14px] leading-[20px] mt-1.5 font-semibold whitespace-nowrap",
+                      segment.date ? "text-foreground" : "text-muted-foreground/40 font-normal"
+                    )}>
+                      {segment.date ? format(segment.date, "d MMM yyyy") : "Select date"}
+                    </span>
+                  </button>
+                </PopoverAnchor>
+                <PopoverContent
+                  align="start"
+                  sideOffset={8}
+                  collisionPadding={16}
+                  avoidCollisions
+                  className="w-auto p-0 rounded-xl border border-border bg-[hsl(222_40%_12%)] shadow-xl max-h-[calc(100vh-2rem)] overflow-y-auto"
+                  style={{ backdropFilter: 'none' }}
+                >
                   <CalendarComponent
                     mode="single"
                     selected={segment.date || undefined}
@@ -200,9 +210,10 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
                       }
                       return false;
                     }}
+                    className="p-3 pointer-events-auto"
                   />
-                </div>
-              )}
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Remove button */}
