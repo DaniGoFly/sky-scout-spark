@@ -95,18 +95,12 @@ export const aviasalesProvider: FlightProvider = {
       );
       const localId = rawId || clickId || crypto.randomUUID();
       const airline = String(f.airlines?.[0] ?? "XX");
-      const segments = Array.isArray(f.segments) ? f.segments : [];
-      const legs = segments.map((s: any, i: number) => ({
-        airlineCode: String(
-          s?.marketing_carrier ?? s?.carrier ?? f.airlines?.[i] ?? airline,
-        ).toUpperCase(),
-        flightNumber: String(s?.flight_number ?? s?.number ?? f.flightNumbers?.[i] ?? ""),
-        departureAirport: String(s?.origin ?? s?.departure ?? "").toUpperCase(),
-        arrivalAirport: String(s?.destination ?? s?.arrival ?? "").toUpperCase(),
-        departureTime: String(s?.departure_at ?? s?.local_departure ?? ""),
-        arrivalTime: String(s?.arrival_at ?? s?.local_arrival ?? ""),
-        durationMinutes: Number(s?.duration ?? 0) || 0,
-      }));
+      // IMPORTANT: pass upstream segments through UNCHANGED. The frontend card
+      // reads them with the raw Aviasales field names (origin/destination/
+      // departure_at/arrival_at). If we rename fields here, the return-flight
+      // row renders empty. The interface's normalized-leg view is derived
+      // on-the-fly by merge.ts for dedupe only.
+      const rawSegments: any[] = Array.isArray(f.segments) ? f.segments : [];
 
       return {
         id: `aviasales:${localId}`,
@@ -122,7 +116,7 @@ export const aviasalesProvider: FlightProvider = {
         durationMinutes: Number(f.durationMinutes ?? 0),
         stopsCount: Number(f.stopsCount ?? 0),
         layovers: Array.isArray(f.stopsAirports) ? f.stopsAirports : [],
-        segments: legs,
+        segments: rawSegments,
         deepLink: "",   // resolved lazily via getClickUrl
         clickUrl: "",
 
