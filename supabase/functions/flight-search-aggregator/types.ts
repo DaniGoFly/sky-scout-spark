@@ -46,6 +46,9 @@ export interface NormalizedFlight {
   search_id?: string;
   click_id?: string;
   results_base?: string;
+  searchId?: string;
+  resultsBase?: string;
+  proposalId?: string;
   booking_url?: string;
   origin?: string;
   destination?: string;
