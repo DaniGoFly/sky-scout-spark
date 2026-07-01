@@ -29,14 +29,12 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-type TripTypeMenuProps = {
+function TripTypeMenu({ tripType, setTripType, label, t }: {
   tripType: "roundtrip" | "oneway" | "multicity";
   setTripType: (t: "roundtrip" | "oneway" | "multicity") => void;
   label: string;
-  t: (key: string, fallback?: string) => string;
-};
-
-function TripTypeMenu({ tripType, setTripType, label, t }: TripTypeMenuProps) {
+  t: any;
+}) {
   const options = ["roundtrip", "oneway", "multicity"] as const;
   return (
     <DropdownMenu>
