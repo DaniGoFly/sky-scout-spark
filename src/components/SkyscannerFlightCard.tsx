@@ -580,6 +580,14 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   const apiCurrency = flight.price?.currency;
 
+  // Show a note when the partner will bill in a different currency than the
+  // one displayed on our card. Purely informational — does not block anything.
+  const currencyMismatch = !!(
+    apiCurrency &&
+    localeCurrency &&
+    String(apiCurrency).toUpperCase() !== String(localeCurrency).toUpperCase()
+  );
+
   const showScarcity = useMemo(() => shouldShowScarcity(
     airlineName, flight.origin || "", flight.destination || ""
   ), [airlineName, flight.origin, flight.destination]);
