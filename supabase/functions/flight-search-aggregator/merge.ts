@@ -15,17 +15,19 @@ function fingerprint(f: NormalizedFlight): string {
       f.stopsCount,
     ].join("|");
   }
+  // Segments are passed through in provider-native shape (Aviasales/Kiwi/etc.
+  // each use different field names). Read every plausible field so dedupe
+  // still works uniformly across providers.
   return f.segments
-    .map((s) =>
-      [
-        s.airlineCode,
-        s.flightNumber,
-        s.departureAirport,
-        s.arrivalAirport,
-        s.departureTime,
-        s.arrivalTime,
-      ].join(":"),
-    )
+    .map((s: any) => {
+      const carrier = s.airlineCode ?? s.marketing_carrier ?? s.carrier ?? "";
+      const fnum = s.flightNumber ?? s.flight_number ?? s.number ?? "";
+      const dep = s.departureAirport ?? s.origin ?? s.departure ?? "";
+      const arr = s.arrivalAirport ?? s.destination ?? s.arrival ?? "";
+      const depAt = s.departureTime ?? s.departure_at ?? s.local_departure ?? "";
+      const arrAt = s.arrivalTime ?? s.arrival_at ?? s.local_arrival ?? "";
+      return [carrier, fnum, dep, arr, depAt, arrAt].join(":");
+    })
     .join("→");
 }
 
