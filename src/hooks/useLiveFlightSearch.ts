@@ -300,6 +300,11 @@ export function useLiveFlightSearch(): UseLiveFlightSearchResult {
       setDebugData(debug);
       setFlights(flightResults);
       setStatus("complete");
+      console.log(
+        "[currency] provider returned:",
+        flightResults[0]?.price?.currency,
+        "(requested:", apiParams.currency, ")",
+      );
       storePriceHistory(params, flightResults);
     } catch (err) {
       if (controller.signal.aborted) return;
