@@ -85,15 +85,18 @@ export const aviasalesProvider: FlightProvider = {
     const search_id = String(context?.search_id ?? "");
     const results_base = String(context?.results_base ?? "");
 
-    return data.flights.map((f: any): NormalizedFlight => {
-      // Upstream may emit `id` as "SEARCHID-PROPOSALID" or just the proposal UUID.
-      // Prefer explicit click_id; else extract from id; else fall back to id.
+    return data.flights.map((f: any, idx: number): NormalizedFlight => {
+      // Travelpayouts Tickets API requires the NUMERIC proposal id (e.g. "362:36")
+      // as click_id / proposalID. `f.id` is a UUID and must NEVER be used as
+      // click_id — doing so triggers `strconv.ParseInt … invalid syntax` upstream.
       const rawId = String(f.id ?? "");
-      const clickId = String(
-        f.click_id ??
-          (rawId.includes("-") && rawId.length > 36 ? rawId.split("-").slice(-5).join("-") : rawId),
-      );
-      const localId = rawId || clickId || crypto.randomUUID();
+      const proposalId = typeof f.proposalId === "string" || typeof f.proposalId === "number"
+        ? String(f.proposalId)
+        : "";
+      // Preserve original numeric click_id only. If missing, leave empty so the
+      // frontend disables "View Deal" for that card.
+      const clickId = proposalId;
+      const localId = rawId || proposalId || crypto.randomUUID();
       const airline = String(f.airlines?.[0] ?? "XX");
       // IMPORTANT: pass upstream segments through UNCHANGED. The frontend card
       // reads them with the raw Aviasales field names (origin/destination/
@@ -102,7 +105,10 @@ export const aviasalesProvider: FlightProvider = {
       // on-the-fly by merge.ts for dedupe only.
       const rawSegments: any[] = Array.isArray(f.segments) ? f.segments : [];
 
-      return {
+      const perFlightSearchId = String(f.searchId ?? f.search_id ?? search_id ?? "");
+      const perFlightResultsBase = String(f.resultsBase ?? f.results_base ?? results_base ?? "");
+
+      const normalized: NormalizedFlight = {
         id: `aviasales:${localId}`,
         provider: "aviasales",
         price: Number(f.price?.amount ?? 0),
@@ -125,13 +131,28 @@ export const aviasalesProvider: FlightProvider = {
         stopsAirports: f.stopsAirports,
         airlines: f.airlines,
         flightNumbers: f.flightNumbers,
-        search_id: String(f.search_id ?? search_id ?? ""),
+        search_id: perFlightSearchId,
+        searchId: perFlightSearchId,
         click_id: clickId,
-        results_base: String(f.results_base ?? results_base ?? ""),
+        proposalId,
+        results_base: perFlightResultsBase,
+        resultsBase: perFlightResultsBase,
         booking_url: f.booking_url ?? "",
         origin: f.origin,
         destination: f.destination,
       };
+
+      if (idx === 0) {
+        console.log("[aviasales.normalize] sample", {
+          id: normalized.id,
+          provider: normalized.provider,
+          click_id: clickId,
+          search_id: perFlightSearchId,
+          results_base: perFlightResultsBase,
+        });
+      }
+
+      return normalized;
     });
   },
 
@@ -141,6 +162,11 @@ export const aviasalesProvider: FlightProvider = {
     const results_base = String(params.extra?.results_base ?? "");
     if (!search_id || !proposal_id) {
       return { ok: false, error: "missing search_id or proposal_id" };
+    }
+    // Guard: proposal_id must be the original Travelpayouts numeric id (e.g. "362:36"),
+    // NOT a UUID. Reject UUID-shaped values before hitting upstream.
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(proposal_id)) {
+      return { ok: false, error: "invalid proposal_id (UUID not accepted by Travelpayouts)" };
     }
     try {
       const resp = await fetch(AVIASALES_UPSTREAM_URL, {
