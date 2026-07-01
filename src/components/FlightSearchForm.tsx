@@ -89,7 +89,6 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
   /* ── Calendar panel open state (lifted) ── */
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarInitialTab, setCalendarInitialTab] = useState<"specific" | "flexible" | undefined>(undefined);
-  const [tripTypeOpen, setTripTypeOpen] = useState(false);
 
   useImperativeHandle(ref, () => ({
     openFlexDates: () => {
@@ -98,23 +97,6 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
       setCalendarOpen(true);
     },
   }));
-
-  // Refs for trip type dropdown
-  const tripTypeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const tripTypeMenuRef = useRef<HTMLDivElement | null>(null);
-
-  // Close trip type menu on outside click
-  useEffect(() => {
-    if (!tripTypeOpen) return;
-    const onDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (tripTypeButtonRef.current?.contains(target)) return;
-      if (tripTypeMenuRef.current?.contains(target)) return;
-      setTripTypeOpen(false);
-    };
-    document.addEventListener("mousedown", onDown, true);
-    return () => document.removeEventListener("mousedown", onDown, true);
-  }, [tripTypeOpen]);
 
   // ── AI params ──
   useEffect(() => {
