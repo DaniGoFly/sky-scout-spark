@@ -11,9 +11,11 @@ const YCP_ANON_KEY =
 
 // Feature flag: route search + click through the provider-based aggregator
 // (supabase/functions/flight-search-aggregator on the primary project).
-// Aggregator's response shape is a superset of the legacy flight-search shape
-// so the UI keeps working. Flip to false to fall back to direct Aviasales.
-export const USE_PROVIDER_AGGREGATOR = true;
+// Response shape is a superset of the legacy flight-search shape so the UI
+// keeps working. Default false to preserve the current Aviasales-direct path
+// until the aggregator has been smoke-tested; flip to true to activate merged
+// multi-provider search.
+export const USE_PROVIDER_AGGREGATOR = false;
 
 const PRIMARY_SUPABASE_URL = "https://kvhykvuvsbmcselojbcn.supabase.co";
 const PRIMARY_ANON_KEY =
