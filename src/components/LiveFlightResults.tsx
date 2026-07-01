@@ -17,6 +17,7 @@ const PriceInsight = lazy(() => import("./PriceInsight"));
 const PriceGraph = lazy(() => import("./PriceGraph"));
 import TrustSignals from "./TrustSignals";
 import NearbyAirportAlert from "./NearbyAirportAlert";
+import ExpiredDealBanner from "./ExpiredDealBanner";
 import { useCartesianSearch, type CartesianFlight } from "@/hooks/useCartesianSearch";
 import { generateSearchCombos, expandFlexDates } from "@/lib/searchCombos";
 
@@ -738,6 +739,7 @@ const LiveFlightResults = () => {
                 <PriceGraph origin={from} destination={to} departDate={depart} returnDate={returnDate} cabinClass={tripClass} adults={adults} />
               </Suspense>
               <MemoizedSortTabs flights={dedupedFlights} sortBy={sortBy} onSortChange={handleSortChange} />
+              <ExpiredDealBanner onRefresh={handleRefreshPrices} />
               <div className="flex items-center gap-2 px-1 flex-wrap">
                 {isRevalidating && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

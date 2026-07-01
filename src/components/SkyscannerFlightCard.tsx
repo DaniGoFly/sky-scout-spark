@@ -399,6 +399,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       }
 
       console.log("[handleViewDeal] navigating to:", safeUrl);
+      try { sessionStorage.setItem("gofly.lastDealClick", String(Date.now())); } catch {}
       window.location.href = safeUrl;
     } catch (err) {
       console.warn("[handleViewDeal] resolve failed:", err);
