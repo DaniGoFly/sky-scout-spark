@@ -6,6 +6,9 @@ enabled = true
 [functions.flight-search]
 verify_jwt = false
 
+[functions.flight-search-aggregator]
+verify_jwt = false
+
 [functions.flights-search]
 verify_jwt = false
 
