@@ -580,6 +580,14 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
 
   const apiCurrency = flight.price?.currency;
 
+  // Show a note when the partner will bill in a different currency than the
+  // one displayed on our card. Purely informational — does not block anything.
+  const currencyMismatch = !!(
+    apiCurrency &&
+    localeCurrency &&
+    String(apiCurrency).toUpperCase() !== String(localeCurrency).toUpperCase()
+  );
+
   const showScarcity = useMemo(() => shouldShowScarcity(
     airlineName, flight.origin || "", flight.destination || ""
   ), [airlineName, flight.origin, flight.destination]);
@@ -673,7 +681,14 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             {!isBestValue && <div className="shrink-0">{saveButton}</div>}
             <div className="flex-1">{ctaButton}</div>
           </div>
-          <p className="text-[9px] text-muted-foreground/50 text-center leading-tight -mt-1">{t("card.opens_partner", "Opens partner booking – price may change")}</p>
+          <p className="text-[10px] text-muted-foreground/70 text-center leading-tight -mt-1">
+            {t("card.partner_confirm", "Price and availability are confirmed on the partner site.")}
+          </p>
+          {currencyMismatch && (
+            <p className="text-[10px] text-muted-foreground/60 text-center leading-tight">
+              {t("card.currency_note", "Final partner price may appear in a different currency.")}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -743,7 +758,14 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
             </div>
             <div className="flex flex-col items-end gap-2 mt-3">
               <div className="flex items-center gap-2">{saveButton}{ctaButton}</div>
-              <p className="text-[10px] text-muted-foreground/50 text-end leading-tight">{t("card.opens_partner_short", "Opens partner booking · Price may change")}</p>
+              <p className="text-[10px] text-muted-foreground/70 text-end leading-tight">
+                {t("card.partner_confirm", "Price and availability are confirmed on the partner site.")}
+              </p>
+              {currencyMismatch && (
+                <p className="text-[10px] text-muted-foreground/60 text-end leading-tight">
+                  {t("card.currency_note", "Final partner price may appear in a different currency.")}
+                </p>
+              )}
             </div>
           </div>
         </div>
