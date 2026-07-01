@@ -7,6 +7,7 @@ import {
   LANGUAGE_TO_CURRENCY,
   COUNTRY_TO_CURRENCY,
 } from "@/i18n/config";
+import { ensureFxRates, getCachedFxRates, convertAmount } from "@/lib/fxRates";
 
 interface LocaleContextValue {
   currency: string;
@@ -63,6 +64,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation();
   const [currency, setCurrencyState] = useState(getInitialCurrency);
   const [currencyLocked, setCurrencyLocked] = useState(getInitialLocked);
+  // Bumped every time FX rates load, so formatPrice re-runs and cards refresh.
+  const [fxTick, setFxTick] = useState(0);
 
   const locale = i18n.language || "en";
   const isRtl = isRtlLanguage(locale);
@@ -95,6 +98,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     setCurrencyLocked(true);
     localStorage.setItem(CURRENCY_KEY, upper);
     localStorage.setItem(CURRENCY_LOCKED_KEY, "true");
+    console.log("[locale] currency changed →", upper);
   }, []);
 
   /** Reset to auto mode — re-derive from current language */
@@ -110,6 +114,17 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const marketCode = useMemo(() => {
     return detectMarketCode();
   }, []);
+
+  // Fetch FX rates on mount and whenever currency changes, so we can
+  // convert prices returned by the provider into the user's currency.
+  useEffect(() => {
+    let cancelled = false;
+    ensureFxRates().then((r) => {
+      if (cancelled) return;
+      if (r) setFxTick((n) => n + 1);
+    });
+    return () => { cancelled = true; };
+  }, [currency]);
 
   // Build full locale string for Intl (e.g., "de-DE", "en-US")
   const fullLocale = useMemo(() => {
@@ -137,22 +152,44 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
    * the price is formatted using the API's original currency to prevent
    * displaying a number with a mismatched currency symbol.
    */
+  /**
+   * Format a price for display.
+   * Always renders in the user-selected `currency`. When `apiCurrency`
+   * differs, we convert using cached FX rates (frankfurter.dev, ECB).
+   * If rates are unavailable, we fall back to the API currency so the
+   * displayed number matches the displayed symbol.
+   */
   const formatPrice = useCallback(
     (amount: number, apiCurrency?: string) => {
-      const effectiveCurrency =
-        apiCurrency && apiCurrency !== currency ? apiCurrency : currency;
+      const src = (apiCurrency || currency).toUpperCase();
+      const dst = currency.toUpperCase();
+      let value = amount;
+      let renderCurrency = dst;
+
+      if (src !== dst) {
+        const rates = getCachedFxRates();
+        const converted = convertAmount(amount, src, dst, rates);
+        if (converted != null && Number.isFinite(converted)) {
+          value = converted;
+        } else {
+          // No rate → render in the API currency to avoid symbol/value mismatch.
+          renderCurrency = src;
+        }
+      }
+
       try {
         return new Intl.NumberFormat(fullLocale, {
           style: "currency",
-          currency: effectiveCurrency,
+          currency: renderCurrency,
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
-        }).format(Math.round(amount));
+        }).format(Math.round(value));
       } catch {
-        return `${effectiveCurrency} ${Math.round(amount)}`;
+        return `${renderCurrency} ${Math.round(value)}`;
       }
     },
-    [fullLocale, currency]
+    // fxTick forces re-render when rates load after first paint.
+    [fullLocale, currency, fxTick],
   );
 
   const formatDate = useCallback(
