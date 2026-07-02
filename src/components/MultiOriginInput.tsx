@@ -344,7 +344,10 @@ const MultiOriginInput = ({
                       }
                     }}
                     onKeyDown={handleKeyDown}
-                    className="w-full min-w-0 bg-transparent text-[14px] font-normal leading-[20px] text-foreground outline-none placeholder:text-[14px] placeholder:font-normal placeholder:text-muted-foreground/40 overflow-hidden"
+                    className={cn(
+                      "w-full min-w-0 bg-transparent text-[14px] font-normal leading-[20px] text-foreground outline-none placeholder:text-[14px] placeholder:font-normal overflow-hidden",
+                      whiteMode ? "placeholder:text-[#4B5563]" : "placeholder:text-muted-foreground/40"
+                    )}
                     placeholder={values.length === 0 ? placeholder : addActionText}
                     autoComplete="off"
                     style={{ 
