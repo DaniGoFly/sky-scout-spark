@@ -29,11 +29,12 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-function TripTypeMenu({ tripType, setTripType, label, t }: {
+function TripTypeMenu({ tripType, setTripType, label, t, whitePanel }: {
   tripType: "roundtrip" | "oneway" | "multicity";
   setTripType: (t: "roundtrip" | "oneway" | "multicity") => void;
   label: string;
   t: any;
+  whitePanel?: boolean;
 }) {
   const options = ["roundtrip", "oneway", "multicity"] as const;
   return (
@@ -41,9 +42,14 @@ function TripTypeMenu({ tripType, setTripType, label, t }: {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-border/30 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
+          className={cn(
+            "flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm font-medium transition-all",
+            whitePanel
+              ? "border-[#E5E7EB] bg-white text-[#111827] hover:border-[#111827]/30 shadow-sm"
+              : "border-border/30 text-muted-foreground hover:text-foreground hover:border-border/50"
+          )}
         >
-          {label} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+          {label} <ChevronDown className={cn("w-3.5 h-3.5", whitePanel ? "text-[#6B7280]" : "text-muted-foreground")} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={8} className="min-w-[160px] bg-card border border-border rounded-xl shadow-xl overflow-hidden p-0">
