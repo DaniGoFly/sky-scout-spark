@@ -245,7 +245,7 @@ const MultiOriginInput = ({
           {(visibleChips.length > 0 || hasOverflow) && (
             <div className="flex flex-[0_0_auto] items-center gap-1.5">
               {visibleChips.map((v) => (
-                <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} />
+                <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} whiteMode={whiteMode} />
               ))}
 
               {hasOverflow && (
