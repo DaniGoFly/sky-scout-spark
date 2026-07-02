@@ -10,9 +10,10 @@ interface NearbyToggleProps {
   onRadiusChange: (radius: number) => void;
   disabled?: boolean;
   whiteMode?: boolean;
+  darkLabels?: boolean;
 }
 
-const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = false, whiteMode = false }: NearbyToggleProps) => (
+const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = false, whiteMode = false, darkLabels = false }: NearbyToggleProps) => (
   <div className="flex h-full min-h-[44px] w-full min-w-0 flex-col justify-start relative z-10 pointer-events-auto">
     <label className={cn("flex min-h-[36px] md:min-h-0 md:h-5 items-center gap-2 select-none", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
       <Checkbox
