@@ -109,7 +109,9 @@ const MultiCitySearchForm = ({ onSearch, whitePanel = false }: MultiCitySearchFo
     : -1;
 
   /* Style tokens matching the standard search bar */
-  const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
+  const SEG_LABEL = whitePanel
+    ? "text-[10px] font-semibold text-[#111827] uppercase tracking-[0.12em] leading-none"
+    : "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
 
   return (
     <div className="space-y-2">
@@ -117,7 +119,12 @@ const MultiCitySearchForm = ({ onSearch, whitePanel = false }: MultiCitySearchFo
       {segments.map((segment, index) => (
         <div
           key={segment.id}
-          className="w-full border border-border/10 bg-background/60 backdrop-blur-sm rounded-2xl overflow-visible"
+          className={cn(
+            "w-full rounded-2xl overflow-visible",
+            whitePanel
+              ? "bg-white border border-[#E5E7EB] shadow-[0_12px_40px_rgba(0,0,0,0.12)] search-bar-light"
+              : "border border-border/10 bg-background/60 backdrop-blur-sm"
+          )}
         >
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] items-stretch">
             {/* From */}
