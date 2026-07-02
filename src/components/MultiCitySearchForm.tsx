@@ -30,7 +30,7 @@ interface MultiCitySearchFormProps {
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
-const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
+const MultiCitySearchForm = ({ onSearch, whitePanel = false }: MultiCitySearchFormProps) => {
   const isMobile = useIsMobile();
   const [segments, setSegments] = useState<FlightSegment[]>([
     { id: generateId(), from: null, to: null, date: null },
