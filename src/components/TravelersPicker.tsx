@@ -21,6 +21,7 @@ interface TravelersPickerProps {
   compact?: boolean;
   bare?: boolean;
   segmentMode?: boolean;
+  whiteMode?: boolean;
 }
 
 const MAX_TRAVELERS = 9;
