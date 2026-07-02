@@ -80,6 +80,7 @@ interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
   onParamsConsumed?: () => void;
   whitePanel?: boolean;
+  darkOptionLabels?: boolean;
 }
 
 export interface FlightSearchFormHandle {
