@@ -56,16 +56,18 @@ const ActiveFilterChips = ({
     <div className="flex flex-wrap items-center gap-1.5">
       {chips.map((chip, i) => (
         <button
-          key={i}
+          key={`${chip.label}-${i}`}
+          type="button"
           onClick={chip.onRemove}
+          aria-label={`Remove filter ${chip.label}`}
           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
         >
           {chip.label}
-          <X className="w-3 h-3" />
+          <X className="w-3 h-3" aria-hidden="true" />
         </button>
       ))}
       {chips.length > 1 && (
-        <button onClick={onClearAll} className="text-xs text-muted-foreground hover:text-foreground underline ms-1">
+        <button type="button" onClick={onClearAll} className="text-xs text-muted-foreground hover:text-foreground underline ms-1">
           {t("chips.clear_all")}
         </button>
       )}
