@@ -462,7 +462,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <div className={`h-full w-full px-5 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
                 <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
                 {tripType === "roundtrip" ? (
-                  <TripLengthSlider value={tripLength} onChange={setTripLength} />
+                  <TripLengthSlider value={tripLength} onChange={setTripLength} whiteMode={whitePanel} />
                 ) : (
                   <span className={`${SEG_PLACEHOLDER} text-[13px]`}>{t("search_form.flexible_departure")}</span>
                 )}
@@ -485,6 +485,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                       segmentLabel={t("calendar.depart")}
                       segmentDisplay={departDisplay}
                       onOpenCalendar={handleOpenCalendar}
+                      whiteMode={whitePanel}
                     />
                   </div>
                   <div className="px-5 py-3 relative z-30 flex flex-col justify-center">
@@ -501,6 +502,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                       segmentLabel={t("calendar.return", "Return")}
                       segmentDisplay={returnDisplay}
                       onOpenCalendar={handleOpenCalendar}
+                      whiteMode={whitePanel}
                     />
                   </div>
                 </div>
@@ -519,6 +521,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                     segmentLabel={t("calendar.depart")}
                     segmentDisplay={departDisplay}
                     onOpenCalendar={handleOpenCalendar}
+                    whiteMode={whitePanel}
                   />
                 </div>
               )}
@@ -527,7 +530,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
 
             {/* TRAVELERS */}
             <div className="w-full px-5 py-3 transition-colors hover:bg-secondary/60 border-l border-border/20 cursor-pointer flex flex-col justify-center">
-              <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+              <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode whiteMode={whitePanel} />
             </div>
 
             {/* SEARCH BUTTON */}
