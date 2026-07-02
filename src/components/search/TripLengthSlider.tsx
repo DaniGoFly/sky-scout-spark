@@ -1,4 +1,5 @@
 import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
 interface TripLengthSliderProps {
   value: [number, number];
