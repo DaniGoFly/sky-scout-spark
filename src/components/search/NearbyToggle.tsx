@@ -41,7 +41,7 @@ const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = fa
           step={25}
           className="w-[140px] shrink-0"
         />
-        <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap font-medium">
+        <span className={cn("text-[11px] tabular-nums whitespace-nowrap font-medium", whiteMode ? "text-[#6B7280]" : "text-muted-foreground")}>
           {radius} km
         </span>
       </div>
