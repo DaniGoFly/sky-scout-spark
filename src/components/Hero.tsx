@@ -136,6 +136,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                 aiSearchParams={aiSearchParams}
                 onParamsConsumed={handleParamsConsumed}
                 whitePanel
+                darkOptionLabels
               />
             </div>
           </div>
