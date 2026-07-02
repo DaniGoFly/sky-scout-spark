@@ -188,7 +188,9 @@ const MultiCitySearchForm = ({ onSearch, whitePanel = false }: MultiCitySearchFo
                     <span className={SEG_LABEL}>Date</span>
                     <span className={cn(
                       "block text-[14px] leading-[20px] mt-1.5 font-semibold whitespace-nowrap",
-                      segment.date ? "text-foreground" : "text-muted-foreground/40 font-normal"
+                      segment.date
+                        ? whitePanel ? "text-[#111827]" : "text-foreground"
+                        : whitePanel ? "text-[#4B5563] font-normal" : "text-muted-foreground/40 font-normal"
                     )}>
                       {segment.date ? format(segment.date, "d MMM yyyy") : "Select date"}
                     </span>
