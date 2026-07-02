@@ -73,6 +73,7 @@ function TripTypeMenu({ tripType, setTripType, label, t }: {
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
   onParamsConsumed?: () => void;
+  whitePanel?: boolean;
 }
 
 export interface FlightSearchFormHandle {
