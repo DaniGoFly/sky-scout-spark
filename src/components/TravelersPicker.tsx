@@ -26,7 +26,7 @@ interface TravelersPickerProps {
 
 const MAX_TRAVELERS = 9;
 
-const TravelersPicker = ({ value, onChange, compact = false, bare = false, segmentMode = false }: TravelersPickerProps) => {
+const TravelersPicker = ({ value, onChange, compact = false, bare = false, segmentMode = false, whiteMode = false }: TravelersPickerProps) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
