@@ -384,7 +384,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
     <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-visible">
       {/* ── Trip type pill ── */}
       <div className="flex items-center justify-start gap-3">
-        <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} />
+        <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} whitePanel={whitePanel} />
       </div>
 
       {/* ═══════════════════════════════════════════
