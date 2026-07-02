@@ -9,6 +9,7 @@ interface NearbyToggleProps {
   radius: number;
   onRadiusChange: (radius: number) => void;
   disabled?: boolean;
+  whiteMode?: boolean;
 }
 
 const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = false }: NearbyToggleProps) => (
