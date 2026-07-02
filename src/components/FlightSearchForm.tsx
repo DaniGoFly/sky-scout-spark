@@ -29,11 +29,12 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-function TripTypeMenu({ tripType, setTripType, label, t }: {
+function TripTypeMenu({ tripType, setTripType, label, t, whitePanel }: {
   tripType: "roundtrip" | "oneway" | "multicity";
   setTripType: (t: "roundtrip" | "oneway" | "multicity") => void;
   label: string;
   t: any;
+  whitePanel?: boolean;
 }) {
   const options = ["roundtrip", "oneway", "multicity"] as const;
   return (
@@ -41,9 +42,14 @@ function TripTypeMenu({ tripType, setTripType, label, t }: {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-border/30 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/50 transition-all"
+          className={cn(
+            "flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm font-medium transition-all",
+            whitePanel
+              ? "border-[#E5E7EB] bg-white text-[#111827] hover:border-[#111827]/30 shadow-sm"
+              : "border-border/30 text-muted-foreground hover:text-foreground hover:border-border/50"
+          )}
         >
-          {label} <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+          {label} <ChevronDown className={cn("w-3.5 h-3.5", whitePanel ? "text-[#6B7280]" : "text-muted-foreground")} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={8} className="min-w-[160px] bg-card border border-border rounded-xl shadow-xl overflow-hidden p-0">
@@ -73,6 +79,7 @@ function TripTypeMenu({ tripType, setTripType, label, t }: {
 interface FlightSearchFormProps {
   aiSearchParams?: AISearchParams | null;
   onParamsConsumed?: () => void;
+  whitePanel?: boolean;
 }
 
 export interface FlightSearchFormHandle {
@@ -95,7 +102,7 @@ const TRUST_KEYS = [
   { icon: Wifi, key: "trust.live_updates" },
 ];
 
-const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProps>(({ aiSearchParams, onParamsConsumed }, ref) => {
+const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProps>(({ aiSearchParams, onParamsConsumed, whitePanel = false }, ref) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { currency, marketCode } = useLocale();
@@ -352,9 +359,9 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
     return (
       <div className="w-full">
         <div className="flex items-center gap-2 mb-4">
-          <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} />
+          <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} whitePanel={whitePanel} />
         </div>
-        <MultiCitySearchForm onSearch={handleMultiCitySearch} />
+        <MultiCitySearchForm onSearch={handleMultiCitySearch} whitePanel={whitePanel} />
       </div>
     );
   }
@@ -362,16 +369,22 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
   const errRing = (has?: boolean) => has ? "ring-2 ring-destructive/40" : "";
 
   /* ── Segment style tokens ── */
-  const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
-  const SEG_VALUE = "text-[14px] font-semibold text-foreground leading-[20px] whitespace-nowrap";
-  const SEG_PLACEHOLDER = "text-[14px] font-normal text-muted-foreground/40 leading-[20px] whitespace-nowrap";
+  const SEG_LABEL = whitePanel
+    ? "text-[10px] font-semibold text-[#111827] uppercase tracking-[0.12em] leading-none"
+    : "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
+  const SEG_VALUE = whitePanel
+    ? "text-[14px] font-semibold text-[#111827] leading-[20px] whitespace-nowrap"
+    : "text-[14px] font-semibold text-foreground leading-[20px] whitespace-nowrap";
+  const SEG_PLACEHOLDER = whitePanel
+    ? "text-[14px] font-normal text-[#4B5563] leading-[20px] whitespace-nowrap"
+    : "text-[14px] font-normal text-muted-foreground/40 leading-[20px] whitespace-nowrap";
 
 
   return (
     <div className="w-full max-w-[1160px] mx-auto space-y-5 overflow-visible">
       {/* ── Trip type pill ── */}
       <div className="flex items-center justify-start gap-3">
-        <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} />
+        <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} whitePanel={whitePanel} />
       </div>
 
       {/* ═══════════════════════════════════════════
@@ -381,8 +394,11 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
         {/* Search bar */}
         <div
           className={cn(
-            "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm xl:h-[94px] overflow-visible",
+            "w-full min-w-0 max-w-full relative z-20 xl:h-[94px] overflow-visible",
             calendarOpen ? "rounded-t-2xl" : "rounded-2xl",
+            whitePanel
+              ? "bg-white border border-[#E5E7EB] shadow-[0_12px_40px_rgba(0,0,0,0.12)] search-bar-light"
+              : "border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] backdrop-blur-sm"
           )}
         >
           {/* Desktop: fixed slot grid */}
@@ -400,6 +416,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                 onChange={handleOriginsChange}
                 placeholder={t("search_form.placeholder_airport")}
                 bare
+                whiteMode={whitePanel}
               /></div>
             </div>
 
@@ -409,7 +426,12 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                 type="button"
                 onClick={swapLocations}
                 disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-                className="w-[32px] h-[32px] rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 hover:scale-105 disabled:opacity-20 transition-all cursor-pointer shadow-sm"
+                className={cn(
+                  "w-[32px] h-[32px] rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm",
+                  whitePanel
+                    ? "border-[#E5E7EB] bg-white text-[#6B7280] hover:text-primary hover:border-primary/30"
+                    : "border-border/40 bg-card text-muted-foreground hover:text-primary hover:border-primary/30"
+                )}
               >
                 <ArrowRightLeft className="w-3.5 h-3.5" />
               </button>
@@ -420,7 +442,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <span className={SEG_LABEL}>{t("search.to")}</span>
               <div className="mt-1.5">{anywhere ? (
                 <div className="flex items-center gap-1.5">
-                  <Globe className="w-4 h-4 text-primary shrink-0" />
+                  <Globe className={cn("w-4 h-4 shrink-0", whitePanel ? "text-[#6B7280]" : "text-primary")} />
                   <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
                 </div>
               ) : (
@@ -430,6 +452,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                   placeholder={t("search_form.placeholder_airport")}
                   multiLabel={t("search_form.multi_destination")}
                   bare
+                  whiteMode={whitePanel}
                 />
               )}</div>
             </div>
@@ -439,7 +462,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <div className={`h-full w-full px-5 py-3 flex flex-col justify-center transition-colors hover:bg-secondary/60 border-l border-border/20 ${errRing(!!errors.dates)}`}>
                 <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
                 {tripType === "roundtrip" ? (
-                  <TripLengthSlider value={tripLength} onChange={setTripLength} />
+                  <TripLengthSlider value={tripLength} onChange={setTripLength} whiteMode={whitePanel} />
                 ) : (
                   <span className={`${SEG_PLACEHOLDER} text-[13px]`}>{t("search_form.flexible_departure")}</span>
                 )}
@@ -462,6 +485,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                       segmentLabel={t("calendar.depart")}
                       segmentDisplay={departDisplay}
                       onOpenCalendar={handleOpenCalendar}
+                      whiteMode={whitePanel}
                     />
                   </div>
                   <div className="px-5 py-3 relative z-30 flex flex-col justify-center">
@@ -478,6 +502,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                       segmentLabel={t("calendar.return", "Return")}
                       segmentDisplay={returnDisplay}
                       onOpenCalendar={handleOpenCalendar}
+                      whiteMode={whitePanel}
                     />
                   </div>
                 </div>
@@ -496,6 +521,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                     segmentLabel={t("calendar.depart")}
                     segmentDisplay={departDisplay}
                     onOpenCalendar={handleOpenCalendar}
+                    whiteMode={whitePanel}
                   />
                 </div>
               )}
@@ -504,7 +530,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
 
             {/* TRAVELERS */}
             <div className="w-full px-5 py-3 transition-colors hover:bg-secondary/60 border-l border-border/20 cursor-pointer flex flex-col justify-center">
-              <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+              <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode whiteMode={whitePanel} />
             </div>
 
             {/* SEARCH BUTTON */}
@@ -525,23 +551,34 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               MOBILE/TABLET: Clean stacked search card
               ═══════════════════════════════════════════ */}
           <div className="xl:hidden flex flex-col gap-0">
-            <div className="rounded-2xl border border-border/20 bg-card/40 backdrop-blur-sm overflow-visible">
+            <div className={cn(
+              "rounded-2xl border overflow-visible",
+              whitePanel
+                ? "bg-white border-[#E5E7EB] shadow-[0_12px_40px_rgba(0,0,0,0.12)] search-bar-light"
+                : "border-border/20 bg-card/40 backdrop-blur-sm"
+            )}>
               {/* FROM row */}
               <div className={`departure-input-container flex items-center gap-3 px-4 min-h-[52px] ${errRing(!!errors.from)}`}>
-                <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                <div className={cn("w-4 h-4 rounded-full border-2 shrink-0", whitePanel ? "border-[#6B7280]/40" : "border-muted-foreground/30")} />
                 <div className="flex-1 min-w-0">
                   <MultiOriginInput
                     values={origins}
                     onChange={handleOriginsChange}
                     placeholder={t("search_form.placeholder_airport")}
                     bare
+                    whiteMode={whitePanel}
                   />
                 </div>
                 {/* Swap button */}
                 <div className="departure-input-actions flex items-center shrink-0">
                   <button type="button" onClick={swapLocations}
                     disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-                    className="w-9 h-9 rounded-full border border-border/30 bg-card flex items-center justify-center text-muted-foreground hover:text-primary disabled:opacity-20 transition-all shadow-sm active:scale-95"
+                    className={cn(
+                      "w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-sm active:scale-95",
+                      whitePanel
+                        ? "border-[#E5E7EB] bg-white text-[#6B7280] hover:text-primary disabled:opacity-20"
+                        : "border-border/30 bg-card text-muted-foreground hover:text-primary disabled:opacity-20"
+                    )}
                     aria-label="Swap"
                   >
                     <ArrowRightLeft className="w-3.5 h-3.5 rotate-90" />
@@ -553,11 +590,11 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
 
               {/* TO row */}
               <div className={`flex items-center gap-3 px-4 min-h-[52px] ${errRing(!!errors.to)}`}>
-                <MapPin className="w-4 h-4 text-muted-foreground/30 shrink-0" />
+                <MapPin className={cn("w-4 h-4 shrink-0", whitePanel ? "text-[#6B7280]" : "text-muted-foreground/30")} />
                 <div className="flex-1 min-w-0 pr-10">
                   {anywhere ? (
                     <div className="flex items-center gap-1.5 min-h-[28px]">
-                      <Globe className="w-4 h-4 text-primary shrink-0" />
+                      <Globe className={cn("w-4 h-4 shrink-0", whitePanel ? "text-[#6B7280]" : "text-primary")} />
                       <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
                     </div>
                   ) : (
@@ -567,6 +604,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                       placeholder={t("search_form.placeholder_destination", t("search_form.placeholder_airport"))}
                       multiLabel={t("search_form.multi_destination")}
                       bare
+                      whiteMode={whitePanel}
                     />
                   )}
                 </div>
@@ -579,7 +617,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                 <div className={`px-4 min-h-[52px] flex flex-col justify-center ${errRing(!!errors.dates)}`}>
                   <span className={SEG_LABEL}>{t("search_form.trip_length")}</span>
                   {tripType === "roundtrip" ? (
-                    <TripLengthSlider value={tripLength} onChange={setTripLength} />
+                    <TripLengthSlider value={tripLength} onChange={setTripLength} whiteMode={whitePanel} />
                   ) : (
                     <span className={`${SEG_PLACEHOLDER} text-[13px]`}>{t("search_form.flexible_departure")}</span>
                   )}
@@ -587,7 +625,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               ) : (
                 <div className={tripType === "roundtrip" ? "grid grid-cols-2" : ""}>
                   <div className={`flex items-center gap-3 px-4 min-h-[52px] cursor-pointer ${tripType === "roundtrip" ? "border-r border-border/15" : ""} ${errRing(!!errors.dates)}`}>
-                    <Calendar className="w-4 h-4 text-muted-foreground/30 shrink-0" />
+                    <Calendar className={cn("w-4 h-4 shrink-0", whitePanel ? "text-[#6B7280]" : "text-muted-foreground/30")} />
                     <div className="min-w-0 flex-1">
                       <FlightDateRangePicker
                         departDate={departDate} returnDate={returnDate}
@@ -595,6 +633,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                         tripType={tripType as "roundtrip" | "oneway"} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
                         bare segmentMode segmentLabel={t("calendar.depart")} segmentDisplay={departDisplay}
                         onOpenCalendar={handleOpenCalendar}
+                        whiteMode={whitePanel}
                       />
                     </div>
                   </div>
@@ -607,6 +646,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                           tripType={tripType} onTripTypeChange={handleTripTypeChange} hasError={!!errors.dates}
                           bare segmentMode segmentLabel={t("calendar.return", "Return")} segmentDisplay={returnDisplay}
                           onOpenCalendar={handleOpenCalendar}
+                          whiteMode={whitePanel}
                         />
                       </div>
                     </div>
@@ -618,30 +658,30 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
 
               {/* TRAVELERS row */}
               <div className="flex items-center gap-3 px-4 min-h-[52px] cursor-pointer">
-                <Users className="w-4 h-4 text-muted-foreground/30 shrink-0" />
+                <Users className={cn("w-4 h-4 shrink-0", whitePanel ? "text-[#6B7280]" : "text-muted-foreground/30")} />
                 <div className="flex-1 min-w-0">
-                  <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode />
+                  <TravelersPicker value={travelers} onChange={setTravelers} compact bare segmentMode whiteMode={whitePanel} />
                 </div>
               </div>
             </div>
 
             {/* ── Utility options — grouped cleanly ── */}
-            <div className="px-1 pt-3 pb-1 space-y-2">
+            <div className={cn("px-1 pt-3 pb-1 space-y-2", whitePanel && "search-bar-light")}>
               {/* Row 1: Direct flights + My location */}
               <div className="flex items-center gap-4 flex-wrap">
                 <label className="flex items-center gap-2 cursor-pointer select-none min-h-[36px]">
                   <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px] border-muted-foreground/30" />
-                  <span className="text-[12px] text-muted-foreground font-medium">{t("search.direct_flights_only")}</span>
+                  <span className={cn("text-[12px] font-medium", whitePanel ? "text-[#111827]" : "text-muted-foreground")}>{t("search.direct_flights_only")}</span>
                 </label>
-                <button onClick={handleUseMyLocation} className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-primary transition-colors cursor-pointer font-medium min-h-[36px]">
-                  <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
+                <button onClick={handleUseMyLocation} className={cn("flex items-center gap-1.5 text-[12px] transition-colors cursor-pointer font-medium min-h-[36px]", whitePanel ? "text-[#111827] hover:text-primary" : "text-muted-foreground hover:text-primary")}>
+                  <Navigation className={cn("w-3.5 h-3.5", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.use_location")}
                 </button>
               </div>
 
               {/* Row 2: Nearby airports */}
               <div className="flex items-start gap-4 flex-wrap">
-                <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
-                {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
+                <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} whiteMode={whitePanel} />
+                {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} whiteMode={whitePanel} />}
               </div>
 
               {/* Row 3: Any day + Anywhere */}
@@ -656,15 +696,15 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                     }}
                     className="h-4 w-4 rounded-[4px]"
                   />
-                  <span className="text-[12px] text-muted-foreground font-medium flex items-center gap-1">
-                    <CalendarOff className="w-3 h-3" /> {t("search.any_day", "Any day")}
+                  <span className={cn("text-[12px] font-medium flex items-center gap-1", whitePanel ? "text-[#111827]" : "text-muted-foreground")}>
+                    <CalendarOff className={cn("w-3 h-3", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.any_day", "Any day")}
                   </span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer select-none min-h-[36px]">
                   <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-4 w-4 rounded-[4px]" />
-                  <span className="text-[12px] text-muted-foreground font-medium flex items-center gap-1">
-                    <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
+                  <span className={cn("text-[12px] font-medium flex items-center gap-1", whitePanel ? "text-[#111827]" : "text-muted-foreground")}>
+                    <Globe className={cn("w-3 h-3", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.anywhere", "Anywhere")}
                   </span>
                 </label>
               </div>
@@ -731,13 +771,13 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
       </div>
 
       {/* ═══════════════════════════════════════════
-          DESKTOP OPTIONS ROW — UNCHANGED
+          DESKTOP OPTIONS ROW
           ═══════════════════════════════════════════ */}
-      <div className="hidden xl:flex w-full min-h-[44px] items-start justify-between gap-4 px-2 pr-6">
+      <div className={cn("hidden xl:flex w-full min-h-[44px] items-start justify-between gap-4 px-2 pr-6", whitePanel && "search-bar-light")}>
         {/* LEFT GROUP */}
         <div className="flex items-start gap-5 min-w-0 shrink">
           <div className="w-[200px] shrink-0">
-            <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
+            <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} whiteMode={whitePanel} />
           </div>
           <div className="w-[200px] shrink-0">
             <NearbyToggle
@@ -746,12 +786,13 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               radius={toRadius}
               onRadiusChange={setToRadius}
               disabled={anywhere}
+              whiteMode={whitePanel}
             />
           </div>
           <div className="shrink-0 pt-[2px]">
             <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap">
               <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
-              <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
+              <span className={cn("text-[12px] font-medium", whitePanel ? "text-[#111827]" : "text-muted-foreground/60")}>{t("search.direct_flights_only")}</span>
             </label>
           </div>
         </div>
@@ -760,21 +801,21 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
         <div className="flex items-start gap-5 shrink-0 pt-[2px]">
           <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
             <Checkbox checked={isAnyDay} onCheckedChange={checked => { const on = checked === true; setIsAnyDay(on); if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); setCalendarOpen(false); } }} className="h-4 w-4 rounded-[4px]" />
-            <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
-              <CalendarOff className="w-3 h-3" /> {t("search.any_day", "Any day")}
+            <span className={cn("text-[12px] font-medium flex items-center gap-1", whitePanel ? "text-[#111827]" : "text-muted-foreground/60")}>
+              <CalendarOff className={cn("w-3 h-3", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.any_day", "Any day")}
             </span>
           </label>
 
           <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-4 w-4 rounded-[4px]" />
-            <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
-              <Globe className="w-3 h-3 shrink-0" /> {t("search.anywhere", "Anywhere")}
+            <span className={cn("text-[12px] font-medium flex items-center gap-1", whitePanel ? "text-[#111827]" : "text-muted-foreground/60")}>
+              <Globe className={cn("w-3 h-3 shrink-0", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.anywhere", "Anywhere")}
             </span>
           </label>
 
           <button onClick={handleUseMyLocation}
-            className="flex h-5 items-center gap-1.5 text-[12px] text-muted-foreground/60 hover:text-primary transition-colors cursor-pointer whitespace-nowrap shrink-0 font-medium">
-            <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
+            className={cn("flex h-5 items-center gap-1.5 text-[12px] transition-colors cursor-pointer whitespace-nowrap shrink-0 font-medium", whitePanel ? "text-[#111827] hover:text-primary" : "text-muted-foreground/60 hover:text-primary")}>
+            <Navigation className={cn("w-3.5 h-3.5", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.use_location")}
           </button>
         </div>
       </div>

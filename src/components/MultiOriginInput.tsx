@@ -5,6 +5,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Loader2, Plus, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Place {
@@ -29,6 +30,7 @@ interface MultiOriginInputProps {
   compact?: boolean;
   multiLabel?: string;
   bare?: boolean;
+  whiteMode?: boolean;
 }
 
 const MAX_DEFAULT = 6;
@@ -40,11 +42,18 @@ const COMPACT_ADD_THRESHOLD_PX = 106;
 const AirportChip = ({
   airport,
   onRemove,
+  whiteMode,
 }: {
   airport: AirportSelection;
   onRemove: () => void;
+  whiteMode?: boolean;
 }) => (
-  <span className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-bold bg-primary/12 text-primary border border-primary/20 rounded-full shrink-0 select-none transition-colors hover:bg-primary/20 hover:border-primary/30">
+  <span className={cn(
+    "inline-flex items-center gap-1 h-6 px-2 text-[11px] font-bold border rounded-full shrink-0 select-none transition-colors",
+    whiteMode
+      ? "bg-[#F3F4F6] text-[#111827] border-[#E5E7EB] hover:bg-[#E5E7EB] hover:border-[#D1D5DB]"
+      : "bg-primary/12 text-primary border-primary/20 hover:bg-primary/20 hover:border-primary/30"
+  )}>
     {airport.code}
     <button
       type="button"
@@ -52,7 +61,7 @@ const AirportChip = ({
         e.stopPropagation();
         onRemove();
       }}
-      className="ml-0.5 rounded-full hover:text-destructive transition-colors p-px"
+      className={cn("ml-0.5 rounded-full transition-colors p-px", whiteMode ? "hover:text-[#6B7280]" : "hover:text-destructive")}
       aria-label={`Remove ${airport.code}`}
     >
       <X className="w-2.5 h-2.5" />
@@ -68,6 +77,7 @@ const MultiOriginInput = ({
   compact = false,
   multiLabel,
   bare = false,
+  whiteMode = false,
 }: MultiOriginInputProps) => {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Place[]>([]);
@@ -235,7 +245,7 @@ const MultiOriginInput = ({
           {(visibleChips.length > 0 || hasOverflow) && (
             <div className="flex flex-[0_0_auto] items-center gap-1.5">
               {visibleChips.map((v) => (
-                <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} />
+                <AirportChip key={v.code} airport={v} onRemove={() => handleRemove(v.code)} whiteMode={whiteMode} />
               ))}
 
               {hasOverflow && (
@@ -308,7 +318,7 @@ const MultiOriginInput = ({
                     setIsOpen(true);
                     requestAnimationFrame(() => inputRef.current?.focus());
                   }}
-                  className="flex-[0_0_auto] text-[14px] font-normal leading-[20px] text-muted-foreground/40 whitespace-nowrap"
+                  className={cn("flex-[0_0_auto] text-[14px] font-normal leading-[20px] whitespace-nowrap", whiteMode ? "text-[#4B5563]" : "text-muted-foreground/40")}
                 >
                   {addActionText}
                 </button>
@@ -334,7 +344,10 @@ const MultiOriginInput = ({
                       }
                     }}
                     onKeyDown={handleKeyDown}
-                    className="w-full min-w-0 bg-transparent text-[14px] font-normal leading-[20px] text-foreground outline-none placeholder:text-[14px] placeholder:font-normal placeholder:text-muted-foreground/40 overflow-hidden"
+                    className={cn(
+                      "w-full min-w-0 bg-transparent text-[14px] font-normal leading-[20px] text-foreground outline-none placeholder:text-[14px] placeholder:font-normal overflow-hidden",
+                      whiteMode ? "placeholder:text-[#4B5563]" : "placeholder:text-muted-foreground/40"
+                    )}
                     placeholder={values.length === 0 ? placeholder : addActionText}
                     autoComplete="off"
                     style={{ 

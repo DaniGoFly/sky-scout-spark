@@ -21,11 +21,12 @@ interface TravelersPickerProps {
   compact?: boolean;
   bare?: boolean;
   segmentMode?: boolean;
+  whiteMode?: boolean;
 }
 
 const MAX_TRAVELERS = 9;
 
-const TravelersPicker = ({ value, onChange, compact = false, bare = false, segmentMode = false }: TravelersPickerProps) => {
+const TravelersPicker = ({ value, onChange, compact = false, bare = false, segmentMode = false, whiteMode = false }: TravelersPickerProps) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -229,8 +230,8 @@ const TravelersPicker = ({ value, onChange, compact = false, bare = false, segme
   if (compact) {
     const trigger = segmentMode ? (
       <button type="button" className="w-full h-full text-left px-4 flex flex-col justify-center cursor-pointer focus:outline-none" onClick={() => setIsOpen((v) => !v)} aria-expanded={isOpen}>
-        <span className="block text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none">{t("travelers_picker.travellers")}</span>
-        <span className="block text-[14px] leading-[20px] mt-1.5 font-semibold text-foreground whitespace-nowrap">{getDisplayText()}</span>
+        <span className={cn("block text-[10px] font-semibold uppercase tracking-[0.12em] leading-none", whiteMode ? "text-[#111827]" : "text-muted-foreground/60")}>{t("travelers_picker.travellers")}</span>
+        <span className={cn("block text-[14px] leading-[20px] mt-1.5 font-semibold whitespace-nowrap", whiteMode ? "text-[#111827]" : "text-foreground")}>{getDisplayText()}</span>
       </button>
     ) : (
       <Button type="button" variant="outline" onClick={() => setIsOpen((v) => !v)}

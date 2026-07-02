@@ -167,6 +167,7 @@ const MobileHero = forwardRef<HeroHandle, MobileHeroProps>(({ searchRef }, ref) 
               ref={searchFormRef}
               aiSearchParams={aiSearchParams}
               onParamsConsumed={handleParamsConsumed}
+              whitePanel
             />
           </div>
         </div>

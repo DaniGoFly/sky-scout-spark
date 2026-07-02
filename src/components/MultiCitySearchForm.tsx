@@ -25,11 +25,12 @@ interface FlightSegment {
 
 interface MultiCitySearchFormProps {
   onSearch: (segments: FlightSegment[], travelers: TravelersData) => void;
+  whitePanel?: boolean;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
-const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
+const MultiCitySearchForm = ({ onSearch, whitePanel = false }: MultiCitySearchFormProps) => {
   const isMobile = useIsMobile();
   const [segments, setSegments] = useState<FlightSegment[]>([
     { id: generateId(), from: null, to: null, date: null },
@@ -108,7 +109,9 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
     : -1;
 
   /* Style tokens matching the standard search bar */
-  const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
+  const SEG_LABEL = whitePanel
+    ? "text-[10px] font-semibold text-[#111827] uppercase tracking-[0.12em] leading-none"
+    : "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
 
   return (
     <div className="space-y-2">
@@ -116,7 +119,12 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
       {segments.map((segment, index) => (
         <div
           key={segment.id}
-          className="w-full border border-border/10 bg-background/60 backdrop-blur-sm rounded-2xl overflow-visible"
+          className={cn(
+            "w-full rounded-2xl overflow-visible",
+            whitePanel
+              ? "bg-white border border-[#E5E7EB] shadow-[0_12px_40px_rgba(0,0,0,0.12)] search-bar-light"
+              : "border border-border/10 bg-background/60 backdrop-blur-sm"
+          )}
         >
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] items-stretch">
             {/* From */}
@@ -180,7 +188,9 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
                     <span className={SEG_LABEL}>Date</span>
                     <span className={cn(
                       "block text-[14px] leading-[20px] mt-1.5 font-semibold whitespace-nowrap",
-                      segment.date ? "text-foreground" : "text-muted-foreground/40 font-normal"
+                      segment.date
+                        ? whitePanel ? "text-[#111827]" : "text-foreground"
+                        : whitePanel ? "text-[#4B5563] font-normal" : "text-muted-foreground/40 font-normal"
                     )}>
                       {segment.date ? format(segment.date, "d MMM yyyy") : "Select date"}
                     </span>
@@ -313,9 +323,9 @@ const MultiCitySearchForm = ({ onSearch }: MultiCitySearchFormProps) => {
       )}
 
       {/* Travelers & Search */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-border/20">
-        <div className="w-full md:w-auto md:min-w-[200px] [&_button]:bg-background/60">
-          <TravelersPicker value={travelers} onChange={setTravelers} />
+      <div className={cn("flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t", whitePanel ? "border-[#E5E7EB]" : "border-border/20")}>
+        <div className="w-full md:w-auto md:min-w-[200px]">
+          <TravelersPicker value={travelers} onChange={setTravelers} whiteMode={whitePanel} />
         </div>
         <Button
           size="lg"

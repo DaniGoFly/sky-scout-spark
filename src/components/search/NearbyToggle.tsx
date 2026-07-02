@@ -9,9 +9,10 @@ interface NearbyToggleProps {
   radius: number;
   onRadiusChange: (radius: number) => void;
   disabled?: boolean;
+  whiteMode?: boolean;
 }
 
-const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = false }: NearbyToggleProps) => (
+const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = false, whiteMode = false }: NearbyToggleProps) => (
   <div className="flex h-full min-h-[44px] w-full min-w-0 flex-col justify-start relative z-10 pointer-events-auto">
     <label className={cn("flex min-h-[36px] md:min-h-0 md:h-5 items-center gap-2 select-none", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
       <Checkbox
@@ -20,8 +21,8 @@ const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = fa
         onCheckedChange={(checked) => onToggle(checked === true)}
         className="h-4 w-4 rounded-[4px]"
       />
-      <span className="text-[12px] text-muted-foreground flex items-center gap-1 leading-none whitespace-nowrap">
-        <MapPin className="w-3 h-3" /> Add nearby airports
+      <span className={cn("text-[12px] flex items-center gap-1 leading-none whitespace-nowrap", whiteMode ? "text-[#111827]" : "text-muted-foreground")}>
+        <MapPin className={cn("w-3 h-3", whiteMode ? "text-[#6B7280]" : "text-current")} /> Add nearby airports
       </span>
     </label>
 
@@ -40,7 +41,7 @@ const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = fa
           step={25}
           className="w-[140px] shrink-0"
         />
-        <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap font-medium">
+        <span className={cn("text-[11px] tabular-nums whitespace-nowrap font-medium", whiteMode ? "text-[#6B7280]" : "text-muted-foreground")}>
           {radius} km
         </span>
       </div>

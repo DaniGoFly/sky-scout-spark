@@ -135,6 +135,7 @@ const Hero = forwardRef<HeroHandle, HeroProps>(({ searchRef }, ref) => {
                 ref={searchFormRef}
                 aiSearchParams={aiSearchParams}
                 onParamsConsumed={handleParamsConsumed}
+                whitePanel
               />
             </div>
           </div>

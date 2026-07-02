@@ -1,10 +1,12 @@
 import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
 interface TripLengthSliderProps {
   value: [number, number];
   onChange: (value: [number, number]) => void;
   min?: number;
   max?: number;
+  whiteMode?: boolean;
 }
 
 const TripLengthSlider = ({
@@ -12,14 +14,15 @@ const TripLengthSlider = ({
   onChange,
   min = 1,
   max = 21,
+  whiteMode = false,
 }: TripLengthSliderProps) => {
   const isSingle = value[0] === value[1];
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium text-muted-foreground">Trip length</span>
-        <span className="text-[11px] font-semibold text-foreground tabular-nums">
+        <span className={cn("text-[11px] font-medium", whiteMode ? "text-[#111827]" : "text-muted-foreground")}>Trip length</span>
+        <span className={cn("text-[11px] font-semibold tabular-nums", whiteMode ? "text-[#111827]" : "text-foreground")}>
           {isSingle ? `${value[0]} days` : `${value[0]}–${value[1]} days`}
         </span>
       </div>
@@ -31,7 +34,7 @@ const TripLengthSlider = ({
         step={1}
         className="w-full"
       />
-      <div className="flex justify-between text-[9px] text-muted-foreground/60">
+      <div className={cn("flex justify-between text-[9px]", whiteMode ? "text-[#6B7280]" : "text-muted-foreground/60")}>
         <span>{min} day</span>
         <span>{max} days</span>
       </div>

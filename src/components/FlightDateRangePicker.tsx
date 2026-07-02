@@ -399,10 +399,11 @@ interface FlightDateRangePickerProps {
   segmentLabel?: string;
   segmentDisplay?: string;
   onOpenCalendar?: () => void;
+  whiteMode?: boolean;
 }
 
 const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
-  segmentLabel, segmentDisplay, departDate, onOpenCalendar,
+  segmentLabel, segmentDisplay, departDate, onOpenCalendar, whiteMode = false,
 }) => {
   return (
     <button
@@ -410,10 +411,12 @@ const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
       onClick={onOpenCalendar}
       className="w-full h-full text-left flex flex-col justify-center cursor-pointer focus:outline-none relative z-30 pointer-events-auto"
     >
-      <span className="block text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none">{segmentLabel}</span>
+      <span className={cn("block text-[10px] font-semibold uppercase tracking-[0.12em] leading-none", whiteMode ? "text-[#111827]" : "text-muted-foreground/60")}>{segmentLabel}</span>
       <span className={cn(
         "block text-[14px] leading-[20px] mt-1.5 whitespace-nowrap",
-        departDate ? "font-semibold text-foreground" : "font-normal text-muted-foreground/40"
+        departDate
+          ? whiteMode ? "font-semibold text-[#111827]" : "font-semibold text-foreground"
+          : whiteMode ? "font-normal text-[#4B5563]" : "font-normal text-muted-foreground/40"
       )}>
         {segmentDisplay}
       </span>
