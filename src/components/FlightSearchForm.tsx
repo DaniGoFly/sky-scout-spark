@@ -771,13 +771,13 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
       </div>
 
       {/* ═══════════════════════════════════════════
-          DESKTOP OPTIONS ROW — UNCHANGED
+          DESKTOP OPTIONS ROW
           ═══════════════════════════════════════════ */}
-      <div className="hidden xl:flex w-full min-h-[44px] items-start justify-between gap-4 px-2 pr-6">
+      <div className={cn("hidden xl:flex w-full min-h-[44px] items-start justify-between gap-4 px-2 pr-6", whitePanel && "search-bar-light")}>
         {/* LEFT GROUP */}
         <div className="flex items-start gap-5 min-w-0 shrink">
           <div className="w-[200px] shrink-0">
-            <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
+            <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} whiteMode={whitePanel} />
           </div>
           <div className="w-[200px] shrink-0">
             <NearbyToggle
@@ -786,12 +786,13 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               radius={toRadius}
               onRadiusChange={setToRadius}
               disabled={anywhere}
+              whiteMode={whitePanel}
             />
           </div>
           <div className="shrink-0 pt-[2px]">
             <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap">
               <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px]" />
-              <span className="text-[12px] text-muted-foreground/60 font-medium">{t("search.direct_flights_only")}</span>
+              <span className={cn("text-[12px] font-medium", whitePanel ? "text-[#111827]" : "text-muted-foreground/60")}>{t("search.direct_flights_only")}</span>
             </label>
           </div>
         </div>
@@ -800,21 +801,21 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
         <div className="flex items-start gap-5 shrink-0 pt-[2px]">
           <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
             <Checkbox checked={isAnyDay} onCheckedChange={checked => { const on = checked === true; setIsAnyDay(on); if (on) { setDepartFlexBefore(0); setDepartFlexAfter(0); setReturnFlexBefore(0); setReturnFlexAfter(0); setCalendarOpen(false); } }} className="h-4 w-4 rounded-[4px]" />
-            <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
-              <CalendarOff className="w-3 h-3" /> {t("search.any_day", "Any day")}
+            <span className={cn("text-[12px] font-medium flex items-center gap-1", whitePanel ? "text-[#111827]" : "text-muted-foreground/60")}>
+              <CalendarOff className={cn("w-3 h-3", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.any_day", "Any day")}
             </span>
           </label>
 
           <label className="flex h-5 items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
             <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-4 w-4 rounded-[4px]" />
-            <span className="text-[12px] text-muted-foreground/60 font-medium flex items-center gap-1">
-              <Globe className="w-3 h-3 shrink-0" /> {t("search.anywhere", "Anywhere")}
+            <span className={cn("text-[12px] font-medium flex items-center gap-1", whitePanel ? "text-[#111827]" : "text-muted-foreground/60")}>
+              <Globe className={cn("w-3 h-3 shrink-0", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.anywhere", "Anywhere")}
             </span>
           </label>
 
           <button onClick={handleUseMyLocation}
-            className="flex h-5 items-center gap-1.5 text-[12px] text-muted-foreground/60 hover:text-primary transition-colors cursor-pointer whitespace-nowrap shrink-0 font-medium">
-            <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
+            className={cn("flex h-5 items-center gap-1.5 text-[12px] transition-colors cursor-pointer whitespace-nowrap shrink-0 font-medium", whitePanel ? "text-[#111827] hover:text-primary" : "text-muted-foreground/60 hover:text-primary")}>
+            <Navigation className={cn("w-3.5 h-3.5", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.use_location")}
           </button>
         </div>
       </div>
