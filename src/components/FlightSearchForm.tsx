@@ -394,8 +394,11 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
         {/* Search bar */}
         <div
           className={cn(
-            "w-full min-w-0 max-w-full border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] relative z-20 backdrop-blur-sm xl:h-[94px] overflow-visible",
+            "w-full min-w-0 max-w-full relative z-20 xl:h-[94px] overflow-visible",
             calendarOpen ? "rounded-t-2xl" : "rounded-2xl",
+            whitePanel
+              ? "bg-white border border-[#E5E7EB] shadow-[0_12px_40px_rgba(0,0,0,0.12)] search-bar-light"
+              : "border border-border/10 bg-background/60 shadow-[0_1px_8px_rgba(0,0,0,0.08)] backdrop-blur-sm"
           )}
         >
           {/* Desktop: fixed slot grid */}
@@ -413,6 +416,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                 onChange={handleOriginsChange}
                 placeholder={t("search_form.placeholder_airport")}
                 bare
+                whiteMode={whitePanel}
               /></div>
             </div>
 
@@ -422,7 +426,12 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                 type="button"
                 onClick={swapLocations}
                 disabled={origins.length !== 1 || destinations.length !== 1 || anywhere}
-                className="w-[32px] h-[32px] rounded-full border border-border/40 bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 hover:scale-105 disabled:opacity-20 transition-all cursor-pointer shadow-sm"
+                className={cn(
+                  "w-[32px] h-[32px] rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm",
+                  whitePanel
+                    ? "border-[#E5E7EB] bg-white text-[#6B7280] hover:text-primary hover:border-primary/30"
+                    : "border-border/40 bg-card text-muted-foreground hover:text-primary hover:border-primary/30"
+                )}
               >
                 <ArrowRightLeft className="w-3.5 h-3.5" />
               </button>
@@ -433,7 +442,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
               <span className={SEG_LABEL}>{t("search.to")}</span>
               <div className="mt-1.5">{anywhere ? (
                 <div className="flex items-center gap-1.5">
-                  <Globe className="w-4 h-4 text-primary shrink-0" />
+                  <Globe className={cn("w-4 h-4 shrink-0", whitePanel ? "text-[#6B7280]" : "text-primary")} />
                   <span className={SEG_VALUE}>{t("search_form.everywhere")}</span>
                 </div>
               ) : (
@@ -443,6 +452,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                   placeholder={t("search_form.placeholder_airport")}
                   multiLabel={t("search_form.multi_destination")}
                   bare
+                  whiteMode={whitePanel}
                 />
               )}</div>
             </div>
