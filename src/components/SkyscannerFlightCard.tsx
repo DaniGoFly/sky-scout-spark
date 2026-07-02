@@ -363,7 +363,7 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
     try {
       const result = await resolveDeal({ search_id: searchId, proposal_id: proposalId, results_base: resultsBase });
       const dealUrl = result.deal_url || "";
-      console.log("[handleViewDeal] deal_url from Supabase:", dealUrl || "(empty)");
+      if (import.meta.env.DEV) console.log("[handleViewDeal] deal_url:", dealUrl || "(empty)");
 
       if (!result.ok || !dealUrl) {
         toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
@@ -377,17 +377,17 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
       if (/^https:\/\/tickets-api\.[^/]*travelpayouts\.com\//i.test(dealUrl)) {
         try {
           const r = await fetch(dealUrl, { credentials: "omit" });
-          console.log("[handleViewDeal] tickets-api fetch status:", r.status);
+          if (import.meta.env.DEV) console.log("[handleViewDeal] tickets-api fetch status:", r.status);
           if (!r.ok) throw new Error(`tickets-api request failed (${r.status})`);
           const data = await r.json();
           if (data && typeof data.url === "string" && data.url) {
-            console.log("[handleViewDeal] parsed data.url:", data.url);
+            if (import.meta.env.DEV) console.log("[handleViewDeal] parsed data.url:", data.url);
             finalUrl = data.url;
           } else {
             throw new Error("tickets-api response missing data.url");
           }
         } catch (err) {
-          console.warn("[handleViewDeal] tickets-api fetch failed, falling back to deal_url:", err);
+          if (import.meta.env.DEV) console.warn("[handleViewDeal] tickets-api fetch failed, falling back to deal_url:", err);
           finalUrl = dealUrl;
         }
       }
@@ -398,11 +398,11 @@ const FlightCard = memo(({ flight, isBestValue = false, badgeLabel, departDate, 
         return;
       }
 
-      console.log("[handleViewDeal] navigating to:", safeUrl);
+      if (import.meta.env.DEV) console.log("[handleViewDeal] navigating to:", safeUrl);
       try { sessionStorage.setItem("gofly.lastDealClick", String(Date.now())); } catch {}
       window.location.href = safeUrl;
     } catch (err) {
-      console.warn("[handleViewDeal] resolve failed:", err);
+      if (import.meta.env.DEV) console.warn("[handleViewDeal] resolve failed:", err);
       toast.error(t("card.deal_error"), { description: t("card.deal_error_desc") });
     } finally {
       setIsResolving(false);

@@ -181,7 +181,7 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
     navigator.geolocation.getCurrentPosition(
       (pos) => { userCoordsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude }; fillNearbyOrigins(pos.coords.latitude, pos.coords.longitude, fromRadius); },
       (err) => {
-        console.log("[GoFlyFinder] Nearby toggle geo error:", err.code, err.message);
+        if (import.meta.env.DEV) console.log("[GoFlyFinder] Nearby toggle geo error:", err.code, err.message);
         setFromNearby(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
