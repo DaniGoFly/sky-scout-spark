@@ -369,9 +369,15 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
   const errRing = (has?: boolean) => has ? "ring-2 ring-destructive/40" : "";
 
   /* ── Segment style tokens ── */
-  const SEG_LABEL = "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
-  const SEG_VALUE = "text-[14px] font-semibold text-foreground leading-[20px] whitespace-nowrap";
-  const SEG_PLACEHOLDER = "text-[14px] font-normal text-muted-foreground/40 leading-[20px] whitespace-nowrap";
+  const SEG_LABEL = whitePanel
+    ? "text-[10px] font-semibold text-[#111827] uppercase tracking-[0.12em] leading-none"
+    : "text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-[0.12em] leading-none";
+  const SEG_VALUE = whitePanel
+    ? "text-[14px] font-semibold text-[#111827] leading-[20px] whitespace-nowrap"
+    : "text-[14px] font-semibold text-foreground leading-[20px] whitespace-nowrap";
+  const SEG_PLACEHOLDER = whitePanel
+    ? "text-[14px] font-normal text-[#4B5563] leading-[20px] whitespace-nowrap"
+    : "text-[14px] font-normal text-muted-foreground/40 leading-[20px] whitespace-nowrap";
 
 
   return (
