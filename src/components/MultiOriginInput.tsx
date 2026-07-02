@@ -29,6 +29,7 @@ interface MultiOriginInputProps {
   compact?: boolean;
   multiLabel?: string;
   bare?: boolean;
+  whiteMode?: boolean;
 }
 
 const MAX_DEFAULT = 6;
