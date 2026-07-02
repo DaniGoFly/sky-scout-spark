@@ -323,9 +323,9 @@ const MultiCitySearchForm = ({ onSearch, whitePanel = false }: MultiCitySearchFo
       )}
 
       {/* Travelers & Search */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-border/20">
-        <div className="w-full md:w-auto md:min-w-[200px] [&_button]:bg-background/60">
-          <TravelersPicker value={travelers} onChange={setTravelers} />
+      <div className={cn("flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t", whitePanel ? "border-[#E5E7EB]" : "border-border/20")}>
+        <div className="w-full md:w-auto md:min-w-[200px]">
+          <TravelersPicker value={travelers} onChange={setTravelers} whiteMode={whitePanel} />
         </div>
         <Button
           size="lg"
