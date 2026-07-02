@@ -666,22 +666,22 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
             </div>
 
             {/* ── Utility options — grouped cleanly ── */}
-            <div className="px-1 pt-3 pb-1 space-y-2">
+            <div className={cn("px-1 pt-3 pb-1 space-y-2", whitePanel && "search-bar-light")}>
               {/* Row 1: Direct flights + My location */}
               <div className="flex items-center gap-4 flex-wrap">
                 <label className="flex items-center gap-2 cursor-pointer select-none min-h-[36px]">
                   <Checkbox checked={directOnly} onCheckedChange={checked => setDirectOnly(checked === true)} className="h-4 w-4 rounded-[4px] border-muted-foreground/30" />
-                  <span className="text-[12px] text-muted-foreground font-medium">{t("search.direct_flights_only")}</span>
+                  <span className={cn("text-[12px] font-medium", whitePanel ? "text-[#111827]" : "text-muted-foreground")}>{t("search.direct_flights_only")}</span>
                 </label>
-                <button onClick={handleUseMyLocation} className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-primary transition-colors cursor-pointer font-medium min-h-[36px]">
-                  <Navigation className="w-3.5 h-3.5" /> {t("search.use_location")}
+                <button onClick={handleUseMyLocation} className={cn("flex items-center gap-1.5 text-[12px] transition-colors cursor-pointer font-medium min-h-[36px]", whitePanel ? "text-[#111827] hover:text-primary" : "text-muted-foreground hover:text-primary")}>
+                  <Navigation className={cn("w-3.5 h-3.5", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.use_location")}
                 </button>
               </div>
 
               {/* Row 2: Nearby airports */}
               <div className="flex items-start gap-4 flex-wrap">
-                <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} />
-                {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} />}
+                <NearbyToggle enabled={fromNearby} onToggle={handleFromNearbyToggle} radius={fromRadius} onRadiusChange={setFromRadius} whiteMode={whitePanel} />
+                {!anywhere && <NearbyToggle enabled={toNearby} onToggle={handleToNearbyToggle} radius={toRadius} onRadiusChange={setToRadius} whiteMode={whitePanel} />}
               </div>
 
               {/* Row 3: Any day + Anywhere */}
@@ -696,15 +696,15 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
                     }}
                     className="h-4 w-4 rounded-[4px]"
                   />
-                  <span className="text-[12px] text-muted-foreground font-medium flex items-center gap-1">
-                    <CalendarOff className="w-3 h-3" /> {t("search.any_day", "Any day")}
+                  <span className={cn("text-[12px] font-medium flex items-center gap-1", whitePanel ? "text-[#111827]" : "text-muted-foreground")}>
+                    <CalendarOff className={cn("w-3 h-3", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.any_day", "Any day")}
                   </span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer select-none min-h-[36px]">
                   <Checkbox checked={anywhere} onCheckedChange={(v) => { setAnywhere(v === true); if (v) { setDestinations([]); } }} className="h-4 w-4 rounded-[4px]" />
-                  <span className="text-[12px] text-muted-foreground font-medium flex items-center gap-1">
-                    <Globe className="w-3 h-3" /> {t("search.anywhere", "Anywhere")}
+                  <span className={cn("text-[12px] font-medium flex items-center gap-1", whitePanel ? "text-[#111827]" : "text-muted-foreground")}>
+                    <Globe className={cn("w-3 h-3", whitePanel ? "text-[#6B7280]" : "text-current")} /> {t("search.anywhere", "Anywhere")}
                   </span>
                 </label>
               </div>
