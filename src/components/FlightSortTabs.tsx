@@ -57,6 +57,8 @@ const FlightSortTabs = memo(({ flights, sortBy, onSortChange }: FlightSortTabsPr
           return (
             <button
               key={key}
+              type="button"
+              aria-pressed={isActive}
               onClick={() => onSortChange(key)}
               className={`flex flex-col gap-0 py-2.5 sm:py-2.5 px-2.5 sm:px-3 rounded-[14px] min-w-0 transition-all border text-left ${
                 isActive
