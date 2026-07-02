@@ -5,6 +5,7 @@ interface TripLengthSliderProps {
   onChange: (value: [number, number]) => void;
   min?: number;
   max?: number;
+  whiteMode?: boolean;
 }
 
 const TripLengthSlider = ({
