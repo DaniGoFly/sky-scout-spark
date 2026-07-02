@@ -77,6 +77,7 @@ const MultiOriginInput = ({
   compact = false,
   multiLabel,
   bare = false,
+  whiteMode = false,
 }: MultiOriginInputProps) => {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Place[]>([]);
