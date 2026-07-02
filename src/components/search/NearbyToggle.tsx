@@ -22,8 +22,8 @@ const NearbyToggle = ({ enabled, onToggle, radius, onRadiusChange, disabled = fa
         onCheckedChange={(checked) => onToggle(checked === true)}
         className="h-4 w-4 rounded-[4px]"
       />
-      <span className={cn("text-[12px] flex items-center gap-1 leading-none whitespace-nowrap", whiteMode ? "text-[#111827]" : "text-muted-foreground")}>
-        <MapPin className={cn("w-3 h-3", whiteMode ? "text-[#6B7280]" : "text-current")} /> Add nearby airports
+      <span className={cn("text-[12px] flex items-center gap-1 leading-none whitespace-nowrap", darkLabels ? "text-white" : whiteMode ? "text-[#111827]" : "text-muted-foreground")}>
+        <MapPin className={cn("w-3 h-3", darkLabels ? "text-current" : whiteMode ? "text-[#6B7280]" : "text-current")} /> Add nearby airports
       </span>
     </label>
 
