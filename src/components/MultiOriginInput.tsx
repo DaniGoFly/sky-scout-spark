@@ -41,11 +41,18 @@ const COMPACT_ADD_THRESHOLD_PX = 106;
 const AirportChip = ({
   airport,
   onRemove,
+  whiteMode,
 }: {
   airport: AirportSelection;
   onRemove: () => void;
+  whiteMode?: boolean;
 }) => (
-  <span className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-bold bg-primary/12 text-primary border border-primary/20 rounded-full shrink-0 select-none transition-colors hover:bg-primary/20 hover:border-primary/30">
+  <span className={cn(
+    "inline-flex items-center gap-1 h-6 px-2 text-[11px] font-bold border rounded-full shrink-0 select-none transition-colors",
+    whiteMode
+      ? "bg-[#F3F4F6] text-[#111827] border-[#E5E7EB] hover:bg-[#E5E7EB] hover:border-[#D1D5DB]"
+      : "bg-primary/12 text-primary border-primary/20 hover:bg-primary/20 hover:border-primary/30"
+  )}>
     {airport.code}
     <button
       type="button"
@@ -53,7 +60,7 @@ const AirportChip = ({
         e.stopPropagation();
         onRemove();
       }}
-      className="ml-0.5 rounded-full hover:text-destructive transition-colors p-px"
+      className={cn("ml-0.5 rounded-full transition-colors p-px", whiteMode ? "hover:text-[#6B7280]" : "hover:text-destructive")}
       aria-label={`Remove ${airport.code}`}
     >
       <X className="w-2.5 h-2.5" />
