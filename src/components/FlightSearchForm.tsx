@@ -359,9 +359,9 @@ const FlightSearchForm = forwardRef<FlightSearchFormHandle, FlightSearchFormProp
     return (
       <div className="w-full">
         <div className="flex items-center gap-2 mb-4">
-          <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} />
+          <TripTypeMenu tripType={tripType} setTripType={setTripType} label={tripTypeLabel} t={t} whitePanel={whitePanel} />
         </div>
-        <MultiCitySearchForm onSearch={handleMultiCitySearch} />
+        <MultiCitySearchForm onSearch={handleMultiCitySearch} whitePanel={whitePanel} />
       </div>
     );
   }
