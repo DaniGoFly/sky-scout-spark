@@ -41,6 +41,7 @@ const FlightSearchHero = () => {
           <FlightSearchForm
             aiSearchParams={aiSearchParams}
             onParamsConsumed={handleParamsConsumed}
+            whitePanel
           />
 
           <TrustSignals />
