@@ -25,6 +25,7 @@ interface FlightSegment {
 
 interface MultiCitySearchFormProps {
   onSearch: (segments: FlightSegment[], travelers: TravelersData) => void;
+  whitePanel?: boolean;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
