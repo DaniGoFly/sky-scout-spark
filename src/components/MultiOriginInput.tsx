@@ -318,7 +318,7 @@ const MultiOriginInput = ({
                     setIsOpen(true);
                     requestAnimationFrame(() => inputRef.current?.focus());
                   }}
-                  className="flex-[0_0_auto] text-[14px] font-normal leading-[20px] text-muted-foreground/40 whitespace-nowrap"
+                  className={cn("flex-[0_0_auto] text-[14px] font-normal leading-[20px] whitespace-nowrap", whiteMode ? "text-[#4B5563]" : "text-muted-foreground/40")}
                 >
                   {addActionText}
                 </button>
