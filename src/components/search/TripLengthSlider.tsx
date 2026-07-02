@@ -13,6 +13,7 @@ const TripLengthSlider = ({
   onChange,
   min = 1,
   max = 21,
+  whiteMode = false,
 }: TripLengthSliderProps) => {
   const isSingle = value[0] === value[1];
 
