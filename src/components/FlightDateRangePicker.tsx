@@ -399,6 +399,7 @@ interface FlightDateRangePickerProps {
   segmentLabel?: string;
   segmentDisplay?: string;
   onOpenCalendar?: () => void;
+  whiteMode?: boolean;
 }
 
 const FlightDateRangePicker: React.FC<FlightDateRangePickerProps> = ({
